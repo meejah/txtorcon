@@ -65,13 +65,6 @@
    possibly triggered my main Tor failing to COOKIE authenticate --
    probably had the cookie file overwritten?)
 
- - refactor the controler into two things: a state tracker and the
-   protocol. Maybe TorControlProtocol and TorState?
-
- . deal with configuration, and PROPERLY so a user can just set values
-   and don't have to worry about which ones need to be sent in a single
-   SETCONF command and so forth. (fix TorState)
-
  - it seems that streams aren't getting set up right if there is
    exactly one right now in tor? via telnet (url changed):
 
