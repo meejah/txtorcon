@@ -5,12 +5,12 @@ from twisted.internet.interfaces import IProtocolFactory, IReactorCore
 from twisted.protocols.basic import LineOnlyReceiver
 from zope.interface import implements, Interface
 
-## outside this module, you can do "from txtor import Stream" etc.
-from txtor.stream import Stream, IStreamListener, IStreamAttacher
-from txtor.circuit import Circuit, ICircuitListener, ICircuitContainer
-from txtor.router import Router, IRouterContainer
-from txtor.addrmap import AddrMap
-from txtor.torcontrolprotocol import ITorControlProtocol, parse_keywords
+## outside this module, you can do "from txtorcon import Stream" etc.
+from txtorcon.stream import Stream, IStreamListener, IStreamAttacher
+from txtorcon.circuit import Circuit, ICircuitListener, ICircuitContainer
+from txtorcon.router import Router, IRouterContainer
+from txtorcon.addrmap import AddrMap
+from txtorcon.torcontrolprotocol import ITorControlProtocol, parse_keywords
 
 from spaghetti import FSM, State, Transition
 
@@ -46,7 +46,7 @@ def build_tor_connection(endpoint, buildstate=True):
     has fired)
     """
     
-    from txtor import TorProtocolFactory
+    from txtorcon import TorProtocolFactory
     d = endpoint.connect(TorProtocolFactory())
     if buildstate:
         d.addCallback(build_state)
@@ -80,7 +80,7 @@ class TorState(object):
         self.stream_factory = Stream
 
         self.attacher = None
-        """If set, provides :class:`txtor.IStreamAttacher` to attach new streams we hear about."""
+        """If set, provides :class:`txtorcon.IStreamAttacher` to attach new streams we hear about."""
         
 
         self.circuit_listeners = []

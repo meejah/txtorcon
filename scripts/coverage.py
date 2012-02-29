@@ -2,7 +2,7 @@
 
 ##
 ## this goes through the _trial_temp/coverage files looking for
-## "txtor" ones and counts the covered and uncovered lines (not
+## "txtorcon" ones and counts the covered and uncovered lines (not
 ## counting comments, etc) and spits out percentages.
 ##
 ## FIXME surely trial et al have a way to do this, but I didn't find
@@ -17,7 +17,7 @@ uncovered = 0
 thedir = './_trial_temp/coverage'
 for file in os.listdir(thedir):
     file = os.path.join(thedir,file)
-    if 'txtor' in file and 'test' not in file:
+    if 'txtorcon' in file and 'test' not in file:
         this_cover = 0
         this_uncover = 0
         for line in open(file,'r').readlines():

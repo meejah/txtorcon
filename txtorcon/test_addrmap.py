@@ -6,9 +6,9 @@ from twisted.internet import reactor, task
 from twisted.internet.interfaces import IReactorTime
 
 # outside this package, you can do
-# from txtor import Circuit
-from txtor.addrmap import AddrMap
-from txtor.addrmap import Addr
+# from txtorcon import Circuit
+from txtorcon.addrmap import AddrMap
+from txtorcon.addrmap import Addr
 
 class AddrMapTests(unittest.TestCase):
 

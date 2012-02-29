@@ -3,9 +3,9 @@ import os
 import shutil
 from distutils.core import setup, Extension
 
-from txtor import __version__, __author__, __contact__, __copyright__, __license__, __url__
+from txtorcon import __version__, __author__, __contact__, __copyright__, __license__, __url__
 
-setup(name = 'txtor',
+setup(name = 'txtorcon',
       version = __version__,
       description = 'Twisted-based Tor controller client, with state-tracking and configuration abstractions.',
       long_description = open('README','r').read(),
@@ -26,9 +26,9 @@ setup(name = 'txtor',
       author_email = __contact__,
       url = __url__,
       license = __license__,
-      packages  = ["txtor"],
+      packages  = ["txtorcon"],
 #      scripts = ['examples/attach_streams_by_country.py'],
-      data_files = [('share/txtor', ['README', 'TODO']),
-                    ('share/txtor/examples', map(lambda x: os.path.join('examples', x), filter(lambda x: x[-3:] == '.py', os.listdir('examples'))))
+      data_files = [('share/txtorcon', ['README', 'TODO']),
+                    ('share/txtorcon/examples', map(lambda x: os.path.join('examples', x), filter(lambda x: x[-3:] == '.py', os.listdir('examples'))))
                     ]
       )

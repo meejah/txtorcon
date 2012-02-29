@@ -12,7 +12,7 @@ from twisted.internet import reactor, defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from zope.interface import implements
 
-from txtor import TorProtocolFactory, TorConfig, DEFAULT_VALUE
+from txtorcon import TorProtocolFactory, TorConfig, DEFAULT_VALUE
 
 def setup_complete(config):
     print "Got config"

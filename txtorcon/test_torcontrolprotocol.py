@@ -7,8 +7,8 @@ from twisted.internet import reactor, defer
 from twisted.internet.protocol import Factory
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.protocols.basic import LineReceiver
-from txtor import TorControlProtocol, TorProtocolFactory, TorState, IStreamAttacher, ICircuitListener, IStreamListener
-from txtor.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
+from txtorcon import TorControlProtocol, TorProtocolFactory, TorState, IStreamAttacher, ICircuitListener, IStreamListener
+from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 import types
 
 def do_nothing(*args):

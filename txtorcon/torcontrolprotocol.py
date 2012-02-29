@@ -5,11 +5,11 @@ from twisted.internet.interfaces import IProtocolFactory
 from twisted.protocols.basic import LineOnlyReceiver
 from zope.interface import implements, Interface
 
-## outside this module, you can do "from txtor import Stream" etc.
-from txtor.stream import Stream, IStreamListener, IStreamAttacher
-from txtor.circuit import Circuit, ICircuitListener, ICircuitContainer
-from txtor.router import Router, IRouterContainer
-from txtor.addrmap import AddrMap
+## outside this module, you can do "from txtorcon import Stream" etc.
+from txtorcon.stream import Stream, IStreamListener, IStreamAttacher
+from txtorcon.circuit import Circuit, ICircuitListener, ICircuitContainer
+from txtorcon.router import Router, IRouterContainer
+from txtorcon.addrmap import AddrMap
 
 from spaghetti import FSM, State, Transition
 
@@ -183,17 +183,17 @@ class TorControlProtocol(LineOnlyReceiver):
     running Tor's state (e.g. circuits, streams etcetera) and provide
     an API for monitoring said state. You 'probably' don't need to use
     this protocol directly, but can for example use it to listen and
-    respond to events (via :meth:`txtor.torcontrolprotocol.TorControlProtocol.add_event_listener`, see also Tor's
+    respond to events (via :meth:`txtorcon.torcontrolprotocol.TorControlProtocol.add_event_listener`, see also Tor's
     SETEVENT command).
 
     This instance does not track state; see TorState for the current
     state of all Circuits, Streams and Routers.
 
-    :meth:`txtor.torstate.TorState.build_circuit` allows you to build custom circuits.
+    :meth:`txtorcon.torstate.TorState.build_circuit` allows you to build custom circuits.
 
     :meth:`add_event_listener` can be used to listen for specific events.
 
-    To see how circuit and stream listeners are used, see :class:`txtor.torstate.TorState`,
+    To see how circuit and stream listeners are used, see :class:`txtorcon.torstate.TorState`,
     which is also the place to go if you wish to add your own stream
     or circuit listeners.
     """
@@ -376,7 +376,7 @@ class TorControlProtocol(LineOnlyReceiver):
     def signal(self, nm):
         """
         Issues a signal to Tor. See control-spec or
-        :attr:`txtor.TorControlProtocol.valid_signals` for which ones
+        :attr:`txtorcon.TorControlProtocol.valid_signals` for which ones
         are available and their return values.
         """
         if not nm in self.valid_signals:

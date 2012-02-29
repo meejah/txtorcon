@@ -13,7 +13,7 @@ from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from zope.interface import implements
 
-import txtor
+import txtorcon
 
     
     
@@ -40,7 +40,7 @@ hs_temp = tempfile.mkdtemp(prefix='torhiddenservice')
 
 ## register something to clean up our tempdir
 reactor.addSystemEventTrigger('before', 'shutdown',
-                              functools.partial(txtor.util.delete_file_or_tree, hs_temp))
+                              functools.partial(txtorcon.util.delete_file_or_tree, hs_temp))
 
 ## configure the hidden service we want. 
 ## obviously, we'd want a more-persistent place to keep the hidden
@@ -49,8 +49,8 @@ reactor.addSystemEventTrigger('before', 'shutdown',
 ## address). That is, every time you run this script you get a new
 ## hidden service URI, which is probably not what you want.
 
-config = txtor.TorConfig()
-config.HiddenServices = [txtor.HiddenService(config, hs_temp, [str(hs_public_port) + " 127.0.0.1:"+str(hs_port)])]
+config = txtorcon.TorConfig()
+config.HiddenServices = [txtorcon.HiddenService(config, hs_temp, [str(hs_public_port) + " 127.0.0.1:"+str(hs_port)])]
 config.save()
 
 ## the launch_tor method adds other needed config directives to give
@@ -79,7 +79,7 @@ hs_endpoint.listen(site)
 def updates(prog, tag, summary):
     print "%d%%: %s" % (prog, summary)
 
-d = txtor.launch_tor(config, reactor, progress_updates=updates)
+d = txtorcon.launch_tor(config, reactor, progress_updates=updates)
 d.addCallback(setup_complete)
 d.addErrback(setup_failed)
 reactor.run()

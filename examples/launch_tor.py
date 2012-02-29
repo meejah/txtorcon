@@ -11,7 +11,7 @@ from twisted.python import log
 from twisted.internet import reactor, defer
 from zope.interface import implements
 
-from txtor import TorProtocolFactory, TorConfig, TorState, DEFAULT_VALUE, launch_tor
+from txtorcon import TorProtocolFactory, TorConfig, TorState, DEFAULT_VALUE, launch_tor
 
 def state_complete(state):
     print "We've completely booted up a TorState to a Tor version %s at PID %d" % (state.protocol.version, state.tor_pid)

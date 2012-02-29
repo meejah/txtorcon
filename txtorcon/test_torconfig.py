@@ -10,7 +10,7 @@ from twisted.internet import defer, error
 from twisted.python.failure import Failure
 from twisted.internet.interfaces import IReactorCore
 
-from txtor import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor
+from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor
 
 def do_nothing(*args):
     pass

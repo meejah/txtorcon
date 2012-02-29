@@ -3,10 +3,10 @@ from twisted.trial import unittest
 from zope.interface import implements
 
 # outside this package, you can do
-# from txtor import Circuit
-from txtor.circuit import Circuit, ICircuitListener, ICircuitContainer
-from txtor.router import IRouterContainer
-from txtor.stream import Stream
+# from txtorcon import Circuit
+from txtorcon.circuit import Circuit, ICircuitListener, ICircuitContainer
+from txtorcon.router import IRouterContainer
+from txtorcon.stream import Stream
 
 class FakeTorController(object):
     implements(IRouterContainer, ICircuitListener, ICircuitContainer)

@@ -6,13 +6,13 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.protocols.basic import LineOnlyReceiver
 from zope.interface import implements, Interface
 
-## outside this module, you can do "from txtor import Stream" etc.
-from txtor.stream import Stream, IStreamListener, IStreamAttacher
-from txtor.circuit import Circuit, ICircuitListener, ICircuitContainer
-from txtor.router import Router, IRouterContainer
-from txtor.addrmap import AddrMap
-from txtor.torcontrolprotocol import ITorControlProtocol, parse_keywords, DEFAULT_VALUE, TorProtocolFactory
-from txtor.util import delete_file_or_tree
+## outside this module, you can do "from txtorcon import Stream" etc.
+from txtorcon.stream import Stream, IStreamListener, IStreamAttacher
+from txtorcon.circuit import Circuit, ICircuitListener, ICircuitContainer
+from txtorcon.router import Router, IRouterContainer
+from txtorcon.addrmap import AddrMap
+from txtorcon.torcontrolprotocol import ITorControlProtocol, parse_keywords, DEFAULT_VALUE, TorProtocolFactory
+from txtorcon.util import delete_file_or_tree
 
 from spaghetti import FSM, State, Transition
 

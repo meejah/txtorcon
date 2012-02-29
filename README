@@ -1,15 +1,15 @@
-txtor
-=====
+txtorcon
+========
 
 overview
 --------
 
-txtor is a Python asynchronous controller for Tor based on Twisted, an
-event-based networking system for Python. The main abstraction of the
-protocol is txtor.TorControlProtocol which presents an asynchronous
-API to speak the Tor client protocol in Python. txtor also provides
-abstractions to track and get updates about Tor's state and current
-configuration.
+txtorcon is a Python asynchronous controller for Tor based on Twisted,
+an event-based networking system for Python. The main abstraction of
+the protocol is txtorcon.TorControlProtocol which presents an
+asynchronous API to speak the Tor client protocol in Python. txtorcon
+also provides abstractions to track and get updates about Tor's state
+and current configuration.
 
 My main motivaation to write this was to learn more about Twisted and
 Tor. I was playing with pyglet and pygame to try out some
@@ -20,13 +20,13 @@ synchronous (thread-based) so I thought I'd write my own
 quick implementation overview
 -----------------------------
 
-txtor also provides a class to track Tor's current state -- such as
-details about routers, circuits and streams -- called txtor.TorState
-and an abstraction to the configuration values via txtor.TorConfig
-which provides attribute-style accessors to Tor's state (including
-making changes). txtor.TorState provides txtor.Router, txtor.Circuit
-and txtor.Stream objects which implement a listener interface so
-client code may receive updates.
+txtorcon also provides a class to track Tor's current state -- such as
+details about routers, circuits and streams -- called
+txtorcon.TorState and an abstraction to the configuration values via
+txtorcon.TorConfig which provides attribute-style accessors to Tor's
+state (including making changes). txtorcon.TorState provides
+txtorcon.Router, txtorcon.Circuit and txtorcon.Stream objects which
+implement a listener interface so client code may receive updates.
 
 
 dependencies
@@ -72,26 +72,26 @@ this library.
 There is also a directory of examples/ scripts, which have inline
 documentation explaining their use. You may also use pydoc::
 
-    pydoc txtor.TorControlProtocol
-    pydoc txtor.TorState
-    pydoc txtor.TorConfig
+    pydoc txtorcon.TorControlProtocol
+    pydoc txtorcon.TorState
+    pydoc txtorcon.TorConfig
 
 ...for the main classes. If you're using TorState, you will also be
 interested in the support classes for it::
 
-    pydoc txtor.Circuit
-    pydoc txtor.Stream
-    pydoc txtor.Router
-    pydoc txtor.AddrMap
+    pydoc txtorcon.Circuit
+    pydoc txtorcon.Stream
+    pydoc txtorcon.Router
+    pydoc txtorcon.AddrMap
 
 There are also Zope interfaces for some things, if you wish to listen
 for events for your own purposes (the best example of the use of these
 being TorState itself)::
 
-    txtor.ITorControlProtocol
-    txtor.IStreamAttacher
-    txtor.ICircuitListener
-    txtor.IStreamListener
+    txtorcon.ITorControlProtocol
+    txtorcon.IStreamAttacher
+    txtorcon.ICircuitListener
+    txtorcon.IStreamListener
 
 IStreamAttacher affects Tor's behavior, allowing one to customize how
 circuits for particular streams are selected. You can build your own

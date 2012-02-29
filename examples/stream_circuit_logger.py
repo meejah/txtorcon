@@ -20,7 +20,7 @@ except ImportError:
     psutil = None
 psutil = None
 
-import txtor
+import txtorcon
 from util import NetLocation, process_from_address
 
 def logCircuit(circuit):
@@ -46,7 +46,7 @@ def logStream(stream, state):
     log.msg('Stream %d to %s:%d attached%s%s' % (stream.id, stream.target_host, stream.target_port, circ, proc))
     
 class StreamCircuitLogger:
-    implements(txtor.IStreamListener, txtor.ICircuitListener)
+    implements(txtorcon.IStreamListener, txtor.ICircuitListener)
 
     def __init__(self, state):
         self.state = state
@@ -102,6 +102,6 @@ def setup_failed(arg):
     reactor.stop()
 
 log.startLogging(sys.stdout)
-d = txtor.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051))
+d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051))
 d.addCallback(setup).addErrback(setup_failed)
 reactor.run()

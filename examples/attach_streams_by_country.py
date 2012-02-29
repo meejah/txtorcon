@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ##
-## This uses a custom txtor.IStreamAttacher to force streams to use
+## This uses a custom txtorcon.IStreamAttacher to force streams to use
 ## circuits that exit in the same country (as supplied by GeoIP) and
 ## builds such a circuit if one isn't available yet.
 ##
@@ -35,11 +35,11 @@ from twisted.internet import reactor, defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from zope.interface import implements
 
-import txtor
+import txtorcon
 from util import NetLocation
 
 class MyStreamListener:
-    implements(txtor.IStreamListener)
+    implements(txtorcon.IStreamListener)
     
     def stream_new(self, stream):
         print "new stream:",stream.id,stream.target_host
@@ -59,7 +59,7 @@ class MyStreamListener:
         pass
 
 class MyAttacher:
-    implements(txtor.IStreamAttacher, txtor.ICircuitListener)
+    implements(txtorcon.IStreamAttacher, txtor.ICircuitListener)
 
     def __init__(self, state):
         ## pointer to our TorState object
@@ -217,6 +217,6 @@ def setup_failed(arg):
     reactor.stop()
 
 point = TCP4ClientEndpoint(reactor, "localhost", 9051)
-d = txtor.build_tor_connection(point)
+d = txtorcon.build_tor_connection(point)
 d.addCallback(do_setup).addErrback(setup_failed)
 reactor.run()

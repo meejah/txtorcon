@@ -1,7 +1,7 @@
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 
-from txtor.util import process_from_address, delete_file_or_tree
+from txtorcon.util import process_from_address, delete_file_or_tree
 
 import os
 import tempfile
