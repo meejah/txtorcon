@@ -1,0 +1,122 @@
+
+ . Looking briefly at "chutney" (tor test-network setup thing) it
+   seems to me an improvement on the templates would be: use
+   txtor.TorConfig in a mode that allows one to set objects by keys
+   (including hidden services, lists-of-strings, etc) and somewhere else
+   is code which can start Tor based on a TorConfig -- *after* it
+   connects, it does validation on the TorConfig by going through all
+   the now-valid Parser objects asking them to validate the
+   options. Then, instead of templates which "inherit" from each other
+   and have an environment to set up, you have Python types (following
+   Builder pattern) which represent the Tors you want to set up so you
+   have a Relay class that has a subclass Authority whith the bonus it
+   can override anything in Relay. They'd all implement a method in
+   something like ITorConfigBuilder that asks it to return a config
+   give a Node object (for example, FIXME: look up Builder again).
+   For example:
+
+      class ITorConfigBuilder(Interface):
+	  def build_config_for(self, node):
+	      """return a TorConfig object for the given Node instance"""
+
+      class Relay:
+	  implements(ITorConfigBuilder)
+	  def build_config_for(self, node):
+	      config = txtor.TorConfig()
+	      config.SocksPort = 0
+	      config.OrPort = node.or_port
+	      config.Address = node.ip
+	      config.DirPort = node.dir_port
+	      return config
+
+      class Authority(Relay):
+	  implements(ITorConfigBuilder)
+	  def build_config_for(self, node):
+	      config = super(self, Relay).build_config_for(node)
+	      config.AuthoritativeDirectory 1
+	      config.V3AuthoritativeDirectory 1
+	      config.ContactInfo = '%d@test.test' % node.number
+	      config.ExitPolicy = 'reject *:*'
+	      return config
+
+ . use defer.succeed(result) and defer.fail(error) instead of making
+   up my own Deferred and calling callback() on it -- more Twisted-like
+   I guess?
+
+ . double-double check that i have a utest covering the case of
+   multi-line 650 in the midst of a multi-line response OR re-verify
+   that this can never happen -- the FSM is right now accumulating in
+   only one buffer I believe (after simplifying in commit
+   a62dfe0a1511eae717788732de54269920206015)
+
+ . should support CIRC_MINOR event, too (in TorState)
+
+ . Some of the replies from Tor are hugh (e.g. network status) and
+   currently I still accumulate them all up into one string and
+   subsequently parse that string. The state machine should be expanded
+   to be more fine-grained so that, for example, we can parse each
+   router descriptor as it arrives (4 lines worth) rather than gather
+   all 2000+ router descriptors first, then parse.
+
+ . $B56F17701DC248F8C42150942BDF7A7FAD6C6FC6~Thaolia is in one of my
+   circuits, but not showing up in ns/all (nor via ns/id/XX). talked
+   about it in #tor a little, but no conclusion. also tried starting
+   up a separate Tor and that one also failed to find the key. (And
+   possibly triggered my main Tor failing to COOKIE authenticate --
+   probably had the cookie file overwritten?)
+
+ - refactor the controler into two things: a state tracker and the
+   protocol. Maybe TorControlProtocol and TorState?
+
+ . deal with configuration, and PROPERLY so a user can just set values
+   and don't have to worry about which ones need to be sent in a single
+   SETCONF command and so forth. (fix TorState)
+
+ - it seems that streams aren't getting set up right if there is
+   exactly one right now in tor? via telnet (url changed):
+
+getinfo stream-status
+250-stream-status=123 SUCCEEDED 496 www.example.com:6667
+250 OK
+
+   fixed, but is this the same for circuits? Probably but hard to have
+   precisely one circuit (still, should utest + fix)
+
+ . ICircuitListener and IStreamListener are pretty complicated
+   interfaces; might be better to make a simpler interface that is more
+   like "pull" Observer pattern with "stateChanged(newstate, **kwargs)"
+   or something and an interface on TorController to listen for newly
+   created streams and circuits. Could still provide the
+   complicated-interface via a multiplex that implemented
+   IStreamListener and fanned out to the complicated states.
+
+   This would ease live for clients merely wanting to know, e.g., when
+   there are new circuits (or streams).
+
+ . need to interrogate Tor for its bootstrap state when connection, as
+   per control-spec.txt
+   (e.g. post_boostrap callback shouldn't be issued until both the
+   TorController are up and running AND Tor is fully bootstrapped, if
+   we connected while it was still starting up). what to do if Tor
+   starts bootstrapping (again) while we're running?
+
+ . implement some magic for "getinfo info/names" and "getinfo
+   config/names" so that we can do things like:
+
+      con = TorController()
+      con.info.process.pid() # same as "GETINFO process/pid"
+      con.info.ns.name("OR_Nick") # same as "GETINFO ns/name/OR_Nick"
+
+   or:
+
+      con = TorController()
+      con.config.socksport # same as "GETCONF SOCKSPORT"
+      con.config.socksport = 1234 # same as "SETCONF SOCKSPORT=1234"
+
+   The config stuff should do the Right Thing so we don't have to do
+   the messing around TorCtl does with lists and so forth -- it should
+   "just work" for the few values that are magic in the Tor config and
+   have to all be set "at the same time".
+
+   See "torplay.py" for a version of the above which works with TorCtl
+   

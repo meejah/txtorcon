@@ -1,0 +1,34 @@
+import sys
+import os
+import shutil
+from distutils.core import setup, Extension
+
+from txtor import __version__, __author__, __contact__, __copyright__, __license__, __url__
+
+setup(name = 'txtor',
+      version = __version__,
+      description = 'Twisted-based Tor controller client, with state-tracking and configuration abstractions.',
+      long_description = open('README','r').read(),
+      keywords = ['python', 'twisted', 'tor', 'tor controller'],
+      requires = ['twisted (>10.1.0)',
+                  'GeoIP',
+                  'ipaddr'],
+      classifiers = ['Framework :: Twisted',
+                     'License :: OSI Approved :: GNU General Public License (GPL)',
+                     'Natural Language :: English',
+                     'Operating System :: POSIX :: Linux',
+                     'Operating System :: Unix',
+                     'Programming Language :: Python',
+                     'Topic :: Internet :: Proxy Servers',
+                     'Topic :: Internet',
+                     'Topic :: Security'],                     
+      author = __author__,
+      author_email = __contact__,
+      url = __url__,
+      license = __license__,
+      packages  = ["txtor"],
+#      scripts = ['examples/attach_streams_by_country.py'],
+      data_files = [('share/txtor', ['README', 'TODO']),
+                    ('share/txtor/examples', map(lambda x: os.path.join('examples', x), filter(lambda x: x[-3:] == '.py', os.listdir('examples'))))
+                    ]
+      )

@@ -1,0 +1,19 @@
+-*- mode: outline -*-
+
+* dependencies
+
+  apt-get install python python-ipaddr python-twisted
+
+* why are errors getting eaten all the time?
+
+   for example, just recently I upgraded twisted and/or didn't correctly
+   have a doStart and doStop on my Factory -- but the whole mess just sat
+   there and when I hit ctl-c I you finally see the correct (?) stack
+   trace.
+
+   answer --> all Deferreds need an errback added to them, as per
+   itamer and ivan on #twisted
+
+* ns/all returns stuff like it says here:
+
+   https://gitweb.torproject.org/torspec.git/blob/HEAD:/dir-spec-v2.txt#l371
