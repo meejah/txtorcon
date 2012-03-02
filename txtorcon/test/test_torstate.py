@@ -121,24 +121,32 @@ class FakeControlProtocol:
     implements(ITorControlProtocol)     # actually we don't, it's a lie
 
     def __init__(self):
+        self.is_owned = None
         self.post_bootstrap = defer.Deferred()
         self.post_bootstrap.callback(self)
 
 class InternalMethodsTests(unittest.TestCase):
 
-    def find_tor_pid(self):
+    def find_tor_pid(self, proc_name='init'):
         (stdout, stderr) = subprocess.Popen(['ps', '-eo', 'pid,comm'], stdout=subprocess.PIPE).communicate()
 
         torpid = 0
         # first line is headers, last line is blank.
         for line in stdout.split('\n')[1:-1]:
             (pid,name) = line.split()
-            if name.strip().lower() == 'tor':
+            if name.strip().lower() == proc_name:
                 if torpid != 0:
-                    raise RuntimeError("Found multiple running Tors, skipping test.")
+                    raise RuntimeError("Found multiple init processes, skipping test.")
                 torpid = int(pid)
         return torpid
     
+    def test_guess_pid_owned(self):
+        state = TorState(FakeControlProtocol(), bootstrap=False)
+        state.protocol.is_owned = 1234
+
+        state.guess_tor_pid()
+        self.assertTrue(state.tor_pid == 1234)
+        
     def test_guess_pid_psutil(self):
         """
         Hmmm...this is hard to unit-test. Consider re-factoring how
@@ -150,11 +158,12 @@ class InternalMethodsTests(unittest.TestCase):
         except RuntimeError, e:
             print e.message
             return
-                
-        import torstate
-        torstate.USE_PSUTIL = True
+
+        import txtorcon.torstate
+        txtorcon.torstate.USE_PSUTIL = True
         
         state = TorState(FakeControlProtocol(), bootstrap=False)
+        state.tor_binary = 'init '
         try:
             state.guess_tor_pid()
         except NameError:
@@ -176,10 +185,11 @@ class InternalMethodsTests(unittest.TestCase):
             print e.message
             return
 
-        import torstate
-        torstate.USE_PSUTIL = False
+        import txtorcon.torstate
+        txtorcon.torstate.USE_PSUTIL = False
                 
         state = TorState(FakeControlProtocol(), bootstrap=False)
+        state.tor_binary = 'init '
         state.guess_tor_pid()
         guess = state.tor_pid
         self.assertTrue(guess != None)
@@ -516,6 +526,15 @@ class StateTests(unittest.TestCase):
         self.state.circuit_update('365 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=TIMEOUT')
         self.assertTrue(not self.state.circuits.has_key(365))
 
+    def test_circuit_destroy_already(self):
+        self.state.circuit_update('365 LAUNCHED PURPOSE=GENERAL')
+        self.assertTrue(self.state.circuits.has_key(365))
+        c = self.state.circuits[365]
+        self.state.circuit_update('365 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=TIMEOUT')
+        self.assertTrue(not self.state.circuits.has_key(365))
+        self.state.circuit_update('365 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=TIMEOUT')
+        self.assertTrue(not self.state.circuits.has_key(365))
+
     def test_circuit_listener(self):
         events = 'CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET'
         self.protocol.set_valid_events(events)
@@ -633,6 +652,25 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
     def test_stream_create(self):
         self.state.stream_update('1610 NEW 0 1.2.3.4:56')
         self.assertTrue(self.state.streams.has_key(1610))
+
+    def test_stream_destroy(self):
+        self.state.stream_update('1610 NEW 0 1.2.3.4:56')
+        self.assertTrue(self.state.streams.has_key(1610))
+        self.state.stream_update("1610 FAILED 0 www.example.com:0 REASON=DONE REMOTE_REASON=FAILED")
+        self.assertTrue(not self.state.streams.has_key(1610))
+
+    def test_stream_detach(self):
+        circ = FakeCircuit(1)
+        circ.state = 'BUILT'
+        self.state.circuits[1] = circ
+        
+        self.state.stream_update('1610 NEW 0 1.2.3.4:56')
+        self.assertTrue(self.state.streams.has_key(1610))
+        self.state.stream_update("1610 SUCCEEDED 1 4.3.2.1:80")
+        self.assertTrue(self.state.streams[1610].circuit == circ)
+        
+        self.state.stream_update("1610 DETACHED 0 www.example.com:0 REASON=DONE REMOTE_REASON=FAILED")
+        self.assertTrue(self.state.streams[1610].circuit == None)
 
     def test_stream_listener(self):
         self.protocol.set_valid_events('CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET')

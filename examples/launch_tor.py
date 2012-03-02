@@ -48,9 +48,10 @@ config = TorConfig()
 config.OrPort = 1234
 config.SocksPort = 9999
 
-print config.unsaved
+def updates(prog, tag, summary):
+    print "%d%%: %s" % (prog, summary)
 
-d = launch_tor(config, reactor)
+d = launch_tor(config, reactor, progress_updates=updates)
 d.addCallback(setup_complete)
 d.addErrback(setup_failed)
 reactor.run()

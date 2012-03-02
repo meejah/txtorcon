@@ -535,12 +535,11 @@ class TorConfig(object):
         
     def __setattr__(self, name, value):
         if self.__dict__.has_key('_setup_'):
-            if name.lower() != 'hiddenservices':
-                name = self._find_real_name(name)
-                if not self.__dict__.has_key('_slutty_'):
-                    value = self.parsers[name].validate(value, self, name)
-                if isinstance(value, types.ListType):
-                    value = _ListWrapper(value, functools.partial(self.mark_unsaved, name))
+            name = self._find_real_name(name)
+            if not self.__dict__.has_key('_slutty_') and name.lower() != 'hiddenservices':
+                value = self.parsers[name].validate(value, self, name)
+            if isinstance(value, types.ListType):
+                value = _ListWrapper(value, functools.partial(self.mark_unsaved, name))
 
             name = self._find_real_name(name)
             self.unsaved[name] = value
@@ -558,11 +557,11 @@ class TorConfig(object):
 
     def bootstrap(self, *args):
 ##        self.protocol.add_event_listener('CONF_CHANGED', self._conf_changed)
-        return self.protocol.get_info_raw("config/names").addCallbacks(self._do_setup, log.err).addCallback(self.doPostbootstrap).addErrback(log.err)
+        return self.protocol.get_info_raw("config/names").addCallbacks(self._do_setup, log.err).addCallback(self.do_post_bootstrap).addErrback(log.err)
 
-    def doPostbootstrap(self, *args):
+    def do_post_bootstrap(self, *args):
         self.post_bootstrap.callback(self)
-        self.post_bootstrap = None
+        self.__dict__['post_bootstrap'] = None
 
     def needs_save(self):
         return len(self.unsaved) > 0
@@ -589,8 +588,6 @@ class TorConfig(object):
             if key == 'HiddenServices':
                 self.config['HiddenServices'] = value
                 for hs in value:
-                    if hs.conf is None:
-                        hs.conf = self
                     args.append('HiddenServiceDir')
                     args.append(hs.dir)
                     for p in hs.ports:
@@ -719,7 +716,7 @@ class TorConfig(object):
         rtn = StringIO()
 
         for (k, v) in self.config.items() + self.unsaved.items():
-            if type(v) is types.ListType:
+            if type(v) is _ListWrapper:
                 if k.lower() == 'hiddenservices':
                     for x in v:
                         for (kk, vv) in x.config_attributes():

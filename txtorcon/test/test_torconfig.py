@@ -16,21 +16,51 @@ def do_nothing(*args):
     pass
 
 class FakeControlProtocol:
+    """
+    This is a little weird, but in most tests the answer at the top of
+    the list is sent back immediately in an already-called
+    Deferred. However, if the answer list is empty at the time of the
+    call, instead the returned Deferred is added to the pending list
+    and answer_pending() may be called to have the next Deferred
+    fire. (see test_slutty_postbootstrap for an example).
+
+    It is done this way in case we need to have some other code run
+    between the get_conf (or whatever) and the callback -- if the
+    Deferred is already-fired when get_conf runs, there's a Very Good
+    Chance (always?) that the callback just runs right away.
+    """
+    
     implements(ITorControlProtocol)     # actually, just get_info_raw
 
     def __init__(self, answers):
         self.answers = answers
+        self.pending = []
         self.post_bootstrap = defer.Deferred()
         self.post_bootstrap.callback(self)
         self.sets = []
 
+    def answer_pending(self, answer):
+        d = self.pending[0]
+        self.pending = self.pending[1:]
+        d.callback(answer)
+
     def get_info_raw(self, info):
+        if len(self.answers) == 0:
+            d = defer.Deferred()
+            self.pending.append(d)
+            return d
+        
         d = defer.Deferred()
         d.callback(self.answers[0])
         self.answers = self.answers[1:]
         return d
 
     def get_conf(self, info):
+        if len(self.answers) == 0:
+            d = defer.Deferred()
+            self.pending.append(d)
+            return d
+        
         d = defer.Deferred()
         d.callback(self.answers[0])
         self.answers = self.answers[1:]
@@ -223,6 +253,22 @@ OK''')
         errs = self.flushLoggedErrors()
         self.assertTrue(len(errs) == 1)
         self.assertTrue('NonExistantParserType' in str(errs[0]))
+
+    def foo(self, *args):
+        print "FOOO",args
+
+    def test_slutty_postbootstrap(self):
+        # test that doPostbootstrap still works in "slutty" mode
+        self.protocol.answers.append('''config/names=
+ORPort Port
+OK''')
+        ## we can't answer right away, or we do all the _do_setup
+        ## callbacks before _setup_ is set -- but we need to do an
+        ## answer callback after that to trigger this bug
+
+        conf = TorConfig(self.protocol)
+        self.assertTrue(conf.__dict__.has_key('_setup_'))
+        self.protocol.answer_pending({'ORPort':1})
 
     def test_immediate_bootstrap(self):
         self.protocol.post_bootstrap = None
@@ -423,11 +469,14 @@ class CreateTorrcTests(unittest.TestCase):
         config.SocksPort = 1234
         config.hiddenservices = [HiddenService(config, '/some/dir', '80 127.0.0.1:1234',
                                                'auth', 2)]
+        config.Log = ['80 127.0.0.1:80', '90 127.0.0.1:90']
         torrc = config.create_torrc()
         self.assertTrue(torrc == '''HiddenServiceDir /some/dir
 HiddenServicePort 80 127.0.0.1:1234
 HiddenServiceVersion 2
 HiddenServiceAuthorizeClient auth
+Log 80 127.0.0.1:80
+Log 90 127.0.0.1:90
 SocksPort 1234
 ''')
         
@@ -747,3 +796,21 @@ class LaunchTorTests(unittest.TestCase):
         d.addErrback(self.check_setup_failure)
         return d
 
+    def confirm_progress(self, exp, *args, **kwargs):
+        self.assertTrue(exp == args)
+        self.got_progress = True
+        
+    def test_progress_updates(self):
+        from txtorcon.torconfig import TorProcessProtocol
+
+        self.got_progress = False;
+        proto = TorProcessProtocol(None, functools.partial(self.confirm_progress,
+                                                           (10, 'tag', 'summary')))
+        proto.progress(10, 'tag', 'summary')
+        self.assertTrue(self.got_progress)
+
+    def test_status_updates(self):
+        from txtorcon.torconfig import TorProcessProtocol
+
+        proto = TorProcessProtocol(None)
+        proto.status_client("NOTICE CONSENSUS_ARRIVED")

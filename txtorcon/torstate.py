@@ -81,7 +81,8 @@ class TorState(object):
 
         self.attacher = None
         """If set, provides :class:`txtorcon.IStreamAttacher` to attach new streams we hear about."""
-        
+
+        self.tor_binary = 'tor'
 
         self.circuit_listeners = []
         self.stream_listeners = []
@@ -171,17 +172,18 @@ class TorState(object):
 
     def guess_tor_pid(self, *args):
         if self.protocol.is_owned:
-            return self.protocol.is_owned
+            self.tor_pid = self.protocol.is_owned
         
-        if USE_PSUTIL:
-            return self.guess_tor_pid_psutil()
+        elif USE_PSUTIL:
+            self.guess_tor_pid_psutil()
         
         else:
-            return self.guess_tor_pid_proc()
+            self.guess_tor_pid_proc()
+        return self.tor_pid
 
     def guess_tor_pid_psutil(self):
-        procs = filter(lambda x: x.name == 'tor', psutil.get_process_list())
-        self.tor_pid = 0
+        procs = filter(lambda x: self.tor_binary in x.name, psutil.get_process_list())
+        self.tor_pid = None
         if len(procs) == 1:
             self.tor_pid = procs[0].pid
         return None
@@ -192,7 +194,7 @@ class TorState(object):
             if pid == 'self':
                 continue
             p = os.path.join('/proc', pid, 'cmdline')
-            if os.path.exists(p) and '/tor' in open(p, 'r').read():
+            if os.path.exists(p) and self.tor_binary in open(p, 'r').read():
                 self.tor_pid = int(pid)
         return None
     
@@ -426,8 +428,7 @@ class TorState(object):
             return
         
         args = line.split()
-        if len(args) < 3:
-            print "OH NO stream_update",args
+        assert len(args) >= 3
 
         stream_id = int(args[0])
         wasnew = False
@@ -444,12 +445,6 @@ class TorState(object):
         ## first update being a CLOSE?
         if wasnew and self.streams.has_key(stream_id):
             self.maybe_attach(self.streams[stream_id])
-
-    def guard_update(self, line):
-        print "guard_update",line
-
-    def status_general(self, update):
-        print "STATUS:",update
 
     def addr_map(self, addr):
         "Internal callback to update DNS cache. Listens to ADDRMAP."
@@ -468,15 +463,17 @@ class TorState(object):
             stream.listen(listen)
         self.stream_listeners.append(listen)
 
-    event_map = {'GUARD': guard_update,
-                 'STREAM': stream_update,
-                 'CIRC': circuit_update,
-                 'NS': update_network_status,
-                 'NEWCONSENSUS': update_network_status,
-                 'ORCONN': newdesc_update,
-                 'NEWDESC': newdesc_update,
-                 'ADDRMAP': addr_map,
-                 'STATUS_GENERAL': status_general}
+    event_map = {
+        #'GUARD': guard_update,
+        'STREAM': stream_update,
+        'CIRC': circuit_update,
+        'NS': update_network_status,
+        'NEWCONSENSUS': update_network_status,
+        'ORCONN': newdesc_update,
+        'NEWDESC': newdesc_update,
+        'ADDRMAP': addr_map
+#        'STATUS_GENERAL': status_general
+        }
     @defer.inlineCallbacks
     def add_events(self):
         """
@@ -538,7 +535,8 @@ class TorState(object):
 
     def circuit_launched(self, circuit):
         "ICircuitListener API"
-        if DEBUG: print "circuit_launched",circuit.id
+        if DEBUG: print "circuit_launched",circuit
+        self.circuits[circuit.id] = circuit
 
     def circuit_extend(self, circuit, router):
         "ICircuitListener API"
@@ -556,12 +554,7 @@ class TorState(object):
     def circuit_destroy(self, circuit):
         "For circuit_closed and circuit_failed"
         if DEBUG: print "circuit_destroy:",circuit.id
-        if not self.circuits.has_key(circuit.id):
-            ## FIXME seems to happen not-infrequently; why?
-            ## looks like "always" for the internal DIR_FECTH circuits at least...
-            warnings.warn("Circuit %s already destroyed." % circuit.id, RuntimeWarning)
-        else:
-            del self.circuits[circuit.id]
+        del self.circuits[circuit.id]
 
     def circuit_closed(self, circuit):
         "ICircuitListener API"
@@ -573,11 +566,6 @@ class TorState(object):
         if DEBUG: print "circuit_failed",circuit,reason
         self.circuit_destroy(circuit)
         
-    def circuit_launched(self, circuit):
-        "ICircuitListener API"
-        if DEBUG: print "circuit_launched",circuit
-        self.circuits[circuit.id] = circuit
-
     ## explicitly build a circuit
 
     def build_circuit(self, routers):
