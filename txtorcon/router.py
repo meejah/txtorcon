@@ -89,7 +89,7 @@ class Router(object):
             target = self.accepted_ports
 
         else:
-            raise Exception("Don't understand policy word \"%s\"" % word)
+            raise RuntimeError("Don't understand policy word \"%s\"" % word)
             
         for port in args[1].split(','):
             if '-' in port:
@@ -100,7 +100,7 @@ class Router(object):
 
     def accepts_port(self, port):
         if self.rejected_ports is None and self.accepted_ports is None:
-            raise Exception("set_policy hasn't been called yet")
+            raise RuntimeError("set_policy hasn't been called yet")
 
         if self.rejected_ports:
             for x in self.rejected_ports:

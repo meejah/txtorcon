@@ -457,7 +457,7 @@ OK''')
         conf = TorConfig(self.protocol)
 
         try:
-            conf.log = {'this', 'is', 'a', 'set'}
+            conf.log = ('this', 'is', 'a', 'tuple')
             self.fail()
         except ValueError, e:
             self.assertTrue('Not valid' in str(e))

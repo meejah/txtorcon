@@ -161,7 +161,7 @@ def parse_keywords(lines):
         else:
             if key is None:
                 rtn[line.strip()] = DEFAULT_VALUE
-                #raise Exception('Should have had a key by now: ' + lines)
+                #raise RuntimeError('Should have had a key by now: ' + lines)
             else:
                 value = value + '\n' + line
     if key:

@@ -176,7 +176,7 @@ class Stream(object):
             self.id = int(args[0])
         else:
             if self.id != int(args[0]):
-                raise Exception("Update for wrong stream.")
+                raise RuntimeError("Update for wrong stream.")
 
         kw = self.find_keywords(args)
 
@@ -197,7 +197,7 @@ class Stream(object):
             self.target_port = int(self.target_port)
             if self.state == 'NEW':
                 if self.circuit != None:
-                    log.err(Exception("Weird: circuit valid in NEW"))
+                    log.err(RuntimeError("Weird: circuit valid in NEW"))
                 [x.stream_new(self) for x in self.listeners]
             else:
                 [x.stream_succeeded(self) for x in self.listeners]
@@ -245,7 +245,7 @@ class Stream(object):
             pass#print 'SENTRESOLVE',self,args
             
         else:
-            raise Exception("Unknown state: %s" % self.state)
+            raise RuntimeError("Unknown state: %s" % self.state)
 
         ## see if we attached to a circuit. I believe this only
         ## happens on a SENTCONNECT or REMAP. DETACHED is excluded so
@@ -266,7 +266,7 @@ class Stream(object):
                         [x.stream_attach(self, self.circuit) for x in self.listeners]
                 else:
                     if self.circuit.id != cid:
-                        log.err(Exception('Circuit ID changed from %d to %d.' % (self.circuit.id, cid)))
+                        log.err(RuntimeError('Circuit ID changed from %d to %d.' % (self.circuit.id, cid)))
             
         
 

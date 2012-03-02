@@ -131,7 +131,7 @@ class Circuit(object):
             [x.circuit_new(self) for x in self.listeners]
         else:
             if int(args[0]) != self.id:
-                raise Exception("Update for wrong circuit.")
+                raise RuntimeError("Update for wrong circuit.")
         self.state = args[1]
 
         kw = self.find_keywords(args)
@@ -150,12 +150,12 @@ class Circuit(object):
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:
-                log.err(Exception("Circuit is %s but still has %d streams" % (self.state, len(self.streams))))
+                log.err(RuntimeError("Circuit is %s but still has %d streams" % (self.state, len(self.streams))))
             [x.circuit_closed(self) for x in self.listeners]
 
         elif self.state == 'FAILED':
             if len(self.streams) > 0:
-                log.err(Exception("Circuit is %s but still has %d streams" % (self.state, len(self.streams))))
+                log.err(RuntimeError("Circuit is %s but still has %d streams" % (self.state, len(self.streams))))
             reason = 'unknown'
             if kw.has_key('REASON'):
                 reason = kw['REASON']

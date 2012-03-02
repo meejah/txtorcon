@@ -26,7 +26,7 @@ class FSM(object):
     def process(self, data):
         #print self,"process",data
         if self.state is None:
-            raise Exception("There is no initial state.")
+            raise RuntimeError("There is no initial state.")
         next_state = self.state.process(data)
         if next_state:
             #print "changing to",next_state.name,next_state
@@ -90,7 +90,7 @@ class Transition(object):
         self.start_state = None
         self.next_state = next_state
         if self.next_state is None:
-            raise Exception("next_state must be valid")
+            raise RuntimeError("next_state must be valid")
         #print self,self.matcher,self.handler
 
     def match(self, data):
