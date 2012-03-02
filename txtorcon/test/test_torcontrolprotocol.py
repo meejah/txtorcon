@@ -23,7 +23,7 @@ class CallbackChecker:
         v = args[0]
         if v != self.expected_value:
             print "WRONG"
-            raise Exception('Expected "%s" but got "%s"' % (self.expected_value, v))
+            raise RuntimeError('Expected "%s" but got "%s"' % (self.expected_value, v))
         ##print "got correct value",v
         self.called_back = True
         return v
