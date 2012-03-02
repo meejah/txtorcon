@@ -183,13 +183,13 @@ class TorState(object):
 
     def guess_tor_pid_psutil(self):
         procs = filter(lambda x: self.tor_binary in x.name, psutil.get_process_list())
-        self.tor_pid = None
+        self.tor_pid = 0
         if len(procs) == 1:
             self.tor_pid = procs[0].pid
         return None
 
     def guess_tor_pid_proc(self):
-        self.tor_pid = None
+        self.tor_pid = 0
         for pid in os.listdir('/proc'):
             if pid == 'self':
                 continue

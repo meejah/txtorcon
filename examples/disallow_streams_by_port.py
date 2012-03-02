@@ -49,7 +49,7 @@ def do_setup(state):
     print "Connected to a Tor version",state.protocol.version
 
     attacher = PortFilterAttacher(state)
-    state.set_attacher(attacher)
+    state.set_attacher(attacher, reactor)
 
     print "Existing streams:"
     for s in state.streams.values():

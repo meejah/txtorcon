@@ -61,7 +61,7 @@ def process_from_address(addr, port, torstate):
     if addr == None:
         return None
 
-    if "(tor_internal)" == addr.lower():
+    if "(tor_internal)" == str(addr).lower():
         return process_factory(torstate.tor_pid)
 
     proc = subprocess.Popen(['lsof','-i','4tcp@%s:%s' % (addr,port)],
