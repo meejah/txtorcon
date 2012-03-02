@@ -6,5 +6,6 @@ Tor. The URI for it is [https://timaq4ygg2iegci7.onion](https://timaq4ygg2iegci7
 
  * [README](README.html)
  * My public key: [meejah.asc](meejah.asc)
+ * `torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git`
  * Releases:
     * March XX, 2011: [txtorcon-0.1.tar.gz](txtorcon-0.1.tar.gz) ([txtorcon-0.1.tar.gz.gpg](txtorcon-0.1.tar.gz.gpg))
