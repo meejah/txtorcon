@@ -1,72 +1,27 @@
 import sys
 
 from twisted.python import log
-from zope.interface import Interface
-from router import IRouterContainer
-
-class ICircuitContainer(Interface):
-    """
-    An interface that contains a bunch of Circuit objects and can look
-    them up by id.
-    """
-    
-    def find_circuit(self, id):
-        "return a circuit for the id, or exception."
-
-class ICircuitListener(Interface):
-    """
-    An interface to listen for updates to Circuits.
-    """
-    
-    def circuit_new(self, circuit):
-        """A new circuit has been created.  You'll always get one of
-        these for every Circuit even if it doesn't go through the "launched"
-        state."""
-        
-    def circuit_launched(self, circuit):
-        "A new circuit has been started."
-
-    def circuit_extend(self, circuit, router):
-        "A circuit has been extended to include a new router hop."
-
-    def circuit_built(self, circuit):
-        "A circuit has been extended to all hops (usually 3 for user circuits)."
-
-    def circuit_closed(self, circuit):
-        "A circuit has been closed cleanly (won't be in controller's list any more)."
-        
-    def circuit_failed(self, circuit, reason):
-        """A circuit has been closed because something went wrong.
-
-        The circuit won't be in the TorState's list anymore. The
-        reason comes from Tor (see tor-spec.txt). It is one of the
-        following strings: MISC, RESOLVEFAILED, CONNECTREFUSED,
-        EXITPOLICY, DESTROY, DONE, TIMEOUT, NOROUTE, HIBERNATING,
-        INTERNAL,RESOURCELIMIT, CONNRESET, TORPROTOCOL, NOTDIRECTORY,
-        END, PRIVATE_ADDR.
-
-        However, don't depend on that: it could be anything.        
-        """
+from interface import IRouterContainer
 
 class Circuit(object):
     """
-    Used by TorState to represent one of Tor's circuits.
+    Used by :class:`TorState` to represent one of Tor's circuits.
 
-    This is kept up-to-date by the L{TorState} that owns it, and
+    This is kept up-to-date by the :class`TorState` that owns it, and
     individual circuits can be listened to for updates (or listen to
-    every one using L{TorState.add_circuit_listener})
+    every one using :meth:`TorState.add_circuit_listener`)
 
-    @ivar path:
+    :ivar path:
         contains a list of Router objects representing the path this
         Circuit takes. Mostly this will be 3 or 4 routers long. Note
         that internally Tor uses single-hop paths for some things. See
-        also the L{purpose} instance-variable.
+        also the *purpose* instance-variable.
 
-    @ivar streams:
+    :ivar streams:
         contains a list of Stream objects representing all streams
         currently attached to this circuit.
 
-    @ivar state:
+    :ivar state:
         contains a string from Tor describing the current state of the
         stream. From control-spec.txt section 4.1.2, these are:
 
@@ -80,7 +35,7 @@ class Circuit(object):
             - CLOSED: Stream closed
             - DETACHED: Detached from circuit; still retriable
 
-    @ivar purpose:
+    :ivar purpose:
         The reason this circuit was built. Values can currently be one
         of (but see control-spec.txt 4.1.1):
 
@@ -94,12 +49,14 @@ class Circuit(object):
 
         For most purposes, you'll want to look at GENERAL circuits only.
 
-    @ivar id:
+    :ivar id:
         The ID of this circuit, a number (or None if unset).
     """
 
     def __init__(self, routercontainer):
-        "routercontainer should implement IRouterContainer"
+        """
+        :param routercontainer: should implement IRouterContainer
+        """
         self.listeners = []
         self.router_container = IRouterContainer(routercontainer)
         self.path = []

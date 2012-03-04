@@ -2,11 +2,8 @@
 from twisted.trial import unittest
 from zope.interface import implements
 
-# outside this package, you can do
-# from txtorcon import Circuit
-from txtorcon.circuit import Circuit, ICircuitListener, ICircuitContainer
-from txtorcon.router import IRouterContainer
-from txtorcon.stream import Stream
+from txtorcon import Circuit, Stream
+from txtorcon.interface import IRouterContainer, ICircuitListener, ICircuitContainer
 
 class FakeTorController(object):
     implements(IRouterContainer, ICircuitListener, ICircuitContainer)

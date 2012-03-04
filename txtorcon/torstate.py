@@ -3,15 +3,16 @@ from twisted.python import log, failure
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory, IReactorCore
 from twisted.protocols.basic import LineOnlyReceiver
-from zope.interface import implements, Interface
+from zope.interface import implements
 
 ## outside this module, you can do "from txtorcon import Stream" etc.
-from txtorcon.stream import Stream, IStreamListener, IStreamAttacher
-from txtorcon.circuit import Circuit, ICircuitListener, ICircuitContainer
-from txtorcon.router import Router, IRouterContainer
+from txtorcon.stream import Stream
+from txtorcon.circuit import Circuit
+from txtorcon.router import Router
 from txtorcon.addrmap import AddrMap
-from txtorcon.torcontrolprotocol import ITorControlProtocol, parse_keywords
+from txtorcon.torcontrolprotocol import parse_keywords
 
+from interface import ITorControlProtocol, IRouterContainer, ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher
 from spaghetti import FSM, State, Transition
 
 import datetime

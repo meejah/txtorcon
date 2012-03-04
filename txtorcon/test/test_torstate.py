@@ -5,7 +5,8 @@ from twisted.internet import task, defer, endpoints, reactor
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 import subprocess
 
-from txtorcon import ITorControlProtocol, TorControlProtocol, TorState, IStreamAttacher, ICircuitListener, IStreamListener, Stream, build_tor_connection
+from txtorcon import TorControlProtocol, TorState, Stream, build_tor_connection
+from txtorcon.interface import ITorControlProtocol, IStreamAttacher, ICircuitListener, IStreamListener
 
 def do_nothing(*args):
     pass

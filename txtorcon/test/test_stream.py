@@ -6,9 +6,7 @@ from twisted.trial import unittest
 from twisted.internet import reactor
 from zope.interface import implements
 
-# outside this package, you can do
-from txtorcon.stream import Stream, IStreamListener
-from txtorcon.circuit import ICircuitContainer
+from txtorcon import Stream, IStreamListener, ICircuitContainer
 
 lines = """650 STREAM 316 NEW 0 www.yahoo.com:80 SOURCE_ADDR=127.0.0.1:55877 PURPOSE=USER
 650 STREAM 316 REMAP 0 1.2.3.4:80 SOURCE=CACHE

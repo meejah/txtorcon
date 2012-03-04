@@ -33,7 +33,7 @@ except:
 country = GeoIP.new(GeoIP.GEOIP_STANDARD)
 
 def delete_file_or_tree(*args):
-    """"
+    """
     For every path in args, try to delete is as a file or a directory tree
     """
     

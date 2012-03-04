@@ -24,7 +24,7 @@ class TestProcessFromUtil(unittest.TestCase):
     def test_real_addr(self):
         ## FIXME should choose a port which definitely isn't used.
         try:
-            proc = subprocess.Popen(['nc', '-l', '9887'], env={})
+            proc = subprocess.Popen(['nc', '-l', '0.0.0.0', '9887'], env={})
             procpid = proc.pid
             pid = process_from_address('0.0.0.0', 9887, self.fakestate)
         finally:

@@ -1,5 +1,5 @@
-txtorcon
-========
+txtorcon README
+===============
 
 overview
 --------
@@ -48,14 +48,14 @@ are no integration tests.
 dependencies
 ------------
 
- * **python-ipaddr**: Google's IP address manipulation code. Could
-   easily just use string if this dependency is a problem; see
-   addrmap.py
+ * [python-ipaddr](http://code.google.com/p/ipaddr-py/): Google's
+   IP address manipulation code. Could easily just use string if this
+   dependency is a problem; see addrmap.py
 
- * **twisted**: I am working against Twisted 11.1.0 on Debian with Python
-   2.7.2.
+ * [twisted](http://twistedmatrix.com): I am working against
+   Twisted 11.1.0 on Debian with Python 2.7.2.
 
- * **GeoIP**: provides location information for ip addresses; you will
+ * [GeoIP](https://www.maxmind.com/app/python): provides location information for ip addresses; you will
    want to download GeoLite City from
    [MaxMind](https://www.maxmind.com/app/geolitecity) or pay them for
    more accurracy. Or use tor-geoip, which makes this sort-of
@@ -63,16 +63,15 @@ dependencies
    doesn't have an answer but I haven't bothered removing the
    dependency yet..
 
- * **pydoctor**: pydoc doesn't work quite so well with zope.interface
-   and the Twisted advice seems to be to use pydoctor.
+ * [Sphinx](http://sphinx.pocoo.org/): Only if you want to build the documentation. 
 
- * **psutil**: optional, used in util.process_from_address and (if
-   available) for guessing Tor's ip if "GETCONF process/pid" isn't
-   available. This makes it a little weird for users of
-   process_from_address() so might be best just to either make it a
-   requirement or not...
+ * [psutil](http://code.google.com/p/psutil/): optional, used in
+   util.process_from_address and (if available) for guessing Tor's ip
+   if "GETCONF process/pid" isn't available. This makes it a little
+   weird for users of process_from_address() so might be best just to
+   either make it a requirement or not...
 
-In any case, on a Debian or Ubuntu system, this should work:
+In any case, on a [Debian](http://www.debian.org/) or Ubuntu system, this should work:
 
     apt-get install twisted python-ipaddr python-geoip python-pydoctor python-psutil
 
@@ -86,14 +85,14 @@ from the torspec git repository so you know what's being abstracted by
 this library.
 
 There is also a directory of examples/ scripts, which have inline
-documentation explaining their use. You may also use pydoc::
+documentation explaining their use. You may also use pydoc:
 
     pydoc txtorcon.TorControlProtocol
     pydoc txtorcon.TorState
     pydoc txtorcon.TorConfig
 
 ...for the main classes. If you're using TorState, you will also be
-interested in the support classes for it::
+interested in the support classes for it:
 
     pydoc txtorcon.Circuit
     pydoc txtorcon.Stream
@@ -102,7 +101,7 @@ interested in the support classes for it::
 
 There are also Zope interfaces for some things, if you wish to listen
 for events for your own purposes (the best example of the use of these
-being TorState itself)::
+being TorState itself):
 
     txtorcon.ITorControlProtocol
     txtorcon.IStreamAttacher
@@ -122,7 +121,7 @@ contact information
 
 The main Web site for the project, with built documentation and so
 forth is at https://timaq4ygg2iegci7.onion although the code itself is hosted
-via git::
+via git:
 
     torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git
 

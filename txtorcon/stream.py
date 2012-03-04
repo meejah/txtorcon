@@ -1,94 +1,29 @@
 """
-Contains an implementation of a L{Stream} abstraction used by
-L{TorState} to represent all streams in Tor's state. There is also an
-interface called L{IStreamListener} for listening for stream updates
-(see also L{TorState.add_stream_listener}) and the interface called
-L{IStreamAttacher} used by L{TorState} as a way to attach streams to
-circuits"by hand"
+Contains an implementation of a :class:`Stream abstraction used by
+:class:`TorState to represent all streams in Tor's state. There is
+also an interface called :class:`interface.IStreamListener` for
+listening for stream updates (see also
+:meth:`TorState.add_stream_listener`) and the interface called
+:class:interface.IStreamAttacher` used by :class:`TorState` as a way
+to attach streams to circuits "by hand"
 
 """
 
 from twisted.python import log
-from zope.interface import Interface
-from circuit import ICircuitContainer
+from txtorcon.interface import ICircuitContainer, IStreamListener
 import ipaddr
-
-class IStreamListener(Interface):
-    """
-    Notifications about changes to a L{Stream}.
-
-    If you wish for your listener to be added to *all* new streams,
-    see L{TorState.add_stream_listener}.
-    """
-    
-    def stream_new(self, stream):
-        "a new stream has been created"
-    
-    def stream_succeeded(self, stream):
-        "stream has succeeded"
-    
-    def stream_attach(self, stream, circuit):
-        "the stream has been attached to a circuit"
-
-    def stream_detach(self, stream, reason):
-        "the stream has been detached from its circuit"
-
-    def stream_closed(self, stream):
-        "stream has been closed (won't be in controller's list anymore)"
-
-    def stream_failed(self, stream, reason, remote_reason):
-        "stream failed for some reason (won't be in controller's list anymore)"
-
-class IStreamAttacher(Interface):
-    """
-    Used by L{TorState} to map streams to circuits.
-
-    Each time a new stream is created, this interface will be queried
-    by L{TorState} to find out which circuit it should be attached to.
-    """
-
-    def attach_stream(self, stream, circuits):
-        """
-        @param stream: The stream to attach, which will be in NEW state.
-
-        @param circuits: all currently available L{Circuit} objects in
-        the L{TorState} in a dict indexed by id. Note they are not
-        limited to BUILT circuits.
-
-        You should return a Circuit instance which should be at state
-        BUILT in the currently running Tor (you may get Circuits from
-        an ICircuitContainer, which TorState implements). You may also
-        return a Deferred which will callback with the desired
-        circuit. In this case, you will probably need to be aware that
-        the callback from TorState.build_circuit does NOT call back
-        with a Circuit (just Tor's response of 'EXTEND 1234') and any
-        circuit you do return must be in the BUILT state anyway (which
-        the above will not). See examples/attach_streams_by_country.py
-        for a complete example of using a Deferred in an
-        IStreamAttacher.
-
-        Alternatively, you may return None in which case the Tor
-        controller will be told to choose a circuit itself.
-
-        Note that Tor will refuse to attach to any circuit not in
-        BUILT state; see ATTACHSTREAM in control-spec.txt
-
-        Note also that you will not get a request to attach a stream
-        that ends in .exit or .onion -- Tor won't let you specify how
-        to attach .onion addresses anyway.
-        """
 
 class Stream(object):
     """
-    Represents an active stream in Tor's state.
+    Represents an active stream in Tor's state (:class:`txtorcon.TorState`).
 
-    @ivar circuit:
+    :ivar circuit:
         Streams will generally be attached to circuits pretty
-        quickly. If they are attached, circuit will be a L{Circuit}
-        instance or None if this stream isn't yet attached to a
-        circuit.
+        quickly. If they are attached, circuit will be a
+        :class:`txtorcon.Circuit` instance or None if this stream
+        isn't yet attached to a circuit.
 
-    @ivar state:
+    :ivar state:
         Tor's idea of the stream's state, one of:
           - NEW: New request to connect
           - NEWRESOLVE: New request to resolve an address
@@ -100,27 +35,37 @@ class Stream(object):
           - CLOSED: Stream closed
           - DETACHED: Detached from circuit; still retriable
 
-    @ivar target_host:
+    :ivar target_host:
         Something like www.example.com -- the host the stream is destined for.
 
-    @ivar target_port:
+    :ivar target_port:
         The port the stream will exit to.
 
-    @ivar target_addr:
+    :ivar target_addr:
         Target address, looked up (usually) by Tor (e.g. 127.0.0.1).
 
-    @ivar id:
+    :ivar id:
         The ID of this stream, a number (or None if unset).
     """
 
     def __init__(self, circuitcontainer):
+        """
+        :param circuitcontainer: an object which implements :class:`interface.ICircuitContainer`
+        
+        """
+        
         self.circuit_container = ICircuitContainer(circuitcontainer)
 
+        ## FIXME: Sphinx doesn't seem to understand these variable
+        ## docstrings, so consolidate with above if Sphinx is the
+        ## answer -- actually it does, so long as the :ivar: things
+        ## are never mentioned it seems.
+
         self.id = None
-        """An int, Tor's ID for this Circuit"""
+        """An int, Tor's ID for this :class:`txtorcon.Circuit`"""
         
         self.state = None
-        """A string, Tor's idea of the state of this Circuit"""
+        """A string, Tor's idea of the state of this :class:`txtorcon.Circuit`"""
         
         self.target_host = None
         """Usually a hostname, but sometimes an IP address (e.g. when we query existing state from Tor)"""
@@ -132,10 +77,10 @@ class Stream(object):
         """The port we're connecting to."""
         
         self.circuit = None
-        """If we've attached to a Circuit, this will be an instance of Circuit (otherwise None)."""
+        """If we've attached to a :class:`txtorcon.Circuit`, this will be an instance of :class:`txtorcon.Circuit` (otherwise None)."""
         
         self.listeners = []
-        """A list of all connected ICircuitListeners"""
+        """A list of all connected :class:`interface.ICircuitListener` instances."""
         
         self.source_addr = None
         """If available, the address from which this Stream originated (e.g. local process, etc). See get_process() also."""
@@ -154,11 +99,11 @@ class Stream(object):
 
     def listen(self, listen):
         """
-        Attach an IStreamListener to this stream.
+        Attach an :class:`interface.IStreamListener` to this stream.
 
-        See also L{TorState.add_stream_listener} to listen to all streams.
+        See also :meth:`TorState.add_stream_listener` to listen to all streams.
 
-        @param listen: something that knows IStreamListener
+        :param listen: something that knows IStreamListener
 
         """
         

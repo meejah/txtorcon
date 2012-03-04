@@ -1,9 +1,4 @@
 from util import NetLocation
-from zope.interface import Interface
-
-class IRouterContainer(Interface):
-    def router_from_id(self, routerid):
-        "Return a router by its ID."
 
 def hexIdFromHash(hash):
     "From the base-64 encoded hashes Tor uses, this produces the longer hex-encoded hashes."
@@ -23,9 +18,11 @@ class PortRange(object):
 
 class Router(object):
     """
-    Represents a Tor Router. The controller you pass in is really only
-    used to do get_info calls for ip-to-country/IP in case the
-    NetLocation stuff fails to find a country.
+    Represents a Tor Router, including location.
+
+    The controller you pass in is really only used to do get_info
+    calls for ip-to-country/IP in case the NetLocation stuff fails to
+    find a country.
 
     After an .update() call, the id_hex attribute contains a
     hex-encoded long hash (suitable, for example, to use in a ns/id/*
@@ -64,8 +61,8 @@ class Router(object):
     def set_flags(self, flags):
         """
         It might be nice to make flags not a list of strings. This is
-        made harder by the control-spec: ``I{...controllers MUST tolerate
-        unrecognized flags and lines...}''
+        made harder by the control-spec: `...controllers MUST tolerate
+        unrecognized flags and lines...`
 
         There is some current work in Twisted for open-ended constants
         (enums) support however, it seems.

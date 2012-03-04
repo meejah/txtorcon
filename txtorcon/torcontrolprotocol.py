@@ -3,14 +3,15 @@ from twisted.python import log, failure
 from twisted.internet import defer, reactor
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.protocols.basic import LineOnlyReceiver
-from zope.interface import implements, Interface
+from zope.interface import implements
 
 ## outside this module, you can do "from txtorcon import Stream" etc.
-from txtorcon.stream import Stream, IStreamListener, IStreamAttacher
-from txtorcon.circuit import Circuit, ICircuitListener, ICircuitContainer
-from txtorcon.router import Router, IRouterContainer
+from txtorcon.stream import Stream
+from txtorcon.circuit import Circuit
+from txtorcon.router import Router
 from txtorcon.addrmap import AddrMap
 
+from interface import ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher, IRouterContainer, ITorControlProtocol
 from spaghetti import FSM, State, Transition
 
 import re
@@ -60,60 +61,6 @@ class TorProtocolFactory(object):
         proto = TorControlProtocol(self.password)
         proto.factory = self
         return proto
-
-class ITorControlProtocol(Interface):
-    """
-    This defines the API to the TorController object.
-
-    This is the usual entry-point to this library, and you shouldn't
-    need to call methods outside this interface.
-    """
-
-    def get_info(self, info):
-        """
-        Returns a Deferred which will callback with the info keys you
-        ask for. For values ones, see control-spec.
-        """
-
-    def get_conf(self, *args):
-        """
-        Returns one or many configuration values via Deferred. See
-        control-spec for valid keys. The value will be a dictionary.
-        """
-
-    def signal(self, signal_name):
-        """
-        Issues a signal to Tor. See control-spec or .valid_signals for
-        which ones are available and their return values.
-        """
-
-    def build_circuit(self, routers):
-        """
-        Builds a circuit consisting of exactly the routers specified,
-        in order.  This issues a series of EXTENDCIRCUIT calls to Tor;
-        the deferred returned from this is for the final EXTEND. It
-        will return the new circuit ID to you.
-        """
-
-    def add_circuit_listener(self, icircuitlistener):
-        """
-        Add an implementor of ICircuitListener which will be added to
-        all new circuits as well as all existing ones (you won't,
-        however, get circuit_new calls for the existing ones)
-        """
-        
-    def add_stream_listener(self, istreamlistener):
-        """
-        Add an implementor of IStreamListener which will be added to
-        all new circuits as well as all existing ones (you won't,
-        however, get stream_new calls for the existing ones)
-        """
-        
-    def add_event_listener(self, evt, callback):
-        """
-        Add a listener to an Event object. This may be called multiple
-        times for the same event.
-        """
 
 class Event(object):
     """
@@ -176,24 +123,24 @@ def parse_keywords(lines):
 
 class TorControlProtocol(LineOnlyReceiver):
     """
-    This is the main instance that talks to a Tor and implements the
-    "raw" procotol.
+    This is the main class that talks to a Tor and implements the "raw" procotol.
 
-    The class TorState uses this to track a Pythonic copy of the
-    running Tor's state (e.g. circuits, streams etcetera) and provide
-    an API for monitoring said state. You 'probably' don't need to use
-    this protocol directly, but can for example use it to listen and
-    respond to events (via :meth:`txtorcon.torcontrolprotocol.TorControlProtocol.add_event_listener`, see also Tor's
-    SETEVENT command).
+    The class :class:`txtorcon.TorState` uses this to track a Pythonic
+    copy of the running Tor's state (e.g. circuits, streams etcetera)
+    and provide an API for monitoring said state. You 'probably' don't
+    need to use this protocol directly, but can for example use it to
+    listen and respond to events (via
+    :meth:`txtorcon.TorControlProtocol.add_event_listener`, see also
+    Tor's SETEVENT command).
 
-    This instance does not track state; see TorState for the current
-    state of all Circuits, Streams and Routers.
+    This instance does not track state; see :class:`txtorcon.TorState`
+    for the current state of all Circuits, Streams and Routers.
 
-    :meth:`txtorcon.torstate.TorState.build_circuit` allows you to build custom circuits.
+    :meth:`txtorcon.TorState.build_circuit` allows you to build custom circuits.
 
-    :meth:`add_event_listener` can be used to listen for specific events.
+    :meth:`txtorcon.TorControlProtocol.add_event_listener` can be used to listen for specific events.
 
-    To see how circuit and stream listeners are used, see :class:`txtorcon.torstate.TorState`,
+    To see how circuit and stream listeners are used, see :class:`txtorcon.TorState`,
     which is also the place to go if you wish to add your own stream
     or circuit listeners.
     """
@@ -310,14 +257,14 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Uses GETINFO to obtain informatoin from Tor.
 
-        `args`
+        :param args:
             should be a list or tuple of strings which are valid
             information keys. For valid keys, see control-spec.txt
             from torspec (@TODO make some way to automagically obtain
             valid keys, either from running Tor or parsing
             control-spec)
         
-        :Return:
+        :return:
             a ``Deferred`` which will callback with a dict containing
             the keys you asked for. This just inserts ``parse_keywords``
             in the callback chain; if you want to avoid the parsing
@@ -329,11 +276,11 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Uses GETCONF to obtain configuration values from Tor.
         
-        @returns: a Deferred which callbacks with one or many
-        configuration values (depends on what you asked for). See
-        control-spec for valid keys (you can also use TorConfig which
-        will come set up with all the keys that are valid). The value
-        will be a dict.
+        :return: a Deferred which callbacks with one or many
+            configuration values (depends on what you asked for). See
+            control-spec for valid keys (you can also use TorConfig which
+            will come set up with all the keys that are valid). The value
+            will be a dict.
 
         To get all valid configuraiton names, you can call::
 
@@ -347,6 +294,7 @@ class TorControlProtocol(LineOnlyReceiver):
         DEFAULT_VALUE for the default value case, or an empty string
         otherwise.
         """
+        
         return self.queue_command('GETCONF %s' % ' '.join(args)).addCallback(parse_keywords).addErrback(log.err)
 
     def get_conf_raw(self, *args):

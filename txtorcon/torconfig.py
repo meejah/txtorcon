@@ -4,16 +4,16 @@ from twisted.internet import defer, process, error, protocol
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.protocols.basic import LineOnlyReceiver
-from zope.interface import implements, Interface
 
 ## outside this module, you can do "from txtorcon import Stream" etc.
-from txtorcon.stream import Stream, IStreamListener, IStreamAttacher
-from txtorcon.circuit import Circuit, ICircuitListener, ICircuitContainer
-from txtorcon.router import Router, IRouterContainer
+from txtorcon.stream import Stream
+from txtorcon.circuit import Circuit
+from txtorcon.router import Router
 from txtorcon.addrmap import AddrMap
-from txtorcon.torcontrolprotocol import ITorControlProtocol, parse_keywords, DEFAULT_VALUE, TorProtocolFactory
+from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE, TorProtocolFactory
 from txtorcon.util import delete_file_or_tree
 
+from interface import ITorControlProtocol, IRouterContainer, ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher
 from spaghetti import FSM, State, Transition
 
 import os
@@ -41,22 +41,40 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     def __init__(self, connection_creator, progress_updates = None):
         """
-        This will read the output from a tor process and attempt a
-        connection to its control por when it sees any 'Bootstrapped'
+        This will read the output from a Tor process and attempt a
+        connection to its control port when it sees any 'Bootstrapped'
         message on stdout. You probably don't need to use this
-        directly; instead, see the launch_tor method.
+        directly except as the return value from the :func:`txtorcon.launch_tor`
+        method. tor_protocol contains a valid :class:`txtorcon.TorControlProtocol`
+        instance by that point.
         
         connection_creator is a callable that should return a Deferred
-        that callbacks with a TorControlProtocol; see launch_tor for
+        that callbacks with a :class:`txtorcon.TorControlProtocol`; see :func:`txtorcon.launch_tor` for
         the default one which is a functools.partial that will call
         .connect(TorProtocolFactory()) on an appropriate
-        TCP4ClientEndpoint
-        """
+        :class:`twisted.internet.endpoints.TCP4ClientEndpoint`
 
+        :param connection_creator: A no-parameter callable which
+            returns a Deferred which promises a IStreamClientEndpoint
+
+        :param progress_updates: A callback which received progress
+            updates with three args: percent, tag, summary
+ 
+        :ivar tor_protocol: The TorControlProtocol instance connected
+            to the Tor this ProcessProtocol is speaking to. Will be valid
+            when the `connected_cb` callback runs.
+
+        :ivar connected_cb: Triggered when the Tor process we
+            represent is fully bootstrapped
+
+       """
+
+        self.tor_protocol = None
         self.connection_creator = connection_creator
         self.progress_updates = progress_updates
         
         self.connected_cb = defer.Deferred()
+         
         self.attempted_connect = False
         self.to_delete = []
         self.stderr = []
@@ -170,27 +188,40 @@ def launch_tor(config, reactor,
                progress_updates = None,
                connection_creator=None):
     """
-    launches a new Tor process with the given config. Right after
-    connecting, the config is validated against whatever metadata the
-    Tor gave us and will kill the process and errback if there's a
-    problem (i.e. if any of the given config values return False from
-    their validate() method).
+    launches a new Tor process with the given config.
 
     If Tor prints anything on stderr, we kill off the process, close
     the TorControlProtocol and raise an exception.
 
-    connection_creator is mostly available to ease testing, so you
-    probably don't want to supply this. If supplied, it is a callable
-    that should return a Deferred that delivers an IProtocol or
-    ConnectError. See
-    twisted.internet.interfaces.IStreamClientEndpoint.connect
+    :param config: an instance of :class:`txtorcon.TorConfig` with any configuration
+        values you want. :meth:`txtorcon.TorConfig.save` should have been
+        called already (anything unsaved won't make it into the torrc
+        produced). Note that the control_port and data_directory
+        parameters to this method override anything in the config.
 
-    On success, the Deferred returned from this method is callback'd
-    with a TorControlProtocol connected to the launched at
-    bootstrapped Tor. The __OwningControllerProcess will be set and
-    TAKEOWNERSHIP will have been called, so if you close the
-    TorControlProtocol the Tor should exit also (see control-spec 3.23).
-    FIXME? do we want to also return the IProcessProtocol?
+    :param reactor: a Twisted IReactorCore implementation (usually
+        twisted.internet.reactor)
+
+    :param control_port: which port the launched Tor process will
+        listen on; anything set in config is overridden.
+
+    :param tor_binary: path to the Tor binary to run.
+
+    :param progress_updates: a callback which gets progress updates; gets as
+         args: percent, tag, summary (FIXME make an interface for this).
+
+    :param connection_creator: is mostly available to ease testing, so
+        you probably don't want to supply this. If supplied, it is a
+        callable that should return a Deferred that delivers an IProtocol
+        or ConnectError. See
+        twisted.internet.interfaces.IStreamClientEndpoint.connect
+
+    :return: a Deferred which callbacks with a TorProcessProtocol
+        connected to the fully-bootstrapped Tor; this has a
+        TorControlProtocol instance as .protocol. The
+        __OwningControllerProcess will be set and TAKEOWNERSHIP will have
+        been called, so if you close the TorControlProtocol the Tor should
+        exit also (see control-spec 3.23).
 
     HACKS:
 
@@ -199,17 +230,6 @@ def launch_tor(config, reactor,
         port. It seems that waiting for the first 'bootstrap' message on
         stdout is sufficient. Seems fragile...and doesn't work 100% of
         the time, so FIXME look at Tor source.
-
-    2. Writing the stub torrc seems sillier and sillier in some
-       ways. I suppose all we're getting out of using SETCONF to set
-       config instead of simply writing then all to a torrc first isn't
-       much, because we have to write a torrc anyway AND tor will barf on
-       startup anyway if the user-code which created the TorConfig did it
-       wrong....so probably just write the torrc from the TorConfig given
-       and try it.
-
-    3. To implement 2. we have to override __OwningControllerProcess
-       and CookieAuthentication at least so that our scheme works.
         
     """
 
