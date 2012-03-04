@@ -1,5 +1,9 @@
 from twisted.trial import unittest
 from twisted.test import proto_helpers
+from twisted.internet import defer
+from twisted.internet.endpoints import TCP4ServerEndpoint
+from twisted.internet.interfaces import IProtocolFactory
+from zope.interface import implements
 
 from txtorcon.util import process_from_address, delete_file_or_tree
 
@@ -9,6 +13,18 @@ import subprocess
 
 class FakeState:
     tor_pid = -1
+
+class FakeProtocolFactory:
+    implements(IProtocolFactory)
+    def doStart(self):
+        "IProtocolFactory API"
+
+    def doStop(self):
+        "IProtocolFactory API"
+        
+    def buildProtocol(self, addr):
+        "IProtocolFactory API"
+        return None
 
 class TestProcessFromUtil(unittest.TestCase):
 
@@ -21,15 +37,22 @@ class TestProcessFromUtil(unittest.TestCase):
     def test_internal(self):
         self.assertTrue(process_from_address('(Tor_internal)', 80, self.fakestate) == self.fakestate.tor_pid)
 
+    @defer.inlineCallbacks
     def test_real_addr(self):
         ## FIXME should choose a port which definitely isn't used.
+
+        ## it's apparently frowned upon to use the "real" reactor in
+        ## tests, but I was using "nc" before, and I think this is
+        ## preferable.
+        from twisted.internet import reactor
+        listener = yield TCP4ServerEndpoint(reactor, 9887).listen(FakeProtocolFactory())
+        
         try:
-            proc = subprocess.Popen(['nc', '-l', '0.0.0.0', '9887'], env={})
-            procpid = proc.pid
             pid = process_from_address('0.0.0.0', 9887, self.fakestate)
         finally:
-            proc.terminate()
-        self.assertTrue(pid == proc.pid)
+            listener.stopListening()
+            
+        self.assertTrue(pid == os.getpid())
 
 class TestDelete(unittest.TestCase):
 
