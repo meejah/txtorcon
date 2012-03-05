@@ -34,7 +34,8 @@ country = GeoIP.new(GeoIP.GEOIP_STANDARD)
 
 def delete_file_or_tree(*args):
     """
-    For every path in args, try to delete is as a file or a directory tree
+    For every path in args, try to delete it as a file or a directory
+    tree. Ignores deletion errors.
     """
     
     for f in args:
@@ -51,7 +52,7 @@ def process_from_address(addr, port, torstate):
     """
     Determines the PID from the address/port provided by using lsof
     and returns a psutil.Process object (or None). In the special case
-    the addr is '(Tor_internal)' then Process having the PID of the
+    the addr is '(Tor_internal)' then the Process having the PID of the
     Tor process (as gotten from the torstate object) is returned.
 
     If psutil isn't installed, the PIDs are returned instead of

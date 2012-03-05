@@ -125,14 +125,6 @@ class TorControlProtocol(LineOnlyReceiver):
     """
     This is the main class that talks to a Tor and implements the "raw" procotol.
 
-    The class :class:`txtorcon.TorState` uses this to track a Pythonic
-    copy of the running Tor's state (e.g. circuits, streams etcetera)
-    and provide an API for monitoring said state. You 'probably' don't
-    need to use this protocol directly, but can for example use it to
-    listen and respond to events (via
-    :meth:`txtorcon.TorControlProtocol.add_event_listener`, see also
-    Tor's SETEVENT command).
-
     This instance does not track state; see :class:`txtorcon.TorState`
     for the current state of all Circuits, Streams and Routers.
 
@@ -187,7 +179,9 @@ class TorControlProtocol(LineOnlyReceiver):
                 proto.post_bootstrap.addCallback(setup_complete)
 
             TCP4ClientEndpoint(reactor, "localhost", 9051).connect(TorProtocolFactory())
-            d.addCallback(setup).addErrback(setup_failed)          
+            d.addCallback(setup)
+
+        See the helper method :func:`txtorcon.build_tor_connection`.
         """
         
         ## variables related to the state machine
@@ -245,7 +239,7 @@ class TorControlProtocol(LineOnlyReceiver):
     def get_info_raw(self, *args):
         """
         Mostly for internal use; gives you the raw string back from
-        the GETINFO command. @see: get_info
+        the GETINFO command. See :meth:`getinfo <txtorcon.TorControlProtocol.get_info>`
         """
         info = ' '.join(map(lambda x: str(x), list(args)))
         return self.queue_command('GETINFO %s'%info)
@@ -260,9 +254,10 @@ class TorControlProtocol(LineOnlyReceiver):
         :param args:
             should be a list or tuple of strings which are valid
             information keys. For valid keys, see control-spec.txt
-            from torspec (@TODO make some way to automagically obtain
-            valid keys, either from running Tor or parsing
-            control-spec)
+            from torspec.
+
+            .. todo:: make some way to automagically obtain valid
+                keys, either from running Tor or parsing control-spec
         
         :return:
             a ``Deferred`` which will callback with a dict containing
@@ -276,15 +271,15 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Uses GETCONF to obtain configuration values from Tor.
         
+        :param args: any number of strings which are keys to get. To
+            get all valid configuraiton names, you can call:
+            ``get_info('config/names')``
+                
         :return: a Deferred which callbacks with one or many
             configuration values (depends on what you asked for). See
             control-spec for valid keys (you can also use TorConfig which
             will come set up with all the keys that are valid). The value
             will be a dict.
-
-        To get all valid configuraiton names, you can call::
-
-           get_info('config/names')
 
         Note that Tor differentiates between an empty value and a
         default value; in the raw protocol one looks like '250
@@ -308,8 +303,11 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         set configuration values. see control-spec for valid
         keys. args is treated as a list containing name then value
-        pairs. For example, set_conf(['foo', 'bar']) will (attempt to) set the
-        key 'foo' to value 'bar'.
+        pairs. For example, ``set_conf('foo', 'bar')`` will (attempt
+        to) set the key 'foo' to value 'bar'.
+
+        :return: a ``Deferred`` that will callback with the response
+            ('OK') or errback with the error code and message (e.g. ``"552 Unrecognized option: Unknown option 'foo'.  Failing."``)
         """
         if len(args) % 2:
             d = defer.Deferred()
@@ -326,6 +324,9 @@ class TorControlProtocol(LineOnlyReceiver):
         Issues a signal to Tor. See control-spec or
         :attr:`txtorcon.TorControlProtocol.valid_signals` for which ones
         are available and their return values.
+
+        :return: a ``Deferred`` which callbacks with Tor's response
+            (``OK`` or something like ``552 Unrecognized signal code "foo"``).
         """
         if not nm in self.valid_signals:
             raise RuntimeError("Invalid signal " + nm)
@@ -333,12 +334,16 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def add_event_listener(self, evt, callback):
         """
-        :Return: ``None``
-        
+        :param evt: event name, see also :var:`txtorcon.TorControlProtocol.events` .keys()
         Add a listener to an Event object. This may be called multiple
         times for the same event. If it's the first listener, a new
         SETEVENTS call will be initiated to Tor.
+
+        :Return: ``None``
+        
+        .. todo:: need an interface for the callback
         """
+        
         if not evt in self.valid_events.values():
             try:
                 evt = self.valid_events[evt]
@@ -364,7 +369,10 @@ class TorControlProtocol(LineOnlyReceiver):
             self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
 
     def protocolinfo(self):
-        "Returns a Deferred which will give you PROTOCOLINFO; see control-spec"
+        """
+        :return: a Deferred which will give you PROTOCOLINFO; see control-spec
+        """
+        
         return self.queue_command("PROTOCOLINFO 1")
     
     def authenticate(self, passphrase):
@@ -374,6 +382,16 @@ class TorControlProtocol(LineOnlyReceiver):
     def quit(self):
         return self.queue_command('QUIT')
     
+    def queue_command(self, cmd):
+        """
+        returns a Deferred which will fire with the response data when we get it
+        """
+        
+        d = defer.Deferred()
+        self.commands.append((d, cmd))
+        self._maybe_issue_command()
+        return d
+
     ## the remaining methods are internal API implementations,
     ## callbacks and state-tracking methods -- you shouldn't have any
     ## need to call them.

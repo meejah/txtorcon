@@ -40,11 +40,31 @@ def wait_for_proto(proto):
 
 def build_tor_connection(endpoint, buildstate=True):
     """
-    :Returns: a Deferred that fires with a TorControlProtocol or, if
-    you specified buildstate=True, a TorState. In both cases, the
-    object has finished bootstrapping
-    (i.e. TorControlProtocol.post_bootstrap or TorState.post_bootstap
-    has fired)
+    This is used to build a valid TorState (which has .protocol for
+    the TorControlProtocol). For example::
+    
+        from twisted.internet import reactor
+        from twisted.internet.endpoints import TCP4ClientEndpoint
+        import txtorcon
+
+        def example(state):
+            print "Fully bootstrapped state:",state
+            print "   with bootstrapped protocol:",state.protocol
+
+        d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051))
+        d.addCallback(example)
+        reactor.run()
+
+    :param buildstate: If True (the default) a TorState object will be
+        built as well. If False, just a TorControlProtocol will be
+        returned via the Deferred.
+    
+    :return:
+        a Deferred that fires with a TorControlProtocol or, if you
+        specified buildstate=True, a TorState. In both cases, the
+        object has finished bootstrapping
+        (i.e. TorControlProtocol.post_bootstrap or
+        TorState.post_bootstap has fired, as needed)
     """
     
     from txtorcon import TorProtocolFactory
@@ -61,13 +81,20 @@ class TorState(object):
 
     On setup it first queries the initial state of streams and
     circuits. It then asks for updates via the listeners. It requires
-    an ITorControlProtocol instance.
+    an ITorControlProtocol instance. The control protocol doesn't need
+    to be bootstrapped yet. The Deferred .post_boostrap is driggered
+    when the TorState instance is fully ready to go.  The easiest way
+    is to use the helper method
+    :func:`txtorcon.build_tor_connection`. For details, see the
+    implementation of that.
 
-    You may add an IStreamAttacher to provide a custom mapping for
-    Strams to Circuits (by default Tor chooses itself).
+    You may add an :class:`txtorcon.interface.IStreamAttacher` to
+    provide a custom mapping for Strams to Circuits (by default Tor
+    picks by itself).
 
     This is also a good example of the various listeners, and acts as
-    an ICircuitContainer and IRouterContainer.
+    an :class:`txtorcon.interface.ICircuitContainer` and
+    :class:`txtorcon.interface.IRouterContainer`.
     """
     
     implements (ICircuitListener, ICircuitContainer, IRouterContainer, IStreamListener)
@@ -81,7 +108,7 @@ class TorState(object):
         self.stream_factory = Stream
 
         self.attacher = None
-        """If set, provides :class:`txtorcon.IStreamAttacher` to attach new streams we hear about."""
+        """If set, provides :class:`txtorcon.interface.IStreamAttacher` to attach new streams we hear about."""
 
         self.tor_binary = 'tor'
 
@@ -210,7 +237,7 @@ class TorState(object):
     
     def set_attacher(self, attacher, myreactor):
         """
-        Provide an IStreamAttacher to associate streams to
+        Provide an :class:`txtorcon.interface.IStreamAttacher to associate streams to
         circuits. This won't get turned on until after bootstrapping
         is completed. ("__LeaveStreamsUnattached" needs to be set to "1"
         and the existing circuits list needs to be populated).
