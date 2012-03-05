@@ -13,6 +13,8 @@ from twisted.python import log
 from txtorcon.interface import ICircuitContainer, IStreamListener
 import ipaddr
 
+from txtorcon.util import find_keywords
+
 def maybe_ip_addr(addr):
     """
     Tries to return an IPAddress, otherwise returns a string. I could
@@ -99,15 +101,6 @@ class Stream(object):
         self.source_port = 0
         """If available, the port from which this Stream originated. See get_process() also."""
 
-    def find_keywords(self, args):
-        """FIXME: dup of the one in circuit, move somewhere shared"""
-        kw = {}
-        for x in args:
-            if '=' in x:
-                (k,v) = x.split('=',1)
-                kw[k] = v
-        return kw
-
     def listen(self, listen):
         """
         Attach an :class:`interface.IStreamListener` to this stream.
@@ -134,7 +127,7 @@ class Stream(object):
             if self.id != int(args[0]):
                 raise RuntimeError("Update for wrong stream.")
 
-        kw = self.find_keywords(args)
+        kw = find_keywords(args)
 
         if kw.has_key('SOURCE_ADDR'):
             last_colon = kw['SOURCE_ADDR'].rfind(':')

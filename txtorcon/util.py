@@ -32,6 +32,22 @@ except:
 
 country = GeoIP.new(GeoIP.GEOIP_STANDARD)
 
+def find_keywords(args):
+    """
+    This splits up strings like name=value, foo=bar into a dict. Does NOT deal
+    with quotes in value (e.g. key="value with space" will not work
+    
+    :return:
+        a dict of key->value (both strings) of all name=value type keywords found in args.
+    """
+    
+    kw = {}
+    for x in args:
+        if '=' in x:
+            (k,v) = x.split('=',1)
+            kw[k] = v
+    return kw
+
 def delete_file_or_tree(*args):
     """
     For every path in args, try to delete it as a file or a directory

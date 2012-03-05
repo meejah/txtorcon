@@ -3,6 +3,8 @@ import sys
 from twisted.python import log
 from interface import IRouterContainer
 
+from txtorcon.util import find_keywords
+
 class Circuit(object):
     """
     Used by :class:`TorState` to represent one of Tor's circuits.
@@ -65,15 +67,6 @@ class Circuit(object):
         self.id = None
         self.state = 'UNKNOWN'
         
-    def find_keywords(self, args):
-        """FIXME: dup of the one in stream, move somewhere shared"""
-        kw = {}
-        for x in args:
-            if '=' in x:
-                (k,v) = x.split('=',1)
-                kw[k] = v
-        return kw
-
     def listen(self, listener):
         if listener not in self.listeners:
             self.listeners.append(listener)
@@ -91,7 +84,7 @@ class Circuit(object):
                 raise RuntimeError("Update for wrong circuit.")
         self.state = args[1]
 
-        kw = self.find_keywords(args)
+        kw = find_keywords(args)
         if kw.has_key('PURPOSE'):
             self.purpose = kw['PURPOSE']
             
