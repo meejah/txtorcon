@@ -21,20 +21,31 @@ illustrate how to use IStreamAttacher and that you may close streams.
 .. literalinclude:: ../examples/disallow_streams_by_port.py
 
 
-.. _schedule_bandwidth.py:
+.. _launch_tor.py:
 
-:file:`schedule_bandwidth.py`
+:file:`launch_tor.py`
 -----------------------------
 
-:download:`Download the example <../examples/schedule_bandwidth.py>`.
-This is pretty similar to a feature Tor already has and is basically
-useless as-is since what it does is toggle the amount of relay
-bandwidth you're willing to carry from 0 to 20KiB/s every 20
-minutes. A slightly-more-entertaining way to illustate config
-changes. (This is useless because your relay takes at least an hour to
-appear in the consensus).
+:download:`Download the example <../examples/launch_tor.py>`.  Set up
+a tor configuration and launch a slave Tor. This takes care of the
+setting Tor's notion ownership so that when the control connection
+goes away, so does the running Tor.
 
-.. literalinclude:: ../examples/schedule_bandwidth.py
+.. literalinclude:: ../examples/launch_tor.py
+
+
+.. _launch_tor_with_hiddenservice.py:
+
+:file:`launch_tor_with_hiddenservice.py`
+-----------------------------
+
+:download:`Download the example
+<../examples/launch_tor_with_hiddenservice.py>`. A more complicated
+version of the :ref:`launch_tor.py` example where we also set up a
+Twisted Web server in the process and have the slave Tor set up a
+hidden service configuration pointing to it.
+
+.. literalinclude:: ../examples/launch_tor_with_hiddenservice.py
 
 
 .. _stream_circuit_logger.py:
@@ -67,4 +78,20 @@ interesting. For bonus points, if there is no Circuit exiting in the
 correct country, one is created before the Stream is attached.
 
 .. literalinclude:: ../examples/attach_streams_by_country.py
+
+
+.. _schedule_bandwidth.py:
+
+:file:`schedule_bandwidth.py`
+-----------------------------
+
+:download:`Download the example <../examples/schedule_bandwidth.py>`.
+This is pretty similar to a feature Tor already has and is basically
+useless as-is since what it does is toggle the amount of relay
+bandwidth you're willing to carry from 0 to 20KiB/s every 20
+minutes. A slightly-more-entertaining way to illustate config
+changes. (This is useless because your relay takes at least an hour to
+appear in the consensus).
+
+.. literalinclude:: ../examples/schedule_bandwidth.py
 
