@@ -8,14 +8,6 @@ from zope.interface import implements
 
 from txtorcon import Stream, IStreamListener, ICircuitContainer
 
-lines = """650 STREAM 316 NEW 0 www.yahoo.com:80 SOURCE_ADDR=127.0.0.1:55877 PURPOSE=USER
-650 STREAM 316 REMAP 0 1.2.3.4:80 SOURCE=CACHE
-650 STREAM 316 SENTCONNECT 186 1.2.3.4:80
-650 STREAM 316 REMAP 186 1.2.3.4:80 SOURCE=EXIT
-650 STREAM 316 SUCCEEDED 186 1.2.3.4:80
-650 STREAM 316 CLOSED 186 1.2.3.4:80 REASON=END REMOTE_REASON=DONE
-"""
-
 class FakeCircuit:
     def __init__(self, id=-999):
         self.streams = []
