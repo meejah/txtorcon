@@ -9,7 +9,9 @@ from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.protocols.basic import LineReceiver
 from txtorcon import TorControlProtocol, TorProtocolFactory, TorState, IStreamAttacher, ICircuitListener, IStreamListener
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
+
 import types
+import functools
 
 def do_nothing(*args):
     pass
@@ -243,8 +245,11 @@ OK''')
         self.send("250 ORPort=0")
         return d
 
+    def response_ok(self, v):
+        self.assertTrue(v == 'OK')
+
     def test_setconf(self):
-        d = self.protocol.set_conf("foo", "bar")
+        d = self.protocol.set_conf("foo", "bar").addCallback(functools.partial(self.response_ok))
         self.send("250 OK")
         self._wait(d)
         self.assertTrue(self.transport.value() == "SETCONF foo=bar\r\n")
