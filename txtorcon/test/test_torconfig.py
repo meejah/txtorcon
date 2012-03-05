@@ -674,7 +674,7 @@ class LaunchTorTests(unittest.TestCase):
         config.SocksPort = 9999
 
         def connector(proto, trans):
-            proto.set_valid_events('STATUS_CLIENT')
+            proto._set_valid_events('STATUS_CLIENT')
             proto.makeConnection(trans)
             proto.post_bootstrap.callback(proto)
             return defer.succeed(proto)
@@ -714,7 +714,7 @@ class LaunchTorTests(unittest.TestCase):
         config.SocksPort = 9999
 
         def connector(proto, trans):
-            proto.set_valid_events('STATUS_CLIENT')
+            proto._set_valid_events('STATUS_CLIENT')
             proto.makeConnection(trans)
             proto.post_bootstrap.callback(proto)
             return defer.succeed(proto)
@@ -742,7 +742,7 @@ class LaunchTorTests(unittest.TestCase):
         config.SocksPort = 9999
 
         def connector(proto, trans):
-            proto.set_valid_events('STATUS_CLIENT')
+            proto._set_valid_events('STATUS_CLIENT')
             proto.makeConnection(trans)
             proto.post_bootstrap.callback(proto)
             return defer.succeed(proto)
@@ -778,7 +778,7 @@ class LaunchTorTests(unittest.TestCase):
                 if self.count < 2:
                     return defer.fail(RuntimeError("connection fails..."))
 
-                proto.set_valid_events('STATUS_CLIENT')
+                proto._set_valid_events('STATUS_CLIENT')
                 proto.makeConnection(trans)
                 proto.post_bootstrap.callback(proto)
                 return defer.succeed(proto)

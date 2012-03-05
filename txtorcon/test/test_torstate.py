@@ -112,7 +112,7 @@ class FakeEndpoint:
         self.proto = TorControlProtocol()
         self.proto.transport = proto_helpers.StringTransport()
         self.proto.get_info_raw = self.get_info_raw
-        self.proto.set_valid_events('GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL')
+        self.proto._set_valid_events('GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL')
         
         d = defer.Deferred()
         d.callback(self.proto)
@@ -265,8 +265,8 @@ class StateTests(unittest.TestCase):
         
         d = self.state.post_bootstrap
         
-        self.protocol.set_valid_events(' '.join(self.state.event_map.keys()))
-        self.state.bootstrap()
+        self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
+        self.state._bootstrap()
 
         self.send("250+ns/all=")
         self.send(".")
@@ -318,8 +318,8 @@ class StateTests(unittest.TestCase):
         clock = task.Clock()
         self.state.addrmap.scheduler = clock
         
-        self.protocol.set_valid_events(' '.join(self.state.event_map.keys()))
-        self.state.bootstrap()
+        self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
+        self.state._bootstrap()
 
         self.send("250+ns/all=")
         self.send(".")
@@ -380,7 +380,7 @@ class StateTests(unittest.TestCase):
         attacher = MyAttacher()
         self.state.set_attacher(attacher, FakeReactor(self))
         events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
-        self.protocol.set_valid_events(events)
+        self.protocol._set_valid_events(events)
         self.state.add_events()
         for ignored in self.state.event_map.items():
             self.send("250 OK")
@@ -436,7 +436,7 @@ class StateTests(unittest.TestCase):
         ## boilerplate to finish enough set-up in the protocol so it
         ## works
         events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
-        self.protocol.set_valid_events(events)
+        self.protocol._set_valid_events(events)
         self.state.add_events()
         for ignored in self.state.event_map.items():
             self.send("250 OK")
@@ -495,7 +495,7 @@ class StateTests(unittest.TestCase):
         attacher = MyAttacher()
         self.state.set_attacher(attacher, FakeReactor(self))
         events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
-        self.protocol.set_valid_events(events)
+        self.protocol._set_valid_events(events)
         self.state.add_events()
         for ignored in self.state.event_map.items():
             self.send("250 OK")
@@ -538,7 +538,7 @@ class StateTests(unittest.TestCase):
 
     def test_circuit_listener(self):
         events = 'CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET'
-        self.protocol.set_valid_events(events)
+        self.protocol._set_valid_events(events)
         self.state.add_events()
         for ignored in self.state.event_map.items():
             self.send("250 OK")
@@ -674,7 +674,7 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         self.assertTrue(self.state.streams[1610].circuit == None)
 
     def test_stream_listener(self):
-        self.protocol.set_valid_events('CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET')
+        self.protocol._set_valid_events('CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET')
         self.state.add_events()
         for ignored in self.state.event_map.items():
             self.send("250 OK")

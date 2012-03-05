@@ -104,12 +104,12 @@ class TorState(object):
         self.post_bootstrap = defer.Deferred()
         if bootstrap:
             if self.protocol.post_bootstrap:
-                self.protocol.post_bootstrap.addCallback(self.bootstrap).addErrback(log.err)
+                self.protocol.post_bootstrap.addCallback(self._bootstrap).addErrback(log.err)
             else:
-                self.bootstrap()
+                self._bootstrap()
 
     @defer.inlineCallbacks
-    def bootstrap(self, arg=None):
+    def _bootstrap(self, arg=None):
         "This takes an arg so we can use it as a callback (see __init__)."
 
         ## update list of routers (must be before we do the circuit-status)
