@@ -252,11 +252,14 @@ class StreamTests(unittest.TestCase):
         stream.listen(listener)
         stream.update("1234 NEW 0 127.0.0.1:80 SOURCE_ADDR=::1:12345 PURPOSE=USER".split())
 
-    def test_states(self):
+    def test_states_and_uris(self):
         self.circuits[1] = FakeCircuit(1)
         
         stream = Stream(self)
-        for address in ['1.2.3.4:80', '1.2.3.4.315D5684D5343580D409F16119F78D776A58AEFB.exit:80']:
+        for address in ['1.2.3.4:80',
+                        '1.2.3.4.315D5684D5343580D409F16119F78D776A58AEFB.exit:80',
+                        'timaq4ygg2iegci7.onion:80']:
+            
             line = "316 %s 1 %s REASON=FOO"
             for state in ['NEW', 'SUCCEEDED', 'REMAP',
                           'SENTCONNECT',
