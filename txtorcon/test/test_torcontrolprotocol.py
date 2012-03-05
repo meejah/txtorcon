@@ -162,7 +162,7 @@ class ProtocolTests(unittest.TestCase):
         self.protocol.auth_failed = self.auth_failed
 
         self.protocol.password='foo'
-        self.protocol.doAuthenticate('''PROTOCOLINFO 1
+        self.protocol.do_authenticate('''PROTOCOLINFO 1
 AUTH METHODS=HASHEDPASSWORD
 VERSION Tor="0.2.2.35"
 OK''')
