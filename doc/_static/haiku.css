@@ -1,5 +1,18 @@
 /* custom stuff I put in FIXME where is it "supposed" to go? */
 
+div.admonition-todo
+{
+  border: 1px solid red;
+  background-color: #Fdd;
+}
+
+div.admonition-todo p.admonition-title
+{
+  margin: 0;
+  color: red;
+  text-transform: lowercase;
+}
+
 p.admonition-title
 {
   font-size: 120%;

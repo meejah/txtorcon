@@ -8,6 +8,8 @@ txtorcon
     moving target; your best bet is to clone from git and explore that
     way. These documents can be built with ``make doc`` if you have Sphinx
 
+This documentation generated |today|.
+
 txtorcon is a `Twisted <https://twistedmatrix.com/>`_-based `Python
 <http://python.org/>`_ asynchronous controller library for `Tor
 <https://www.torproject.org/>`_, following `control-spec
