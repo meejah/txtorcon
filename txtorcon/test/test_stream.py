@@ -256,10 +256,11 @@ class StreamTests(unittest.TestCase):
         self.circuits[1] = FakeCircuit(1)
         
         stream = Stream(self)
-        line = "316 %s 1 1.2.3.4:80 REASON=FOO"
-        for state in ['NEW', 'SUCCEEDED', 'REMAP',
-                      'SENTCONNECT',
-                      'DETACHED', 'NEWRESOLVE', 'SENTRESOLVE',
-                      'FAILED', 'CLOSED']:
-            stream.update((line % state).split(' '))
-            self.assertTrue(stream.state == state)
+        for address in ['1.2.3.4:80', '1.2.3.4.315D5684D5343580D409F16119F78D776A58AEFB.exit:80']:
+            line = "316 %s 1 %s REASON=FOO"
+            for state in ['NEW', 'SUCCEEDED', 'REMAP',
+                          'SENTCONNECT',
+                          'DETACHED', 'NEWRESOLVE', 'SENTRESOLVE',
+                          'FAILED', 'CLOSED']:
+                stream.update((line % (state, address)).split(' '))
+                self.assertTrue(stream.state == state)
