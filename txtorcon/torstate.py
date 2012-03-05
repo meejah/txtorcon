@@ -141,15 +141,15 @@ class TorState(object):
 
         ## update list of routers (must be before we do the circuit-status)
         ns = yield self.protocol.get_info_raw('ns/all')
-        self.update_network_status(ns)
+        self._update_network_status(ns)
 
         ## update list of existing circuits
         cs = yield self.protocol.get_info_raw('circuit-status')
-        self.circuit_status(cs)
+        self._circuit_status(cs)
 
         ## update list of streams
         ss = yield self.protocol.get_info_raw('stream-status')
-        self.stream_status(ss)
+        self._stream_status(ss)
 
         ## update list of existing address-maps
         key = 'address-mappings/all'
@@ -162,10 +162,7 @@ class TorState(object):
                     continue            # FIXME
                 self.addrmap.update(line)
 
-        ## FIXME can we use yield in here too? not really a huge deal
-        ## that we don't wait for these right now...or does add_events
-        ## then need to be inlineCallbacks decorated also?
-        self.add_events()
+        self._add_events()
 
         entries = yield self.protocol.get_info_raw("entry-guards")
         for line in entries.split('\n')[1:]:
@@ -284,8 +281,31 @@ class TorState(object):
             
         return self.protocol.queue_command("CLOSESTREAM %d %d" % (stream.id, self.stream_close_reasons[reason]))
 
+    def add_circuit_listener(self, icircuitlistener):
+        listen = ICircuitListener(icircuitlistener)
+        for circ in self.circuits.values():
+            circ.listen(listen)
+        self.circuit_listeners.append(listen)
+
+    def add_stream_listener(self, istreamlistener):
+        listen = IStreamListener(istreamlistener)
+        for stream in self.streams.values():
+            stream.listen(listen)
+        self.stream_listeners.append(listen)
+
+    def build_circuit(self, routers):
+        """
+        Builds a circuit consisting of exactly the routers specified,
+        in order.  This issues a series of EXTENDCIRCUIT calls to Tor;
+        the deferred returned from this is for the final EXTEND. It
+        will return the new circuit ID to you.
+        """
+        if routers[0] not in self.entry_guards.values():
+            warnings.warn("Building a circuit not starting with a guard: %s" % (str(routers),), RuntimeWarning)
+        return self.protocol.queue_command("EXTENDCIRCUIT 0 " + ','.join(map(lambda x: x.id_hex, routers)))
+
     DO_NOT_ATTACH = object()
-    def maybe_attach(self, stream):
+    def _maybe_attach(self, stream):
         """
         If we've got a custom stream-attachment instance (see
         set_attacher) this will ask it for the appropriate
@@ -334,12 +354,12 @@ class TorState(object):
                         raise RuntimeError("Can only attach to BUILT circuits; %d is in %s." % (circ.id, circ.state))
                     self.protocol.queue_command("ATTACHSTREAM %d %d" % (stream.id, circ.id))
 
-    def circuit_status(self, data):
+    def _circuit_status(self, data):
         "Used internally as a callback for updating Circuit information"
         for line in data.split('\n')[1:-1]:
-            self.circuit_update(line)
+            self._circuit_update(line)
 
-    def stream_status(self, data):
+    def _stream_status(self, data):
         "Used internally as a callback for updating Stream information"
         # there's a slight issue with a single-stream vs >= 2 streams,
         # in that in the latter case we have a line by itself with
@@ -353,11 +373,11 @@ class TorState(object):
             # if there are actually 0 streams, then there's nothing
             # left to parse
             if len(d):
-                self.stream_update(d)
+                self._stream_update(d)
         else:
-            [self.stream_update(line) for line in lines[1:]]
+            [self._stream_update(line) for line in lines[1:]]
 
-    def update_network_status(self, data):
+    def _update_network_status(self, data):
         """
         Used internally as a callback for updating Router information
         from NS and NEWCONSENSUS events
@@ -419,7 +439,7 @@ class TorState(object):
 
         if DEBUG: print len(self.guards),"GUARDs"
                 
-    def newdesc_update(self, args):
+    def _newdesc_update(self, args):
         """
         Callback used internall for ORCONN and NEWDESC events to update Router information.
         
@@ -430,10 +450,10 @@ class TorState(object):
         hsh = args[:41]
         if not self.routers.has_key(hsh):
             if DEBUG: print "haven't seen",hsh,"yet!"
-        self.protocol.get_info_raw('ns/id/%s' % hsh[1:]).addCallback(self.update_network_status).addErrback(log.err)
+        self.protocol.get_info_raw('ns/id/%s' % hsh[1:]).addCallback(self._update_network_status).addErrback(log.err)
         if DEBUG: print "NEWDESC",args
                 
-    def circuit_update(self, line):
+    def _circuit_update(self, line):
         "Used internally as a callback to update Circuit information from CIRC events."
         #print "circuit_update",line
         args = line.split()
@@ -448,7 +468,7 @@ class TorState(object):
         else:
             self.circuits[circ_id].update(args)
 
-    def stream_update(self, line):
+    def _stream_update(self, line):
         "Used internally as a callback to update Stream information from STREAM events."
         #print "stream_update",line
         if line.strip() == 'stream-status=':
@@ -472,38 +492,25 @@ class TorState(object):
         ## anymore. FIXME: how can we ever hit such a case as the
         ## first update being a CLOSE?
         if wasnew and self.streams.has_key(stream_id):
-            self.maybe_attach(self.streams[stream_id])
+            self._maybe_attach(self.streams[stream_id])
 
-    def addr_map(self, addr):
+    def _addr_map(self, addr):
         "Internal callback to update DNS cache. Listens to ADDRMAP."
         if DEBUG: print " --> addr_map",addr
         self.addrmap.update(addr)
 
-    def add_circuit_listener(self, icircuitlistener):
-        listen = ICircuitListener(icircuitlistener)
-        for circ in self.circuits.values():
-            circ.listen(listen)
-        self.circuit_listeners.append(listen)
-
-    def add_stream_listener(self, istreamlistener):
-        listen = IStreamListener(istreamlistener)
-        for stream in self.streams.values():
-            stream.listen(listen)
-        self.stream_listeners.append(listen)
-
     event_map = {
-        #'GUARD': guard_update,
-        'STREAM': stream_update,
-        'CIRC': circuit_update,
-        'NS': update_network_status,
-        'NEWCONSENSUS': update_network_status,
-        'ORCONN': newdesc_update,
-        'NEWDESC': newdesc_update,
-        'ADDRMAP': addr_map
-#        'STATUS_GENERAL': status_general
+        'STREAM': _stream_update,
+        'CIRC': _circuit_update,
+        'NS': _update_network_status,
+        'NEWCONSENSUS': _update_network_status,
+        'ORCONN': _newdesc_update,
+        'NEWDESC': _newdesc_update,
+        'ADDRMAP': _addr_map
         }
+    """event_map used by add_events to map event_name -> unbound method"""
     @defer.inlineCallbacks
-    def add_events(self):
+    def _add_events(self):
         """
         Add listeners for all the events the controller is interested in.
         """
@@ -594,15 +601,3 @@ class TorState(object):
         if DEBUG: print "circuit_failed",circuit,reason
         self.circuit_destroy(circuit)
         
-    ## explicitly build a circuit
-
-    def build_circuit(self, routers):
-        """
-        Builds a circuit consisting of exactly the routers specified,
-        in order.  This issues a series of EXTENDCIRCUIT calls to Tor;
-        the deferred returned from this is for the final EXTEND. It
-        will return the new circuit ID to you.
-        """
-        if routers[0] not in self.entry_guards.values():
-            warnings.warn("Building a circuit not starting with a guard: %s" % (str(routers),), RuntimeWarning)
-        return self.protocol.queue_command("EXTENDCIRCUIT 0 " + ','.join(map(lambda x: x.id_hex, routers)))

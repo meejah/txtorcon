@@ -511,7 +511,7 @@ baz''')
         self.assertTrue(x['foo'] == 'bar\nbaz')
 
     def test_network_status(self):
-        self.controller.update_network_status("""ns/all=
+        self.controller._update_network_status("""ns/all=
 r right2privassy3 ADQ6gCT3DiFHKPDFr3rODBUI8HM JehnjB8l4Js47dyjLCEmE8VJqao 2011-12-02 03:36:40 50.63.8.215 9023 0
 s Exit Fast Named Running Stable Valid
 w Bandwidth=53
@@ -530,7 +530,7 @@ p reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999
         self.controller.routers_by_name.clear()
 
     def test_circuit_status(self):
-        self.controller.update_network_status("""r wildnl f+Ty/+B6lgYr0Ntbf67O/L2M8ZI c1iK/kPPXKGZZvwXRWbvL9eCfSc 2011-12-02 19:07:05 209.159.142.164 9001 0
+        self.controller._update_network_status("""r wildnl f+Ty/+B6lgYr0Ntbf67O/L2M8ZI c1iK/kPPXKGZZvwXRWbvL9eCfSc 2011-12-02 19:07:05 209.159.142.164 9001 0
 s Exit Fast Named Running Stable Valid
 w Bandwidth=1900
 p reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999
@@ -543,7 +543,7 @@ s Fast Guard HSDir Named Running Stable V2Dir Valid
 w Bandwidth=18700
 p reject 1-65535
 """)
-        self.controller.circuit_status("""250+circuit-status=
+        self.controller._circuit_status("""250+circuit-status=
 4472 BUILT $FF1003D2D14B4B9D03933F8EDFBC46C952E82A59=Tecumseh,$C185D4A4B069CD559FCD548C8063B475385D777F=l0l,$7FE4F2FFE07A96062BD0DB5B7FAECEFCBD8CF192=wildnl PURPOSE=GENERAL
 """)
         self.assertTrue(len(self.controller.circuits) == 1)
