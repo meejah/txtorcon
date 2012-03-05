@@ -1,5 +1,11 @@
 /* custom stuff I put in FIXME where is it "supposed" to go? */
 
+p.admonition-title
+{
+  font-size: 120%;
+  font-weight: bold;
+}
+
 dl.class>dt, dl.interface>dt, dl.function>dt, dl.staticmethod>dt
 {
   font-size: 150%;

@@ -4,9 +4,9 @@
 txtorcon
 ========
 
-**PLEASE NOTE:** this is currently a moving target; your best bet is
-to clone from git and explore that way. These documents can be built
-with ``make doc``
+.. warning:: This code and (especially) documentation is currently a
+    moving target; your best bet is to clone from git and explore that
+    way. These documents can be built with ``make doc`` if you have Sphinx
 
 txtorcon is a `Twisted <https://twistedmatrix.com/>`_-based `Python
 <http://python.org/>`_ asynchronous controller library for `Tor
