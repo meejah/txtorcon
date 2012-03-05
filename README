@@ -44,6 +44,11 @@ code is at least exercised somehow by the unit tests.
 Tor itself is not required to be running for any of the tests. There
 are no integration tests.
 
+I would also **note** that I was experimenting with underscores
+instead of camelCase for the method names; since Twisted is camelCase
+it might make sense to switch especially if anyone has strong feelings
+on this.
+
 
 dependencies
 ------------
