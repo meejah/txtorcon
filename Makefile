@@ -25,6 +25,7 @@ clean:
 	-rm -rf html
 	-rm MANIFEST
 	-rm `find . -name \*.py[co]`
+	-cd doc && make clean
 
 counts:
 	ohcount -s txtorcon/*.py
