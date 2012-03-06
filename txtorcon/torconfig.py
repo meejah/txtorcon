@@ -52,16 +52,16 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         that callbacks with a :class:`txtorcon.TorControlProtocol`; see :func:`txtorcon.launch_tor` for
         the default one which is a functools.partial that will call
         .connect(TorProtocolFactory()) on an appropriate
-        :class:`twisted.internet.endpoints.TCP4ClientEndpoint`
+        :api:`twisted.internet.endpoints.TCP4ClientEndpoint`
 
         :param connection_creator: A no-parameter callable which
-            returns a Deferred which promises a IStreamClientEndpoint
+            returns a Deferred which promises a :api:`twisted.internet.interfaces.IStreamClientEndpoint <IStreamClientEndpoint>`
 
         :param progress_updates: A callback which received progress
             updates with three args: percent, tag, summary
  
         :ivar tor_protocol: The TorControlProtocol instance connected
-            to the Tor this ProcessProtocol is speaking to. Will be valid
+            to the Tor this :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` is speaking to. Will be valid
             when the `connected_cb` callback runs.
 
         :ivar connected_cb: Triggered when the Tor process we
@@ -82,7 +82,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     def outReceived(self, data):
         """
-        ProcessProtocol API
+        :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
         """
 
         self.stdout.append(data)
@@ -105,7 +105,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     def errReceived(self, data):
         """
-        ProcessProtocol API
+        :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
         """
 
         self.stderr.append(data)
@@ -122,7 +122,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     def processEnded(self, status):
         """
-        ProcessProtocol API
+        :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
         """
 
         self.cleanup()
@@ -212,9 +212,9 @@ def launch_tor(config, reactor,
 
     :param connection_creator: is mostly available to ease testing, so
         you probably don't want to supply this. If supplied, it is a
-        callable that should return a Deferred that delivers an IProtocol
+        callable that should return a Deferred that delivers an :api:`twisted.internet.interfaces.IProtocol <IProtocol>`
         or ConnectError. See
-        twisted.internet.interfaces.IStreamClientEndpoint.connect
+        :api:`twisted.internet.interfaces.IStreamClientEndpoint`.connect
 
     :return: a Deferred which callbacks with a TorProcessProtocol
         connected to the fully-bootstrapped Tor; this has a

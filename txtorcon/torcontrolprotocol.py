@@ -51,13 +51,13 @@ class TorProtocolFactory(object):
         self.password = password
 
     def doStart(self):
-        "IProtocolFactory API"
+        ":api:`twisted.internet.interfaces.IProtocolFactory` API"
 
     def doStop(self):
-        "IProtocolFactory API"
+        ":api:`twisted.internet.interfaces.IProtocolFactory` API"
         
     def buildProtocol(self, addr):
-        "IProtocolFactory API"
+        ":api:`twisted.internet.interfaces.IProtocolFactory` API"
         proto = TorControlProtocol(self.password)
         proto.factory = self
         return proto
@@ -397,7 +397,7 @@ class TorControlProtocol(LineOnlyReceiver):
     ## need to call them.
 
     def lineReceived(self, line):
-        "LineOnlyReceiver API"
+        ":api:`twisted.protocols.basic.LineOnlyReceiver` API"
 #        print "LINE:",line
         self.log.write(line+'\n')
         self.log.flush()
