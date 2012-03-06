@@ -1,12 +1,11 @@
 State-Tracking Classes
 ======================
 
-launch_tor
-----------
-.. autofunction:: txtorcon.launch_tor
+.. comment::
+	launch_tor is documented in txtorcon-launching.rst
 
 build_tor_connection
-----------
+--------------------
 .. autofunction:: txtorcon.build_tor_connection
 
 TorState

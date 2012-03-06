@@ -218,10 +218,10 @@ def launch_tor(config, reactor,
 
     :return: a Deferred which callbacks with a TorProcessProtocol
         connected to the fully-bootstrapped Tor; this has a
-        TorControlProtocol instance as .protocol. The
-        __OwningControllerProcess will be set and TAKEOWNERSHIP will have
+        :class:`txtorcon.TorControlProtocol` instance as .protocol. In Tor, 
+        ``__OwningControllerProcess`` will be set and TAKEOWNERSHIP will have
         been called, so if you close the TorControlProtocol the Tor should
-        exit also (see control-spec 3.23).
+        exit also (see `control-spec <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_ 3.23).
 
     HACKS:
 
