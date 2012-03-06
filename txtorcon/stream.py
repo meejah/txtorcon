@@ -93,7 +93,7 @@ class Stream(object):
         """If we've attached to a :class:`txtorcon.Circuit`, this will be an instance of :class:`txtorcon.Circuit` (otherwise None)."""
         
         self.listeners = []
-        """A list of all connected :class:`interface.ICircuitListener` instances."""
+        """A list of all connected :class:`txtorcon.interface.ICircuitListener` instances."""
         
         self.source_addr = None
         """If available, the address from which this Stream originated (e.g. local process, etc). See get_process() also."""
@@ -103,11 +103,11 @@ class Stream(object):
 
     def listen(self, listen):
         """
-        Attach an :class:`interface.IStreamListener` to this stream.
+        Attach an :class:`txtorcon.interface.IStreamListener` to this stream.
 
-        See also :meth:`TorState.add_stream_listener` to listen to all streams.
+        See also :meth:`txtorcon.TorState.add_stream_listener` to listen to all streams.
 
-        :param listen: something that knows IStreamListener
+        :param listen: something that knows :class:`txtorcon.interface.IStreamListener`
 
         """
         

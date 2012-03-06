@@ -68,17 +68,21 @@ dependencies
    doesn't have an answer but I haven't bothered removing the
    dependency yet..
 
- * [Sphinx](http://sphinx.pocoo.org/): Only if you want to build the documentation. 
-
  * [psutil](http://code.google.com/p/psutil/): optional, used in
    util.process_from_address and (if available) for guessing Tor's ip
    if "GETCONF process/pid" isn't available. This makes it a little
    weird for users of process_from_address() so might be best just to
    either make it a requirement or not...
 
+ * [Sphinx](http://sphinx.pocoo.org/): Only if you want to build the documentation.
+   In that case you'll also need something called
+   ``python-repoze.sphinx.autointerface`` (at least in Debian) to
+   build the Interface-derived docs properly.
+
 In any case, on a [Debian](http://www.debian.org/) or Ubuntu system, this should work:
 
     apt-get install twisted python-ipaddr python-geoip python-pydoctor python-psutil
+    apt-get install python-sphinx python-repoze.sphinx.autointerface # for documentation
 
 
 documentation

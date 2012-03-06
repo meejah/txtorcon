@@ -7,17 +7,18 @@ from txtorcon.util import find_keywords
 
 class Circuit(object):
     """
-    Used by :class:`TorState` to represent one of Tor's circuits.
+    Used by :class:`txtorcon.TorState` to represent one of Tor's circuits.
 
-    This is kept up-to-date by the :class`TorState` that owns it, and
+    This is kept up-to-date by the :class`txtorcon.TorState` that owns it, and
     individual circuits can be listened to for updates (or listen to
-    every one using :meth:`TorState.add_circuit_listener`)
+    every one using :meth:`txtorcon.TorState.add_circuit_listener`)
 
     :ivar path:
-        contains a list of Router objects representing the path this
-        Circuit takes. Mostly this will be 3 or 4 routers long. Note
-        that internally Tor uses single-hop paths for some things. See
-        also the *purpose* instance-variable.
+        contains a list of :class:`txtorcon.Router` objects
+        representing the path this Circuit takes. Mostly this will be
+        3 or 4 routers long. Note that internally Tor uses single-hop
+        paths for some things. See also the *purpose*
+        instance-variable.
 
     :ivar streams:
         contains a list of Stream objects representing all streams
@@ -57,7 +58,7 @@ class Circuit(object):
 
     def __init__(self, routercontainer):
         """
-        :param routercontainer: should implement IRouterContainer
+        :param routercontainer: should implement :class:`txtorcon.interface.IRouterContainer`
         """
         self.listeners = []
         self.router_container = IRouterContainer(routercontainer)

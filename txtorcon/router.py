@@ -21,11 +21,11 @@ class Router(object):
     Represents a Tor Router, including location.
 
     The controller you pass in is really only used to do get_info
-    calls for ip-to-country/IP in case the NetLocation stuff fails to
+    calls for ip-to-country/IP in case the :class:`txtorcon.util.NetLocation` stuff fails to
     find a country.
 
     After an .update() call, the id_hex attribute contains a
-    hex-encoded long hash (suitable, for example, to use in a ns/id/*
+    hex-encoded long hash (suitable, for example, to use in a ``GETINFO ns/id/*``
     call).
 
     After a .set_policy() you may call accepts_port() to find out if
@@ -66,14 +66,24 @@ class Router(object):
 
         There is some current work in Twisted for open-ended constants
         (enums) support however, it seems.
+
+        .. todo:: remove this, use attribute access only (i.e. make this a setter in a descriptor)
         """
         self.flags = map(lambda x: x.lower(), flags)
         self.name_is_unique = 'named' in self.flags
 
     def set_bandwidth(self, bw):
+        """
+        .. todo:: remove me, use descriptor
+        """
+        
         self.bandwidth = bw
 
     def set_policy(self, args):
+        """
+        .. todo:: remove me, use descriptor
+        """
+        
         word = args[0]
         if word == 'reject':
             self.accepted_ports = None
@@ -128,6 +138,10 @@ class Router(object):
         return ports[:-1]
 
     def set_country(self, c):
+        """
+        .. todo:: remove me, use descriptor
+        """
+        
         self.location.countrycode = c[:-3].split('=')[1].strip().upper()
 
     def __repr__(self):

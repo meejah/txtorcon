@@ -149,14 +149,14 @@ class ITorControlProtocol(Interface):
 
     def add_circuit_listener(self, icircuitlistener):
         """
-        Add an implementor of :class:`interface.ICircuitListener` which will be
+        Add an implementor of :class:`txtorcon.interface.ICircuitListener` which will be
         added to all new circuits as well as all existing ones (you
         won't, however, get circuit_new calls for the existing ones)
         """
         
     def add_stream_listener(self, istreamlistener):
         """
-        Add an implementor of :class:`IStreamListener` which will be added to
+        Add an implementor of :class:`txtorcon.interface.IStreamListener` which will be added to
         all new circuits as well as all existing ones (you won't,
         however, get stream_new calls for the existing ones)
         """
