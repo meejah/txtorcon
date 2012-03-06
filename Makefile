@@ -1,4 +1,4 @@
-.PHONY: test html counts coverage sdist clean install doc
+.PHONY: test html counts coverage sdist clean install doc doc_single_html
 .DEFAULT: test
 
 test:
@@ -14,6 +14,12 @@ doc: dist/txtorcon-0.1.tar.gz.gpg README doc/*.rst
 	cp dist/txtorcon-0.1.tar.gz doc/_build/html
 	cp dist/txtorcon-0.1.tar.gz.gpg doc/_build/html
 
+doc_single_html:
+	-pandoc -r markdown -w rst README -o doc/README.rst
+	cd doc && make singlehtml
+	-rm -rf doc_html
+	cp -r doc/_build/singlehtml doc_html
+
 coverage:
 	trial --reporter=bwverbose --coverage txtorcon
 	python scripts/coverage.py
@@ -26,11 +32,12 @@ clean:
 	-rm MANIFEST
 	-rm `find . -name \*.py[co]`
 	-cd doc && make clean
+	-rm doc/single.html
 
 counts:
 	ohcount -s txtorcon/*.py
 
-sdist:
+sdist: doc_single_html setup.py
 	python setup.py sdist
 
 dist/txtorcon-0.1.tar.gz: sdist
