@@ -1,4 +1,29 @@
 
+ . If I want to depend on sphinx-contrib's programoutput then I can
+   add this to README to get live results from the tests/coverage
+   things:
+
+      .. command-output:: make test
+	  :ellipsis: 0,-5
+	  :shell:
+	  :nostderr:
+
+      .. command-output:: make coverage
+	  :ellipsis: 0,-5
+	  :shell:
+	  :nostderr:
+
+   This also needs a couple changes to doc, in Makefile:
+
+      test:
+	     cd .. && make test
+      coverage:
+	     cd .. && make coverage
+
+   and to conf.py, adding to extensions:
+
+      'sphinxcontrib.programoutput'
+
  . if we're going with "attribute-style access for everything" then
    also basically everything should be audited for
    this:
