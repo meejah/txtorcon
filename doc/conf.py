@@ -35,7 +35,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.todo',
               'sphinx.ext.coverage',
-              'repoze.sphinx.autointerface'
+              'repoze.sphinx.autointerface',
+              'apilinks_sphinxext'
               ]
 
 todo_include_todos = True
