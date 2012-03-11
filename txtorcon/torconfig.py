@@ -599,9 +599,7 @@ class TorConfig(object):
         """
         
         if not self.needs_save():
-            d = defer.Deferred()
-            d.callback(self)
-            return d
+            return defer.succeed(self)
 
         args = []
         for (key, value) in self.unsaved.items():
