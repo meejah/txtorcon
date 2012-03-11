@@ -1,9 +1,10 @@
 
 from twisted.python import log, failure
 from twisted.internet import defer, process, error, protocol
-from twisted.internet.interfaces import IProtocolFactory
-from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.interfaces import IProtocolFactory, IStreamServerEndpoint
+from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.protocols.basic import LineOnlyReceiver
+from zope.interface import implements
 
 ## outside this module, you can do "from txtorcon import Stream" etc.
 from txtorcon.stream import Stream
@@ -36,6 +37,90 @@ def find_keywords(args):
             (k,v) = x.split('=',1)
             kw[k] = v
     return kw
+
+class TCP4HiddenServiceEndpoint(object):
+    implements(IStreamServerEndpoint)
+
+    def __init__(self, reactor, config, public_port, data_dir=None):
+        """
+        :param reactor: IReactorTCP provider
+        
+        :param config: TorConfig instance
+        
+        :param public_port: The port number we will advertise in the
+            hidden serivces directory.
+
+        :param data_dir: The hidden-service data directory; if None,
+            one will be created in /tmp. This contains the public +
+            private keys for the onion uri.
+            
+        """
+        self.reactor = reactor
+        self.config = config
+        self.public_port = public_port
+        self.data_dir = data_dir
+        self.onion_uri = None
+        self.hiddenservice = None
+        if self.data_dir != None:
+            hn = os.path.join(self.data_dir,'hostname')
+            if os.path.exists(hn):
+                self.onion_uri = open(hn, 'r').read()
+        else:
+            self.data_dir = tempfile.mkdtemp(prefix='tortmp')
+                
+        self.defer = defer.Deferred()
+
+    def _create_hiddenservice(self, *args):
+        """
+        Internal callback to create a hidden-service config in the
+        running Tor.
+        """
+
+        ## FIXME this should be anything that doesn't currently have a
+        ## listener, and we should check that. or keep trying
+        ## different ones if the "real" listen fails?
+        self.listen_port = 9876
+        
+        self.hiddenservice = HiddenService(self.config, self.data_dir,
+                                           ['%d 127.0.0.1:%d' % (self.public_port, self.listen_port)])
+        self.config.HiddenServices = [self.hiddenservice]
+        return self.config.save()
+
+    def _do_error(self, f):
+        print "ERROR",f
+        return f
+
+    def listen(self, protocolfactory):
+        """
+        Implement IStreamServerEndpoint.
+        """
+
+        self.protocolfactory = protocolfactory
+        if self.config.post_bootstrap:
+            d = self.config.post_bootstrap.addCallback(self._create_hiddenservice).addErrback(self._do_error)
+            
+        else:
+            if self.hiddenservice is None:
+                d = self._create_hiddenservice()
+
+        d.addCallback(self._create_listener)
+        return d
+
+    def _create_listener(self, proto):
+        hn = os.path.join(self.hiddenservice.dir,'hostname')
+        pk = os.path.join(self.hiddenservice.dir,'private_key')
+        self.onion_uri = open(hn, 'r').read().strip()
+        self.onion_private_key = open(pk, 'r').read().strip()
+            
+        self.tcp_endpoint = TCP4ServerEndpoint(self.reactor, self.listen_port)
+        d = self.tcp_endpoint.listen(self.protocolfactory)
+        d.addCallback(self._add_attributes)
+        return d
+
+    def _add_attributes(self, port):
+        port.onion_uri = self.onion_uri
+        port.onion_port = self.public_port
+        return port
 
 class TorProcessProtocol(protocol.ProcessProtocol):
 
@@ -612,7 +697,7 @@ class TorConfig(object):
                     args.append(hs.dir)
                     for p in hs.ports:
                         args.append('HiddenServicePort')
-                        args.append(p)
+                        args.append('"' + str(p) + '"')
                     if hs.version:
                         args.append('HiddenServiceVersion')
                         args.append(str(hs.version))
@@ -705,6 +790,8 @@ class TorConfig(object):
             if not len(line.strip()):
                 continue
 
+            if line == 'HiddenServiceOptions':
+                continue
             k, v = line.split('=')
             if k == 'HiddenServiceDir':
                 if directory != None:
