@@ -24,6 +24,24 @@ import types
 DEBUG = False
 DEFAULT_VALUE = 'DEFAULT'
 
+class TorProtocolError(RuntimeError):
+    '''
+    Happens on 500-level responses in the protocol, almost certainly
+    in an errback chain.
+
+    :ivar code: the actual error code
+    :ivar text: other text from the protocol
+    '''
+
+    def __init__(self, code, text):
+        self.code = code
+        self.text = text
+        super(TorProtocolError, self).__init__(text)
+
+    def __str__(self):
+        return str(self.code) + ' ' + self.text
+        
+
 class TorProtocolFactory(object):
     """
     Builds TorControlProtocol objects. Implements IProtocolFactory for
@@ -145,7 +163,7 @@ class TorControlProtocol(LineOnlyReceiver):
         authentication turned on. Tor's default is COOKIE.
         """
 
-        self.password = None
+        self.password = password
         """If set, a password to use for authentication to Tor (default is to use COOKIE, however)."""
 
         self.version = None
@@ -582,7 +600,8 @@ class TorControlProtocol(LineOnlyReceiver):
         if self.code >= 200 and self.code < 300:
             self.defer.callback(resp)
         elif self.code >= 500 and self.code < 600:
-            self.defer.errback(str(self.code) + ' ' + resp)
+            err = TorProtocolError(self.code, resp)
+            self.defer.errback(err)
         elif self.code >= 600 and self.code < 700:
             self._handle_notify(self.code, resp)
             self.code = None

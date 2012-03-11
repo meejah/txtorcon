@@ -38,7 +38,7 @@ def build_state(proto):
 def wait_for_proto(proto):
     return proto.post_bootstrap
 
-def build_tor_connection(endpoint, buildstate=True):
+def build_tor_connection(endpoint, buildstate=True, password=None):
     """
     This is used to build a valid TorState (which has .protocol for
     the TorControlProtocol). For example::
@@ -68,7 +68,7 @@ def build_tor_connection(endpoint, buildstate=True):
     """
     
     from txtorcon import TorProtocolFactory
-    d = endpoint.connect(TorProtocolFactory())
+    d = endpoint.connect(TorProtocolFactory(password=password))
     if buildstate:
         d.addCallback(build_state)
     else:
