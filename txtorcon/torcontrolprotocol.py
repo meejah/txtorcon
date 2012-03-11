@@ -316,6 +316,11 @@ class TorControlProtocol(LineOnlyReceiver):
         strargs = map(lambda x: str(x), args)
         keys = [strargs[i] for i in range(0, len(strargs), 2)]
         values = [strargs[i] for i in range(1, len(strargs), 2)]
+        def maybe_quote(s):
+            if ' ' in s:
+                return '"%s"' % s
+            return s
+        values = map(maybe_quote, values)
         args = ' '.join(map(lambda x,y:'%s=%s'%(x,y), keys, values))
         return self.queue_command('SETCONF ' + args)
 

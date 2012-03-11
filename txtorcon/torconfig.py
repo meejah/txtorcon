@@ -697,7 +697,7 @@ class TorConfig(object):
                     args.append(hs.dir)
                     for p in hs.ports:
                         args.append('HiddenServicePort')
-                        args.append('"' + str(p) + '"')
+                        args.append(str(p))
                     if hs.version:
                         args.append('HiddenServiceVersion')
                         args.append(str(hs.version))
