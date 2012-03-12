@@ -34,6 +34,22 @@ goes away, so does the running Tor.
 .. literalinclude:: ../examples/launch_tor.py
 
 
+.. _launch_tor_endpoint.py:
+
+:file:`launch_tor_endpoint.py`
+-----------------------------
+
+:download:`Download the example
+<../examples/launch_tor_endpoint.py>`. Using the
+:class:`txtorcon.TCP4HiddenServiceEndpoint` class to start up a Tor
+with a hidden service pointed to an
+:api:`twisted.internet.interfaces.IStreamServerEndpoint
+<IStreamServerEndpoint>`; fairly similar to
+:ref:`launch_tor_with_hiddenservice.py` but more things are automated.
+
+.. literalinclude:: ../examples/launch_tor_endpoint.py
+
+
 .. _launch_tor_with_hiddenservice.py:
 
 :file:`launch_tor_with_hiddenservice.py`

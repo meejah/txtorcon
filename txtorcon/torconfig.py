@@ -43,16 +43,19 @@ class TCP4HiddenServiceEndpoint(object):
 
     def __init__(self, reactor, config, public_port, data_dir=None):
         """
-        :param reactor: IReactorTCP provider
+        :param reactor: :api:`twisted.internet.interfaces.IReactorTCP` provider
         
-        :param config: TorConfig instance
+        :param config: :class:`txtorcon.TorConfig` instance (doesn't need to be bootstrapped).
         
         :param public_port: The port number we will advertise in the
             hidden serivces directory.
 
         :param data_dir: The hidden-service data directory; if None,
             one will be created in /tmp. This contains the public +
-            private keys for the onion uri.
+            private keys for the onion uri. If you didn't specify a
+            directory, it's up to you to save the public/private keys
+            later if you want to re-launch the same hidden service at
+            a different time.
             
         """
         self.reactor = reactor
