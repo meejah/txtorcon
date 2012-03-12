@@ -63,15 +63,28 @@ class TCP4HiddenServiceEndpoint(object):
         self.public_port = public_port
         self.data_dir = data_dir
         self.onion_uri = None
+        self.onion_private_key = None
         self.hiddenservice = None
         if self.data_dir != None:
-            hn = os.path.join(self.data_dir,'hostname')
-            if os.path.exists(hn):
-                self.onion_uri = open(hn, 'r').read()
+            self._update_onion()
+            
         else:
             self.data_dir = tempfile.mkdtemp(prefix='tortmp')
                 
         self.defer = defer.Deferred()
+
+    def _update_onion(self):
+        hn = os.path.join(self.hiddenservice.dir,'hostname')
+        pk = os.path.join(self.hiddenservice.dir,'private_key')
+        try:
+            self.onion_uri = open(hn, 'r').read().strip()
+        except IOError:
+            self.onion_uri = None
+
+        try:
+            self.onion_private_key = open(pk, 'r').read().strip()
+        except IOError:
+            self.onion_private_key = None
 
     def _create_hiddenservice(self, *args):
         """
@@ -110,10 +123,7 @@ class TCP4HiddenServiceEndpoint(object):
         return d
 
     def _create_listener(self, proto):
-        hn = os.path.join(self.hiddenservice.dir,'hostname')
-        pk = os.path.join(self.hiddenservice.dir,'private_key')
-        self.onion_uri = open(hn, 'r').read().strip()
-        self.onion_private_key = open(pk, 'r').read().strip()
+        self._update_onion()
             
         self.tcp_endpoint = TCP4ServerEndpoint(self.reactor, self.listen_port)
         d = self.tcp_endpoint.listen(self.protocolfactory)
