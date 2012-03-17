@@ -275,8 +275,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         if DEBUG: print data
         if not self.attempted_connect and 'Bootstrap' in data:
             self.attempted_connect = True
-            ## FIXME need arbitrary, random port
-            ## FIXME use a factory method (or functool.partial) to do this so it's more-easily testable
             d = self.connection_creator()
             d.addCallback(self.tor_connected)
             d.addErrback(self.tor_connection_failed)
@@ -323,7 +321,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         
     def tor_connection_failed(self, fail):
         ## FIXME more robust error-handling please, like a timeout so
-        ## we don't just wait forever after 100% bootstrapped.
+        ## we don't just wait forever after 100% bootstrapped (that
+        ## is, we're ignoring these errors, but shouldn't do so after
+        ## we'll stop trying)
         self.attempted_connect = False
         return None
 

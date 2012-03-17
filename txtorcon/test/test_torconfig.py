@@ -8,7 +8,7 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error
 from twisted.python.failure import Failure
-from twisted.internet.interfaces import IReactorCore
+from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
 
@@ -776,7 +776,7 @@ class LaunchTorTests(unittest.TestCase):
             def __call__(self, proto, trans):
                 self.count += 1
                 if self.count < 2:
-                    return defer.fail(RuntimeError("connection fails..."))
+                    return defer.fail(error.CannotListenError(None, None, None))
 
                 proto._set_valid_events('STATUS_CLIENT')
                 proto.makeConnection(trans)
@@ -843,7 +843,6 @@ class FakeReactorTcp(object):
     failures = 0
 
     def listenTCP(self, port, factory, **kwargs):
-        print "listenTCP",port,factory,kwargs
         if self.failures > 0:
             self.failures -= 1
             raise error.CannotListenError()
