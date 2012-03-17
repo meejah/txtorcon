@@ -36,7 +36,7 @@ def setup_complete(port):
 def setup_hidden_service(tpp):
     config = txtorcon.TorConfig(tpp.tor_protocol)
     public_port = 80
-    hs_endpoint = txtorcon.TCP4HiddenServiceEndpoint(reactor, config, public_port)
+    hs_endpoint = txtorcon.TCPHiddenServiceEndpoint(reactor, config, public_port)
 
     ## the important thing here is that "site" implements
     ## IProtocolFactory -- this could be any service at all,

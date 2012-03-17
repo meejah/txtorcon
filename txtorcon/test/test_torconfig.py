@@ -10,7 +10,7 @@ from twisted.internet import defer, error
 from twisted.python.failure import Failure
 from twisted.internet.interfaces import IReactorCore
 
-from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor
+from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
 
 def do_nothing(*args):
     pass
@@ -814,3 +814,62 @@ class LaunchTorTests(unittest.TestCase):
 
         proto = TorProcessProtocol(None)
         proto.status_client("NOTICE CONSENSUS_ARRIVED")
+
+
+class FakeProtocolFactory:
+    implements(IProtocolFactory)
+
+    def buildProtocol(self, addr):
+        return None
+    
+    def doStart(self):
+        return None
+
+    def doStop(self):
+        return None
+
+class FakeListeningPort(object):
+    def startListening(self):
+        print "startListening"
+    def stopListening(self):
+        print "stopListening"
+    def getHost(self):
+        return "host"
+        
+
+class FakeReactorTcp(object):
+    implements(IReactorTCP)
+
+    failures = 0
+
+    def listenTCP(self, port, factory, **kwargs):
+        print "listenTCP",port,factory,kwargs
+        if self.failures > 0:
+            self.failures -= 1
+            raise error.CannotListenError()
+        
+        return FakeListeningPort()
+    
+    def connectTCP(self, host, port, factory, **kwargs):
+        print "listenTCP",port,factory,kwards
+        return FakeListeningPort()
+        
+class EndpointTests(unittest.TestCase):
+
+    def setUp(self):
+        self.reactor = FakeReactorTcp()
+        self.protocol = FakeControlProtocol([])
+        self.config = TorConfig(self.protocol)
+
+    def test_basic(self):
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
+        d = ep.listen(FakeProtocolFactory())
+
+        self.protocol.answers.append('''config/names=
+HiddenServiceOptions Virtual
+OK''')
+        self.protocol.answers.append('HiddenServiceOptions')
+        
+        self.config.bootstrap()
+
+        return d
