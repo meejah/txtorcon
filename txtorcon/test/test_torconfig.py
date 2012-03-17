@@ -845,7 +845,7 @@ class FakeReactorTcp(object):
     def listenTCP(self, port, factory, **kwargs):
         if self.failures > 0:
             self.failures -= 1
-            raise error.CannotListenError()
+            raise error.CannotListenError(None, None, None)
         
         return FakeListeningPort()
     
@@ -870,5 +870,39 @@ OK''')
         self.protocol.answers.append('HiddenServiceOptions')
         
         self.config.bootstrap()
+
+        return d
+
+    def test_failure(self):
+        self.reactor.failures = 2
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
+        d = ep.listen(FakeProtocolFactory())
+
+        self.protocol.answers.append('''config/names=
+HiddenServiceOptions Virtual
+OK''')
+        self.protocol.answers.append('HiddenServiceOptions')
+        
+        self.config.bootstrap()
+
+        return d
+
+    def check_error(self, failure):
+        self.assertTrue(failure.type == error.CannotListenError)
+        return None
+
+    def test_too_many_failures(self):
+        self.reactor.failures = 12
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
+        d = ep.listen(FakeProtocolFactory())
+
+        self.protocol.answers.append('''config/names=
+HiddenServiceOptions Virtual
+OK''')
+        self.protocol.answers.append('HiddenServiceOptions')
+        
+        self.config.bootstrap()
+
+        d.addErrback(self.check_error)
 
         return d
