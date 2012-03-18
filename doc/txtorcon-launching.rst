@@ -5,9 +5,9 @@ TorProcessProtocol
 ------------------
 .. autoclass:: txtorcon.TorProcessProtocol
 
-TCP4HiddenServiceEndpoint
-------------------
-.. autoclass:: txtorcon.TCP4HiddenServiceEndpoint
+TCPHiddenServiceEndpoint
+------------------------
+.. autoclass:: txtorcon.TCPHiddenServiceEndpoint
 
 launch_tor
 ----------

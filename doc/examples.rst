@@ -24,7 +24,7 @@ illustrate how to use IStreamAttacher and that you may close streams.
 .. _launch_tor.py:
 
 :file:`launch_tor.py`
------------------------------
+---------------------
 
 :download:`Download the example <../examples/launch_tor.py>`.  Set up
 a tor configuration and launch a slave Tor. This takes care of the
@@ -37,7 +37,7 @@ goes away, so does the running Tor.
 .. _launch_tor_endpoint.py:
 
 :file:`launch_tor_endpoint.py`
------------------------------
+------------------------------
 
 :download:`Download the example
 <../examples/launch_tor_endpoint.py>`. Using the
@@ -53,7 +53,7 @@ with a hidden service pointed to an
 .. _launch_tor_with_hiddenservice.py:
 
 :file:`launch_tor_with_hiddenservice.py`
------------------------------
+----------------------------------------
 
 :download:`Download the example
 <../examples/launch_tor_with_hiddenservice.py>`. A more complicated
@@ -67,7 +67,7 @@ hidden service configuration pointing to it.
 .. _stream_circuit_logger.py:
 
 :file:`stream_circuit_logger.py`
-----------------------------------------
+--------------------------------
 
 :download:`Download the example <../examples/stream_circuit_logger.py>`.
 For listening to changes in the Circuit and State objects, this
