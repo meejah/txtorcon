@@ -30,11 +30,11 @@ site = server.Site(Simple())
 
 def setup_complete(port):
     print "I have set up a hidden service, advertised at:"
-    print "%s:%d" % (port.onion_uri, port.onion_port)
+    print "http://%s:%d" % (port.onion_uri, port.onion_port)
     print "locally listening on",port.getHost()
 
-def setup_hidden_service(tpp):
-    config = txtorcon.TorConfig(tpp.tor_protocol)
+def setup_hidden_service(tor_process_protocol):
+    config = txtorcon.TorConfig(tor_process_protocol.tor_protocol)
     public_port = 80
     hs_endpoint = txtorcon.TCPHiddenServiceEndpoint(reactor, config, public_port)
 
