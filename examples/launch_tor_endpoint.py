@@ -3,7 +3,7 @@
 ##
 ## Here we set up a Twisted Web server and then launch a slave tor
 ## with a configured hidden service directed at the Web server we set
-## up. This uses TCP4HiddenServiceEndpoint, which gives you slightly
+## up. This uses TCPHiddenServiceEndpoint, which gives you slightly
 ## less control over how things are set up, but may be easier. See
 ## also the :ref:`launch_tor.py` example.
 ##
