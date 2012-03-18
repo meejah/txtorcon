@@ -12,8 +12,6 @@ import tempfile
 import functools
 
 from twisted.internet import reactor
-from twisted.internet.endpoints import TCP4ServerEndpoint
-from zope.interface import implements
 
 import txtorcon
 
