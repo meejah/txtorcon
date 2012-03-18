@@ -8,9 +8,9 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error
 from twisted.python.failure import Failure
-from twisted.internet.interfaces import IReactorCore
+from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP
 
-from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor
+from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
 
 def do_nothing(*args):
     pass
@@ -776,7 +776,7 @@ class LaunchTorTests(unittest.TestCase):
             def __call__(self, proto, trans):
                 self.count += 1
                 if self.count < 2:
-                    return defer.fail(RuntimeError("connection fails..."))
+                    return defer.fail(error.CannotListenError(None, None, None))
 
                 proto._set_valid_events('STATUS_CLIENT')
                 proto.makeConnection(trans)
@@ -814,3 +814,95 @@ class LaunchTorTests(unittest.TestCase):
 
         proto = TorProcessProtocol(None)
         proto.status_client("NOTICE CONSENSUS_ARRIVED")
+
+
+class FakeProtocolFactory:
+    implements(IProtocolFactory)
+
+    def buildProtocol(self, addr):
+        return None
+    
+    def doStart(self):
+        return None
+
+    def doStop(self):
+        return None
+
+class FakeListeningPort(object):
+    def startListening(self):
+        print "startListening"
+    def stopListening(self):
+        print "stopListening"
+    def getHost(self):
+        return "host"
+        
+
+class FakeReactorTcp(object):
+    implements(IReactorTCP)
+
+    failures = 0
+
+    def listenTCP(self, port, factory, **kwargs):
+        if self.failures > 0:
+            self.failures -= 1
+            raise error.CannotListenError(None, None, None)
+        
+        return FakeListeningPort()
+    
+    def connectTCP(self, host, port, factory, **kwargs):
+        print "listenTCP",port,factory,kwards
+        return FakeListeningPort()
+        
+class EndpointTests(unittest.TestCase):
+
+    def setUp(self):
+        self.reactor = FakeReactorTcp()
+        self.protocol = FakeControlProtocol([])
+        self.config = TorConfig(self.protocol)
+
+    def test_basic(self):
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
+        d = ep.listen(FakeProtocolFactory())
+
+        self.protocol.answers.append('''config/names=
+HiddenServiceOptions Virtual
+OK''')
+        self.protocol.answers.append('HiddenServiceOptions')
+        
+        self.config.bootstrap()
+
+        return d
+
+    def test_failure(self):
+        self.reactor.failures = 2
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
+        d = ep.listen(FakeProtocolFactory())
+
+        self.protocol.answers.append('''config/names=
+HiddenServiceOptions Virtual
+OK''')
+        self.protocol.answers.append('HiddenServiceOptions')
+        
+        self.config.bootstrap()
+
+        return d
+
+    def check_error(self, failure):
+        self.assertTrue(failure.type == error.CannotListenError)
+        return None
+
+    def test_too_many_failures(self):
+        self.reactor.failures = 12
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
+        d = ep.listen(FakeProtocolFactory())
+
+        self.protocol.answers.append('''config/names=
+HiddenServiceOptions Virtual
+OK''')
+        self.protocol.answers.append('HiddenServiceOptions')
+        
+        self.config.bootstrap()
+
+        d.addErrback(self.check_error)
+
+        return d

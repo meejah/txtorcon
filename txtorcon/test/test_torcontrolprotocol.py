@@ -254,6 +254,12 @@ OK''')
         self._wait(d)
         self.assertTrue(self.transport.value() == "SETCONF foo=bar\r\n")
 
+    def test_setconf_with_space(self):
+        d = self.protocol.set_conf("foo", "a value with a space").addCallback(functools.partial(self.response_ok))
+        self.send("250 OK")
+        self._wait(d)
+        self.assertTrue(self.transport.value() == 'SETCONF foo="a value with a space"\r\n')
+
     def test_setconf_multi(self):
         d = self.protocol.set_conf("foo", "bar", "baz", 1)
         self.send("250 OK")

@@ -11,7 +11,7 @@ from circuit import Circuit
 from stream import Stream
 from torcontrolprotocol import TorControlProtocol, TorProtocolFactory, DEFAULT_VALUE
 from torstate import TorState, build_tor_connection
-from torconfig import TorConfig, HiddenService, TorProcessProtocol, launch_tor
+from torconfig import TorConfig, HiddenService, TorProcessProtocol, TCPHiddenServiceEndpoint, launch_tor
 from addrmap import AddrMap
 from addrmap import Addr
 import util
@@ -25,6 +25,7 @@ __all__ = ["Router",
            "TorState", "DEFAULT_VALUE",
            "build_tor_connection", "launch_tor",
            "TorConfig", "HiddenService", "TorProcessProtocol",
+           "TCPHiddenServiceEndpoint",
            "AddrMap",
            "util", "interface",
 
