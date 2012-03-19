@@ -131,7 +131,7 @@ class TorState(object):
         self.post_bootstrap = defer.Deferred()
         if bootstrap:
             if self.protocol.post_bootstrap:
-                self.protocol.post_bootstrap.addCallback(self._bootstrap).addErrback(log.err)
+                self.protocol.post_bootstrap.addCallback(self._bootstrap).addErrback(self.post_bootstrap.errback)
             else:
                 self._bootstrap()
 

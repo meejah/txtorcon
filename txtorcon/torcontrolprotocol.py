@@ -463,29 +463,31 @@ class TorControlProtocol(LineOnlyReceiver):
             self.log.write(cmd+'\n')
 
     def _auth_failed(self, fail):
-        "Errback if authentication fails."
-        print "Authentication failed:"
-        print fail.getErrorMessage()
-
-        ## FIXME do something nicer than scorching the earth...
-        from twisted.internet import reactor
-        reactor.stop()
+        """
+        Errback if authentication fails.
+        """
+        
+        if self.post_bootstrap:
+            self.post_bootstrap.errback(fail)
+            return None
+        return fail
 
     def _do_authenticate(self, protoinfo):
         "Callback on PROTOCOLINFO to actually authenticate once we know what's supported."
         if 'COOKIE' in protoinfo:
             cookie = re.search('COOKIEFILE="(.*)"', protoinfo).group(1)
             data = open(cookie,'r').read()
+            if len(data) != 32:
+                raise RuntimeError("Expected authentication cookie to be 32 bytes, got %d" % len(data))
             if DEBUG: print "Using COOKIE authentication",cookie,len(data),"bytes"
-            self.authenticate(data).addErrback(self._auth_failed)
+            self.authenticate(data).addCallback(self._bootstrap).addErrback(self._auth_failed)
+            return
 
-        else:
-            if self.password:
-                self.authenticate(self.password).addErrback(self._auth_failed)
-            else:
-                raise RuntimeError("The Tor I connected to doesn't support COOKIE authentication and I have no password.")
-
-        self._bootstrap()
+        if self.password:
+            self.authenticate(self.password).addCallback(self._bootstrap).addErrback(self._auth_failed)
+            return
+        
+        raise RuntimeError("The Tor I connected to doesn't support COOKIE authentication and I have no password.")
 
     def _set_valid_events(self, events):
         "used as a callback; see _bootstrap"
@@ -494,7 +496,7 @@ class TorControlProtocol(LineOnlyReceiver):
             self.valid_events[x] = Event(x)
 
     @defer.inlineCallbacks
-    def _bootstrap(self):
+    def _bootstrap(self, *args):
         """
         The inlineCallbacks decorator allows us to make this method
         look synchronous; see the Twisted docs. Each yeild is for a
