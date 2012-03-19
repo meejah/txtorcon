@@ -25,13 +25,13 @@ DEBUG = False
 DEFAULT_VALUE = 'DEFAULT'
 
 class TorProtocolError(RuntimeError):
-    '''
+    """
     Happens on 500-level responses in the protocol, almost certainly
     in an errback chain.
 
     :ivar code: the actual error code
     :ivar text: other text from the protocol
-    '''
+    """
 
     def __init__(self, code, text):
         self.code = code
