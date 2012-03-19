@@ -128,19 +128,6 @@ class FakeControlProtocol:
 
 class InternalMethodsTests(unittest.TestCase):
 
-    def find_tor_pid(self, proc_name='init'):
-        (stdout, stderr) = subprocess.Popen(['ps', '-eo', 'pid,comm'], stdout=subprocess.PIPE).communicate()
-
-        torpid = 0
-        # first line is headers, last line is blank.
-        for line in stdout.split('\n')[1:-1]:
-            (pid,name) = line.split()
-            if name.strip().lower() == proc_name:
-                if torpid != 0:
-                    raise RuntimeError("Found multiple init processes, skipping test.")
-                torpid = int(pid)
-        return torpid
-    
     def test_guess_pid_owned(self):
         state = TorState(FakeControlProtocol(), bootstrap=False)
         state.protocol.is_owned = 1234
@@ -154,17 +141,14 @@ class InternalMethodsTests(unittest.TestCase):
         guess_tor_pid works? Or throw hands up and don't test? ;)
         """
 
-        try:
-            torpid = self.find_tor_pid()
-        except RuntimeError, e:
-            print e.message
-            return
+        ## FIXME is init always process 1? I believe so, but not sure.
+        torpid = 1
 
         import txtorcon.torstate
         txtorcon.torstate.USE_PSUTIL = True
         
         state = TorState(FakeControlProtocol(), bootstrap=False)
-        state.tor_binary = 'init '
+        state.tor_binary = 'init'
         try:
             state.guess_tor_pid()
         except NameError:
@@ -179,18 +163,15 @@ class InternalMethodsTests(unittest.TestCase):
         Hmmm...this is hard to unit-test. Consider re-factoring how
         guess_tor_pid works? Or throw hands up and don't test? ;)
         """
-        
-        try:
-            torpid = self.find_tor_pid()
-        except RuntimeError, e:
-            print e.message
-            return
+
+        ## FIXME is init always process 1? I believe so, but not sure.
+        torpid = 1
 
         import txtorcon.torstate
         txtorcon.torstate.USE_PSUTIL = False
                 
         state = TorState(FakeControlProtocol(), bootstrap=False)
-        state.tor_binary = 'init '
+        state.tor_binary = 'init'
         state.guess_tor_pid()
         guess = state.tor_pid
         self.assertTrue(guess != None)

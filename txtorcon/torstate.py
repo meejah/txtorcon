@@ -207,7 +207,7 @@ class TorState(object):
         return self.tor_pid
 
     def guess_tor_pid_psutil(self):
-        procs = filter(lambda x: self.tor_binary in x.name, psutil.get_process_list())
+        procs = filter(lambda x: x.name[:len(self.tor_binary)] == self.tor_binary, psutil.get_process_list())
         self.tor_pid = 0
         if len(procs) == 1:
             self.tor_pid = procs[0].pid
@@ -219,10 +219,9 @@ class TorState(object):
             if pid == 'self':
                 continue
             p = os.path.join('/proc', pid, 'cmdline')
-            if os.path.exists(p) and self.tor_binary in open(p, 'r').read():
+            if os.path.exists(p) and open(p, 'r').read()[:len(self.tor_binary)] == self.tor_binary:
                 self.tor_pid = int(pid)
         return None
-    
 
     def undo_attacher(self):
         """
