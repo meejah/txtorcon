@@ -31,14 +31,14 @@ try:
 except ImportError:
     USE_PSUTIL = False
 
-def build_state(proto):
+def _build_state(proto):
     state = TorState(proto)
     return state.post_bootstrap
 
-def wait_for_proto(proto):
+def _wait_for_proto(proto):
     return proto.post_bootstrap
 
-def build_tor_connection(endpoint, buildstate=True, password=None):
+def build_tor_connection(endpoint, build_state=True, password=None):
     """
     This is used to build a valid TorState (which has .protocol for
     the TorControlProtocol). For example::
@@ -55,13 +55,13 @@ def build_tor_connection(endpoint, buildstate=True, password=None):
         d.addCallback(example)
         reactor.run()
 
-    :param buildstate: If True (the default) a TorState object will be
+    :param build_state: If True (the default) a TorState object will be
         built as well. If False, just a TorControlProtocol will be
         returned via the Deferred.
     
     :return:
         a Deferred that fires with a TorControlProtocol or, if you
-        specified buildstate=True, a TorState. In both cases, the
+        specified build_state=True, a TorState. In both cases, the
         object has finished bootstrapping
         (i.e. TorControlProtocol.post_bootstrap or
         TorState.post_bootstap has fired, as needed)
@@ -69,10 +69,10 @@ def build_tor_connection(endpoint, buildstate=True, password=None):
     
     from txtorcon import TorProtocolFactory
     d = endpoint.connect(TorProtocolFactory(password=password))
-    if buildstate:
-        d.addCallback(build_state)
+    if build_state:
+        d.addCallback(_build_state)
     else:
-        d.addCallback(wait_for_proto)
+        d.addCallback(_wait_for_proto)
     return d
 
 class TorState(object):

@@ -189,14 +189,14 @@ class BootstrapTests(unittest.TestCase):
 
     def test_build(self):
         p = FakeEndpoint()
-        d = build_tor_connection(p, buildstate=False)
+        d = build_tor_connection(p, build_state=False)
         d.addCallback(self.confirm_proto)
         p.proto.post_bootstrap.callback(p.proto)
         return d
 
     def test_build_state(self):
         p = FakeEndpoint()
-        d = build_tor_connection(p, buildstate=True)
+        d = build_tor_connection(p, build_state=True)
         d.addCallback(self.confirm_state)
         p.proto.post_bootstrap.callback(p.proto)
         return d
