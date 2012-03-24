@@ -121,6 +121,7 @@ class TorState(object):
         self.circuits = {}              # keys on id (integer)
         self.streams = {}               # keys on id (integer)
 
+        self.unique_routers = []        # just the list of every router (dicts below have duplicate entries, e.g. by name and by hex_id)
         self.routers = {}               # keys by hexid (string) and by unique names
         self.routers_by_name = {}       # keys on name, value always list (many duplicate "Unnamed" routers, for example)
         self.guards = {}                # potentially-usable as entry guards, I think? (any router with 'Guard' flag)
@@ -503,6 +504,8 @@ class TorState(object):
             if v is None:
                 txtorlog.msg(len(self.routers_by_name[k]), "dups:", k)
                 del self.routers[k]
+            if not v in self.unique_routers:
+                self.unique_routers.append(v)
 
         txtorlog.msg(len(self.guards), "GUARDs")
 
