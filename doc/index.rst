@@ -5,7 +5,8 @@ txtorcon
 ========
 
 .. note:: This code and (especially) documentation is currently a
-    moving target. Might be best to clone from git and explore that
+    moving target. **I haven't released this officially yet for a
+    reason**. It's probably best to clone from git and explore that
     way. These documents can be built with ``make doc`` if you have
     Sphinx installed.
 
