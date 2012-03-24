@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-"""
-This example uses ICircuitListener to monitor how many circuits have
-failed since the monitor started up. If this figure is more than 50%,
-a warning-level message is logged.
-
-Like the :ref:`stream_circuit_logger.py` example, we also log all new
-circuits.
-"""
+##
+## This example uses ICircuitListener to monitor how many circuits have
+## failed since the monitor started up. If this figure is more than 50%,
+## a warning-level message is logged.
+## 
+## Like the :ref:`stream_circuit_logger.py` example, we also log all new
+## circuits.
+## 
 
 import os
 import sys
