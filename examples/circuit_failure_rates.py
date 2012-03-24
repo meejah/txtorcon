@@ -1,24 +1,22 @@
 #!/usr/bin/env python
 
-##
-## This uses an IStreamListener and an ICircuitListener to log all
-## built circuits and all streams that succeed.
-##
+"""
+This example uses ICircuitListener to monitor how many circuits have
+failed since the monitor started up. If this figure is more than 50%,
+a warning-level message is logged.
+
+Like the :ref:`stream_circuit_logger.py` example, we also log all new
+circuits.
+"""
 
 import os
 import sys
 import random
 
 from twisted.python import log
-from twisted.internet import reactor, defer
+from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from zope.interface import implements
-
-try:
-    import psutil
-except ImportError:
-    psutil = None
-psutil = None
 
 import txtorcon
 
@@ -33,17 +31,24 @@ class CircuitFailureWatcher:
         self.total_circuits = total
         self.failed_circuits = 0
 
+    ## All the below methods are the ICircuitListener API
+        
     def circuit_new(self, circuit):
         pass
+    
     def circuit_launched(self, circuit):
         pass
+    
     def circuit_extend(self, circuit, router):
         pass
+    
     def circuit_built(self, circuit):
         self.total_circuits += 1
         logCircuit(circuit)
+        
     def circuit_closed(self, circuit):
         pass
+    
     def circuit_failed(self, circuit, reason):
         log.msg('Circuit failed: %d for purpose "%s" because "%s"' % (circuit.id, circuit.purpose, reason))
         self.failed_circuits += 1
@@ -72,6 +77,7 @@ def setup_failed(arg):
     reactor.stop()
 
 log.startLogging(sys.stdout)
-d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051))
+d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051),
+                                  build_state=True)
 d.addCallback(setup).addErrback(setup_failed)
 reactor.run()
