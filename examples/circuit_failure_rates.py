@@ -13,23 +13,29 @@ import os
 import sys
 import random
 
-from twisted.python import log
-from twisted.internet import reactor
+from twisted.internet import reactor, task
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from zope.interface import implements
 
 import txtorcon
 
-def logCircuit(circuit):
-    path = '->'.join(map(lambda x: x.location.countrycode, circuit.path))
-    log.msg('Circuit %d (%s) is %s for purpose "%s"' % (circuit.id, path, circuit.state, circuit.purpose))
-
 class CircuitFailureWatcher:
     implements(txtorcon.ICircuitListener)
 
-    def __init__(self, total=0):
-        self.total_circuits = total
-        self.failed_circuits = 0
+    total_circuits = 0
+    failed_circuits = 0
+    percent = 0.0
+
+    def print_update(self):
+        print self.information()
+
+    def update_percent(self):
+        self.percent = 100.0 * (float(self.failed_circuits) / float(self.total_circuits + self.failed_circuits))
+        if self.percent > 50.0:
+            print 'WARNING: %02.1f percent of all routes have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.total_circuits)
+
+    def information(self):
+        return '%02.1f%% of all circuits have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.total_circuits)
 
     ## All the below methods are the ICircuitListener API
         
@@ -44,39 +50,30 @@ class CircuitFailureWatcher:
     
     def circuit_built(self, circuit):
         self.total_circuits += 1
-        logCircuit(circuit)
+        self.update_percent()
         
     def circuit_closed(self, circuit):
         pass
     
     def circuit_failed(self, circuit, reason):
-        log.msg('Circuit failed: %d for purpose "%s" because "%s"' % (circuit.id, circuit.purpose, reason))
         self.failed_circuits += 1
-        percent = 100.0 * (float(self.failed_circuits) / float(self.total_circuits + self.failed_circuits))
-        log.msg('%02.1f%% of all circuits have failed; %d of %d' % (percent, self.failed_circuits, self.total_circuits))
-        if percent > 50.0:
-            log.warn('More than half (%02.1f%%) of all circuits have failed since I started monitoring' % percent);
+        self.update_percent()
 
 def setup(state):
-    log.msg('Connected to a Tor version %s' % state.protocol.version)
+    print 'Connected to a Tor version %s' % state.protocol.version
 
-    listener = CircuitFailureWatcher(len(state.circuits))
+    listener = CircuitFailureWatcher()
+    listener.total_circuits = len(state.circuits)
     state.add_circuit_listener(listener)
-
-    state.protocol.add_event_listener('STATUS_GENERAL', log.msg)
-    state.protocol.add_event_listener('STATUS_SERVER', log.msg)
-    state.protocol.add_event_listener('STATUS_CLIENT', log.msg)
-
-    log.msg('Existing circuits when we connected:')
-    for c in state.circuits.values():
-        logCircuit(c)
+    # print an update every minute
+    task.LoopingCall(listener.print_update).start(60.0)
 
 def setup_failed(arg):
     print "SETUP FAILED",arg
-    log.err(arg)
+    print arg
     reactor.stop()
 
-log.startLogging(sys.stdout)
+print "Connecting to localhost:9051 with AUTHCOOKIE authentication..."
 d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051),
                                   build_state=True)
 d.addCallback(setup).addErrback(setup_failed)
