@@ -1,4 +1,12 @@
 
+ . looks like ~41 hours to do full scan of 850321 combinations, at 3.5
+   seconds per combo and 20 outstanding requests (i.e. 20 in parallel at
+   3.5 seconds each).
+
+ . should handle the case when routers are added/delete in
+   exit-scanning thing. Maybe/probably add an IRouterListener that has
+   callbacks for new and removed routers?
+
  . need test for authentication (and other) bootstrap errors -- does
    the Deferred from build_tor_connection get the errbacks properly?
 
