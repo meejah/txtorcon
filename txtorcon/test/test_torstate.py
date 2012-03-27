@@ -688,7 +688,7 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         path[0].flags = ['guard']
 
         self.state.build_circuit(path)
-        self.assertTrue(self.transport.value() == 'EXTENDCIRCUIT 0 $0000000000000000000000000000000000000000,$0000000000000000000000000000000000000001,$0000000000000000000000000000000000000002\r\n')
+        self.assertTrue(self.transport.value() == 'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002\r\n')
         ## should have gotten a warning about this not being an entry
         ## guard
         self.assertEqual(len(self.flushWarnings()), 1)

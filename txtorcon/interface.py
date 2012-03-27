@@ -1,4 +1,4 @@
-from zope.interface import implements, Interface
+from zope.interface import implements, Interface, Attribute
 
 class IStreamListener(Interface):
     """
@@ -172,6 +172,9 @@ class ITorControlProtocol(Interface):
         """
 
 class IRouterContainer(Interface):
+
+    unique_routers = Attribute("""unique_routers contains a list of all the Router instances""")
+    
     def router_from_id(self, routerid):
         """
         :return: a router by its ID.
