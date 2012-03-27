@@ -69,7 +69,7 @@ class CircuitProber(object):
 
         ## just test a random sampling of the circuits
         ## FIXME: obviously need to play with methods for selecting which circuits to test.
-        self.circuits = random.sample(allcircuits, 2000)
+        self.circuits = random.sample(allcircuits, 10000)
         self._maybe_launch_circuits()
 
     def _create_possible_circuits(self):
