@@ -121,3 +121,31 @@ appear in the consensus).
 
 .. literalinclude:: ../examples/schedule_bandwidth.py
 
+
+
+.. _dump_config.py:
+
+:file:`dump_config.py`
+-----------------------------
+
+:download:`Download the example <../examples/dump_config.py>`.
+Very simple read-only use of :class:`txtorcon.TorConfig`
+
+.. literalinclude:: ../examples/dump_config.py
+
+
+
+
+.. _monitor.py:
+
+:file:`monitor.py`
+-----------------------------
+
+:download:`Download the example <../examples/monitor.py>`.
+
+Use a plain :class:`txtorcon.TorControlProtocol` instance to listen
+for SETEVNET updates. In this case marginally useful, as it listens
+for logging things INFO, NOTICE, WARN, ERR.
+
+.. literalinclude:: ../examples/monitor.py
+
