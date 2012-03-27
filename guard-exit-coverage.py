@@ -62,6 +62,9 @@ class CircuitProber(object):
         """The circuits that failed."""
         self.failed = []
 
+        """Circuits for which the request to build was rejected; we retry a few times with different middles"""
+        self.rejected = {}
+
         ## do some setup
         allcircuits = self._create_possible_circuits()
         
@@ -69,7 +72,7 @@ class CircuitProber(object):
 
         ## just test a random sampling of the circuits
         ## FIXME: obviously need to play with methods for selecting which circuits to test.
-        self.circuits = random.sample(allcircuits, 10000)
+        self.circuits = random.sample(allcircuits, 5000)
         self._maybe_launch_circuits()
 
     def _create_possible_circuits(self):
@@ -129,14 +132,26 @@ class CircuitProber(object):
         """
         callback in case our build request was rejected.
         """
-        
+
+        try:
+            self.rejected[circ[0]] += 1
+        except KeyError:
+            self.rejected[circ[0]] = 1
+            
+        try:
+            self.rejected[circ[2]] += 1
+        except KeyError:
+            self.rejected[circ[2]] = 1
+            
         print "Even our request to build a circuit was rejected"
         print circ,arg.getErrorMessage()
         self.circuit_build_requests -= 1
 
-        print "trying again, with a different middle"
-        circ = (circ[0], random.choice(self.middles), circ[2])
-        self.circuits.append(circ)
+        if self.rejected[circ[0]] < 5 and self.rejected[circ[2]] < 5:
+            print "...trying again, with a different middle"
+            circ = (circ[0], random.choice(self.middles), circ[2])
+            self.circuits.append(circ)
+            
         return
         
         if DEBUG: print "FAILED",arg,circ
@@ -150,6 +165,10 @@ class CircuitProber(object):
         """
         Dump out our results.
         """
+
+        print "Couldn't successfully ask Tor to build with these:"
+        print self.rejected
+        print
         
         print "%d successful, %d failed" % (len(self.succeeded), len(self.failed))
 
