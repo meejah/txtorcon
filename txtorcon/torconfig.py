@@ -346,7 +346,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         
         self.tor_protocol = proto
         self.tor_protocol.is_owned = self.transport.pid
-        self.tor_protocol.post_bootstrap.addCallback(self.protocol_bootstrapped).addErrback(log.err)
+        self.tor_protocol.post_bootstrap.addCallback(self.protocol_bootstrapped).addErrback(self.tor_connection_failed)
 
     def protocol_bootstrapped(self, proto):
         if DEBUG: print "Protocol is bootstrapped"

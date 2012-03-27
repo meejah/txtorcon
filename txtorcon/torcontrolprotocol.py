@@ -400,7 +400,7 @@ class TorControlProtocol(LineOnlyReceiver):
     
     def authenticate(self, passphrase):
         """Call the AUTHENTICATE command."""
-        return self.queue_command('AUTHENTICATE "%s"' % passphrase)
+        return self.queue_command('AUTHENTICATE ' + passphrase.encode("hex"))
 
     def quit(self):
         return self.queue_command('QUIT')
