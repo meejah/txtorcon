@@ -35,8 +35,8 @@ class CircuitProber(object):
         """TorState instance, should be bootstrapped already"""
         self.state = tor_state
 
-        """Maximum number of outstanding circuit build requests"""
-        self.max_circuit_build_requests = 5
+        """Maximum number of outstanding circuit build requests (FIXME does Tor have a limit? What's reasonable?)"""
+        self.max_circuit_build_requests = 10
 
         """Circuits we're waiting for currently; key is circuit_id"""
         self.outstanding_circuit_ids = {}
@@ -46,7 +46,6 @@ class CircuitProber(object):
 
         """All the nodes taggged 'Guard'"""
         self.guards = filter(lambda x: 'guard' in x.flags, self.state.unique_routers)
-        ##self.guards = uniquify(self.state.entry_guards.values())
 
         """All the nodes tagged 'Exit'"""
         self.exits = filter(lambda x: 'exit' in x.flags, self.state.unique_routers)
@@ -136,7 +135,7 @@ class CircuitProber(object):
         self.circuit_build_requests -= 1
 
         print "trying again, with a different middle"
-        circ = (circ[0], random.choice(middles), circ[2])
+        circ = (circ[0], random.choice(self.middles), circ[2])
         self.circuits.append(circ)
         return
         
@@ -153,9 +152,6 @@ class CircuitProber(object):
         """
         
         print "%d successful, %d failed" % (len(self.succeeded), len(self.failed))
-
-        print self.succeeded
-        print self.failed
 
         def write_csv(fname, thelist):
             f = open(fname, 'w')
@@ -185,10 +181,12 @@ class CircuitProber(object):
             return
             
         while self.circuit_build_requests < self.max_circuit_build_requests and len(self.circuits) > 0:
+            if self.circuit_build_requests % 20 == 0:
+                print "Processed %d, with %d left to go." % (self.circuit_build_requests, len(self.circuits))
             self.circuit_build_requests += 1            
             circ = self.circuits[0]
             self.circuits = self.circuits[1:]
-            print "requesting:",circ
+            ##print "requesting:",circ
             d = self.state.build_circuit(circ)
             d.addCallback(self._circuit_build_issued, circ)
             d.addErrback(self._circuit_build_failed, circ)
