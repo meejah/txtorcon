@@ -4,18 +4,6 @@
 txtorcon
 ========
 
-.. note:: This code and (especially) documentation is currently a
-    moving target. **I haven't released this officially yet for a
-    reason**. It's probably best to clone from git and explore that
-    way. These documents can be built with ``make doc`` if you have
-    Sphinx installed.
-
-    This documentation generated |today|.
-
-    If there is some interest in this being released, I would put the
-    code on GitHub and these pages somewhere accessible from the
-    non-onion Web.
-
 txtorcon is a `Twisted <https://twistedmatrix.com/>`_-based `Python
 <http://python.org/>`_ asynchronous controller library for `Tor
 <https://www.torproject.org/>`_, following `control-spec
@@ -54,6 +42,8 @@ The canonical URI is https://timaq4ygg2iegci7.onion
 - releases:
 
   - march, 2011: `txtorcon-0.1.tar.gz <txtorcon-0.1.tar.gz>`_ (`txtorcon-0.1.tar.gz.gpg <txtorcon-0.1.tar.gz.gpg>`_)
+
+This documentation was generated |today|.
 
 Documentation
 -------------
