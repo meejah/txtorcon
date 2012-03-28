@@ -155,15 +155,15 @@ although the code itself is hosted via git:
 
 You may contact me via meejah@meejah.ca with GPG key
 [128069A7](http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7)
-or see `meejah.asc`.  It is often possible to contact `meejah` in
-#tor-dev on [OFTC](http://www.oftc.net/oftc/) but be patient for
-replies.
+or see `meejah.asc`.  It is often possible to contact me at nick
+`meejah` in #tor-dev on [OFTC](http://www.oftc.net/oftc/) but be
+patient for replies.
 
 More conventionally, you may get the code at GitHub and documentation
 via ReadTheDocs:
 
-   https://github.com/meejah/txtorcon
-   http://readthedocs.org/docs/txtorcon/en/latest/
+ * https://github.com/meejah/txtorcon
+ * http://readthedocs.org/docs/txtorcon/en/latest/
 
 Please do use the GitHub issue-tracker to report bugs. Patches,
 comments, criticisms all welcomed and appreciated. See TODO for notes
