@@ -163,7 +163,7 @@ More conventionally, you may get the code at GitHub and documentation
 via ReadTheDocs:
 
    https://github.com/meejah/txtorcon
-   XXX FIXME RTD link
+   http://readthedocs.org/docs/txtorcon/en/latest/
 
 Please do use the GitHub issue-tracker to report bugs. Patches,
 comments, criticisms all welcomed and appreciated. See TODO for notes
