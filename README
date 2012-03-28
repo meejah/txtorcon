@@ -4,12 +4,17 @@ txtorcon README
 overview
 --------
 
-txtorcon is a Python asynchronous controller for Tor based on Twisted,
-an event-based networking system for Python. The main abstraction of
-the protocol is txtorcon.TorControlProtocol which presents an
-asynchronous API to speak the Tor client protocol in Python. txtorcon
-also provides abstractions to track and get updates about Tor's state
-and current configuration.
+txtorcon is a Twisted-based asynchronous Tor control protocol
+implementation. Twisted is an event-driven networking engine written
+in Python and Tor is an onion-routing network designed to improve
+people's privacy and security on the Internet.
+
+The main abstraction of this library is txtorcon.TorControlProtocol
+which presents an asynchronous API to speak the Tor client protocol in
+Python. txtorcon also provides abstractions to track and get updates
+about Tor's state and current configuration, along with helpers to
+asynchronously launch slave instances of Tor including Twisted
+endpoint support.
 
 My main motivation to write this was to learn more about Twisted and
 Tor. I was playing with pyglet and pygame to try out some
@@ -33,21 +38,23 @@ which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
 
     $ make test
-    Ran 167 tests in 0.412s
+    Ran 171 tests in 0.333s
 
     $ make coverage
     ## ...deleted lots of output...
-      covered: 1474
-    uncovered: 21
-    98.58% test coverage
+    covered: 1556
+    uncovered: 29
+    98.14% test coverage
 
 Tor itself is not required to be running for any of the tests. There
-are no integration tests.
+are no integration tests. ohcount claims under 2000 lines of code for
+the core bit; around 4000 including tests.
 
 I would also **note** that I was experimenting with underscores
 instead of camelCase for the method names; since Twisted is camelCase
 it might make sense to switch especially if anyone has strong feelings
-on this.
+on this. On the other hand, it makes it obvious which calls are
+Twisted and which are txtorcon.
 
 
 dependencies
@@ -87,6 +94,10 @@ In any case, on a [Debian](http://www.debian.org/) or Ubuntu system, this should
 
 documentation
 -------------
+
+**FIXME** **NOTE** I'm planning to re-organize which .py files the
+classes are in. If you know some best practices on this, or have
+specific suggestions please email me.
 
 It is likely that you will need to read at least some of
 [control-spec.txt](https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt)
@@ -129,8 +140,8 @@ contact information
 -------------------
 
 The main Web site for the project, with built documentation and so
-forth is at https://timaq4ygg2iegci7.onion although the code itself is hosted
-via git:
+forth is at https://timaq4ygg2iegci7.onion although the code itself is
+hosted via git:
 
     torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git
 
