@@ -5,7 +5,14 @@
 
 import os
 import shutil
-import GeoIP
+try:
+    import GeoIP
+    create_geoip = GeoIP.new
+    STANDARD = GeoIP.GEOIP_STANDARD
+except ImportError:
+    import pygeoip
+    create_geoip = pygeoip.GeoIP
+    STANDARD = pygeoip.STANDARD
 import socket
 import subprocess
 
@@ -21,16 +28,19 @@ country = None
 asn = None
 
 try:
-    city = GeoIP.open("/usr/share/GeoIP/GeoLiteCity.dat", GeoIP.GEOIP_STANDARD)
+    city = create_geoip("/usr/share/GeoIP/GeoLiteCity.dat", STANDARD)
 except:
-    pass
+    city = None
 
 try:
-    asn = GeoIP.open("/usr/share/GeoIP/GeoIPASNum.dat", GeoIP.GEOIP_STANDARD)
+    asn = create_geoip("/usr/share/GeoIP/GeoIPASNum.dat", STANDARD)
 except:
-    pass
+    asn = None
 
-country = GeoIP.new(GeoIP.GEOIP_STANDARD)
+try:
+    country = create_geoip("/usr/share/GeoIP/IP.dat", STANDARD)
+except:
+    country = None
 
 def find_keywords(args):
     """
@@ -119,8 +129,11 @@ class NetLocation:
                 self.latlng = (r['latitude'], r['longitude'])
                 self.city = (r['city'], r['region'])
             
-        else:
+        elif country:
             self.countrycode = country.country_code_by_addr(ipaddr)
+
+        else:
+            self.countrycode = ''
             
         if asn:
             self.asn = asn.org_by_addr(self.ip)
