@@ -33,7 +33,7 @@ setup(name = 'txtorcon',
       ## the documentation etc.
       
       data_files = [('share/txtorcon', ['README', 'TODO']),
-                    ('share/txtorcon', ['doc_html/index.html', 'doc_html/objects.inv'] + map(lambda x: os.path.join('doc_html/_static', x), os.listdir('doc_html/_static'))),
+##FIXME                    ('share/txtorcon', ['doc_html/index.html', 'doc_html/objects.inv'] + map(lambda x: os.path.join('doc_html/_static', x), os.listdir('doc_html/_static'))),
                     ('share/txtorcon/examples', map(lambda x: os.path.join('examples', x), filter(lambda x: x[-3:] == '.py', os.listdir('examples'))))
                     ]
       )
