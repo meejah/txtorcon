@@ -19,8 +19,7 @@ from zope.interface import implements
 
 import txtorcon
 
-class CircuitFailureWatcher:
-    implements(txtorcon.ICircuitListener)
+class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
     total_circuits = 0
     failed_circuits = 0
@@ -37,25 +36,13 @@ class CircuitFailureWatcher:
     def information(self):
         return '%02.1f%% of all circuits have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.total_circuits)
 
-    ## All the below methods are the ICircuitListener API
-        
-    def circuit_new(self, circuit):
-        pass
-    
-    def circuit_launched(self, circuit):
-        pass
-    
-    def circuit_extend(self, circuit, router):
-        pass
-    
     def circuit_built(self, circuit):
+        """ICircuitListener API"""
         self.total_circuits += 1
         self.update_percent()
         
-    def circuit_closed(self, circuit):
-        pass
-    
     def circuit_failed(self, circuit, reason):
+        """ICircuitListener API"""
         self.failed_circuits += 1
         self.update_percent()
 

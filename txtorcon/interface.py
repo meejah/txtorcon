@@ -26,6 +26,28 @@ class IStreamListener(Interface):
     def stream_failed(self, stream, reason, remote_reason):
         "stream failed for some reason (won't be in controller's list anymore)"
 
+class StreamListenerMixin(object):
+    """
+    Implements all of :class:`txtorcon.IStreamListener` with no-op
+    methods. You may subclass from this if you don't care about most
+    of the notifications.
+    """
+
+    implements(IStreamListener)
+    
+    def stream_new(self, stream):
+        pass
+    def stream_succeeded(self, stream):
+        pass
+    def stream_attach(self, stream, circuit):
+        pass
+    def stream_detach(self, stream, reason):
+        pass
+    def stream_closed(self, stream):
+        pass
+    def stream_failed(self, stream, reason, remote_reason):
+        pass
+
 class IStreamAttacher(Interface):
     """
     Used by :class:`txtorcon.TorState` to map streams to circuits (see
@@ -110,6 +132,25 @@ class ICircuitListener(Interface):
 
         However, don't depend on that: it could be anything.        
         """
+
+class CircuitListenerMixin(object):
+    """
+    Implements all of ICircuitListener with no-op methods. Subclass
+    from this if you don't care about most of the notifications.
+    """
+    implements(ICircuitListener)
+    def circuit_new(self, circuit):
+        pass
+    def circuit_launched(self, circuit):
+        pass
+    def circuit_extend(self, circuit, router):
+        pass
+    def circuit_built(self, circuit):
+        pass
+    def circuit_closed(self, circuit):
+        pass
+    def circuit_failed(self, circuit, reason):
+        pass
 
 class ITorControlProtocol(Interface):
     """

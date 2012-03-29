@@ -44,35 +44,18 @@ def logStream(stream, state):
         proc = ' from remote "%s:%s"' % (str(stream.source_addr), str(stream.source_port))
     log.msg('Stream %d to %s:%d attached%s%s' % (stream.id, stream.target_host, stream.target_port, circ, proc))
     
-class StreamCircuitLogger:
-    implements(txtorcon.IStreamListener, txtorcon.ICircuitListener)
+class StreamCircuitLogger(txtorcon.StreamListenerMixin, txtorcon.CircuitListenerMixin):
 
     def __init__(self, state):
         self.state = state
     
-    def stream_new(self, stream):
-        pass
-    def stream_succeeded(self, stream):
-        pass
     def stream_attach(self, stream, circuit):
         logStream(stream, self.state)
-    def stream_detach(self, stream, reason):
-        pass
-    def stream_closed(self, stream):
-        pass
     def stream_failed(self, stream, reason, remote_reason):
         print 'Stream %d failed because "%s"' % (stream.id, remote_reason)
     
-    def circuit_new(self, circuit):
-        pass
-    def circuit_launched(self, circuit):
-        pass
-    def circuit_extend(self, circuit, router):
-        pass
     def circuit_built(self, circuit):
         logCircuit(circuit)
-    def circuit_closed(self, circuit):
-        pass
     def circuit_failed(self, circuit, reason):
         log.msg('circuit %d failed "%s"' % (circuit.id, reason))
 
