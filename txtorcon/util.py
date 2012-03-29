@@ -5,41 +5,50 @@
 
 import os
 import shutil
+import socket
+import subprocess
+
 try:
     import GeoIP
-    create_geoip = GeoIP.new
-    STANDARD = GeoIP.GEOIP_STANDARD
+    def create_geoip(fname):
+        try:
+            ## It's more "pythonic" to just wait for the exception,
+            ## but GeoIP prints out "Can't open..." messages for you,
+            ## which isn't desired here
+            if not os.path.isfile(fname):
+                raise IOError("Can't find %s" % fname)
+            return GeoIP.open(fname, GeoIP.GEOIP_STANDARD)
+        
+        except GeoIP.error:
+            raise IOError("Can't load %s" % fname)
+        
 except ImportError:
     import pygeoip
     create_geoip = pygeoip.GeoIP
-    STANDARD = pygeoip.STANDARD
-import socket
-import subprocess
 
 try:
     import psutil
     process_factory = psutil.Process
 except ImportError:
     process_factory = int
-process_factory = int
 
 city = None
 country = None
 asn = None
 
 try:
-    city = create_geoip("/usr/share/GeoIP/GeoLiteCity.dat", STANDARD)
-except:
+    city = create_geoip("/usr/share/GeoIP/GeoLiteCity.dat")
+except IOError:
     city = None
 
 try:
-    asn = create_geoip("/usr/share/GeoIP/GeoIPASNum.dat", STANDARD)
-except:
+    asn = create_geoip("/usr/share/GeoIP/GeoIPASNum.dat")
+except IOError:
     asn = None
 
 try:
-    country = create_geoip("/usr/share/GeoIP/IP.dat", STANDARD)
-except:
+    country = create_geoip("/usr/share/GeoIP/IP.dat")
+except IOError:
     country = None
 
 def find_keywords(args):
@@ -74,12 +83,14 @@ def ip_from_int(self, ip):
         """ Convert long int back to dotted quad string """
         return socket.inet_ntoa(struct.pack('>I', ip))
 
-def process_from_address(addr, port, torstate):
+def process_from_address(addr, port, torstate=None):
     """
     Determines the PID from the address/port provided by using lsof
     and returns a psutil.Process object (or None). In the special case
-    the addr is '(Tor_internal)' then the Process having the PID of the
-    Tor process (as gotten from the torstate object) is returned.
+    the addr is '(Tor_internal)' then the Process having the PID of
+    the Tor process (as gotten from the torstate object) is
+    returned. In this case if no torstate instance is given, None is
+    returned.
 
     If psutil isn't installed, the PIDs are returned instead of
     psutil.Process instances.    
@@ -89,6 +100,8 @@ def process_from_address(addr, port, torstate):
         return None
 
     if "(tor_internal)" == str(addr).lower():
+        if torstate is None:
+            return None
         return process_factory(torstate.tor_pid)
 
     proc = subprocess.Popen(['lsof','-i','4tcp@%s:%s' % (addr,port)],
