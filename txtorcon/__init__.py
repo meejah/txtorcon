@@ -2,8 +2,8 @@
 __version__ = '0.1'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
-__url__ = 'https://timaq4ygg2iegci7.onion'
-__license__ = 'GPL'
+__url__ = 'https://github.com/meejah/txtorcon'
+__license__ = 'MIT'
 __copyright__ = 'Copyright 2012'
 
 from router import Router
