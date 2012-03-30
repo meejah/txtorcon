@@ -1,5 +1,59 @@
 -*- mode: outline -*-
 
+* exit-scanning stuff:
+
+With well over 800,000 routes for Guards cross Exits, some type of
+sampling is needed. If someone is doing a tagging attack in the
+network, some guards will be seen to fail "significantly" more routes
+than others. If we uniformly sampled from the possible routes to test,
+it seems certain we'd miss the attack.
+
+This seems to indicate that we'd want to test all guards, and randomly
+choose the middles and exits. It was mentioned that biasing this
+selection by bandwidth is probably a good idea, as Tor itself will
+also bias route selection (understanding
+smartlist_choose_node_by_bandwidth_weights seems important here, which
+I don't). It also seems like sampling more routes from high-bw guards
+is a good idea: that is, if we're targeting say 10,000 routes to test
+and use all ~700 guards, we'd produce more random routes for the
+high-bandwidth guards (in proportion to their bandwidth). However, we
+probably can't bias "too much" here or we won't do very many routes
+for low-bandwidth guards.
+
+So, the method I'd propose at this point is:
+
+ . For each Guard, decide how many routes it gets by its proportion of
+   bandwidth
+ . Produce these routes by selecting a weighted-random middle and a
+   weighted-random Exit
+ . shuffle the list of routes
+ . start testing the routes.
+
+Open questions:
+
+ . what is a reasonable number of routes to test? 10k?
+ . what is needed as far as stealth about how we set up circuits? That
+   is, so colluding Guards can't notice we're the guard-testing router?
+
+ . can middle nodes really be ignored? It seems that a colluding
+   middle could be useful in failing circuits (i.e. it knows the
+   previous and next hops, so if the previous is a colluding guard and
+   the next is a not-colluding exit, fail there).
+ . further to the above, if we
+
+
+
+Whoa, whoa, whoa. Lets's step back a second.
+
+Make test first: what does the attack look like if it's working: with
+about 800 odd Guards and Exits, and more-than-that middles, if you've
+got X colluding guards with Y colluding Exits -- even saying they fail
+ALL circuits coming through them that don't go to their
+colluding-partner, what do the stats look like? Does the proposed
+method find these nodes? What if there's a lot of low-bandwidth ones
+vs. a few high-bandwidth ones?
+
+
 * dependencies
 
   apt-get install python python-ipaddr python-twisted
