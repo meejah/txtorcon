@@ -53,6 +53,77 @@ colluding-partner, what do the stats look like? Does the proposed
 method find these nodes? What if there's a lot of low-bandwidth ones
 vs. a few high-bandwidth ones?
 
+* still seeing Tor "somehow" get into a state where cookie
+  authentication no longer works.
+
+* FIXME, just saw this
+
+6 BUILT [84.55.117.251] for GENERAL>
+<Circuit 17 BUILT [86.59.119.83] for GENERAL>
+<Circuit 18 BUILT [96.44.163.75] for GENERAL>
+<Circuit 19 BUILT [81.21.246.66] for GENERAL>
+<Circuit 20 BUILT [91.219.237.72] for GENERAL>
+<Circuit 21 BUILT [80.237.226.73] for GENERAL>
+<Circuit 22 BUILT [85.25.145.98] for GENERAL>
+<Circuit 23 BUILT [38.229.79.2] for GENERAL>
+<Circuit 24 BUILT [173.254.192.36] for GENERAL>
+<Circuit 25 BUILT [213.239.234.158 62.178.103.91 77.247.181.165] for GENERAL>
+<Circuit 26 BUILT [213.239.234.158 96.44.163.76 62.141.53.224] for GENERAL>
+<Circuit 27 BUILT [213.239.234.158 128.175.29.34 146.185.23.179] for GENERAL>
+<Circuit 28 BUILT [213.239.234.158 188.40.12.93 94.23.0.46] for GENERAL>
+We could now do any sort of exciting thing we wanted...
+...but instead, we'll just exit.
+Unhandled Error
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/twisted/python/log.py", line 84, in callWithLogger
+    return callWithContext({"system": lp}, func, *args, **kw)
+  File "/usr/lib/python2.7/dist-packages/twisted/python/log.py", line 69, in callWithContext
+    return context.call({ILogContext: newCtx}, func, *args, **kw)
+  File "/usr/lib/python2.7/dist-packages/twisted/python/context.py", line 118, in callWithContext
+    return self.currentContext().callWithContext(ctx, func, *args, **kw)
+  File "/usr/lib/python2.7/dist-packages/twisted/python/context.py", line 81, in callWithContext
+    return func(*args,**kw)
+--- <exception caught here> ---
+  File "/usr/lib/python2.7/dist-packages/twisted/internet/posixbase.py", line 581, in _doReadOrWrite
+    why = selectable.doRead()
+  File "/usr/lib/python2.7/dist-packages/twisted/internet/tcp.py", line 199, in doRead
+    rval = self.protocol.dataReceived(data)
+  File "/usr/lib/python2.7/dist-packages/twisted/internet/endpoints.py", line 82, in dataReceived
+    return self._wrappedProtocol.dataReceived(data)
+  File "/usr/lib/python2.7/dist-packages/twisted/protocols/basic.py", line 455, in dataReceived
+    self.lineReceived(line)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/torcontrolprotocol.py", line 405, in lineReceived
+    self.fsm.process(line)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/spaghetti.py", line 30, in process
+    next_state = self.state.process(data)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/spaghetti.py", line 58, in process
+    r = t.process(data)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/spaghetti.py", line 124, in process
+    return self.handle(data)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/spaghetti.py", line 113, in handle
+    state = self.handler(data)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/torcontrolprotocol.py", line 587, in _broadcast_response
+    self._handle_notify(self.code, resp)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/torcontrolprotocol.py", line 419, in _handle_notify
+    self.events[args[0]].got_update(rest[len(args[0])+1:])
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/torcontrolprotocol.py", line 87, in got_update
+    cb(data)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/torstate.py", line 469, in _circuit_update
+    self.circuits[circ_id].update(args)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/circuit.py", line 97, in update
+    self.update_path(args[2].split(','))
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/circuit.py", line 120, in update_path
+    router = self.router_container.router_from_id(p)
+  File "/home/mike/src/txtorcon/build/lib.linux-x86_64-2.7/txtorcon/torstate.py", line 533, in router_from_id
+    return self.routers[routerid]
+exceptions.KeyError: '$1D87D18908A1475927D00280E96DEAC5DD1F7077'
+^Cmike@pangea:/tmp/barbar$
+
+ log file is /tmp/barbar/torcontrollerfoo.log or ~/src/txtorcon/keyerror.log
+
+...looks like a key unfound in an extend (for purpose=testing)
+
+hmmm, weird that key doesn't actually exist in the log. did I not subscribe to an update that I need?
 
 * dependencies
 
