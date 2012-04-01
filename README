@@ -12,14 +12,14 @@ people's privacy and security on the Internet.
 The main abstraction of this library is txtorcon.TorControlProtocol
 which presents an asynchronous API to speak the Tor client protocol in
 Python. txtorcon also provides abstractions to track and get updates
-about Tor's state and current configuration, along with helpers to
-asynchronously launch slave instances of Tor including Twisted
-endpoint support.
+about Tor's state and current configuration (including writing it to
+Tor or disk), along with helpers to asynchronously launch slave
+instances of Tor including Twisted endpoint support.
 
 My main motivation to write this was to learn more about Twisted and
 Tor. I was playing with pyglet and pygame to try out some
 visualization ideas and the only Python controller library was
-synchronous (thread-based) so I thought I'd write my own
+synchronous (thread-based) so I thought I'd write my own. 
 
 
 quick implementation overview
@@ -73,7 +73,8 @@ dependencies
    more accuracy. Or use tor-geoip, which makes this sort-of
    optional, in that we'll query Tor for the if the GeoIP database
    doesn't have an answer but I haven't bothered removing the
-   dependency yet..
+   dependency yet..It also does ASN lookups if you installed that
+   MaxMind database.
 
  * [psutil](http://code.google.com/p/psutil/): optional, used in
    util.process_from_address and (if available) for guessing Tor's ip
@@ -86,7 +87,8 @@ dependencies
    ``python-repoze.sphinx.autointerface`` (at least in Debian) to
    build the Interface-derived docs properly.
 
-In any case, on a [Debian](http://www.debian.org/) or Ubuntu system, this should work:
+In any case, on a [Debian](http://www.debian.org/) wheezy or Ubuntu
+system, this should work:
 
     apt-get install twisted python-ipaddr python-geoip python-pydoctor python-psutil
     apt-get install python-sphinx python-repoze.sphinx.autointerface # for documentation

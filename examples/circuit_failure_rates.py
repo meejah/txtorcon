@@ -24,6 +24,9 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
     total_circuits = 0
     failed_circuits = 0
     percent = 0.0
+    failed_circuit_ids = []
+    per_guard_built = {}
+    per_guard_failed = {}
 
     def print_update(self):
         print self.information()
@@ -34,23 +37,62 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
             print 'WARNING: %02.1f percent of all routes have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.total_circuits)
 
     def information(self):
-        return '%02.1f%% of all circuits have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.total_circuits)
+        rtn = '%02.1f%% of all circuits have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.total_circuits)
+        for g in self.per_guard_built.keys():
+            per_guard_percent = 100.0*(self.per_guard_failed[g]/(self.per_guard_built[g]+self.per_guard_failed[g]))
+            rtn = rtn + '\n  %s: %d built, %d failed: %02.1f%%' % (g, self.per_guard_built[g], self.per_guard_failed[g],
+                                                                   per_guard_percent)
+        return rtn
 
     def circuit_built(self, circuit):
         """ICircuitListener API"""
-        self.total_circuits += 1
-        self.update_percent()
+        if circuit.purpose == 'GENERAL':
+            if len(circuit.path) > 0 and circuit.path[0] not in self.state.entry_guards.values():
+                print "WEIRD: first circuit hop not in entry guards:",circuit,circuit.path
+                return
+            
+            self.total_circuits += 1
+            self.update_percent()
+
+            if len(circuit.path) != 3 and len(circuit.path) != 4:
+                print "WEIRD: circuit has odd pathlength:",circuit,circuit.path
+            try:
+                self.per_guard_built[circuit.path[0].unique_name()] += 1
+            except KeyError:
+                self.per_guard_built[circuit.path[0].unique_name()] = 1.0
+                self.per_guard_failed[circuit.path[0].unique_name()] = 0.0
         
     def circuit_failed(self, circuit, reason):
         """ICircuitListener API"""
-        self.failed_circuits += 1
-        self.update_percent()
+        if circuit.purpose == 'GENERAL':
+            if len(circuit.path) > 0 and circuit.path[0] not in self.state.entry_guards.values():
+                print "WEIRD: first circuit hop not in entry guards:",circuit,circuit.path
+                return
+            
+            self.failed_circuits += 1
+            print "failed",circuit.id
+            if not circuit.id in self.failed_circuit_ids:
+                self.failed_circuit_ids.append(circuit.id)
+            else:
+                print "WARNING: duplicate message for",circuit
+
+            if len(circuit.path) > 0:
+                try:
+                    self.per_guard_failed[circuit.path[0].unique_name()] += 1
+                except KeyError:
+                    self.per_guard_failed[circuit.path[0].unique_name()] = 1.0
+                    self.per_guard_built[circuit.path[0].unique_name()] = 0.0
+                
+            self.update_percent()
 
 def setup(state):
     print 'Connected to a Tor version %s' % state.protocol.version
 
     listener = CircuitFailureWatcher()
-    listener.total_circuits = len(state.circuits)
+    listener.state = state              # FIXME use ctor
+    for circ in filter(lambda x: x.purpose == 'GENERAL', state.circuits.values()):
+        if circ.state == 'BUILT':
+            listener.circuit_built(circ)
     state.add_circuit_listener(listener)
     # print an update every minute
     task.LoopingCall(listener.print_update).start(60.0)
