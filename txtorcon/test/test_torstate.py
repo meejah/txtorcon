@@ -656,7 +656,6 @@ p accept 43,53
 .''')
         self.assertTrue(self.state.routers.has_key('$624926802351575FF7E4E3D60EFA3BFB56E67E8A'))
         r = self.state.routers['$624926802351575FF7E4E3D60EFA3BFB56E67E8A']
-        self.assertEqual(r.controller, self.state.protocol)
         self.assertEqual(r.bandwidth, 518000)
         self.assertEqual(len(self.state.routers_by_name['fake']), 2)
 

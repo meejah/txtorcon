@@ -8,6 +8,7 @@
 import os
 import sys
 import random
+import bisect
 
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -22,6 +23,24 @@ def uniquify(seq):
     set = {}
     map(set.__setitem__, seq, [])
     return set.keys()
+
+def weighted_choice(routers):
+    """
+    Returns a function that makes a weighted random choice from
+    routers, based on bandwidth.
+    http://stackoverflow.com/a/526300/84322
+    """
+    
+    added_weights = []
+    last_sum = 0
+
+    for router in routers:
+        last_sum += router.bandwidth
+        added_weights.append(last_sum)
+
+    def choice(rnd=random.random, bis=bisect.bisect):
+        return routers[bis(added_weights, rnd() * last_sum)]
+    return choice
 
 class CircuitProber(object):
     implements(txtorcon.ICircuitListener)
@@ -65,23 +84,40 @@ class CircuitProber(object):
         """Circuits for which the request to build was rejected; we retry a few times with different middles"""
         self.rejected = {}
 
-        ## do some setup
-        allcircuits = self._create_possible_circuits()
+        """All the circuits we will test."""
+        self.circuits = self._create_possible_circuits()
         
-        print "I have %d guards and %d exits, or %d permutations to test" % (len(self.guards), len(self.exits), len(allcircuits))
+        print "I have %d guards and %d exits (that's %d combinations)" % (len(self.guards), len(self.exits), len(self.guards)*len(self.exits))
+        print "We will test %d circuits." % len(self.circuits)
 
-        ## just test a random sampling of the circuits
-        ## FIXME: obviously need to play with methods for selecting which circuits to test.
-        self.circuits = random.sample(allcircuits, 5000)
         self._maybe_launch_circuits()
 
     def _create_possible_circuits(self):
+        """
+        Create the circuits to test. Here we iterate every guard, and
+        for each guard produce 5 random circuits consisting of a
+        random exit (weighted by bandwidth) and a random middle node
+        (also weighted by bandwidth, from the set of all routers
+        tagged Fast).
+        """
+        
+        weighted_exit_chooser = weighted_choice(self.exits)
+        weighted_middle_chooser = weighted_choice(self.middles)
+        
         circs = []
         for g in self.guards:
-            for e in self.exits:
-                if g != e:
-                    circs.append((g, random.choice(self.middles), e))
+            for _ in range(5):          # 5 exits per entry
+                e = weighted_exit_chooser()
+                while e == g:
+                    e = weighted_exit_chooser()
+                    ## some guards are also exits
+                    
+                circs.append((g, weighted_middle_chooser(), e))
+
         return circs
+
+    def print_update(self):
+        print "%d succeeded, %d failed, %d still to test" % (len(self.succeeded), len(self.failed), len(self.circuits))
 
     ## ICircuitListener API
     def circuit_new(self, circuit):
@@ -101,14 +137,14 @@ class CircuitProber(object):
             
         except KeyError:
             # this will happen for the circuits Tor built by itself.
-            print "wasn't waiting for circuit:",circuit
+            pass#print "wasn't waiting for circuit:",circuit
         self._maybe_launch_circuits()
         
     def circuit_closed(self, circuit):
         pass
     
     def circuit_failed(self, circuit, reason):
-        print "FAILED:",circuit,reason
+        #print "FAILED:",circuit,reason
         try:
             circ, started = self.outstanding_circuit_ids[circuit.id]
             diff = self.reactor.seconds() - started
@@ -117,7 +153,7 @@ class CircuitProber(object):
             self.circuit_build_requests -= 1
             
         except KeyError:
-            print "wasn't waiting for circuit:",circuit
+            pass#print "wasn't waiting for circuit:",circuit
         self._maybe_launch_circuits()
 
     def _circuit_build_issued(self, arg, circ):
@@ -143,7 +179,7 @@ class CircuitProber(object):
         except KeyError:
             self.rejected[circ[2]] = 1
             
-        print "Even our request to build a circuit was rejected"
+        print "Even our request to build a circuit was rejected:",arg.getErrorMessage()
         print circ,arg.getErrorMessage()
         self.circuit_build_requests -= 1
 
@@ -153,13 +189,6 @@ class CircuitProber(object):
             self.circuits.append(circ)
             
         return
-        
-        if DEBUG: print "FAILED",arg,circ
-        self.failed.append((arg.getErrorMessage(), circ, 0))
-        def foo(arg):
-            print "FOO",arg
-        print "DANG",circ[2].id_hex,len(circ[2].id_hex)
-        self.state.protocol.get_info('ns/id/%s' % circ[2].id_hex[1:]).addCallback(foo)
 
     def _output_results(self):
         """
@@ -200,8 +229,6 @@ class CircuitProber(object):
             return
             
         while self.circuit_build_requests < self.max_circuit_build_requests and len(self.circuits) > 0:
-            if self.circuit_build_requests % 20 == 0:
-                print "Processed %d, with %d left to go." % (self.circuit_build_requests, len(self.circuits))
             self.circuit_build_requests += 1            
             circ = self.circuits[0]
             self.circuits = self.circuits[1:]
@@ -219,6 +246,7 @@ def really_setup(state):
     print 'Connected to a Tor version %s' % state.protocol.version
     probe = CircuitProber(reactor, state)
     state.add_circuit_listener(probe)
+    task.LoopingCall(probe.print_update).start(60.0)
 
 def setup_failed(arg):
     print "SETUP FAILED",arg

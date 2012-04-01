@@ -21,6 +21,7 @@ def setup(state):
             print "Can't find guard or exit:",line
             continue
     output.close()
+    reactor.stop()
 
 def setup_failed(arg):
     print "SETUP FAILED",arg

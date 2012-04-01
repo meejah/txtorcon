@@ -187,7 +187,9 @@ class TorState(object):
 
     def _router_begin(self, data):
         args = data.split()
-        self._router = Router(self.protocol)
+        def country_finder(ip):
+            return self.protocol.get_info_raw('ip-to-country/'+str(ip))
+        self._router = Router(country_finder=country_finder)
         self._router.from_consensus = True
         self._router.update(args[1],         # nickname
                             args[2],         # idhash
@@ -617,7 +619,7 @@ class TorState(object):
             return self.routers[routerid]
 
         except KeyError:
-            router = Router(self.protocol)
+            router = Router()
             if routerid[0] != '$':
                 raise                   # just re-raise the KeyError
 

@@ -5,7 +5,7 @@ from twisted.trial import unittest
 from twisted.internet import defer
 
 # outside this package, you can do
-from txtorcon.router import Router, hexIdFromHash, hashFromHexId
+from txtorcon.router import Router, hexIdFromHash, hashFromHexId, load_routers_from_consensus
 
 class FakeController(object):
     def get_info_raw(self, i):
@@ -19,6 +19,18 @@ class UtilityTests(unittest.TestCase):
         ## should work with or without leading $
         self.assertEqual(hexIdFromHash(hashFromHexId('00786E43CCC5409753F25E36031C5CEA6EA43702')), '$00786E43CCC5409753F25E36031C5CEA6EA43702')
 
+
+class LoadFromFileTests(unittest.TestCase):
+
+    def test_load_cached_consensus(self):
+        return
+    ## FIXME either make a real test with no file access, or use
+    ## Stem's instead of this method anyway
+        f = open('../cached-consensus', 'r')
+        routers = load_routers_from_consensus(f)
+        self.assertTrue(len(routers) == 2911)
+        self.assertTrue(routers[2].name == 'torftw')
+        self.assertTrue(routers[3].name == 'ph3x')
 
 class RouterTests(unittest.TestCase):
 
@@ -107,7 +119,7 @@ class RouterTests(unittest.TestCase):
 
     def test_countrycode(self):
         controller = FakeController()
-        router = Router(controller)
+        router = Router()
         router.update("foo",
                       "AHhuQ8zFQJdT8l42Axxc6m6kNwI",
                       "MAANkj30tnFvmoh7FsjVFr+cmcs",

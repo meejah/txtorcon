@@ -79,7 +79,7 @@ class Circuit(object):
         self.listeners.remove(listener)
 
     def update(self, args):
-        ##print "Circuit.update:",args
+        print "Circuit.update:",args
         if self.id is None:
             self.id = int(args[0])
             [x.circuit_new(self) for x in self.listeners]

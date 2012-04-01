@@ -1,3 +1,4 @@
+from twisted.internet import defer
 from util import NetLocation
 import types
 
@@ -36,6 +37,47 @@ class PortRange(object):
         return "%d-%d" % (self.min, self.max)
 
 
+def load_routers_from_consensus(file_or_fname):
+    """
+    FIXME: move to a helpers.py file or something. OR better yet, can
+    we just use Stem's instead?
+
+    This loads from a file like cached-consensus (WITHOUT checking
+    signatures, etcetera; you have Tor for that) and returns a list of
+    Router instances.
+    """
+
+    try:
+        f = open(file_or_fname, 'r')
+    except TypeError:
+        f = file_or_fname
+
+    routers = []
+    current_router = None
+    
+    for line in f.readlines():
+        args = line.split()
+        if args[0] == 'r':
+            if current_router:
+                routers.append(current_router)
+            current_router = Router()
+            current_router.update(args[1],         # nickname
+                                  args[2],         # idhash
+                                  args[3],         # orhash
+                                  datetime.datetime.strptime(args[4]+args[5], '%Y-%m-%f%H:%M:%S'),
+                                  args[6],         # ip address
+                                  args[7],         # ORPort
+                                  args[8])         # DirPort
+        elif args[0] == 's':
+            current_router.set_flags(args[1:])
+        elif args[0] == 'w':
+            current_router.set_bandwidth(int(args[1].split('=')[1]))
+        elif args[0] == 'p':
+            current_router.set_policy(args[1:])
+        ## FIXME not parsing version lines
+    routers.append(current_router)
+    return routers        
+
 class Router(object):
     """
     Represents a Tor Router, including location.
@@ -53,8 +95,14 @@ class Router(object):
     the reject or accept based policies.
     """
 
-    def __init__(self, controller):
-        self.controller = controller
+    def __init__(self, country_finder=lambda x: defer.succeed('??')):
+        """
+        :param country_finder:
+            a callable that takes an IP address and returns a Deferred
+            that callbacks with None or a country-code.
+        """
+       
+        self.country_finder = country_finder
         self._flags = []
         self.bandwidth = 0
         self.name_is_unique = False
@@ -78,7 +126,7 @@ class Router(object):
         self.location = NetLocation(self.ip)
         if self.location.countrycode is None and self.ip != 'unknown':
             ## see if Tor is magic and knows more...
-            self.controller.get_info_raw('ip-to-country/' + self.ip).addCallback(self._set_country)
+            self.country_finder(self.ip).addCallback(self._set_country)
 
         self.id_hex = hexIdFromHash(self.id_hash)
 
@@ -183,10 +231,14 @@ class Router(object):
 
     def _set_country(self, c):
         """
-        callback if we used Tor's GETINFO ip-to-country
+        Callback from the country_finder callable (e.g. usually this
+        uses Tor's GETINFO ip-to-country); see how torstate.py
+        instantiates Router objects.
         """
 
-        self.location.countrycode = c[:-3].split('=')[1].strip().upper()
+        self.location.countrycode = c
+        if '=' in c:
+            self.location.countrycode = c[:-3].split('=')[1].strip().upper()
 
     def __repr__(self):
         n = self.id_hex
