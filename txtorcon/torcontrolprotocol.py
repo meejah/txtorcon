@@ -454,9 +454,8 @@ class TorControlProtocol(LineOnlyReceiver):
             return
 
         if len(self.commands):
-            (d,cmd) = self.commands[0]
-            self.commands = self.commands[1:]
-            self.command = (d, cmd)
+            self.command = self.commands.pop(0)
+            (d,cmd) = self.command
             self.defer = d
             if DEBUG and 'AUTH' not in cmd: print "issue:",cmd
             self.transport.write(cmd + '\r\n')
