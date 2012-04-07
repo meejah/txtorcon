@@ -198,23 +198,30 @@ class TorState(object):
     def guess_tor_pid(self, *args):
         if self.protocol.is_owned:
             self.tor_pid = self.protocol.is_owned
-        
+
         elif USE_PSUTIL:
             self.guess_tor_pid_psutil()
-        
+
         else:
             self.guess_tor_pid_proc()
         return self.tor_pid
 
     def guess_tor_pid_psutil(self):
-        procs = filter(lambda x: x.name[:len(self.tor_binary)] == self.tor_binary, psutil.get_process_list())
         self.tor_pid = 0
-        if len(procs) == 1:
-            self.tor_pid = procs[0].pid
+        try:
+            procs = filter(lambda x: x.name[:len(self.tor_binary)] == self.tor_binary, psutil.get_process_list())
+            if procs:
+                self.tor_pid = procs[0].pid
+        except psutil.AccessDenied:
+            pass
         return None
 
     def guess_tor_pid_proc(self):
         self.tor_pid = 0
+
+        if not os.path.isdir('/proc'):
+            return None
+
         for pid in os.listdir('/proc'):
             if pid == 'self':
                 continue

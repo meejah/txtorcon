@@ -146,22 +146,30 @@ class InternalMethodsTests(unittest.TestCase):
 
         import txtorcon.torstate
         txtorcon.torstate.USE_PSUTIL = True
-        
+
         state = TorState(FakeControlProtocol(), bootstrap=False)
         state.tor_binary = 'init'
         try:
             state.guess_tor_pid()
         except NameError:
-            print "throwing hands up"
+            print "can't get pid of %s" % state.tor_binary
             return
         guess = state.tor_pid
         self.assertTrue(guess != None)
         self.assertTrue(guess == torpid)
-        
+
     def test_guess_pid_proc(self):
         """
         Hmmm...this is hard to unit-test. Consider re-factoring how
         guess_tor_pid works? Or throw hands up and don't test? ;)
+        """
+
+        """
+        you have other dependencies, make psutil one as well
+        guess_tor_pid is not cross platform
+        on osx "init" is /sbin/launchd, newer fedora it's /bin/systemd
+
+        master process is always pid 1
         """
 
         ## FIXME is init always process 1? I believe so, but not sure.
@@ -169,12 +177,12 @@ class InternalMethodsTests(unittest.TestCase):
 
         import txtorcon.torstate
         txtorcon.torstate.USE_PSUTIL = False
-                
+
         state = TorState(FakeControlProtocol(), bootstrap=False)
         state.tor_binary = 'init'
         state.guess_tor_pid()
         guess = state.tor_pid
-        self.assertTrue(guess != None)
+        self.assertTrue(guess is not None) # this should probably be guess != 0 as that is the default
         self.assertTrue(guess == torpid)
 
 class BootstrapTests(unittest.TestCase):
