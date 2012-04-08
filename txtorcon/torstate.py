@@ -1,4 +1,6 @@
 
+import psutil
+
 from twisted.python import log, failure
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory, IReactorCore
@@ -21,15 +23,6 @@ import types
 import os
 
 DEBUG = False
-USE_PSUTIL = False
-## not really sure if this is a great way to make a module optional. I
-## used this global instead of a try in the method guess_tor_pid so I
-## may test both code-paths; see test_torstate
-try:
-    import psutil
-    USE_PSUTIL = True
-except ImportError:
-    USE_PSUTIL = False
 
 def _build_state(proto):
     state = TorState(proto)
@@ -199,36 +192,15 @@ class TorState(object):
         if self.protocol.is_owned:
             self.tor_pid = self.protocol.is_owned
 
-        elif USE_PSUTIL:
-            self.guess_tor_pid_psutil()
-
         else:
-            self.guess_tor_pid_proc()
-        return self.tor_pid
-
-    def guess_tor_pid_psutil(self):
-        self.tor_pid = 0
-        try:
-            procs = filter(lambda x: x.name[:len(self.tor_binary)] == self.tor_binary, psutil.get_process_list())
-            if procs:
-                self.tor_pid = procs[0].pid
-        except psutil.AccessDenied:
-            pass
-        return None
-
-    def guess_tor_pid_proc(self):
-        self.tor_pid = 0
-
-        if not os.path.isdir('/proc'):
-            return None
-
-        for pid in os.listdir('/proc'):
-            if pid == 'self':
-                continue
-            p = os.path.join('/proc', pid, 'cmdline')
-            if os.path.exists(p) and open(p, 'r').read()[:len(self.tor_binary)] == self.tor_binary:
-                self.tor_pid = int(pid)
-        return None
+            self.tor_pid = 0
+            try:
+                procs = filter(lambda x: x.name.startswith(self.tor_binary),
+                               psutil.get_process_list())
+                if len(procs) == 1:
+                    self.tor_pid = procs[0].pid
+            except psutil.AccessDenied:
+                pass
 
     def undo_attacher(self):
         """

@@ -3,6 +3,7 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import task, defer, endpoints, reactor
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
+import psutil
 import subprocess
 
 from txtorcon import TorControlProtocol, TorState, Stream, build_tor_connection
@@ -135,56 +136,50 @@ class InternalMethodsTests(unittest.TestCase):
         state.guess_tor_pid()
         self.assertTrue(state.tor_pid == 1234)
         
-    def test_guess_pid_psutil(self):
+    def test_guess_pid(self):
         """
-        Hmmm...this is hard to unit-test. Consider re-factoring how
-        guess_tor_pid works? Or throw hands up and don't test? ;)
+        this is kind of hard to test, and borders on testing psutil.
         """
-
-        ## FIXME is init always process 1? I believe so, but not sure.
+        
+        ## kneufeld points out there is no "init" on osx ("launchd")
+        ## or newer fedora ("systemd")...
         torpid = 1
-
-        import txtorcon.torstate
-        txtorcon.torstate.USE_PSUTIL = True
-
-        state = TorState(FakeControlProtocol(), bootstrap=False)
-        state.tor_binary = 'init'
-        try:
-            state.guess_tor_pid()
-        except NameError:
-            print "can't get pid of %s" % state.tor_binary
-            return
-        guess = state.tor_pid
-        self.assertTrue(guess != None)
-        self.assertTrue(guess == torpid)
-
-    def test_guess_pid_proc(self):
-        """
-        Hmmm...this is hard to unit-test. Consider re-factoring how
-        guess_tor_pid works? Or throw hands up and don't test? ;)
-        """
-
-        """
-        you have other dependencies, make psutil one as well
-        guess_tor_pid is not cross platform
-        on osx "init" is /sbin/launchd, newer fedora it's /bin/systemd
-
-        master process is always pid 1
-        """
-
-        ## FIXME is init always process 1? I believe so, but not sure.
-        torpid = 1
-
-        import txtorcon.torstate
-        txtorcon.torstate.USE_PSUTIL = False
 
         state = TorState(FakeControlProtocol(), bootstrap=False)
         state.tor_binary = 'init'
         state.guess_tor_pid()
         guess = state.tor_pid
-        self.assertTrue(guess is not None) # this should probably be guess != 0 as that is the default
+        if guess == 0:
+            print "Didn't find any \"%s\" on this system." % state.tor_binary
+            ## unsupported system; we didn't find any 'init' process
+            return
         self.assertTrue(guess == torpid)
+        
+    def test_guess_pid_multiple(self):
+        """
+        make at least two python processes, name the tor_binary to
+        'python' and ensure we don't try to report a PID in such a
+        case.
+        """
 
+        one = subprocess.Popen(['python'], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        two = subprocess.Popen(['python'], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        procs = filter(lambda x: x.name.startswith('python'),
+                       psutil.get_process_list())
+        self.assertTrue(len(procs) >= 2)
+                               
+        ## kneufeld points out there is no "init" on osx ("launchd")
+        ## or newer fedora ("systemd")...
+        torpid = 1
+
+        state = TorState(FakeControlProtocol(), bootstrap=False)
+        state.tor_binary = 'python'
+        state.guess_tor_pid()
+        guess = state.tor_pid
+        self.assertTrue(guess == 0)
+        one.kill()
+        two.kill()
+        
 class BootstrapTests(unittest.TestCase):
 
     def confirm_proto(self, x):

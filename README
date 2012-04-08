@@ -76,11 +76,9 @@ dependencies
    dependency yet..It also does ASN lookups if you installed that
    MaxMind database.
 
- * [psutil](http://code.google.com/p/psutil/): optional, used in
-   util.process_from_address and (if available) for guessing Tor's ip
-   if "GETCONF process/pid" isn't available. This makes it a little
-   weird for users of process_from_address() so might be best just to
-   either make it a requirement or not...
+ * [psutil](http://code.google.com/p/psutil/): used in
+   util.process_from_address and for guessing Tor's ip
+   if "GETCONF process/pid" isn't available.
 
  * [Sphinx](http://sphinx.pocoo.org/): Only if you want to build the documentation.
    In that case you'll also need something called
