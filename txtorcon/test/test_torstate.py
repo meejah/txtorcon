@@ -164,21 +164,20 @@ class InternalMethodsTests(unittest.TestCase):
 
         one = subprocess.Popen(['python'], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         two = subprocess.Popen(['python'], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        procs = filter(lambda x: x.name.startswith('python'),
-                       psutil.get_process_list())
-        self.assertTrue(len(procs) >= 2)
-                               
-        ## kneufeld points out there is no "init" on osx ("launchd")
-        ## or newer fedora ("systemd")...
-        torpid = 1
+        try:
+            procs = filter(lambda x: x.name.startswith('python'),
+                           psutil.get_process_list())
 
-        state = TorState(FakeControlProtocol(), bootstrap=False)
-        state.tor_binary = 'python'
-        state.guess_tor_pid()
-        guess = state.tor_pid
-        self.assertTrue(guess == 0)
-        one.kill()
-        two.kill()
+            state = TorState(FakeControlProtocol(), bootstrap=False)
+            state.tor_binary = 'python'
+            state.guess_tor_pid()
+
+        finally:
+            one.kill()
+            two.kill()
+
+        self.assertTrue(len(procs) >= 2)
+        self.assertTrue(state.tor_pid == 0)
         
 class BootstrapTests(unittest.TestCase):
 
