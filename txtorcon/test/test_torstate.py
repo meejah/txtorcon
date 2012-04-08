@@ -130,6 +130,11 @@ class FakeControlProtocol:
 class InternalMethodsTests(unittest.TestCase):
 
     def test_guess_pid_owned(self):
+        """
+        Make sure our PID-guessing code uses a known owned process
+        properly.
+        """
+        
         state = TorState(FakeControlProtocol(), bootstrap=False)
         state.protocol.is_owned = 1234
 
