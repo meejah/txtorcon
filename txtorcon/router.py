@@ -43,6 +43,9 @@ class Router(object):
         self.id_hex = None
         self.location = NetLocation('0.0.0.0')
 
+    unique_name = property(lambda x: x.name_is_unique and x.name or x.id_hex)
+    """has the hex id if this router's name is not unique, or it's name otherwise"""
+
     def update(self, name, idhash, orhash, modified, ip, orport, dirport):
         self.name = name
         self.id_hash = idhash

@@ -57,10 +57,10 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
             if len(circuit.path) != 3 and len(circuit.path) != 4:
                 print "WEIRD: circuit has odd pathlength:",circuit,circuit.path
             try:
-                self.per_guard_built[circuit.path[0].unique_name()] += 1
+                self.per_guard_built[circuit.path[0].unique_name] += 1
             except KeyError:
-                self.per_guard_built[circuit.path[0].unique_name()] = 1.0
-                self.per_guard_failed[circuit.path[0].unique_name()] = 0.0
+                self.per_guard_built[circuit.path[0].unique_name] = 1.0
+                self.per_guard_failed[circuit.path[0].unique_name] = 0.0
         
     def circuit_failed(self, circuit, reason):
         """ICircuitListener API"""
@@ -78,10 +78,10 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
             if len(circuit.path) > 0:
                 try:
-                    self.per_guard_failed[circuit.path[0].unique_name()] += 1
+                    self.per_guard_failed[circuit.path[0].unique_name] += 1
                 except KeyError:
-                    self.per_guard_failed[circuit.path[0].unique_name()] = 1.0
-                    self.per_guard_built[circuit.path[0].unique_name()] = 0.0
+                    self.per_guard_failed[circuit.path[0].unique_name] = 1.0
+                    self.per_guard_built[circuit.path[0].unique_name] = 0.0
                 
             self.update_percent()
 

@@ -27,6 +27,20 @@ class RouterTests(unittest.TestCase):
         self.assertTrue(router.id_hex == "$00786E43CCC5409753F25E36031C5CEA6EA43702")
         self.assertTrue(router.get_policy() == '')
 
+    def test_unique_name(self):
+        controller = object()
+        router = Router(controller)
+        router.update("foo",
+                      "AHhuQ8zFQJdT8l42Axxc6m6kNwI",
+                      "MAANkj30tnFvmoh7FsjVFr+cmcs",
+                      "2011-12-16 15:11:34",
+                      "77.183.225.114",
+                      "24051", "24052")
+        self.assertTrue(router.id_hex == "$00786E43CCC5409753F25E36031C5CEA6EA43702")
+        self.assertTrue(router.unique_name == "$00786E43CCC5409753F25E36031C5CEA6EA43702")
+        router.set_flags(['Named'])
+        self.assertTrue(router.unique_name == "foo")
+
     def test_flags(self):
         controller = object()
         router = Router(controller)
