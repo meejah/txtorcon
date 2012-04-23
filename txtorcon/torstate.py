@@ -395,7 +395,7 @@ class TorState(object):
                 self.routers[last.id_hex] = last
                 
             elif args[0] == 's':
-                last.set_flags(args[1:])
+                last.flags = args[1:]
                 if 'guard' in last.flags:
                     self.guards[last.id_hex] = last
                 if 'authority' in last.flags:

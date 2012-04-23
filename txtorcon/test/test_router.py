@@ -38,7 +38,7 @@ class RouterTests(unittest.TestCase):
                       "24051", "24052")
         self.assertTrue(router.id_hex == "$00786E43CCC5409753F25E36031C5CEA6EA43702")
         self.assertTrue(router.unique_name == "$00786E43CCC5409753F25E36031C5CEA6EA43702")
-        router.set_flags(['Named'])
+        router.flags = ['Named']
         self.assertTrue(router.unique_name == "foo")
 
     def test_flags(self):
@@ -50,7 +50,7 @@ class RouterTests(unittest.TestCase):
                       "2011-12-16 15:11:34",
                       "77.183.225.114",
                       "24051", "24052")
-        router.set_flags("Exit Fast Named Running V2Dir Valid".split())
+        router.flags = "Exit Fast Named Running V2Dir Valid".split()
         self.assertTrue(router.name_is_unique == True)
 
     def test_policy_accept(self):
@@ -120,7 +120,7 @@ class RouterTests(unittest.TestCase):
                       "2011-12-16 15:11:34",
                       "1.2.3.4",
                       "24051", "24052")
-        router.set_flags(['Named'])
+        router.flags = ['Named']
         r = repr(router)
         
     def test_repr_no_update(self):
