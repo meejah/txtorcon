@@ -53,6 +53,18 @@ class RouterTests(unittest.TestCase):
         router.flags = "Exit Fast Named Running V2Dir Valid".split()
         self.assertTrue(router.name_is_unique == True)
 
+    def test_flags_from_string(self):
+        controller = object()
+        router = Router(controller)
+        router.update("foo",
+                      "AHhuQ8zFQJdT8l42Axxc6m6kNwI",
+                      "MAANkj30tnFvmoh7FsjVFr+cmcs",
+                      "2011-12-16 15:11:34",
+                      "77.183.225.114",
+                      "24051", "24052")
+        router.flags = "Exit Fast Named Running V2Dir Valid"
+        self.assertTrue(router.name_is_unique == True)
+
     def test_policy_accept(self):
         controller = object()
         router = Router(controller)
