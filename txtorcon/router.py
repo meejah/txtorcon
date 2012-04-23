@@ -29,9 +29,9 @@ class Router(object):
     hex-encoded long hash (suitable, for example, to use in a ``GETINFO ns/id/*``
     call).
 
-    After a .set_policy() you may call accepts_port() to find out if
-    the router will accept a given port. This works with the reject or
-    accept based policies.
+    After setting the policy property you may call accepts_port() to
+    find out if the router will accept a given port. This works with
+    the reject or accept based policies.
     """
 
     def __init__(self, controller):
@@ -82,14 +82,35 @@ class Router(object):
         self._flags = map(lambda x: x.lower(), flags)
         self.name_is_unique = 'named' in self._flags
 
-    def set_bandwidth(self, bw):
-        """
-        .. todo:: remove me, use descriptor
-        """
-        
-        self.bandwidth = bw
+    @property
+    def bandwidth(self):
+        """The reported bandwidth of this Router."""
+        return self._bandwidth
+    @bandwidth.setter
+    def bandwidth(self, bw):
+        self._bandwidth = int(bw)
 
-    def set_policy(self, args):
+    @property
+    def policy(self):
+        """Port policies for this Router."""
+        "return a string describing the policy"
+        if self.accepted_ports:
+            ports = 'accept '
+            target = self.accepted_ports
+        else:
+            ports = 'reject '
+            target = self.rejected_ports
+
+        if target is None:
+            return ''
+        
+        last = None
+        for x in target:
+            ports = ports + str(x) + ','
+        return ports[:-1]
+
+    @policy.setter
+    def policy(self, args):
         """
         .. todo:: remove me, use descriptor
         """
@@ -117,7 +138,7 @@ class Router(object):
 
     def accepts_port(self, port):
         if self.rejected_ports is None and self.accepted_ports is None:
-            raise RuntimeError("set_policy hasn't been called yet")
+            raise RuntimeError("policy hasn't been set yet")
 
         if self.rejected_ports:
             for x in self.rejected_ports:
@@ -129,23 +150,6 @@ class Router(object):
             if port == x:
                 return True
         return False
-
-    def get_policy(self):
-        "return a string describing the policy"
-        if self.accepted_ports:
-            ports = 'accept '
-            target = self.accepted_ports
-        else:
-            ports = 'reject '
-            target = self.rejected_ports
-
-        if target is None:
-            return ''
-        
-        last = None
-        for x in target:
-            ports = ports + str(x) + ','
-        return ports[:-1]
 
     def set_country(self, c):
         """
@@ -159,5 +163,5 @@ class Router(object):
         if self.name_is_unique:
             n = self.name
         return "<Router %s %s %s>" % (n, self.location.countrycode,
-                                      self.get_policy())
+                                      self.policy)
 

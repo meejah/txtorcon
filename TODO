@@ -45,10 +45,6 @@
       . TorControlProtocol needs some things marked read-only?
       . TorState.set_attacher
 
- . if we're going with "attribute-style access for everything" then
-   Router should be fixed to not contain get_policy() (use policy)
-   set_bandwidth, set_flags etc.
-
  . TorState.build_circuit should return the final Circuit instance,
    not the final EXTEND message (like "EXTEND 1234")
 

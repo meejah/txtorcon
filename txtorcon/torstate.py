@@ -402,10 +402,10 @@ class TorState(object):
                     self.authorities[last.name] = last
 
             elif args[0] == 'w':
-                last.set_bandwidth(int(args[1].split('=')[1]))
+                last.bandwidth = int(args[1].split('=')[1])
                 
             else:                       # args[0] == 'p'
-                last.set_policy(args[1:])
+                last.policy = args[1:]
                 last = None
 
         if DEBUG: print len(self.routers_by_name),"named routers found."
