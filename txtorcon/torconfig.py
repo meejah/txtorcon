@@ -724,14 +724,16 @@ class TorConfig(object):
 
         self.__dict__['_setup_'] = None
 
-    ## we override this so that we can provide direct attribute access
-    ## to our config items, and move them into self.unsaved when
-    ## they've been changed. hiddenservices have to be special
-    ## unfortunately. the _setup_ thing is so that we can set up the
-    ## attributes we need in the constructor without uusing __dict__
-    ## all over the place.
-        
     def __setattr__(self, name, value):
+        """
+        we override this so that we can provide direct attribute
+        access to our config items, and move them into self.unsaved
+        when they've been changed. hiddenservices have to be special
+        unfortunately. the _setup_ thing is so that we can set up the
+        attributes we need in the constructor without uusing __dict__
+        all over the place.
+        """
+        
         if self.__dict__.has_key('_setup_'):
             name = self._find_real_name(name)
             if not self.__dict__.has_key('_slutty_') and name.lower() != 'hiddenservices':
@@ -745,12 +747,15 @@ class TorConfig(object):
         else:
             super(TorConfig, self).__setattr__(name, value)
 
-    ## on purpose, we don't return self.saved if the key is in there
-    ## because I want the config to represent the running Tor not
-    ## "things which might get into the running Tor if save() were to
-    ## be called"
             
     def __getattr__(self, name):
+        """
+        on purpose, we don't return self.saved if the key is in there
+        because I want the config to represent the running Tor not
+        ``things which might get into the running Tor if save() were
+        to be called''
+        """
+        
         return self.config[self._find_real_name(name)]
 
     def bootstrap(self, *args):
