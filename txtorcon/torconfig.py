@@ -758,6 +758,20 @@ class TorConfig(object):
         
         return self.config[self._find_real_name(name)]
 
+    def get_type(self, name):
+        """
+        return the type of a config key.
+
+        :param: name the key
+
+        FIXME can we do something more-clever than this for client
+        code to determine what sort of thing a key is?
+        """
+
+        if name.lower() == 'hiddenservices':
+            return HiddenService
+        return type(self.parsers[name])
+
     def bootstrap(self, *args):
 ##        self.protocol.add_event_listener('CONF_CHANGED', self._conf_changed)
         return self.protocol.get_info_raw("config/names").addCallbacks(self._do_setup, log.err).addCallback(self.do_post_bootstrap).addErrback(log.err)
