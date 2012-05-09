@@ -220,9 +220,14 @@ class TorState(object):
     def _bootstrap(self, arg=None):
         "This takes an arg so we can use it as a callback (see __init__)."
 
-        ## update list of routers (must be before we do the circuit-status)
+        ## update list of routers (must be before we do the
+        ## circuit-status) note that we're feeding each line
+        ## incrementally to a state-machine called
+        ## _network_status_parser, set up in constructor. "ns" should
+        ## be the empty string, but we call _update_network_status for
+        ## the de-duplication of named routers
         ns = yield self.protocol.get_info_incremental('ns/all', self._network_status_parser.process)
-        ##self._update_network_status(ns)
+        self._update_network_status(ns)
 
         ## update list of existing circuits
         cs = yield self.protocol.get_info_raw('circuit-status')
@@ -446,7 +451,7 @@ class TorState(object):
     def _update_network_status(self, data):
         """
         Used internally as a callback for updating Router information
-        from NS and NEWCONSENSUS events
+        from NS and NEWCONSENSUS events.
         """
 
         for line in data.split('\n'):
