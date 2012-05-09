@@ -70,14 +70,21 @@ class Addr(object):
         callback done via callLater
         """
         del self.map.addr[self.name]
+        self.map.notify("addrmap_expired", *[self.name], **{})
 
 class AddrMap(object):
     """
     A collection of Addr objects mapping domains to addresses, with automatic expiry.
+
+    FIXME: need listener interface, so far:
+
+    addrmap_added(Addr)
+    addrmap_expired(name)
     """
     def __init__(self):
         self.addr = {}
         self.scheduler = IReactorTime(reactor)
+        self.listeners = []
 
     def update(self, update):
         """
@@ -88,13 +95,24 @@ class AddrMap(object):
         params = shlex.split(update)
         if self.addr.has_key(params[0]):
             self.addr[params[0]].update(*params)
+            
         else:
             a = Addr(self)
             self.addr[params[0]] = a
             a.update(*params)
+            self.notify("addrmap_added", *[a], **{})
 
     def find(self, name_or_ip):
         "FIXME should make this class a dict-like (or subclass?)"
         return self.addr[name_or_ip]
+
+    def notify(self, method, *args, **kwargs):
+        for listener in self.listeners:
+            getattr(listener, method)(*args, **kwargs)
+
+    def add_listener(self, listener):
+        if not listener in self.listeners:
+            #self.listeners.append(IAddrListener(listener))
+            self.listeners.append(listener)
 
     

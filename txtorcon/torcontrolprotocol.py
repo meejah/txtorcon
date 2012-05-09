@@ -372,6 +372,10 @@ class TorControlProtocol(LineOnlyReceiver):
         times for the same event. If it's the first listener, a new
         SETEVENTS call will be initiated to Tor.
 
+        Currently the callback is any callable that takes a single
+        argument, that is the text collected for the event from the
+        tor control protocol.
+
         :Return: ``None``
         
         .. todo:: need an interface for the callback
