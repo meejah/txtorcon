@@ -541,8 +541,7 @@ p accept 80,1194,1220,1293,1500,1533,1677,1723,1863,2082-2083,2086-2087,2095-209
 r Unnamed AHe2V2pmj4Yfn0H9+Np3lci7htU T/g7ZLzG/ooqCn+gdLd9Jjh+AEI 2011-12-02 15:52:09 84.101.216.232 443 9030
 s Exit Fast Running V2Dir Valid
 w Bandwidth=33
-p reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999
-""")
+p reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999""")
         ## the routers list is always keyed with both name and hash
         self.assertTrue(len(self.controller.routers_by_name) == 2)
         self.assertTrue(self.controller.routers.has_key("right2privassy3"))
@@ -552,7 +551,8 @@ p reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999
         self.controller.routers_by_name.clear()
 
     def test_circuit_status(self):
-        self.controller._update_network_status("""r wildnl f+Ty/+B6lgYr0Ntbf67O/L2M8ZI c1iK/kPPXKGZZvwXRWbvL9eCfSc 2011-12-02 19:07:05 209.159.142.164 9001 0
+        self.controller._update_network_status("""ns/all=
+r wildnl f+Ty/+B6lgYr0Ntbf67O/L2M8ZI c1iK/kPPXKGZZvwXRWbvL9eCfSc 2011-12-02 19:07:05 209.159.142.164 9001 0
 s Exit Fast Named Running Stable Valid
 w Bandwidth=1900
 p reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999
@@ -563,8 +563,7 @@ p reject 1-65535
 r Tecumseh /xAD0tFLS50Dkz+O37xGyVLoKlk yJHbad7MFl1VW2/23RxrPKBTOIE 2011-12-02 09:44:10 76.73.48.211 22 9030
 s Fast Guard HSDir Named Running Stable V2Dir Valid
 w Bandwidth=18700
-p reject 1-65535
-""")
+p reject 1-65535""")
         self.controller._circuit_status("""250+circuit-status=
 4472 BUILT $FF1003D2D14B4B9D03933F8EDFBC46C952E82A59=Tecumseh,$C185D4A4B069CD559FCD548C8063B475385D777F=l0l,$7FE4F2FFE07A96062BD0DB5B7FAECEFCBD8CF192=wildnl PURPOSE=GENERAL
 """)

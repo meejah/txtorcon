@@ -443,53 +443,9 @@ class TorState(object):
         Used internally as a callback for updating Router information
         from NS and NEWCONSENSUS events
         """
-        last = None
-        ##print "updatenetworkstatus",data[:80]
-        lines = data.split('\n')[:-1]
-        i = 0
-        for line in lines:
-            i += 1
-            if line == 'ns/all=' or line[:5] == 'ns/id':
-                continue
-            args = line.split()
-            if args[0] == 'r':
-                last = Router(self.protocol)
-                last.update(args[1],         # nickname
-                            args[2],         # idhash
-                            args[3],         # orhash
-                            datetime.datetime.strptime(args[4]+args[5], '%Y-%m-%f%H:%M:%S'),
-                            args[6],         # ip address
-                            args[7],         # ORPort
-                            args[8])         # DirPort
-                
-                if self.routers.has_key(last.id_hex):
-                    last = self.routers[last.id_hex]
-                    continue
-                
-                if self.routers_by_name.has_key(last.name):
-                    self.routers_by_name[last.name].append(last)
-                else:
-                    self.routers_by_name[last.name] = [last]
 
-                if self.routers.has_key(last.name):
-                    self.routers[last.name] = None
-                else:
-                    self.routers[last.name] = last
-                self.routers[last.id_hex] = last
-                
-            elif args[0] == 's':
-                last.flags = args[1:]
-                if 'guard' in last.flags:
-                    self.guards[last.id_hex] = last
-                if 'authority' in last.flags:
-                    self.authorities[last.name] = last
-
-            elif args[0] == 'w':
-                last.bandwidth = int(args[1].split('=')[1])
-                
-            else:                       # args[0] == 'p'
-                last.policy = args[1:]
-                last = None
+        for line in data.split('\n'):
+            self._network_status_parser.process(line)
 
         if DEBUG: print len(self.routers_by_name),"named routers found."
         ## remove any names we added that turned out to have dups
