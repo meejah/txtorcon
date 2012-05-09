@@ -109,10 +109,17 @@ class FakeEndpoint:
         d.callback('\r\n'.join(map(lambda k: '%s='%k, keys.split())))
         return d
 
+    def get_info_incremental(self, key, linecb):
+        d = defer.Deferred()
+        linecb('%s='%key)
+        d.callback('')
+        return d
+
     def connect(self, protocol_factory):
         self.proto = TorControlProtocol()
         self.proto.transport = proto_helpers.StringTransport()
         self.proto.get_info_raw = self.get_info_raw
+        self.proto.get_info_incremental = self.get_info_incremental
         self.proto._set_valid_events('GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL')
         
         d = defer.Deferred()

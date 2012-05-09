@@ -262,6 +262,16 @@ class TorControlProtocol(LineOnlyReceiver):
         info = ' '.join(map(lambda x: str(x), list(args)))
         return self.queue_command('GETINFO %s'%info)
 
+    def get_info_incremental(self, key, line_cb):
+        """
+        Mostly for internal use; calls GETINFO for a single key and
+        calls line_cb with each line received, as it is received.
+
+        See :meth:`getinfo <txtorcon.TorControlProtocol.get_info>`
+        """
+
+        return self.queue_command('GETINFO %s'%key, line_cb)
+
     ## The following methods are the main TorController API and
     ## probably the most interesting for users.
 
@@ -405,13 +415,13 @@ class TorControlProtocol(LineOnlyReceiver):
     def quit(self):
         return self.queue_command('QUIT')
     
-    def queue_command(self, cmd):
+    def queue_command(self, cmd, arg=None):
         """
         returns a Deferred which will fire with the response data when we get it
         """
         
         d = defer.Deferred()
-        self.commands.append((d, cmd))
+        self.commands.append((d, cmd, arg))
         self._maybe_issue_command()
         return d
 
@@ -455,7 +465,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
         if len(self.commands):
             self.command = self.commands.pop(0)
-            (d,cmd) = self.command
+            (d, cmd, cmd_arg) = self.command
             self.defer = d
             if DEBUG and 'AUTH' not in cmd: print "issue:",cmd
             self.transport.write(cmd + '\r\n')
@@ -555,7 +565,10 @@ class TorControlProtocol(LineOnlyReceiver):
 #        print "startCommand",self.code,line
         self.code = int(line[:3])
 #        print "startCommand:",self.code
-        self.response = line[4:] + '\n'
+        if self.command[2] != None:
+            self.command[2](line[4:])
+        else:
+            self.response = line[4:] + '\n'
         return None
         
     def _is_continuation_line(self, line):
@@ -576,12 +589,20 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def _accumulate_multi_response(self, line):
         "for FSM"
-        self.response += (line + '\n')
+        if self.command[2] != None:
+            self.command[2](line)
+            
+        else:
+            self.response += (line + '\n')
         return None
     
     def _accumulate_response(self, line):
         "for FSM"
-        self.response += (line[4:] + '\n')
+        if self.command[2] != None:
+            self.command[2](line[4:])
+
+        else:
+            self.response += (line[4:] + '\n')
         return None
 
     def _is_finish_line(self, line):
@@ -599,7 +620,12 @@ class TorControlProtocol(LineOnlyReceiver):
         "for FSM"
 #        print "BCAST",line
         if len(line) > 3:
-            resp = self.response + line[4:]
+            if self.code >= 200 and self.code < 300 and self.command[2] != None:
+                self.command[2](line[4:])
+                resp = ''
+                
+            else:
+                resp = self.response + line[4:]
         else:
             resp = self.response
         self.response = ''
