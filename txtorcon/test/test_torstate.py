@@ -622,6 +622,23 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         self.assertTrue('fake' in self.state.routers.keys())
         self.assertTrue('PPrivCom012' in self.state.routers.keys())
 
+
+    def test_routers_no_bandwidth(self):
+        """
+        ensure we can parse a router descriptor which has no w line
+        """
+        
+        self.state._update_network_status('''ns/all=
+r fake YkkmgCNRV1/35OPWDvo7+1bmfoo tanLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 12.45.56.78 443 80
+s Exit Fast Guard HSDir Named Running Stable V2Dir Valid FutureProof
+r PPrivCom012 2CGDscCeHXeV/y1xFrq1EGqj5g4 QX7NVLwx7pwCuk6s8sxB4rdaCKI 2011-12-20 08:34:19 84.19.178.6 9001 0
+s Exit Fast Guard HSDir Named Running Stable V2Dir Valid FutureProof
+w Bandwidth=518000
+p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863,2082-2083,2086-2087,2095-2096,3128,4321,5050,5190,5222-5223,6679,6697,7771,8000,8008,8080-8081,8090,8118,8123,8181,8300,8443,8888
+.''')
+        self.assertTrue('fake' in self.state.routers.keys())
+        self.assertTrue('PPrivCom012' in self.state.routers.keys())
+
     def test_router_factory(self):
         self.state._update_network_status('''ns/all=
 r fake YkkmgCNRV1/35OPWDvo7+1bmfoo tanLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 12.45.56.78 443 80
