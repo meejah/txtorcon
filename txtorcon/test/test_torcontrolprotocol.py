@@ -231,6 +231,21 @@ OK''')
         self.send("250 ORPORT=0")
         return d
 
+    def test_multiline_plus(self):
+        """
+        """
+
+        d = self.protocol.get_info("FOO")
+        d.addCallback(CallbackChecker({"FOO":"\na\nb\nc"}))
+        self.send("250+FOO=")
+        self.send("a")
+        self.send("b")
+        self.send("c")
+        self.send(".")
+        self.send("250 OK")
+        return d
+        
+
     def test_getconf(self):
         d = self.protocol.get_conf("SOCKSPORT ORPORT")
         d.addCallback(CallbackChecker({'SocksPort':'9050',
