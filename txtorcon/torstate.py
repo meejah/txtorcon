@@ -121,6 +121,43 @@ class TorState(object):
 
         self.cleanup = None             # see set_attacher
 
+        class die(object):
+            def __init__(self, msg):
+                self.msg = msg
+            def __call__(self, *args):
+                raise RuntimeError(self.msg%tuple(args))
+
+        def nothing(*args):
+            pass
+
+        eat_line = State("eat_line")
+        waiting_r = State("waiting_r")
+        waiting_w = State("waiting_r")
+        waiting_p = State("waiting_r")
+        waiting_s = State("waiting_r")
+        done = State("DONE")
+
+        eat_line.add_transition(Transition(waiting_r, lambda x: True, nothing))
+        
+        waiting_r.add_transition(Transition(done, lambda x: x.strip() == '.' or x.strip() == 'OK', nothing))
+        waiting_r.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin))
+        ## FIXME use better method/func than die!!
+        waiting_r.add_transition(Transition(done, lambda x: x[:2] != 'r ', die('Expected "r " while parsing routers not "%s"')))
+        
+        waiting_s.add_transition(Transition(waiting_w, lambda x: x[:2] == 's ', self._router_flags))
+        waiting_s.add_transition(Transition(done, lambda x: x[:2] != 's ', die('Expected "s " while parsing routers not "%s"')))
+        waiting_s.add_transition(Transition(done, lambda x: x.strip() == '.', nothing))
+        
+        waiting_w.add_transition(Transition(waiting_p, lambda x: x[:2] == 'w ', self._router_bandwidth))
+        waiting_w.add_transition(Transition(done, lambda x: x[:2] != 'w ', die('Expected "w " while parsing routers not "%s"')))
+        waiting_w.add_transition(Transition(done, lambda x: x.strip() == '.', nothing))
+        
+        waiting_p.add_transition(Transition(waiting_s, lambda x: x[:2] == 'p ', self._router_policy))
+        waiting_p.add_transition(Transition(done, lambda x: x[:2] != 'p ', die('Expected "p " while parsing routers not "%s"')))
+        waiting_p.add_transition(Transition(done, lambda x: x.strip() == '.', nothing))
+        
+        self._network_status_parser = FSM([eat_line, waiting_r, waiting_s, waiting_w, waiting_p])
+
         self.post_bootstrap = defer.Deferred()
         if bootstrap:
             if self.protocol.post_bootstrap:
@@ -128,13 +165,59 @@ class TorState(object):
             else:
                 self._bootstrap()
 
+    def _router_begin(self, data):
+        args = data.split()
+        self._router = Router(self.protocol)
+        self._router.update(args[1],         # nickname
+                            args[2],         # idhash
+                            args[3],         # orhash
+                            datetime.datetime.strptime(args[4]+args[5], '%Y-%m-%f%H:%M:%S'),
+                            args[6],         # ip address
+                            args[7],         # ORPort
+                            args[8])         # DirPort
+
+        if self.routers.has_key(self._router.id_hex):
+            self._router = self.routers[self._router.id_hex]
+            return
+
+        if self.routers_by_name.has_key(self._router.name):
+            self.routers_by_name[self._router.name].append(self._router)
+            
+        else:
+            self.routers_by_name[self._router.name] = [self._router]
+
+        if self.routers.has_key(self._router.name):
+            self.routers[self._router.name] = None
+            
+        else:
+            self.routers[self._router.name] = self._router
+        self.routers[self._router.id_hex] = self._router
+        
+
+    def _router_flags(self, data):
+        args = data.split()
+        self._router.flags = args[1:]
+        if 'guard' in self._router.flags:
+            self.guards[self._router.id_hex] = self._router
+        if 'authority' in self._router.flags:
+            self.authorities[self._router.name] = self._router
+
+    def _router_bandwidth(self, data):
+        args = data.split()
+        self._router.bandwidth = int(args[1].split('=')[1])
+
+    def _router_policy(self, data):
+        args = data.split()
+        self._router.policy = args[1:]
+        self._router = None
+
     @defer.inlineCallbacks
     def _bootstrap(self, arg=None):
         "This takes an arg so we can use it as a callback (see __init__)."
 
         ## update list of routers (must be before we do the circuit-status)
-        ns = yield self.protocol.get_info_raw('ns/all')
-        self._update_network_status(ns)
+        ns = yield self.protocol.get_info_incremental('ns/all', self._network_status_parser.process)
+        ##self._update_network_status(ns)
 
         ## update list of existing circuits
         cs = yield self.protocol.get_info_raw('circuit-status')
