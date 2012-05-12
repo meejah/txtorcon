@@ -455,7 +455,8 @@ class TorState(object):
         """
 
         for line in data.split('\n'):
-            self._network_status_parser.process(line)
+            if len(line.strip()):
+                self._network_status_parser.process(line)
 
         if DEBUG: print len(self.routers_by_name),"named routers found."
         ## remove any names we added that turned out to have dups
