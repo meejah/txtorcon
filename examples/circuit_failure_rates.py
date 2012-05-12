@@ -15,9 +15,20 @@ import random
 
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.python import usage
 from zope.interface import implements
 
 import txtorcon
+
+class Options(usage.Options):
+    """
+    command-line options we understand
+    """
+    
+    optParameters = [
+        ['failed', 'f', 0, 'Starting value for number of failed circuits.'],
+        ['built', 'b', 0, 'Starting value for number of successfully built circuits.']
+        ]
 
 class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
@@ -87,9 +98,15 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
 def setup(state):
     print 'Connected to a Tor version %s' % state.protocol.version
+    global options
 
     listener = CircuitFailureWatcher()
-    listener.state = state              # FIXME use ctor
+    if options['failed']:
+        listener.failed_circuits = int(options['failed'])
+    if options['built']:
+        listener.failed_circuits = int(options['built'])
+    listener.state = state              # FIXME use ctor (ditto for options, probably)
+    
     for circ in filter(lambda x: x.purpose == 'GENERAL', state.circuits.values()):
         if circ.state == 'BUILT':
             listener.circuit_built(circ)
@@ -101,6 +118,9 @@ def setup_failed(arg):
     print "SETUP FAILED",arg
     print arg
     reactor.stop()
+
+options = Options()
+options.parseOptions(sys.argv[1:])
 
 print "Connecting to localhost:9051 with AUTHCOOKIE authentication..."
 d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051),
