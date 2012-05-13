@@ -494,9 +494,18 @@ OK"""))
 
         return d
 
-    def test_line_no_command(self):
+    def test_plus_line_no_command(self):
         self.protocol.lineReceived("650+NS\r\n")
         self.protocol.lineReceived("r Gabor gFpAHsFOHGATy12ZUswRf0ZrqAU GG6GDp40cQfR3ODvkBT0r+Q09kw 2012-05-12 16:54:56 91.219.238.71 443 80\r\n")
+
+    def test_minus_line_no_command(self):
+        """
+        haven't seen 600's use - "in the wild" but don't see why it's not possible
+        """
+        self.protocol._set_valid_events('NS')
+        self.protocol.add_event_listener('NS', do_nothing)
+        self.protocol.lineReceived("650-NS\r\n")
+        self.protocol.lineReceived("650 OK\r\n")
 
 class ParseTests(unittest.TestCase):
 
