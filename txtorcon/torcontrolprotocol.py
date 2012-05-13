@@ -569,7 +569,7 @@ class TorControlProtocol(LineOnlyReceiver):
 #        print "startCommand",self.code,line
         self.code = int(line[:3])
 #        print "startCommand:",self.code
-        if self.command[2] != None:
+        if self.command and self.command[2] != None:
             self.command[2](line[4:])
         else:
             self.response = line[4:] + '\n'
