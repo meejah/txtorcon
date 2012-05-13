@@ -12,6 +12,7 @@
 import os
 import sys
 import random
+import signal
 
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -27,7 +28,7 @@ class Options(usage.Options):
     
     optParameters = [
         ['failed', 'f', 0, 'Starting value for number of failed circuits.'],
-        ['built', 'b', 0, 'Starting value for number of successfully built circuits.']
+        ['built', 'b', 0, 'Starting value for the total number of built cicuits.']
         ]
 
 class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
@@ -96,15 +97,15 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
                 
             self.update_percent()
 
+listener = CircuitFailureWatcher()
 def setup(state):
     print 'Connected to a Tor version %s' % state.protocol.version
-    global options
+    global options, listener
 
-    listener = CircuitFailureWatcher()
     if options['failed']:
         listener.failed_circuits = int(options['failed'])
     if options['built']:
-        listener.failed_circuits = int(options['built'])
+        listener.total_circuits = int(options['built'])
     listener.state = state              # FIXME use ctor (ditto for options, probably)
     
     for circ in filter(lambda x: x.purpose == 'GENERAL', state.circuits.values()):
@@ -121,6 +122,12 @@ def setup_failed(arg):
 
 options = Options()
 options.parseOptions(sys.argv[1:])
+
+def on_shutdown(*args):
+    global listener
+    print 'To carry on where you left off, run:'
+    print '  %s --failed %d --built %d' % (sys.argv[0], listener.failed_circuits, listener.total_circuits)
+reactor.addSystemEventTrigger('before', 'shutdown', on_shutdown)
 
 print "Connecting to localhost:9051 with AUTHCOOKIE authentication..."
 d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051),
