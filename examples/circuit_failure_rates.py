@@ -33,7 +33,7 @@ class Options(usage.Options):
 
 class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
-    total_circuits = 0
+    built_circuits = 0
     failed_circuits = 0
     percent = 0.0
     failed_circuit_ids = []
@@ -44,12 +44,12 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
         print self.information()
 
     def update_percent(self):
-        self.percent = 100.0 * (float(self.failed_circuits) / float(self.total_circuits + self.failed_circuits))
+        self.percent = 100.0 * (float(self.failed_circuits) / float(self.built_circuits + self.failed_circuits))
         if self.percent > 50.0:
-            print 'WARNING: %02.1f percent of all routes have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.total_circuits)
+            print 'WARNING: %02.1f percent of all routes have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.built_circuits)
 
     def information(self):
-        rtn = '%02.1f%% of all circuits have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.total_circuits)
+        rtn = '%02.1f%% of all circuits have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.built_circuits)
         for g in self.per_guard_built.keys():
             per_guard_percent = 100.0*(self.per_guard_failed[g]/(self.per_guard_built[g]+self.per_guard_failed[g]))
             rtn = rtn + '\n  %s: %d built, %d failed: %02.1f%%' % (g, self.per_guard_built[g], self.per_guard_failed[g],
@@ -63,7 +63,7 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
                 print "WEIRD: first circuit hop not in entry guards:",circuit,circuit.path
                 return
             
-            self.total_circuits += 1
+            self.built_circuits += 1
             self.update_percent()
 
             if len(circuit.path) != 3 and len(circuit.path) != 4:
@@ -105,7 +105,7 @@ def setup(state):
     if options['failed']:
         listener.failed_circuits = int(options['failed'])
     if options['built']:
-        listener.total_circuits = int(options['built'])
+        listener.built_circuits = int(options['built'])
     listener.state = state              # FIXME use ctor (ditto for options, probably)
     
     for circ in filter(lambda x: x.purpose == 'GENERAL', state.circuits.values()):
@@ -126,7 +126,7 @@ options.parseOptions(sys.argv[1:])
 def on_shutdown(*args):
     global listener
     print 'To carry on where you left off, run:'
-    print '  %s --failed %d --built %d' % (sys.argv[0], listener.failed_circuits, listener.total_circuits)
+    print '  %s --failed %d --built %d' % (sys.argv[0], listener.failed_circuits, listener.built_circuits)
 reactor.addSystemEventTrigger('before', 'shutdown', on_shutdown)
 
 print "Connecting to localhost:9051 with AUTHCOOKIE authentication..."
