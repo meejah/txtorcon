@@ -37,7 +37,9 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 
 html:
+	-pandoc -r markdown -w rst ../README -o README.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	-cp ../meejah.asc docs/_build/html/meejah.asc
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 

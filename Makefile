@@ -8,9 +8,7 @@ install:
 	python setup.py install
 
 doc: dist/txtorcon-0.1.tar.gz.gpg dist/txtorcon-0.2.tar.gz.gpg README docs/*.rst
-	-pandoc -r markdown -w rst README -o docs/README.rst
 	cd docs && make html
-	cp meejah.asc docs/_build/html/meejah.asc
 	cp dist/txtorcon-0.1.tar.gz docs/_build/html
 	cp dist/txtorcon-0.1.tar.gz.gpg docs/_build/html
 	cp dist/txtorcon-0.2.tar.gz docs/_build/html
