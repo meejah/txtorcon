@@ -7,18 +7,20 @@ test:
 install:
 	python setup.py install
 
-doc: dist/txtorcon-0.1.tar.gz.gpg README doc/*.rst
-	-pandoc -r markdown -w rst README -o doc/README.rst
-	cd doc && make html
-	cp meejah.asc doc/_build/html/meejah.asc
-	cp dist/txtorcon-0.1.tar.gz doc/_build/html
-	cp dist/txtorcon-0.1.tar.gz.gpg doc/_build/html
+doc: dist/txtorcon-0.1.tar.gz.gpg dist/txtorcon-0.2.tar.gz.gpg README docs/*.rst
+	-pandoc -r markdown -w rst README -o docs/README.rst
+	cd docs && make html
+	cp meejah.asc docs/_build/html/meejah.asc
+	cp dist/txtorcon-0.1.tar.gz docs/_build/html
+	cp dist/txtorcon-0.1.tar.gz.gpg docs/_build/html
+	cp dist/txtorcon-0.2.tar.gz docs/_build/html
+	cp dist/txtorcon-0.2.tar.gz.gpg docs/_build/html
 
 doc_single_html:
-	-pandoc -r markdown -w rst README -o doc/README.rst
-	cd doc && make singlehtml
+	-pandoc -r markdown -w rst README -o docs/README.rst
+	cd docs && make singlehtml
 	-rm -rf doc_html
-	cp -r doc/_build/singlehtml doc_html
+	cp -r docs/_build/singlehtml doc_html
 
 coverage:
 	trial --reporter=bwverbose --coverage txtorcon
@@ -31,8 +33,8 @@ clean:
 	-rm -rf html
 	-rm MANIFEST
 	-rm `find . -name \*.py[co]`
-	-cd doc && make clean
-	-rm doc/single.html
+	-cd docs && make clean
+	-rm docs/single.html
 
 counts:
 	ohcount -s txtorcon/*.py
