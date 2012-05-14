@@ -7,3 +7,4 @@ psutil==0.4.1
 #pydoctor==0.3
 repoze.sphinx.autointerface==0.4
 zope.interface==3.6.1
+pandoc==1.8.2.1
