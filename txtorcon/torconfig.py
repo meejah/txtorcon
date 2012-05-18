@@ -1,6 +1,6 @@
 
 from twisted.python import log, failure
-from twisted.internet import defer, process, error, protocol
+from twisted.internet import defer, error, protocol
 from twisted.internet.interfaces import IProtocolFactory, IStreamServerEndpoint
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.protocols.basic import LineOnlyReceiver
@@ -48,7 +48,7 @@ class TCPHiddenServiceEndpoint(object):
 
     :ivar public_port: the port we are advertising
     """
-    
+
     implements(IStreamServerEndpoint)
 
     def __init__(self, reactor, config, public_port, data_dir=None,
@@ -57,14 +57,14 @@ class TCPHiddenServiceEndpoint(object):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
-        
+
         :param config:
             :class:`txtorcon.TorConfig` instance (doesn't need to be
             bootstrapped). Note that `save()` will be called on this
             at least once. FIXME should I just accept a
             TorControlProtocol instance instead, and create my own
             TorConfig?
-        
+
         :param public_port:
             The port number we will advertise in the hidden serivces
             directory.
@@ -85,14 +85,14 @@ class TCPHiddenServiceEndpoint(object):
             A callable that generates a new instance of something that
             implements IServerEndpoint (by default TCP4ServerEndpoint)
         """
-        
+
         self.public_port = public_port
         self.data_dir = data_dir
         self.onion_uri = None
         self.onion_private_key = None
         if self.data_dir != None:
             self._update_onion()
-            
+
         else:
             self.data_dir = tempfile.mkdtemp(prefix='tortmp')
 
@@ -104,7 +104,7 @@ class TCPHiddenServiceEndpoint(object):
         self.endpoint_generator = endpoint_generator
 
         self.retries = 0
-        
+
         self.defer = defer.Deferred()
 
     def _update_onion(self):
@@ -112,7 +112,7 @@ class TCPHiddenServiceEndpoint(object):
         Used internally to update the `onion_uri` and
         `onion_private_key` members.
         """
-        
+
         hn = os.path.join(self.hiddenservice.dir,'hostname')
         pk = os.path.join(self.hiddenservice.dir,'private_key')
         try:
@@ -145,7 +145,7 @@ class TCPHiddenServiceEndpoint(object):
         """
         handle errors. FIXME
         """
-        
+
         print "ERROR",f
         return f
 
@@ -166,7 +166,7 @@ class TCPHiddenServiceEndpoint(object):
         self.protocolfactory = protocolfactory
         if self.config.post_bootstrap:
             d = self.config.post_bootstrap.addCallback(self._create_hiddenservice).addErrback(self._do_error)
-            
+
         elif self.hiddenservice is None:
             self._create_hiddenservice(None)
             d = self.config.save()
@@ -184,7 +184,7 @@ class TCPHiddenServiceEndpoint(object):
         and propogate the error.
         """
         failure.trap(error.CannotListenError)
-        
+
         self.retries += 1
         if self.retries > 10:
             return failure
@@ -193,7 +193,7 @@ class TCPHiddenServiceEndpoint(object):
         self.hiddenservice.ports = ['%d 127.0.0.1:%d' % (self.public_port, self.listen_port)]
         d = self.config.save()
         d.addCallback(self._create_listener).addErrback(self._retry_local_port)
-        return d        
+        return d
 
     def _create_listener(self, proto):
         """
@@ -202,9 +202,9 @@ class TCPHiddenServiceEndpoint(object):
         :meth:`TCP4HiddenServiceEndpoint._add_attributes` called
         against it (adds `onion_uri` and `onion_private_key` members).
         """
-        
+
         self._update_onion()
-            
+
         self.tcp_endpoint = TCP4ServerEndpoint(self.reactor, self.listen_port)
         d = self.tcp_endpoint.listen(self.protocolfactory)
         d.addCallback(self._add_attributes).addErrback(self._retry_local_port)
@@ -225,7 +225,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         directly except as the return value from the :func:`txtorcon.launch_tor`
         method. tor_protocol contains a valid :class:`txtorcon.TorControlProtocol`
         instance by that point.
-        
+
         connection_creator is a callable that should return a Deferred
         that callbacks with a :class:`txtorcon.TorControlProtocol`; see :func:`txtorcon.launch_tor` for
         the default one which is a functools.partial that will call
@@ -237,7 +237,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
         :param progress_updates: A callback which received progress
             updates with three args: percent, tag, summary
- 
+
         :ivar tor_protocol: The TorControlProtocol instance connected
             to the Tor this :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` is speaking to. Will be valid
             when the `connected_cb` callback runs.
@@ -250,9 +250,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.tor_protocol = None
         self.connection_creator = connection_creator
         self.progress_updates = progress_updates
-        
+
         self.connected_cb = defer.Deferred()
-         
+
         self.attempted_connect = False
         self.to_delete = []
         self.stderr = []
@@ -264,7 +264,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         """
 
         self.stdout.append(data)
-        
+
         ## minor hack: we can't try this in connectionMade because
         ## that's when the process first starts up so Tor hasn't
         ## opened any ports properly yet. So, we presume that after
@@ -292,7 +292,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         """
         Clean up my temporary files.
         """
-        
+
         [delete_file_or_tree(f) for f in self.to_delete]
         self.to_delete = []
 
@@ -302,10 +302,10 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         """
 
         self.cleanup()
-        
+
         if isinstance(status.value, error.ProcessDone):
             return
-        
+
         raise RuntimeError('\n'.join(self.stdout) + "\n\nTor exited with error-code %d" % status.value.exitCode)
 
     def progress(self, percent, tag, summary):
@@ -318,7 +318,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             self.progress_updates(percent, tag, summary)
 
     ## the below are all callbacks
-        
+
     def tor_connection_failed(self, fail):
         ## FIXME more robust error-handling please, like a timeout so
         ## we don't just wait forever after 100% bootstrapped (that
@@ -331,26 +331,26 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         args = shlex.split(arg)
         if args[1] != 'BOOTSTRAP':
             return
-        
+
         kw = find_keywords(args)
         prog = int(kw['PROGRESS'])
         tag = kw['TAG']
         summary = kw['SUMMARY']
         self.progress(prog, tag, summary)
-        
+
         if prog == 100:
             self.connected_cb.callback(self)
 
     def tor_connected(self, proto):
         if DEBUG: print "tor_connected",proto
-        
+
         self.tor_protocol = proto
         self.tor_protocol.is_owned = self.transport.pid
         self.tor_protocol.post_bootstrap.addCallback(self.protocol_bootstrapped).addErrback(self.tor_connection_failed)
 
     def protocol_bootstrapped(self, proto):
         if DEBUG: print "Protocol is bootstrapped"
-        
+
         self.tor_protocol.add_event_listener('STATUS_CLIENT', self.status_client)
 
         ## FIXME: should really listen for these to complete as well
@@ -396,7 +396,7 @@ def launch_tor(config, reactor,
 
     :return: a Deferred which callbacks with a TorProcessProtocol
         connected to the fully-bootstrapped Tor; this has a
-        :class:`txtorcon.TorControlProtocol` instance as .protocol. In Tor, 
+        :class:`txtorcon.TorControlProtocol` instance as .protocol. In Tor,
         ``__OwningControllerProcess`` will be set and TAKEOWNERSHIP will have
         been called, so if you close the TorControlProtocol the Tor should
         exit also (see `control-spec <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_ 3.23).
@@ -408,7 +408,7 @@ def launch_tor(config, reactor,
         port. It seems that waiting for the first 'bootstrap' message on
         stdout is sufficient. Seems fragile...and doesn't work 100% of
         the time, so FIXME look at Tor source.
-        
+
     """
 
     ## We have a slight problem with the approach: we need to pass a
@@ -424,7 +424,7 @@ def launch_tor(config, reactor,
 
     if data_directory is None:
         data_directory = tempfile.mkdtemp(prefix='tortmp')
-        
+
     (fd, torrc) = tempfile.mkstemp(prefix='tortmp')
 
     config.DataDirectory = data_directory
@@ -458,27 +458,27 @@ def launch_tor(config, reactor,
                                          path=data_directory)
         #FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
         transport.closeStdin()
-        
+
     except RuntimeError, e:
         process_protocol.connected_cb.errback(e)
 
     return process_protocol.connected_cb
 
-    
+
 
 class TorConfigType(object):
     """
     Base class for all configuration types, which function as parsers
     and un-parsers.
     """
-    
+
     def parse(self, s):
         """
         Given the string s, this should return a parsed representation
         of it.
         """
         return s
-    
+
     def validate(self, s, instance, name):
         """
         If s is not a valid type for this object, an exception should
@@ -536,7 +536,7 @@ class LineList(TorConfigType):
         if isinstance(s, types.ListType):
             return map(str, s)
         return map(string.strip, s.split('\n'))
-    
+
     def validate(self, obj, instance, name):
         if not isinstance(obj, types.ListType):
             raise ValueError("Not valid for %s: %s" % (self.__class__, obj))
@@ -558,7 +558,7 @@ def _wrapture(orig):
         obj.on_modify()
         return orig(*args)
     return foo
-        
+
 class _ListWrapper(list):
     """
     Do some voodoo to wrap lists so that if you do anything to modify
@@ -567,7 +567,7 @@ class _ListWrapper(list):
     FIXME: really worth it to preserve attribute-style access? seems
     to be okay from an exterior API perspective....
     """
-    
+
     def __init__(self, thelist, on_modify_cb):
         list.__init__(self, thelist)
         self.on_modify = on_modify_cb
@@ -607,11 +607,11 @@ class HiddenService(object):
         to HiddenServicePort (like '80 127.0.0.1:1234' to advertise a
         hidden service at port 80 and redirect it internally on
         127.0.0.1:1234). auth corresponds to
-        HiddenServiceAuthenticateClient line (FIXME: is that lines?) 
+        HiddenServiceAuthenticateClient line (FIXME: is that lines?)
         and ver corresponds to HiddenServiceVersion and is always 2
         right now.
         """
-        
+
         self.conf = config
         self.dir = thedir
         self.version = ver
@@ -622,7 +622,7 @@ class HiddenService(object):
         ## accessed. Note that after a SETCONF has returned '250 OK'
         ## it seems from tor code that the keys will always have been
         ## created on disk by that point
-        
+
         if not isinstance(ports, types.ListType):
             ports = [ports]
         self.ports = _ListWrapper(ports, functools.partial(self.conf.mark_unsaved, 'HiddenServices'))
@@ -633,7 +633,7 @@ class HiddenService(object):
         HiddenServices as unsaved in our TorConfig object if anything
         is changed.
         """
-        
+
         if name in ['dir', 'version', 'authorize_client', 'ports'] and self.conf:
             self.conf.mark_unsaved('HiddenServices')
         if isinstance(value, types.ListType):
@@ -649,7 +649,7 @@ class HiddenService(object):
         """
         Helper method used by y TorConfig when generating a torrc file.
         """
-    
+
         rtn = [('HiddenServiceDir', self.dir)]
         for x in self.ports:
             rtn.append(('HiddenServicePort', x))
@@ -685,13 +685,13 @@ class TorConfig(object):
     like it for prior versions?
 
     FIXME:
-    
+
         - HiddenServiceOptions is special: GETCONF on it returns
         several (well, two) values. Besides adding the two keys 'by
         hand' do we need to do anything special? Can't we just depend
         on users doing 'conf.hiddenservicedir = foo' AND
         'conf.hiddenserviceport = bar' before a save() ?
-        
+
         - once I determine a value is default, is there any way to
           actually get what this value is?
     """
@@ -705,10 +705,10 @@ class TorConfig(object):
 
         self.config = {}
         '''Current configuration, by keys.'''
-        
+
         self.unsaved = {}
         '''Configuration that has been changed since last save().'''
-        
+
         self.parsers = {}
         '''Instances of the parser classes, subclasses of TorConfigType'''
 
@@ -733,7 +733,7 @@ class TorConfig(object):
         attributes we need in the constructor without uusing __dict__
         all over the place.
         """
-        
+
         if self.__dict__.has_key('_setup_'):
             name = self._find_real_name(name)
             if not self.__dict__.has_key('_slutty_') and name.lower() != 'hiddenservices':
@@ -747,7 +747,7 @@ class TorConfig(object):
         else:
             super(TorConfig, self).__setattr__(name, value)
 
-            
+
     def __getattr__(self, name):
         """
         on purpose, we don't return self.saved if the key is in there
@@ -755,7 +755,7 @@ class TorConfig(object):
         ``things which might get into the running Tor if save() were
         to be called''
         """
-        
+
         return self.config[self._find_real_name(name)]
 
     def get_type(self, name):
@@ -794,7 +794,7 @@ class TorConfig(object):
         errback if Tor was unhappy with anything, or callback with
         this TorConfig object on success.
         """
-        
+
         if not self.needs_save():
             return defer.succeed(self)
 
@@ -815,12 +815,12 @@ class TorConfig(object):
                         args.append('HiddenServiceAuthorizeClient')
                         args.append(hs.authorize_client)
                 continue
-            
+
             if isinstance(value, types.ListType):
                 for x in value:
                     args.append(key)
                     args.append(str(x))
-                    
+
             else:
                 args.append(key)
                 args.append(value)
@@ -837,7 +837,7 @@ class TorConfig(object):
             d.addCallback(self._save_completed)
             d.addErrback(log.err)
             return d
-        
+
         else:
             return defer.succeed(self)
 
@@ -863,10 +863,10 @@ class TorConfig(object):
                 servicelines = yield self.protocol.get_conf_raw('HiddenServiceOptions')
                 self._setup_hidden_services(servicelines)
                 continue
-            
+
             if value == 'Dependant':
                 continue
-            
+
             inst = None
             # FIXME: put parser classes in dict instead?
             for cls in config_types:
@@ -876,14 +876,14 @@ class TorConfig(object):
                 raise RuntimeError("Don't have a parser for: " + value)
             v = yield self.protocol.get_conf(name)
             v = v[name]
-            
+
             self.parsers[name] = inst
-            
+
             if value == 'LineList':
                 ## FIXME should move to the parse() method, but it
                 ## doesn't have access to conf object etc.
                 self.config[self._find_real_name(name)] = _ListWrapper(self.parsers[name].parse(v), functools.partial(self.mark_unsaved, name))
-                
+
             else:
                 self.config[self._find_real_name(name)] = self.parsers[name].parse(v)
 
@@ -942,7 +942,7 @@ class TorConfig(object):
                 else:
                     for x in v:
                         rtn.write('%s %s\n' % (k, x))
-                    
+
             else:
                 rtn.write('%s %s\n' % (k, v))
 
