@@ -1,3 +1,4 @@
+from __future__ import with_statement
 
 from twisted.python import log, failure
 from twisted.internet import defer, error, protocol
@@ -116,12 +117,14 @@ class TCPHiddenServiceEndpoint(object):
         hn = os.path.join(self.hiddenservice.dir,'hostname')
         pk = os.path.join(self.hiddenservice.dir,'private_key')
         try:
-            self.onion_uri = open(hn, 'r').read().strip()
+            with open(hn, 'r') as hnfile:
+                self.onion_uri = hnfile.read().strip()
         except IOError:
             self.onion_uri = None
 
         try:
-            self.onion_private_key = open(pk, 'r').read().strip()
+            with open(pk, 'r') as pkfile:
+                self.onion_private_key = pkfile.read().strip()
         except IOError:
             self.onion_private_key = None
 
@@ -641,8 +644,9 @@ class HiddenService(object):
         self.__dict__[name] = value
 
     def __getattr__(self, name):
-        if name in ['hostname', 'private_key']:
-            self.__dict__[name] = open(os.path.join(self.dir, name)).read().strip()
+        if name in ('hostname', 'private_key'):
+            with open(os.path.join(self.dir, name)) as f:
+                self.__dict__[name] = f.read().strip()
         return self.__dict__[name]
 
     def config_attributes(self):

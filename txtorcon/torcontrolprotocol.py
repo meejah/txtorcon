@@ -1,3 +1,4 @@
+from __future__ import with_statement
 
 from twisted.python import log, failure
 from twisted.internet import defer, reactor
@@ -40,7 +41,7 @@ class TorProtocolError(RuntimeError):
 
     def __str__(self):
         return str(self.code) + ' ' + self.text
-        
+
 
 class TorProtocolFactory(object):
     """
@@ -51,16 +52,16 @@ class TorProtocolFactory(object):
     you should supply a password. FIXME: should supply a
     password-getting method, instead.
     """
-    
+
     implements(IProtocolFactory)
-    
+
     def __init__(self, password=None):
         """
         Builds protocols to talk to a Tor client on the specified address. For example:
-        
+
         TCP4ClientEndpoint(reactor, "localhost", 9051).connect(TorProtocolFactory())
         reactor.run()
-        
+
         By default, COOKIE authentication is used if
         available. Otherwise, a password should be supplied. FIXME:
         user should supply a password getter, not a password (e.g. if
@@ -73,7 +74,7 @@ class TorProtocolFactory(object):
 
     def doStop(self):
         ":api:`twisted.internet.interfaces.IProtocolFactory` API"
-        
+
     def buildProtocol(self, addr):
         ":api:`twisted.internet.interfaces.IProtocolFactory` API"
         proto = TorControlProtocol(self.password)
@@ -122,7 +123,7 @@ def parse_keywords(lines):
                 else:
                     rtn[key] = value
             (key, value) = line.split('=')
-            
+
         else:
             if key is None:
                 rtn[line.strip()] = DEFAULT_VALUE
@@ -171,13 +172,13 @@ class TorControlProtocol(LineOnlyReceiver):
 
         self.is_owned = None
         """If not None, this is the PID of the Tor process we own (TAKEOWNERSHIP, etc)."""
-        
+
         self.events = {}
         """events we've subscribed to (keyed by name like "GUARD", "STREAM")"""
-        
+
         self.valid_events = {}
         """all valid events (name -> Event instance)"""
-        
+
         self.valid_signals = []
         """A list of all valid signals we accept from Tor"""
 
@@ -201,7 +202,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
         See the helper method :func:`txtorcon.build_tor_connection`.
         """
-        
+
         ## variables related to the state machine
         self.defer = None               # Deferred we returned for the current command
         self.response = ''
@@ -213,7 +214,7 @@ class TorControlProtocol(LineOnlyReceiver):
         ## simply, confounded by the fact that 600's (notify) can come
         ## at any time AND can be multi-line itself. Luckily, these
         ## can't be nested, nor can the responses be interleaved.
-        
+
         idle = State("IDLE")
         recv = State("RECV")
         recvmulti = State("RECV_PLUS")
@@ -228,7 +229,7 @@ class TorControlProtocol(LineOnlyReceiver):
         idle.add_transition(Transition(recv,
                                        self._is_continuation_line,
                                        self._start_command))
-        
+
         recv.add_transition(Transition(recv,
                                        self._is_continuation_line,
                                        self._accumulate_response))
@@ -249,7 +250,8 @@ class TorControlProtocol(LineOnlyReceiver):
         ## list; the above looks nice in dotty though
         self.fsm.state = idle
         if DEBUG:
-            open("fsm.dot","w").write(self.fsm.dotty())
+            with open('fsm.dot', 'w') as fsmfile:
+                fsmfile.write(self.fsm.dotty())
 
     ## see end of file for all the state machine matcher and
     ## transition methods.
@@ -286,7 +288,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
             .. todo:: make some way to automagically obtain valid
                 keys, either from running Tor or parsing control-spec
-        
+
         :return:
             a ``Deferred`` which will callback with a dict containing
             the keys you asked for. This just inserts ``parse_keywords``
@@ -298,11 +300,11 @@ class TorControlProtocol(LineOnlyReceiver):
     def get_conf(self, *args):
         """
         Uses GETCONF to obtain configuration values from Tor.
-        
+
         :param args: any number of strings which are keys to get. To
             get all valid configuraiton names, you can call:
             ``get_info('config/names')``
-                
+
         :return: a Deferred which callbacks with one or many
             configuration values (depends on what you asked for). See
             control-spec for valid keys (you can also use TorConfig which
@@ -317,14 +319,14 @@ class TorControlProtocol(LineOnlyReceiver):
         DEFAULT_VALUE for the default value case, or an empty string
         otherwise.
         """
-        
+
         return self.queue_command('GETCONF %s' % ' '.join(args)).addCallback(parse_keywords).addErrback(log.err)
 
     def get_conf_raw(self, *args):
         """
         Same as get_conf, except that the results are not parsed into a dict
         """
-        
+
         return self.queue_command('GETCONF %s' % ' '.join(args))
 
     def set_conf(self, *args):
@@ -377,10 +379,10 @@ class TorControlProtocol(LineOnlyReceiver):
         tor control protocol.
 
         :Return: ``None``
-        
+
         .. todo:: need an interface for the callback
         """
-        
+
         if not evt in self.valid_events.values():
             try:
                 evt = self.valid_events[evt]
@@ -409,21 +411,21 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         :return: a Deferred which will give you PROTOCOLINFO; see control-spec
         """
-        
+
         return self.queue_command("PROTOCOLINFO 1")
-    
+
     def authenticate(self, passphrase):
         """Call the AUTHENTICATE command."""
         return self.queue_command('AUTHENTICATE ' + passphrase.encode("hex"))
 
     def quit(self):
         return self.queue_command('QUIT')
-    
+
     def queue_command(self, cmd, arg=None):
         """
         returns a Deferred which will fire with the response data when we get it
         """
-        
+
         d = defer.Deferred()
         self.commands.append((d, cmd, arg))
         self._maybe_issue_command()
@@ -441,7 +443,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
         self.fsm.process(line)
         return
-    
+
     def connectionMade(self):
         "LineOnlyReceiver API (or parent?)"
         if DEBUG: print "got connection, authenticating"
@@ -455,7 +457,7 @@ class TorControlProtocol(LineOnlyReceiver):
         if self.events.has_key(args[0]):
             self.events[args[0]].got_update(rest[len(args[0])+1:])
             return
-        
+
         raise RuntimeError("Wasn't listening for event of type " + args[0])
 
     def _maybe_issue_command(self):
@@ -479,7 +481,7 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Errback if authentication fails.
         """
-        
+
         if self.post_bootstrap:
             self.post_bootstrap.errback(fail)
             return None
@@ -489,7 +491,8 @@ class TorControlProtocol(LineOnlyReceiver):
         "Callback on PROTOCOLINFO to actually authenticate once we know what's supported."
         if 'COOKIE' in protoinfo:
             cookie = re.search('COOKIEFILE="(.*)"', protoinfo).group(1)
-            data = open(cookie,'r').read()
+            with open(cookie, 'r') as cookiefile:
+                data = cookiefile.read()
             if len(data) != 32:
                 raise RuntimeError("Expected authentication cookie to be 32 bytes, got %d" % len(data))
             if DEBUG: print "Using COOKIE authentication",cookie,len(data),"bytes"
@@ -499,7 +502,7 @@ class TorControlProtocol(LineOnlyReceiver):
         if self.password:
             self.authenticate(self.password).addCallback(self._bootstrap).addErrback(self._auth_failed)
             return
-        
+
         raise RuntimeError("The Tor I connected to doesn't support COOKIE authentication and I have no password.")
 
     def _set_valid_events(self, events):
@@ -549,14 +552,14 @@ class TorControlProtocol(LineOnlyReceiver):
     def _is_not_end_line(self, line):
         "for FSM"
         return not self._is_end_line(line)
-    
+
     def _is_single_line_response(self, line):
         "for FSM"
         try:
             code = int(line[:3])
         except:
             return False
-        
+
         sl = len(line) > 3 and line[3] == ' '
 #        print "single line?",line,sl
         if sl:
@@ -574,7 +577,7 @@ class TorControlProtocol(LineOnlyReceiver):
         else:
             self.response = line[4:] + '\n'
         return None
-        
+
     def _is_continuation_line(self, line):
         "for FSM"
 #        print "isContinuationLine",self.code,line
@@ -582,7 +585,7 @@ class TorControlProtocol(LineOnlyReceiver):
         if self.code and self.code != code:
             raise RuntimeError("Unexpected code %d, wanted %d" % (code,self.code))
         return line[3] == '-'
-        
+
     def _is_multi_line(self, line):
         "for FSM"
 #        print "isMultiLine",self.code,line,line[3] == '+'
@@ -595,11 +598,11 @@ class TorControlProtocol(LineOnlyReceiver):
         "for FSM"
         if self.command and self.command[2] != None:
             self.command[2](line)
-            
+
         else:
             self.response += (line + '\n')
         return None
-    
+
     def _accumulate_response(self, line):
         "for FSM"
         if self.command[2] != None:
@@ -627,7 +630,7 @@ class TorControlProtocol(LineOnlyReceiver):
             if self.code >= 200 and self.code < 300 and self.command[2] != None:
                 self.command[2](line[4:])
                 resp = ''
-                
+
             else:
                 resp = self.response + line[4:]
         else:
