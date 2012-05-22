@@ -84,6 +84,6 @@ def setup_failed(arg):
     reactor.stop()
 
 log.startLogging(sys.stdout)
-d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051))
+d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9052))
 d.addCallback(setup).addErrback(setup_failed)
 reactor.run()

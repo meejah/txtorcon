@@ -14,12 +14,16 @@ from txtorcon.addrmap import AddrMap
 from interface import ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher, IRouterContainer, ITorControlProtocol
 from spaghetti import FSM, State, Transition
 
+import os
 import re
 import shlex
 import time
 import datetime
 import warnings
 import types
+import hmac
+import hashlib
+import base64
 
 DEBUG = False
 DEFAULT_VALUE = 'DEFAULT'
@@ -485,9 +489,48 @@ class TorControlProtocol(LineOnlyReceiver):
             return None
         return fail
 
+    def _authchallenge(self, reply):
+        kw = parse_keywords(reply.replace(' ', '\n'))
+        print "AC",kw
+        ## FIXME put string in global. or something.
+        server_hash = base64.b16decode(kw['SERVERHASH'])
+        server_nonce = base64.b16decode(kw['SERVERNONCE'])
+        expected_server_hash = hmac.new("Tor safe cookie authentication server-to-controller hash",
+                                        self.cookie_data + self.client_nonce + server_nonce,
+                                        hashlib.sha256).digest()
+        
+        if expected_server_hash != server_hash:
+            raise RuntimeError('Server hash not expected; wanted "%s" and got "%s".' % (expected_server_hash, server_hash))
+
+        client_hash = hmac.new("Tor safe cookie authentication controller-to-server hash",
+                               self.cookie_data +
+                               self.client_nonce +
+                               server_nonce,
+                               hashlib.sha256).digest()
+        client_hash_hex = base64.b16encode(client_hash)
+        return self.queue_command('AUTHENTICATE %s' % client_hash_hex)
+
     def _do_authenticate(self, protoinfo):
         "Callback on PROTOCOLINFO to actually authenticate once we know what's supported."
-        if 'COOKIE' in protoinfo:
+
+        ## FIXME yuck, better parsing
+        kw = parse_keywords(protoinfo.split('\n')[1].replace(' ', '\n'))
+        methods = kw['METHODS'].split(',')
+        print "METH",methods
+
+        if 'SAFECOOKIE' in methods:
+            print "DOING SAFECOOKIE"
+            cookie = re.search('COOKIEFILE="(.*)"', protoinfo).group(1)
+            self.cookie_data = open(cookie,'r').read()
+            if len(self.cookie_data) != 32:
+                raise RuntimeError("Expected authentication cookie to be 32 bytes, got %d" % len(self.cookie_data))
+            if DEBUG: print "Using SAFECOOKIE authentication",cookie,len(self.cookie_data),"bytes"
+            self.client_nonce = os.urandom(32)
+
+            self.queue_command('AUTHCHALLENGE SAFECOOKIE %s' % base64.b16encode(self.client_nonce)).addCallback(self._authchallenge).addCallback(self._bootstrap).addErrback(self._auth_failed)
+            return
+
+        elif 'COOKIE' in methods:
             cookie = re.search('COOKIEFILE="(.*)"', protoinfo).group(1)
             data = open(cookie,'r').read()
             if len(data) != 32:
