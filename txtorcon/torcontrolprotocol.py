@@ -110,14 +110,37 @@ class Event(object):
             cb(data)
 
 def parse_keywords(lines):
-    "Utility method to parse name=value pairs (GETINFO etc)"
+    """
+    Utility method to parse name=value pairs (GETINFO etc). Takes a
+    string with newline-separated lines. Will parse multiple key/value
+    pairs from a single line if they exist (FIXME: need utest for this
+    case!)
+    """
+    
     rtn = {}
     key = None
     value = ''
+    ## FIXME needs some refactoring to reduce code duplication!
     for line in lines.split('\n'):
         if line.strip() == 'OK':
             continue
-        if '=' in line:
+        
+        if line.count('=') > 1:
+            for subline in line.split():
+                if '=' not in subline:
+                    continue
+                
+                if key:
+                    if rtn.has_key(key):
+                        if isinstance(rtn[key], types.ListType):
+                            rtn[key].append(value)
+                        else:
+                            rtn[key] = [rtn[key], value]
+                    else:
+                        rtn[key] = value
+                (key, value) = subline.split('=')
+        
+        elif '=' in line:
             if key:
                 if rtn.has_key(key):
                     if isinstance(rtn[key], types.ListType):
@@ -495,8 +518,8 @@ class TorControlProtocol(LineOnlyReceiver):
         Callback on AUTHCHALLENGE SAFECOOKIE
         """
     
-        kw = parse_keywords(reply.replace(' ', '\n'))
-        print "AC",kw
+        kw = parse_keywords(reply)
+
         server_hash = base64.b16decode(kw['SERVERHASH'])
         server_nonce = base64.b16decode(kw['SERVERNONCE'])
         ## FIXME put string in global. or something.
@@ -517,12 +540,10 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         
         ## FIXME yuck, better parsing
-        kw = parse_keywords(protoinfo.split('\n')[1].replace(' ', '\n'))
+        kw = parse_keywords(protoinfo)
         methods = kw['METHODS'].split(',')
-        print "METH",methods
 
         if 'SAFECOOKIE' in methods:
-            print "DOING SAFECOOKIE"
             cookie = re.search('COOKIEFILE="(.*)"', protoinfo).group(1)
             self.cookie_data = open(cookie,'r').read()
             if len(self.cookie_data) != 32:
