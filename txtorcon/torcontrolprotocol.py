@@ -10,6 +10,7 @@ from txtorcon.stream import Stream
 from txtorcon.circuit import Circuit
 from txtorcon.router import Router
 from txtorcon.addrmap import AddrMap
+from txtorcon.util import hmac_sha256, compare_via_hash
 
 from interface import ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher, IRouterContainer, ITorControlProtocol
 from spaghetti import FSM, State, Transition
@@ -489,30 +490,32 @@ class TorControlProtocol(LineOnlyReceiver):
             return None
         return fail
 
-    def _authchallenge(self, reply):
+    def _safecookie_authchallenge(self, reply):
+        """
+        Callback on AUTHCHALLENGE SAFECOOKIE
+        """
+    
         kw = parse_keywords(reply.replace(' ', '\n'))
         print "AC",kw
-        ## FIXME put string in global. or something.
         server_hash = base64.b16decode(kw['SERVERHASH'])
         server_nonce = base64.b16decode(kw['SERVERNONCE'])
-        expected_server_hash = hmac.new("Tor safe cookie authentication server-to-controller hash",
-                                        self.cookie_data + self.client_nonce + server_nonce,
-                                        hashlib.sha256).digest()
+        ## FIXME put string in global. or something.
+        expected_server_hash = hmac_sha256("Tor safe cookie authentication server-to-controller hash",
+                                           self.cookie_data + self.client_nonce + server_nonce)
         
-        if expected_server_hash != server_hash:
+        if not compare_via_hash(expected_server_hash, server_hash):
             raise RuntimeError('Server hash not expected; wanted "%s" and got "%s".' % (expected_server_hash, server_hash))
 
-        client_hash = hmac.new("Tor safe cookie authentication controller-to-server hash",
-                               self.cookie_data +
-                               self.client_nonce +
-                               server_nonce,
-                               hashlib.sha256).digest()
+        client_hash = hmac_sha256("Tor safe cookie authentication controller-to-server hash",
+                                  self.cookie_data + self.client_nonce + server_nonce)
         client_hash_hex = base64.b16encode(client_hash)
         return self.queue_command('AUTHENTICATE %s' % client_hash_hex)
 
     def _do_authenticate(self, protoinfo):
-        "Callback on PROTOCOLINFO to actually authenticate once we know what's supported."
-
+        """
+        Callback on PROTOCOLINFO to actually authenticate once we know what's supported.
+        """
+        
         ## FIXME yuck, better parsing
         kw = parse_keywords(protoinfo.split('\n')[1].replace(' ', '\n'))
         methods = kw['METHODS'].split(',')
@@ -527,7 +530,8 @@ class TorControlProtocol(LineOnlyReceiver):
             if DEBUG: print "Using SAFECOOKIE authentication",cookie,len(self.cookie_data),"bytes"
             self.client_nonce = os.urandom(32)
 
-            self.queue_command('AUTHCHALLENGE SAFECOOKIE %s' % base64.b16encode(self.client_nonce)).addCallback(self._authchallenge).addCallback(self._bootstrap).addErrback(self._auth_failed)
+            d = self.queue_command('AUTHCHALLENGE SAFECOOKIE %s' % base64.b16encode(self.client_nonce))
+            d.addCallback(self._safecookie_authchallenge).addCallback(self._bootstrap).addErrback(self._auth_failed)
             return
 
         elif 'COOKIE' in methods:
@@ -543,7 +547,7 @@ class TorControlProtocol(LineOnlyReceiver):
             self.authenticate(self.password).addCallback(self._bootstrap).addErrback(self._auth_failed)
             return
         
-        raise RuntimeError("The Tor I connected to doesn't support COOKIE authentication and I have no password.")
+        raise RuntimeError("The Tor I connected to doesn't support SAFECOOKIE nor COOKIE authentication and I have no password.")
 
     def _set_valid_events(self, events):
         "used as a callback; see _bootstrap"
