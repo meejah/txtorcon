@@ -125,22 +125,7 @@ def parse_keywords(lines):
         if line.strip() == 'OK':
             continue
         
-        if line.count('=') > 1:
-            for subline in line.split():
-                if '=' not in subline:
-                    continue
-                
-                if key:
-                    if rtn.has_key(key):
-                        if isinstance(rtn[key], types.ListType):
-                            rtn[key].append(value)
-                        else:
-                            rtn[key] = [rtn[key], value]
-                    else:
-                        rtn[key] = value
-                (key, value) = subline.split('=')
-        
-        elif '=' in line:
+        if '=' in line:
             if key:
                 if rtn.has_key(key):
                     if isinstance(rtn[key], types.ListType):
@@ -538,10 +523,14 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Callback on PROTOCOLINFO to actually authenticate once we know what's supported.
         """
-        
-        ## FIXME yuck, better parsing
-        kw = parse_keywords(protoinfo)
-        methods = kw['METHODS'].split(',')
+
+        methods = None
+        for line in protoinfo.split('\n'):
+            if line[:5] == 'AUTH ':
+                kw = parse_keywords(line[5:].replace(' ', '\n'))
+                methods = kw['METHODS'].split(',')
+        if not methods:
+            raise RuntimeError("Didn't find AUTH line in PROTOCOLINFO response.")
 
         if 'SAFECOOKIE' in methods:
             cookie = re.search('COOKIEFILE="(.*)"', protoinfo).group(1)
