@@ -176,6 +176,16 @@ OK''')
         self.send('551 go away\r\n')
         self.assertTrue(self.got_auth_failed)
 
+    def test_authenticate_no_auth_line(self):
+        try:
+            self.protocol._do_authenticate('''PROTOCOLINFO 1
+FOOAUTH METHODS=COOKIE,SAFECOOKIE COOKIEFILE="/dev/null"
+VERSION Tor="0.2.2.35"
+OK''')
+            self.assertTrue(False)
+        except RuntimeError, e:
+            self.assertTrue('find AUTH line' in e.message)
+
     def test_authenticate_not_enough_cookie_data(self):
         with tempfile.NamedTemporaryFile() as cookietmp:
             cookietmp.write('x'*35)     # too much data
@@ -183,7 +193,21 @@ OK''')
 
             try:
                 self.protocol._do_authenticate('''PROTOCOLINFO 1
-AUTH METHODS=HASHEDPASSWORD,COOKIE COOKIEFILE="%s"
+AUTH METHODS=COOKIE COOKIEFILE="%s"
+VERSION Tor="0.2.2.35"
+OK''' % cookietmp.name)
+                self.assertTrue(False)
+            except RuntimeError, e:
+                self.assertTrue('cookie to be 32' in e.message)
+
+    def test_authenticate_not_enough_safecookie_data(self):
+        with tempfile.NamedTemporaryFile() as cookietmp:
+            cookietmp.write('x'*35)     # too much data
+            cookietmp.flush()
+
+            try:
+                self.protocol._do_authenticate('''PROTOCOLINFO 1
+AUTH METHODS=SAFECOOKIE COOKIEFILE="%s"
 VERSION Tor="0.2.2.35"
 OK''' % cookietmp.name)
                 self.assertTrue(False)
