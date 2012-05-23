@@ -148,11 +148,11 @@ reactor.addSystemEventTrigger('before', 'shutdown', on_shutdown)
 if options['connect']:
     host, port = options['connect'].split(':')
     port = int(port)
-    print "Connecting to %s:%d with AUTHCOOKIE authentication..." % (host, port)
+    print "Connecting to %s:%d..." % (host, port)
     endpoint = endpoints.clientFromString(reactor, 'tcp:host=%s:port=%d' % (host, port))
     
 else:
-    print "Connecting to localhost:9051 with AUTHCOOKIE authentication..."
+    print "Connecting to localhost:9051..."
     endpoint = endpoints.TCP4ClientEndpoint(reactor, "localhost", 9051)
     
 d = txtorcon.build_tor_connection(endpoint, build_state=True)
