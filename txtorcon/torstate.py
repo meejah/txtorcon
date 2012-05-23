@@ -215,7 +215,7 @@ class TorState(object):
         self._router = None
 
     def connection_lost(self, *args):
-        print "CONNECTIONLOST:",args
+        if DEBUG: print "CONNECTIONLOST:",args
 
     @defer.inlineCallbacks
     def _bootstrap(self, arg=None):
