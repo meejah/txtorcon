@@ -26,9 +26,10 @@ class Options(usage.Options):
     """
     
     optParameters = [
-        ['failed', 'f', 0, 'Starting value for number of failed circuits.'],
-        ['built', 'b', 0, 'Starting value for the total number of built cicuits.'],
-        ['connect', 'c', None, 'Tor control socket to connect to in host:port format, like "localhost:9051" (the default).']
+        ['failed', 'f', 0, 'Starting value for number of failed circuits.', int],
+        ['built', 'b', 0, 'Starting value for the total number of built cicuits.', int],
+        ['connect', 'c', None, 'Tor control socket to connect to in host:port format, like "localhost:9051" (the default).'],
+        ['delay', 'n', 60, 'Seconds to wait between status updates.', int],
         ]
 
     def __init__(self):
@@ -126,7 +127,7 @@ def setup(state):
             listener.circuit_built(circ)
     state.add_circuit_listener(listener)
     # print an update every minute
-    task.LoopingCall(listener.print_update).start(60.0)
+    task.LoopingCall(listener.print_update).start(options['delay'])
 
 def setup_failed(arg):
     print "SETUP FAILED",arg
