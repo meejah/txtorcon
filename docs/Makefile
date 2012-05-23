@@ -35,10 +35,9 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
+	-rm README.rst #generated from ../README 
 
 html:
-	## NOTE: we get the README by running pandoc on it, but I do it from conf.py so that ReadTheDocs gets it to since they seem to run sphinx directly (not via make)
-	##-pandoc -r markdown -w rst ../README -o README.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	-cp ../meejah.asc docs/_build/html/meejah.asc
 	@echo

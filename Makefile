@@ -7,14 +7,17 @@ test:
 install:
 	python setup.py install
 
-doc: dist/txtorcon-0.1.tar.gz.gpg dist/txtorcon-0.2.tar.gz.gpg README docs/*.rst
+docs/README.rst: README
+	pandoc -r markdown -w rst README -o docs/README.rst
+
+doc: dist/txtorcon-0.1.tar.gz.gpg dist/txtorcon-0.2.tar.gz.gpg docs/*.rst docs/README.rst
 	cd docs && make html
 	cp dist/txtorcon-0.1.tar.gz docs/_build/html
 	cp dist/txtorcon-0.1.tar.gz.gpg docs/_build/html
 	cp dist/txtorcon-0.2.tar.gz docs/_build/html
 	cp dist/txtorcon-0.2.tar.gz.gpg docs/_build/html
 
-doc_single_html:
+doc_single_html: docs/README.rst
 	-pandoc -r markdown -w rst README -o docs/README.rst
 	cd docs && make singlehtml
 	-rm -rf doc_html
