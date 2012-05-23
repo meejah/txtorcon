@@ -1,3 +1,4 @@
+from __future__ import with_statement
 
 from zope.interface import implements
 from twisted.python import log
@@ -9,9 +10,12 @@ from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.protocols.basic import LineReceiver
 from txtorcon import TorControlProtocol, TorProtocolFactory, TorState, IStreamAttacher, ICircuitListener, IStreamListener
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
+from txtorcon.util import hmac_sha256
 
 import types
 import functools
+import tempfile
+import base64
 
 def do_nothing(*args):
     pass
@@ -171,6 +175,57 @@ VERSION Tor="0.2.2.35"
 OK''')
         self.send('551 go away\r\n')
         self.assertTrue(self.got_auth_failed)
+
+    def test_authenticate_not_enough_cookie_data(self):
+        with tempfile.NamedTemporaryFile() as cookietmp:
+            cookietmp.write('x'*35)     # too much data
+            cookietmp.flush()
+
+            try:
+                self.protocol._do_authenticate('''PROTOCOLINFO 1
+AUTH METHODS=HASHEDPASSWORD,COOKIE COOKIEFILE="%s"
+VERSION Tor="0.2.2.35"
+OK''' % cookietmp.name)
+                self.assertTrue(False)
+            except RuntimeError, e:
+                self.assertTrue('cookie to be 32' in e.message)
+
+    def test_authenticate_safecookie(self):
+        with tempfile.NamedTemporaryFile() as cookietmp:
+            cookiedata = bytearray([0]*32)
+            cookietmp.write(cookiedata)
+            cookietmp.flush()
+
+            self.protocol._do_authenticate('''PROTOCOLINFO 1
+AUTH METHODS=SAFECOOKIE COOKIEFILE="%s"
+VERSION Tor="0.2.2.35"
+OK''' % cookietmp.name)
+            self.assertTrue('AUTHCHALLENGE SAFECOOKIE ' in self.transport.value())
+            client_nonce = base64.b16decode(self.transport.value().split()[-1])
+            self.transport.clear()
+            server_nonce = bytearray([0]*32)
+            server_hash = hmac_sha256("Tor safe cookie authentication server-to-controller hash",
+                                      cookiedata + client_nonce + server_nonce)
+
+            self.send('250 AUTHCHALLENGE SERVERHASH=%s SERVERNONCE=%s' % \
+                      (base64.b16encode(server_hash), base64.b16encode(server_nonce)))
+            self.assertTrue('AUTHENTICATE ' in self.transport.value())
+
+    def test_authenticate_safecookie_wrong_hash(self):
+        cookiedata = bytearray([0]*32)
+        server_nonce = bytearray([0]*32)
+        server_hash = bytearray([0]*32)
+
+        ## pretend we already did PROTOCOLINFO and read the cookie
+        ## file
+        self.protocol.cookie_data = cookiedata
+        self.protocol.client_nonce = server_nonce # all 0's anyway
+        try:
+            self.protocol._safecookie_authchallenge('250 AUTHCHALLENGE SERVERHASH=%s SERVERNONCE=%s' % \
+                                                    (base64.b16encode(server_hash), base64.b16encode(server_nonce)))
+            self.assertTrue(False)
+        except RuntimeError, e:
+            self.assertTrue('hash not expected' in e.message)
 
     def confirm_version_events(self, arg):
         self.assertTrue(self.protocol.version == 'foo')
