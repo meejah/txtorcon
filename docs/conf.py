@@ -19,6 +19,10 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('.'))
 
+## hack attack; I can't/don't want to run this from Makefile because
+## ReadTheDocs.org doesn't appear to run it that way
+os.system('pandoc -r markdown -w rst ../README -o README.rst')
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
