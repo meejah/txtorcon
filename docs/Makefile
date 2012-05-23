@@ -35,9 +35,11 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
+	-rm README.rst #generated from ../README 
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	-cp ../meejah.asc docs/_build/html/meejah.asc
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 

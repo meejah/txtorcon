@@ -17,6 +17,7 @@ from txtorcon.torcontrolprotocol import parse_keywords
 from interface import ITorControlProtocol, IRouterContainer, ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher
 from spaghetti import FSM, State, Transition
 
+import functools
 import datetime
 import warnings
 import types
@@ -214,7 +215,7 @@ class TorState(object):
         self._router = None
 
     def connection_lost(self, *args):
-        print "CONNECTIONLOST:",args
+        if DEBUG: print "CONNECTIONLOST:",args
 
     @defer.inlineCallbacks
     def _bootstrap(self, arg=None):
@@ -226,7 +227,11 @@ class TorState(object):
         ## _network_status_parser, set up in constructor. "ns" should
         ## be the empty string, but we call _update_network_status for
         ## the de-duplication of named routers
-        ns = yield self.protocol.get_info_incremental('ns/all', self._network_status_parser.process)
+
+        def strip_ok_lines(callthrough, line):
+            if line.strip() != 'OK':
+                callthrough(line)
+        ns = yield self.protocol.get_info_incremental('ns/all', functools.partial(strip_ok_lines, self._network_status_parser.process))
         self._update_network_status(ns)
 
         ## update list of existing circuits

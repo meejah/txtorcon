@@ -4,6 +4,8 @@
 ##
 
 import os
+import hmac
+import hashlib
 import shutil
 import socket
 import subprocess
@@ -114,7 +116,23 @@ def process_from_address(addr, port, torstate=None):
 
     return None
 
-    
+def hmac_sha256(key, msg):
+    """
+    Adapted from rransom's tor-utils git repository. Returns the
+    digest (binary) of an HMAC with SHA256 over msg with key.
+    """
+
+    return hmac.new(key, msg, hashlib.sha256).digest()
+
+CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
+def compare_via_hash(x, y):
+    """
+    Taken from rrandom's tor-utils git repository, to compare two
+    hashes in something resembling constant time (or at least, not
+    leaking timing info?)
+    """
+    return (hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
+            hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
 
 ##
 ## classes
