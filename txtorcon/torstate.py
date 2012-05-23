@@ -459,6 +459,10 @@ class TorState(object):
         from NS and NEWCONSENSUS events.
         """
 
+        if data[0:2] == 'r ':
+            ## FIXME
+            self._network_status_parser.process("intentionally blank")
+            
         for line in data.split('\n'):
             if len(line.strip()):
                 self._network_status_parser.process(line)
@@ -562,7 +566,13 @@ class TorState(object):
 
     def router_from_id(self, routerid):
         "IRouterContainer API"
-        return self.routers[routerid]
+        try:
+            return self.routers[routerid]
+        except KeyError:
+            print "ERROR: router ID unfound:",routerid
+            print "dumping my routers:"
+            for x in self.routers:
+                print " ",x.id_hex
 
     ## implement IStreamListener
     
