@@ -52,6 +52,7 @@ Releases:
      incremental parsing,
      faster TorState startup,
      SAFECOOKIE support,
+     add options to :ref:`circuit-failure-rates.py` example and make it actually-useful,
      several bug fixes,
      patches from `mmaker <https://github.com/mmaker>`_ and `kneufeld <https://github.com/kneufeld>`_,
      ...
