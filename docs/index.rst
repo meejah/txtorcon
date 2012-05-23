@@ -37,13 +37,26 @@ including tests. Some features and motivating examples:
 
 The canonical URI is https://timaq4ygg2iegci7.onion
 
-- public key: `meejah.asc <meejah.asc>`_
+- meejah@meejah.ca (public key: `meejah.asc <meejah.asc>`_)
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
-- releases:
-
-  - march, 2011: `txtorcon-0.1.tar.gz <txtorcon-0.1.tar.gz>`_ (`txtorcon-0.1.tar.gz.gpg <txtorcon-0.1.tar.gz.gpg>`_)
 
 This documentation was generated |today|.
+
+Releases:
+---------
+
+.. comment::
+
+    - **XXX, 2012**: `txtorcon-0.2.tar.gz <txtorcon-0.2.tar.gz>`_ (`txtorcon-0.2.tar.gz.gpg <txtorcon-0.2.tar.gz.gpg>`_)
+     *adds*:
+     incremental parsing,
+     faster TorState startup,
+     SAFECOOKIE support,
+     several bug fixes,
+     patches from `mmaker <https://github.com/mmaker>`_ and `kneufeld <https://github.com/kneufeld>`_,
+     ...
+
+- march, 2012: `txtorcon-0.1.tar.gz <txtorcon-0.1.tar.gz>`_ (`txtorcon-0.1.tar.gz.gpg <txtorcon-0.1.tar.gz.gpg>`_)
 
 Documentation
 -------------
