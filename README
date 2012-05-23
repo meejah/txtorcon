@@ -38,13 +38,13 @@ which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
 
     $ make test
-    Ran 171 tests in 0.333s
+    Ran 186 tests in 0.426s
 
     $ make coverage
     ## ...deleted lots of output...
-    covered: 1556
-    uncovered: 29
-    98.14% test coverage
+    covered: 1675
+    uncovered: 57
+    96.60% test coverage
 
 Tor itself is not required to be running for any of the tests. There
 are no integration tests. ohcount claims under 2000 lines of code for
@@ -85,10 +85,14 @@ dependencies
    ``python-repoze.sphinx.autointerface`` (at least in Debian) to
    build the Interface-derived docs properly.
 
+ * GraphViz is used in the tests (and to generate state-machine
+   diagrams, if you like). If you don't have/want it see
+   ``txtorcon/test/test_fsm.py`` around line 62 to disable the test
+
 In any case, on a [Debian](http://www.debian.org/) wheezy or Ubuntu
 system, this should work:
 
-    apt-get install twisted python-ipaddr python-geoip python-pydoctor python-psutil
+    apt-get install twisted python-ipaddr python-geoip python-pydoctor python-psutil graphviz
     apt-get install python-sphinx python-repoze.sphinx.autointerface # for documentation
 
 
@@ -154,10 +158,10 @@ although the code itself is hosted via git:
     torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git
 
 You may contact me via meejah@meejah.ca with GPG key
-[128069A7](http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7)
-or see `meejah.asc`.  It is often possible to contact me at nick
-`meejah` in #tor-dev on [OFTC](http://www.oftc.net/oftc/) but be
-patient for replies.
+`128069A7 <http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>`_
+or see ``meejah.asc``. It is often possible to contact me as
+``meejah`` in #tor-dev on `OFTC <http://www.oftc.net/oftc/>`_ but be
+patient for replies (I do look at scrollback, so mention my nick).
 
 More conventionally, you may get the code at GitHub and documentation
 via ReadTheDocs:
