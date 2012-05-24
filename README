@@ -19,7 +19,12 @@ instances of Tor including Twisted endpoint support.
 My main motivation to write this was to learn more about Twisted and
 Tor. I was playing with pyglet and pygame to try out some
 visualization ideas and the only Python controller library was
-synchronous (thread-based) so I thought I'd write my own. 
+synchronous (thread-based) so I thought I'd write my own.
+
+NOTE: that this is currently a moving target still; if you're going to
+depend on txtorcon as a controller library, it Very Highly Recommended
+that you follow the source at github (or via the hidden service). I
+(fairly) regularly push code to both.
 
 
 quick implementation overview
@@ -99,9 +104,9 @@ system, this should work:
 documentation
 -------------
 
-**FIXME** **NOTE** I'm planning to re-organize which .py files the
-classes are in. If you know some best practices on this, or have
-specific suggestions please email me.
+**FIXME** **NOTE** I'm planning to possibly re-organize which .py
+files the classes are in. If you know some best practices on this, or
+have specific suggestions please email me.
 
 It is likely that you will need to read at least some of
 [control-spec.txt](https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt)
