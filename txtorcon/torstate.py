@@ -132,34 +132,37 @@ class TorState(object):
         def nothing(*args):
             pass
 
-        eat_line = State("eat_line")
         waiting_r = State("waiting_r")
-        waiting_w = State("waiting_r")
-        waiting_p = State("waiting_r")
-        waiting_s = State("waiting_r")
+        waiting_w = State("waiting_w")
+        waiting_p = State("waiting_p")
+        waiting_s = State("waiting_s")
 
-        eat_line.add_transition(Transition(waiting_r, lambda x: True, nothing))
-        
-        waiting_r.add_transition(Transition(eat_line, lambda x: x.strip() == '.' or x.strip() == 'OK', nothing))
+        ## eat lines that don't make sense
+        waiting_r.add_transition(Transition(waiting_r, lambda x: x.strip() == '.' or x.strip() == 'OK' or x[:3] == 'ns/' or x.strip() == '', nothing))
+
+        ## the "real" parsing
         waiting_r.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin))
         ## FIXME use better method/func than die!!
-        waiting_r.add_transition(Transition(eat_line, lambda x: x[:2] != 'r ', die('Expected "r " while parsing routers not "%s"')))
+        waiting_r.add_transition(Transition(waiting_r, lambda x: x[:2] != 'r ', die('Expected "r " while parsing routers not "%s"')))
         
         waiting_s.add_transition(Transition(waiting_w, lambda x: x[:2] == 's ', self._router_flags))
-        waiting_s.add_transition(Transition(eat_line, lambda x: x[:2] != 's ', die('Expected "s " while parsing routers not "%s"')))
-        waiting_s.add_transition(Transition(eat_line, lambda x: x.strip() == '.', nothing))
+        waiting_s.add_transition(Transition(waiting_r, lambda x: x[:2] != 's ', die('Expected "s " while parsing routers not "%s"')))
+        waiting_s.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
         
         waiting_w.add_transition(Transition(waiting_p, lambda x: x[:2] == 'w ', self._router_bandwidth))
         waiting_w.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin)) # "w" lines are optional
-        waiting_w.add_transition(Transition(eat_line, lambda x: x[:2] != 'w ', die('Expected "w " while parsing routers not "%s"')))
-        waiting_w.add_transition(Transition(eat_line, lambda x: x.strip() == '.', nothing))
+        waiting_w.add_transition(Transition(waiting_r, lambda x: x[:2] != 'w ', die('Expected "w " while parsing routers not "%s"')))
+        waiting_w.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
         
         waiting_p.add_transition(Transition(waiting_r, lambda x: x[:2] == 'p ', self._router_policy))
         waiting_p.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin)) # "p" lines are optional
-        waiting_p.add_transition(Transition(eat_line, lambda x: x[:2] != 'p ', die('Expected "p " while parsing routers not "%s"')))
-        waiting_p.add_transition(Transition(eat_line, lambda x: x.strip() == '.', nothing))
+        waiting_p.add_transition(Transition(waiting_r, lambda x: x[:2] != 'p ', die('Expected "p " while parsing routers not "%s"')))
+        waiting_p.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
         
-        self._network_status_parser = FSM([eat_line, waiting_r, waiting_s, waiting_w, waiting_p])
+        self._network_status_parser = FSM([waiting_r, waiting_s, waiting_w, waiting_p])
+        if DEBUG:
+            with open('routerfsm.dot', 'w') as fsmfile:
+                fsmfile.write(self._network_status_parser.dotty())
 
         self.post_bootstrap = defer.Deferred()
         if bootstrap:
@@ -228,10 +231,7 @@ class TorState(object):
         ## be the empty string, but we call _update_network_status for
         ## the de-duplication of named routers
 
-        def strip_ok_lines(callthrough, line):
-            if line.strip() != 'OK':
-                callthrough(line)
-        ns = yield self.protocol.get_info_incremental('ns/all', functools.partial(strip_ok_lines, self._network_status_parser.process))
+        ns = yield self.protocol.get_info_incremental('ns/all', self._network_status_parser.process)
         self._update_network_status(ns)
 
         ## update list of existing circuits
@@ -460,8 +460,7 @@ class TorState(object):
         """
 
         for line in data.split('\n'):
-            if len(line.strip()):
-                self._network_status_parser.process(line)
+            self._network_status_parser.process(line)
 
         if DEBUG: print len(self.routers_by_name),"named routers found."
         ## remove any names we added that turned out to have dups
