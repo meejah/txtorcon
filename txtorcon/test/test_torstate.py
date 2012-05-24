@@ -670,7 +670,64 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
 
     def test_addrmap(self):
         self.state._addr_map('example.com 127.0.0.1 "2012-01-01 00:00:00" EXPIRES=NEVER')
-            
+
+    def test_double_newconsensus(self):
+        """
+        The arrival of a second NEWCONSENSUS event causes parsing
+        errors.
+        """
+
+        ## bootstrap the TorState so we can send it a "real" 650
+        ## update
+        
+        self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
+        self.state._bootstrap()
+
+        self.send("250+ns/all=")
+        self.send(".")
+        self.send("250 OK")
+
+        self.send("250+circuit-status=")
+        self.send(".")
+        self.send("250 OK")
+
+        self.send("250-stream-status=")
+        self.send("250 OK")
+
+        self.send("250-address-mappings/all=")
+        self.send('250 OK')
+
+        for ignored in self.state.event_map.items():
+            self.send("250 OK")
+
+        self.send("250-entry-guards=")
+        self.send("250 OK")
+
+        self.send("250 OK")
+
+        ## state is now bootstrapped, we can send our NEWCONSENSUS update
+
+        self.protocol.dataReceived('\r\n'.join('''650+NEWCONSENSUS
+r Unnamed ABJlguUFz1lvQS0jq8nhTdRiXEk /zIVUg1tKMUeyUBoyimzorbQN9E 2012-05-23 01:10:22 219.94.255.254 9001 0
+s Fast Guard Running Stable Valid
+w Bandwidth=166
+p reject 1-65535
+.
+650 OK
+'''.split('\n')))
+
+        self.protocol.dataReceived('\r\n'.join('''650+NEWCONSENSUS
+r Unnamed ABJlguUFz1lvQS0jq8nhTdRiXEk /zIVUg1tKMUeyUBoyimzorbQN9E 2012-05-23 01:10:22 219.94.255.254 9001 0
+s Fast Guard Running Stable Valid
+w Bandwidth=166
+p reject 1-65535
+.
+650 OK
+'''.split('\n')))
+
+        self.assertTrue(self.state.routers.has_key('Unnamed'))
+        self.assertTrue(self.state.routers.has_key('$00126582E505CF596F412D23ABC9E14DD4625C49'))
+
     def test_newdesc_parse(self):
         """
         should this mostly go in test_router instead? all we need to
