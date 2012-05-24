@@ -6,17 +6,7 @@ mostly-simple ways of using txtorcon. They all show how to set up a
 connection and then wait for and use various information from Tor.
 
 
-.. _circuit_failure_rates:
-
-:file:`circuit_failure_rates.py`
---------------------------------
-
-:download:`Download the example <../examples/circuit_failure_rates.py>`.
-
-.. literalinclude:: ../examples/circuit_failure_rates.py
-
-
-.. _dissalow_streams_by_port:
+.. _dissalow_streams_by_port.py:
 
 :file:`disallow_streams_by_port.py`
 -----------------------------------
@@ -148,4 +138,17 @@ for SETEVNET updates. In this case marginally useful, as it listens
 for logging things INFO, NOTICE, WARN, ERR.
 
 .. literalinclude:: ../examples/monitor.py
+
+
+
+
+.. _circuit_failure_rates.py:
+
+:file:`circuit_failure_rates.py`
+--------------------------------
+
+:download:`Download the example <../examples/circuit_failure_rates.py>`.
+
+.. literalinclude:: ../examples/circuit_failure_rates.py
+
 

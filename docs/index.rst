@@ -45,17 +45,16 @@ This documentation was generated |today|.
 Releases:
 ---------
 
-.. comment::
-
-    - **XXX, 2012**: `txtorcon-0.2.tar.gz <txtorcon-0.2.tar.gz>`_ (`txtorcon-0.2.tar.gz.gpg <txtorcon-0.2.tar.gz.gpg>`_)
-     *adds*:
-     incremental parsing,
-     faster TorState startup,
-     SAFECOOKIE support,
-     add options to :ref:`circuit-failure-rates.py` example and make it actually-useful,
-     several bug fixes,
-     patches from `mmaker <https://github.com/mmaker>`_ and `kneufeld <https://github.com/kneufeld>`_,
-     ...
+- **May 24, 2012**: `txtorcon-0.2.tar.gz <txtorcon-0.2.tar.gz>`_ (`txtorcon-0.2.tar.gz.gpg <txtorcon-0.2.tar.gz.gpg>`_)
+  *This release adds*:
+  incremental parsing;
+  faster TorState startup;
+  SAFECOOKIE support;
+  several bug fixes;
+  options to :ref:`circuit_failure_rates.py` example to make it actually-useful;
+  include built documentation + sources in .tar.gz release;
+  patches from `mmaker <https://github.com/mmaker>`_ and `kneufeld <https://github.com/kneufeld>`_;
+  ...
 
 - march, 2012: `txtorcon-0.1.tar.gz <txtorcon-0.1.tar.gz>`_ (`txtorcon-0.1.tar.gz.gpg <txtorcon-0.1.tar.gz.gpg>`_)
 
