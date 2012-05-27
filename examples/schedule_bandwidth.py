@@ -5,16 +5,19 @@
 ## "BandWidthRate" and optionally "BandWidthBurst" settings in Tor.
 ##
 
+import os
 import sys
 import datetime
+import stat
 
 from twisted.python import log
 from twisted.internet import reactor, defer
 from twisted.internet.interfaces import IReactorTime
+from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from zope.interface import implements
 
-from txtor import TorProtocolFactory, TorConfig
+from txtorcon import TorProtocolFactory, TorConfig
 
 class BandwidthUpdater:
 
@@ -69,7 +72,13 @@ def bootstrap(proto):
     config.post_bootstrap.addCallback(setup_complete).addErrback(setup_failed)
     print "Connection is live, bootstrapping config..."
 
-point = TCP4ClientEndpoint(reactor, "localhost", 9051)
+if os.stat('/var/run/tor/control').st_mode & (stat.S_IRGRP | stat.S_IRUSR | stat.S_IROTH):
+    print "using control socket"
+    point = UNIXClientEndpoint(reactor, "/var/run/tor/control")
+    
+else:
+    point = TCP4ClientEndpoint(reactor, "localhost", 9051)
+    
 d = point.connect(TorProtocolFactory())
 d.addCallback(bootstrap).addErrback(setup_failed)
 reactor.run()

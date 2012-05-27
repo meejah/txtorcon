@@ -11,6 +11,7 @@
 
 import os
 import sys
+import stat
 import random
 import time
 
@@ -169,8 +170,13 @@ if options['connect']:
     endpoint = endpoints.clientFromString(reactor, 'tcp:host=%s:port=%d' % (host, port))
     
 else:
-    print "Connecting to localhost:9051..."
-    endpoint = endpoints.TCP4ClientEndpoint(reactor, "localhost", 9051)
+    if os.stat('/var/run/tor/control').st_mode & (stat.S_IRGRP | stat.S_IRUSR | stat.S_IROTH):
+        print 'Connecting to "/var/run/tor/control"'
+        endpoint = endpoints.UNIXClientEndpoint(reactor, "/var/run/tor/control")
+
+    else:
+        print "Connecting to localhost:9051..."
+        endpoint = endpoints.TCP4ClientEndpoint(reactor, "localhost", 9051)
     
 d = txtorcon.build_tor_connection(endpoint, build_state=True)
 d.addCallback(setup).addErrback(setup_failed)

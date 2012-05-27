@@ -7,11 +7,12 @@
 
 import os
 import sys
+import stat
 import random
 
 from twisted.python import log
 from twisted.internet import reactor, defer
-from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 from zope.interface import implements
 
 try:
@@ -84,6 +85,13 @@ def setup_failed(arg):
     reactor.stop()
 
 log.startLogging(sys.stdout)
-d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051))
+
+if os.stat('/var/run/tor/control').st_mode & (stat.S_IRGRP | stat.S_IRUSR | stat.S_IROTH):
+    print "using control socket"
+    d = txtorcon.build_tor_connection(UNIXClientEndpoint(reactor, "/var/run/tor/control"))
+    
+else:
+    d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051))
+    
 d.addCallback(setup).addErrback(setup_failed)
 reactor.run()

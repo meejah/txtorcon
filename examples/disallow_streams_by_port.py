@@ -10,11 +10,14 @@
 ## attach_streams_by_country.py
 ##
 
+import os
 import sys
+import stat
 import random
 
 from twisted.python import log
 from twisted.internet import reactor, defer
+from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from zope.interface import implements
 
@@ -59,7 +62,13 @@ def setup_failed(arg):
     print "SETUP FAILED",arg
     reactor.stop()
 
-point = TCP4ClientEndpoint(reactor, "localhost", 9051)
+if os.stat('/var/run/tor/control').st_mode & (stat.S_IRGRP | stat.S_IRUSR | stat.S_IROTH):
+    print "using control socket"
+    point = UNIXClientEndpoint(reactor, "/var/run/tor/control")
+    
+else:
+    point = TCP4ClientEndpoint(reactor, "localhost", 9051)
+    
 d = txtorcon.build_tor_connection(point)
 d.addCallback(do_setup).addErrback(setup_failed)
 reactor.run()
