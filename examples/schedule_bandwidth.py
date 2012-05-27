@@ -50,7 +50,7 @@ class BandwidthUpdater:
         self.new_burst = x[2]
         
         tm = (future - datetime.datetime.now()).seconds
-        self.scheduler.callLater(tm, self.reallyUpdate)
+        self.scheduler.callLater(tm, self.really_update)
         print "waiting",tm,"seconds to adjust bandwidth"
 
     def really_update(self):
@@ -61,7 +61,7 @@ class BandwidthUpdater:
 def setup_complete(conf):
     print "Connected."
     bwup = BandwidthUpdater(conf, reactor)
-    bwup.doUpdate()
+    bwup.do_update()
 
 def setup_failed(arg):
     print "SETUP FAILED",arg

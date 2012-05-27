@@ -53,6 +53,7 @@ class MyStreamListener(txtorcon.StreamListenerMixin):
               "with path:",'->'.join(map(lambda x: x.location.countrycode, circuit.path))
 
 class MyAttacher(txtorcon.CircuitListenerMixin):
+    implements(txtorcon.IStreamAttacher)
 
     def __init__(self, state):
         ## pointer to our TorState object
