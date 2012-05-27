@@ -52,7 +52,8 @@ Releases:
   SAFECOOKIE support;
   several bug fixes;
   options to :ref:`circuit_failure_rates.py` example to make it actually-useful;
-  include built documentation + sources in .tar.gz release;
+  include built documentation + sources in tarball;
+  include tests in tarball;
   patches from `mmaker <https://github.com/mmaker>`_ and `kneufeld <https://github.com/kneufeld>`_;
   ...
 
