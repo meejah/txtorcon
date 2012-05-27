@@ -216,7 +216,7 @@ OK''' % cookietmp.name)
 
     def test_authenticate_safecookie(self):
         with tempfile.NamedTemporaryFile() as cookietmp:
-            cookiedata = bytearray([0]*32)
+            cookiedata = str(bytearray([0]*32))
             cookietmp.write(cookiedata)
             cookietmp.flush()
 
@@ -227,7 +227,7 @@ OK''' % cookietmp.name)
             self.assertTrue('AUTHCHALLENGE SAFECOOKIE ' in self.transport.value())
             client_nonce = base64.b16decode(self.transport.value().split()[-1])
             self.transport.clear()
-            server_nonce = bytearray([0]*32)
+            server_nonce = str(bytearray([0]*32))
             server_hash = hmac_sha256("Tor safe cookie authentication server-to-controller hash",
                                       cookiedata + client_nonce + server_nonce)
 
@@ -236,9 +236,9 @@ OK''' % cookietmp.name)
             self.assertTrue('AUTHENTICATE ' in self.transport.value())
 
     def test_authenticate_safecookie_wrong_hash(self):
-        cookiedata = bytearray([0]*32)
-        server_nonce = bytearray([0]*32)
-        server_hash = bytearray([0]*32)
+        cookiedata = str(bytearray([0]*32))
+        server_nonce = str(bytearray([0]*32))
+        server_hash = str(bytearray([0]*32))
 
         ## pretend we already did PROTOCOLINFO and read the cookie
         ## file
