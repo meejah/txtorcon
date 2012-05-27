@@ -194,8 +194,6 @@ class TorControlProtocol(LineOnlyReceiver):
         self.valid_signals = []
         """A list of all valid signals we accept from Tor"""
 
-        self.log = open('torcontrollerfoo.log','w')
-
         self.post_bootstrap = defer.Deferred()
         """
         This Deferred is triggered when we're done setting up
@@ -450,11 +448,8 @@ class TorControlProtocol(LineOnlyReceiver):
     def lineReceived(self, line):
         ":api:`twisted.protocols.basic.LineOnlyReceiver` API"
 #        print "LINE:",line
-        self.log.write(line+'\n')
-        self.log.flush()
-
+        log.msg(line)
         self.fsm.process(line)
-        return
 
     def connectionMade(self):
         "LineOnlyReceiver API (or parent?)"
@@ -487,7 +482,7 @@ class TorControlProtocol(LineOnlyReceiver):
             self.defer = d
             if DEBUG and 'AUTH' not in cmd: print "issue:",cmd
             self.transport.write(cmd + '\r\n')
-            self.log.write(cmd+'\n')
+            log.msg(cmd)
 
     def _auth_failed(self, fail):
         """
