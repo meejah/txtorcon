@@ -45,7 +45,7 @@ This documentation was generated |today|.
 Releases:
 ---------
 
-- **May 24, 2012**: `txtorcon-0.2.tar.gz <txtorcon-0.2.tar.gz>`_ (`txtorcon-0.2.tar.gz.gpg <txtorcon-0.2.tar.gz.gpg>`_)
+- **May 24, 2012**: `txtorcon-0.2.tar.gz <txtorcon-0.2.tar.gz>`_ (`txtorcon-0.2.tar.gz.sig <txtorcon-0.2.tar.gz.sig>`_)
   *This release adds*:
   incremental parsing;
   faster TorState startup;
@@ -57,7 +57,7 @@ Releases:
   patches from `mmaker <https://github.com/mmaker>`_ and `kneufeld <https://github.com/kneufeld>`_;
   ...
 
-- march, 2012: `txtorcon-0.1.tar.gz <txtorcon-0.1.tar.gz>`_ (`txtorcon-0.1.tar.gz.gpg <txtorcon-0.1.tar.gz.gpg>`_)
+- march, 2012: `txtorcon-0.1.tar.gz <txtorcon-0.1.tar.gz>`_ (`txtorcon-0.1.tar.gz.sig <txtorcon-0.1.tar.gz.sig>`_)
 
 Documentation
 -------------
