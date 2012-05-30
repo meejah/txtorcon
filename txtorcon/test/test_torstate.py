@@ -465,7 +465,7 @@ class StateTests(unittest.TestCase):
         try:
             self.state._maybe_attach(stream)
         except Exception, e:
-            msg = e.message
+            msg = str(e)
         self.assertTrue('circuit unknown' in msg)
 
         attacher.answer = self.state.circuits[1]
@@ -473,7 +473,7 @@ class StateTests(unittest.TestCase):
         try:
             self.state._maybe_attach(stream)
         except Exception, e:
-            msg = e.message
+            msg = str(e)
         self.assertTrue('only attach to BUILT' in msg)
 
     def test_attacher_no_attach(self):
@@ -603,7 +603,7 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
             self.fail()
             
         except RuntimeError, e:
-            self.assertTrue('"s "' in e.message)
+            self.assertTrue('"s "' in str(e))
 
     def test_routers_no_policy(self):
         """

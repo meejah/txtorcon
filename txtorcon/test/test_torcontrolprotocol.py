@@ -125,7 +125,7 @@ class ProtocolTests(unittest.TestCase):
             self.protocol._broadcast_response("foo")
             self.fail()
         except RuntimeError, e:
-            self.assertTrue('No code set yet' in e.message)
+            self.assertTrue('No code set yet' in str(e))
 
     def test_statemachine_broadcast_unknown_code(self):
         try:
@@ -133,7 +133,7 @@ class ProtocolTests(unittest.TestCase):
             self.protocol._broadcast_response("foo")
             self.fail()
         except RuntimeError, e:
-            self.assertTrue('Unknown code' in e.message)
+            self.assertTrue('Unknown code' in str(e))
 
     def test_statemachine_is_finish(self):
         self.assertTrue(not self.protocol._is_finish_line(''))
@@ -150,7 +150,7 @@ class ProtocolTests(unittest.TestCase):
             self.protocol._is_continuation_line("123 ")
             self.fail()
         except RuntimeError, e:
-            self.assertTrue('Unexpected code' in e.message)
+            self.assertTrue('Unexpected code' in str(e))
 
     def test_statemachine_multiline(self):
         try:
@@ -158,7 +158,7 @@ class ProtocolTests(unittest.TestCase):
             self.protocol._is_multi_line("123 ")
             self.fail()
         except RuntimeError, e:
-            self.assertTrue('Unexpected code' in e.message)
+            self.assertTrue('Unexpected code' in str(e))
 
     def auth_failed(self, msg):
         self.assertTrue(str(msg.value) == '551 go away')
@@ -184,7 +184,7 @@ VERSION Tor="0.2.2.35"
 OK''')
             self.assertTrue(False)
         except RuntimeError, e:
-            self.assertTrue('find AUTH line' in e.message)
+            self.assertTrue('find AUTH line' in str(e))
 
     def test_authenticate_not_enough_cookie_data(self):
         with tempfile.NamedTemporaryFile() as cookietmp:
@@ -198,7 +198,7 @@ VERSION Tor="0.2.2.35"
 OK''' % cookietmp.name)
                 self.assertTrue(False)
             except RuntimeError, e:
-                self.assertTrue('cookie to be 32' in e.message)
+                self.assertTrue('cookie to be 32' in str(e))
 
     def test_authenticate_not_enough_safecookie_data(self):
         with tempfile.NamedTemporaryFile() as cookietmp:
@@ -212,7 +212,7 @@ VERSION Tor="0.2.2.35"
 OK''' % cookietmp.name)
                 self.assertTrue(False)
             except RuntimeError, e:
-                self.assertTrue('cookie to be 32' in e.message)
+                self.assertTrue('cookie to be 32' in str(e))
 
     def test_authenticate_safecookie(self):
         with tempfile.NamedTemporaryFile() as cookietmp:
@@ -249,7 +249,7 @@ OK''' % cookietmp.name)
                                                     (base64.b16encode(server_hash), base64.b16encode(server_nonce)))
             self.assertTrue(False)
         except RuntimeError, e:
-            self.assertTrue('hash not expected' in e.message)
+            self.assertTrue('hash not expected' in str(e))
 
     def confirm_version_events(self, arg):
         self.assertTrue(self.protocol.version == 'foo')
@@ -407,7 +407,7 @@ OK''' % cookietmp.name)
             self.protocol.signal('FOO')
             self.fail()
         except Exception, e:
-            self.assertTrue('Invalid signal' in e.message)
+            self.assertTrue('Invalid signal' in str(e))
 
     def test_signal(self):
         self.protocol.valid_signals = ['NEWNYM']
@@ -433,7 +433,7 @@ OK''' % cookietmp.name)
             self.send("650 CIRC 1000 EXTENDED moria1,moria2")
             self.assertTrue(False)
         except Exception, e:
-            self.assertTrue("Wasn't listening" in e.message )
+            self.assertTrue("Wasn't listening" in str(e) )
 
     def test_getinfo(self):
         d = self.protocol.get_info("version")
@@ -530,7 +530,7 @@ OK''' % cookietmp.name)
             self.protocol.remove_event_listener('FOO', listener0)
             self.fail()
         except Exception, e:
-            self.assertTrue('FOO' in e.message)
+            self.assertTrue('FOO' in str(e))
 
     def checkContinuation(self, v):
         self.assertTrue(v == "key=\nvalue0\nvalue1\nOK")

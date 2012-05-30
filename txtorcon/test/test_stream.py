@@ -135,7 +135,7 @@ class StreamTests(unittest.TestCase):
             stream.update("999 SENTCONNECT 186 1.2.3.4:80 SOURCE=EXIT".split())
             self.fail()
         except Exception, e:
-            self.assertTrue('wrong stream' in e.message)
+            self.assertTrue('wrong stream' in str(e))
 
     def test_update_illegal_state(self):
         self.circuits[186] = FakeCircuit(186)
@@ -145,7 +145,7 @@ class StreamTests(unittest.TestCase):
             stream.update("316 FOO 0 www.yahoo.com:80 SOURCE_ADDR=127.0.0.1:55877 PURPOSE=USER".split())
             self.fail()
         except Exception, e:
-            self.assertTrue('Unknown state' in e.message)
+            self.assertTrue('Unknown state' in str(e))
 
     def test_listen_unlisten(self):
         self.circuits[186] = FakeCircuit(186)
