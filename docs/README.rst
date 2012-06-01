@@ -12,9 +12,10 @@ privacy and security on the Internet.
 The main abstraction of this library is txtorcon.TorControlProtocol
 which presents an asynchronous API to speak the Tor client protocol in
 Python. txtorcon also provides abstractions to track and get updates
-about Tor's state and current configuration (including writing it to Tor
-or disk), along with helpers to asynchronously launch slave instances of
-Tor including Twisted endpoint support.
+about Tor's state (txtorcon.TorState) and current configuration
+(including writing it to Tor or disk) in txtorcon.TorConfig, along with
+helpers to asynchronously launch slave instances of Tor including
+Twisted endpoint support.
 
 My main motivation to write this was to learn more about Twisted and
 Tor. I was playing with pyglet and pygame to try out some visualization
@@ -24,7 +25,10 @@ ideas and the only Python controller library was synchronous
 NOTE: that this is currently a moving target still; if you're going to
 depend on txtorcon as a controller library, it Very Highly Recommended
 that you follow the source at github (or via the hidden service). I
-(fairly) regularly push code to both.
+fairly regularly push code to both.
+
+txtorcon runs all test cleanly on both Debian stable (squeeze) and
+testing (wheezy). Reports from other OSes appreciated.
 
 quick implementation overview
 -----------------------------
