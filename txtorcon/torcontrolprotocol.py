@@ -31,7 +31,7 @@ import hashlib
 import base64
 
 DEFAULT_VALUE = 'DEFAULT'
-
+DEBUG = False
 
 class TorProtocolError(RuntimeError):
     """
@@ -262,7 +262,10 @@ class TorControlProtocol(LineOnlyReceiver):
         ## hand-set initial state default start state is first in the
         ## list; the above looks nice in dotty though
         self.fsm.state = idle
-        # txtorlog.msg('FSM: ', self.fsm.dotty())
+        if DEBUG:
+            self.debuglog = open('txtorcon-debug.log', 'w')
+            with open('fsm.dot', 'w') as fsmfile:
+                fsmfile.write(self.fsm.dotty())
 
     ## see end of file for all the state machine matcher and
     ## transition methods.
@@ -447,8 +450,14 @@ class TorControlProtocol(LineOnlyReceiver):
     ## need to call them.
 
     def lineReceived(self, line):
-        ":api:`twisted.protocols.basic.LineOnlyReceiver` API"
-        txtorlog.msg(line)
+        """
+        :api:`twisted.protocols.basic.LineOnlyReceiver` API
+        """
+        
+        if DEBUG:
+            self.debuglog.write(line+'\n')
+            self.debuglog.flush()
+            
         self.fsm.process(line)
 
     def connectionMade(self):
@@ -457,8 +466,10 @@ class TorControlProtocol(LineOnlyReceiver):
         self.protocolinfo().addCallback(self._do_authenticate).addErrback(self._auth_failed)
 
     def _handle_notify(self, code, rest):
-        "Internal method to deal with 600-level responses."
-        #print "NOTIFY",code,rest
+        """
+        Internal method to deal with 600-level responses.
+        """
+        
         firstline = rest[:rest.find('\n')]
         args = firstline.split()
         if self.events.has_key(args[0]):
@@ -480,7 +491,12 @@ class TorControlProtocol(LineOnlyReceiver):
             self.command = self.commands.pop(0)
             (d, cmd, cmd_arg) = self.command
             self.defer = d
-            txtorlog.msg(cmd)
+
+            if DEBUG:
+                #print "NOTIFY",code,rest
+                self.debuglog.write(cmd+'\n')
+                self.debuglog.flush()
+
             self.transport.write(cmd + '\r\n')
 
     def _auth_failed(self, fail):
@@ -533,7 +549,7 @@ class TorControlProtocol(LineOnlyReceiver):
             self.cookie_data = open(cookie,'r').read()
             if len(self.cookie_data) != 32:
                 raise RuntimeError("Expected authentication cookie to be 32 bytes, got %d" % len(self.cookie_data))
-            if DEBUG: print "Using SAFECOOKIE authentication",cookie,len(self.cookie_data),"bytes"
+            txtorlog.msg("Using SAFECOOKIE authentication",cookie,len(self.cookie_data),"bytes")
             self.client_nonce = os.urandom(32)
 
             d = self.queue_command('AUTHCHALLENGE SAFECOOKIE %s' % base64.b16encode(self.client_nonce))
