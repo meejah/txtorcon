@@ -13,6 +13,7 @@ from txtorcon.circuit import Circuit
 from txtorcon.router import Router
 from txtorcon.addrmap import AddrMap
 from txtorcon.torcontrolprotocol import parse_keywords
+from txtorcon.log import txtorlog
 
 from interface import ITorControlProtocol, IRouterContainer, ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher
 from spaghetti import FSM, State, Transition
@@ -22,8 +23,6 @@ import datetime
 import warnings
 import types
 import os
-
-DEBUG = False
 
 def _build_state(proto):
     state = TorState(proto)
@@ -36,7 +35,7 @@ def build_tor_connection(endpoint, build_state=True, password=None):
     """
     This is used to build a valid TorState (which has .protocol for
     the TorControlProtocol). For example::
-    
+
         from twisted.internet import reactor
         from twisted.internet.endpoints import TCP4ClientEndpoint
         import txtorcon
@@ -52,7 +51,7 @@ def build_tor_connection(endpoint, build_state=True, password=None):
     :param build_state: If True (the default) a TorState object will be
         built as well. If False, just a TorControlProtocol will be
         returned via the Deferred.
-    
+
     :return:
         a Deferred that fires with a TorControlProtocol or, if you
         specified build_state=True, a TorState. In both cases, the
@@ -60,7 +59,7 @@ def build_tor_connection(endpoint, build_state=True, password=None):
         (i.e. TorControlProtocol.post_bootstrap or
         TorState.post_bootstap has fired, as needed)
     """
-    
+
     from txtorcon import TorProtocolFactory
     d = endpoint.connect(TorProtocolFactory(password=password))
     if build_state:
@@ -90,13 +89,13 @@ class TorState(object):
     an :class:`txtorcon.interface.ICircuitContainer` and
     :class:`txtorcon.interface.IRouterContainer`.
     """
-    
+
     implements (ICircuitListener, ICircuitContainer, IRouterContainer, IStreamListener)
 
     def __init__(self, protocol, bootstrap=True):
         self.protocol = ITorControlProtocol(protocol)
         self.protocol.connectionLost = self.connection_lost
-        
+
         ## could override these to get your own Circuit/Stream subclasses
         ## to track these things
         self.circuit_factory = Circuit
@@ -109,11 +108,11 @@ class TorState(object):
 
         self.circuit_listeners = []
         self.stream_listeners = []
-        
+
         self.addrmap = AddrMap()
         self.circuits = {}              # keys on id (integer)
         self.streams = {}               # keys on id (integer)
-        
+
         self.routers = {}               # keys by hexid (string) and by unique names
         self.routers_by_name = {}       # keys on name, value always list (many duplicate "Unnamed" routers, for example)
         self.guards = {}                # potentially-usable as entry guards, I think? (any router with 'Guard' flag)
@@ -149,19 +148,19 @@ class TorState(object):
         waiting_s.add_transition(Transition(waiting_r, ignorable_line, nothing))
         waiting_s.add_transition(Transition(waiting_r, lambda x: x[:2] != 's ', die('Expected "s " while parsing routers not "%s"')))
         waiting_s.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
-        
+
         waiting_w.add_transition(Transition(waiting_p, lambda x: x[:2] == 'w ', self._router_bandwidth))
         waiting_w.add_transition(Transition(waiting_r, ignorable_line, nothing))
         waiting_w.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin)) # "w" lines are optional
         waiting_w.add_transition(Transition(waiting_r, lambda x: x[:2] != 'w ', die('Expected "w " while parsing routers not "%s"')))
         waiting_w.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
-        
+
         waiting_p.add_transition(Transition(waiting_r, lambda x: x[:2] == 'p ', self._router_policy))
         waiting_p.add_transition(Transition(waiting_r, ignorable_line, nothing))
         waiting_p.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin)) # "p" lines are optional
         waiting_p.add_transition(Transition(waiting_r, lambda x: x[:2] != 'p ', die('Expected "p " while parsing routers not "%s"')))
         waiting_p.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
-        
+
         self._network_status_parser = FSM([waiting_r, waiting_s, waiting_w, waiting_p])
         if DEBUG:
             with open('routerfsm.dot', 'w') as fsmfile:
@@ -192,17 +191,17 @@ class TorState(object):
 
         if self.routers_by_name.has_key(self._router.name):
             self.routers_by_name[self._router.name].append(self._router)
-            
+
         else:
             self.routers_by_name[self._router.name] = [self._router]
 
         if self.routers.has_key(self._router.name):
             self.routers[self._router.name] = None
-            
+
         else:
             self.routers[self._router.name] = self._router
         self.routers[self._router.id_hex] = self._router
-        
+
     def _router_flags(self, data):
         args = data.split()
         self._router.flags = args[1:]
@@ -272,7 +271,7 @@ class TorState(object):
             if status.lower() != 'up':
                 self.unusable_entry_guards.append(line)
                 continue
-                
+
             try:
                 self.entry_guards[name] = self.router_from_id(name)
             except KeyError:
@@ -308,9 +307,9 @@ class TorState(object):
         Shouldn't Tor handle this by turning this back to 0 if the
         controller that twiddled it disconnects?
         """
-        
+
         return self.protocol.set_conf("__LeaveStreamsUnattached", 0)
-    
+
     def set_attacher(self, attacher, myreactor):
         """
         Provide an :class:`txtorcon.interface.IStreamAttacher to associate streams to
@@ -324,13 +323,13 @@ class TorState(object):
             self.attacher = IStreamAttacher(attacher)
         else:
             self.attacher = None
-        
+
         if self.attacher is None:
             self.undo_attacher()
             if self.cleanup:
                 react.removeSystemEventTrigger(self.cleanup)
                 self.cleanup = None
-            
+
         else:
             self.protocol.set_conf("__LeaveStreamsUnattached", "1")
             self.cleanup = react.addSystemEventTrigger('before', 'shutdown',
@@ -357,7 +356,7 @@ class TorState(object):
     def close_stream(self, stream, reason='REASON_MISC'):
         if not self.streams.has_key(stream.id):
             raise KeyError("No such stream: %d" % stream.id)
-            
+
         return self.protocol.queue_command("CLOSESTREAM %d %d" % (stream.id, self.stream_close_reasons[reason]))
 
     def add_circuit_listener(self, icircuitlistener):
@@ -398,23 +397,23 @@ class TorState(object):
         cause the circuit attacher to simply ignore the stream
         (neither attaching it, nor telling Tor to attach it).
         """
-        
+
         if self.attacher:
             if stream.target_host is not None and '.exit' in stream.target_host:
                 ## we want to totally ignore .exit URIs as these are
                 ## used to specify a particular exit node, and trying
                 ## to do STREAMATTACH on them will fail with an error
                 ## from Tor anyway.
-                if DEBUG: print "ignore attacher:",stream
+                txtorlog.msg("ignore attacher:", stream)
                 return
 
             circ = IStreamAttacher(self.attacher).attach_stream(stream, self.circuits)
             if circ is self.DO_NOT_ATTACH:
                 return
-            
+
             if circ == None:
                 self.protocol.queue_command("ATTACHSTREAM %d 0" % stream.id)
-                
+
             else:
                 if isinstance(circ, defer.Deferred):
                     class IssueStreamAttach:
@@ -465,35 +464,35 @@ class TorState(object):
         for line in data.split('\n'):
             self._network_status_parser.process(line)
 
-        if DEBUG: print len(self.routers_by_name),"named routers found."
+        txtorlog.msg(len(self.routers_by_name), "named routers found.")
         ## remove any names we added that turned out to have dups
         for (k,v) in self.routers.items():
             if v is None:
-                if DEBUG: print len(self.routers_by_name[k]),"dups:",k ##,self.routers_by_name[k]
+                txtorlog.msg(len(self.routers_by_name[k]), "dups:", k)  ##,self.routers_by_name[k]
                 del self.routers[k]
 
-        if DEBUG: print len(self.guards),"GUARDs"
-                
+        txtorlog.msg(len(self.guards), "GUARDs")
+
     def _newdesc_update(self, args):
         """
         Callback used internall for ORCONN and NEWDESC events to update Router information.
-        
+
         FIXME: need to look at state for NEWDESC; if it's CLOSED we
         probably want to remove it from dicts...
         """
 
         hsh = args[:41]
         if not self.routers.has_key(hsh):
-            if DEBUG: print "haven't seen",hsh,"yet!"
+            txtorlog.msg("haven't seen", hsh, "yet!")
         self.protocol.get_info_raw('ns/id/%s' % hsh[1:]).addCallback(self._update_network_status).addErrback(log.err)
-        if DEBUG: print "NEWDESC",args
-                
+        txtorlog.msg("NEWDESC", args)
+
     def _circuit_update(self, line):
         "Used internally as a callback to update Circuit information from CIRC events."
         #print "circuit_update",line
         args = line.split()
         circ_id = int(args[0])
-        
+
         if not self.circuits.has_key(circ_id):
             c = self.circuit_factory(self)
             c.listen(self)
@@ -509,7 +508,7 @@ class TorState(object):
         if line.strip() == 'stream-status=':
             ## this happens if there are no active streams
             return
-        
+
         args = line.split()
         assert len(args) >= 3
 
@@ -522,7 +521,7 @@ class TorState(object):
             [stream.listen(x) for x in self.stream_listeners]
             wasnew = True
         self.streams[stream_id].update(args)
-        
+
         ## if the update closed the stream, it won't be in our list
         ## anymore. FIXME: how can we ever hit such a case as the
         ## first update being a CLOSE?
@@ -531,7 +530,7 @@ class TorState(object):
 
     def _addr_map(self, addr):
         "Internal callback to update DNS cache. Listens to ADDRMAP."
-        if DEBUG: print " --> addr_map",addr
+        txtorlog.msg(" --> addr_map", addr)
         self.addrmap.update(addr)
 
     event_map = {
@@ -555,7 +554,7 @@ class TorState(object):
             yield self.protocol.add_event_listener(event, types.MethodType(func, self, TorState))
 
     ## ICircuitContainer
-        
+
     def find_circuit(self, circid):
         "ICircuitContainer API"
         return self.circuits[circid]
@@ -567,14 +566,14 @@ class TorState(object):
         return self.routers[routerid]
 
     ## implement IStreamListener
-    
+
     def stream_new(self, stream):
         "IStreamListener: a new stream has been created"
-        if DEBUG: print "stream_new",stream
+        txtorlog.msg("stream_new", stream)
 
     def stream_succeeded(self, stream):
         "IStreamListener: stream has succeeded"
-        if DEBUG: print "stream_succeeded",stream
+        txtorlog.msg("stream_succeeded", stream)
 
     def stream_attach(self, stream, circuit):
         """
@@ -582,56 +581,59 @@ class TorState(object):
         seems you get an attach to None followed by an attach to real
         circuit fairly frequently. Perhaps related to __LeaveStreamsUnattached?
         """
-        if DEBUG: print "stream_attach",stream.id,stream.target_host," -> ",circuit
+        txtorlog.msg("stream_attach", stream.id,
+                     stream.target_host, " -> ", circuit)
 
     def stream_detach(self, stream, circuit):
         """
         IStreamListener
         """
-        if DEBUG: print "stream_detach",stream.id
+        txtorlog.msg("stream_detach", stream.id)
 
     def stream_closed(self, stream):
         "IStreamListener: stream has been closed (won't be in controller's list anymore)"
-        if DEBUG: print "stream_closed",stream.id
+        txtorlog.msg("stream_closed", stream.id)
         del self.streams[stream.id]
 
     def stream_failed(self, stream, reason, remote_reason):
         "IStreamListener: stream failed for some reason (won't be in controller's list anymore)"
-        if DEBUG: print "stream_failed",stream.id
+        txtorlog.msg("stream_failed", stream.id)
         del self.streams[stream.id]
 
     ## implement ICircuitListener
 
     def circuit_launched(self, circuit):
         "ICircuitListener API"
-        if DEBUG: print "circuit_launched",circuit
+        txtorlog.msg("circuit_launched", circuit)
         self.circuits[circuit.id] = circuit
 
     def circuit_extend(self, circuit, router):
         "ICircuitListener API"
-        if DEBUG: print "circuit_extend:",circuit.id,router
-    
+        txtorlog.msg("circuit_extend:", circuit.id, router)
+
     def circuit_built(self, circuit):
         "ICircuitListener API"
-        if DEBUG: print "circuit_built:",circuit.id,'->'.join(map(lambda x: x.name+'.'+str(x.location.countrycode), circuit.path)), circuit.streams
-    
+        txtorlog.msg("circuit_built:", circuit.id,
+                     "->".join("%s.%s" % (x.name, x.location.countrycode) for x in circuit.path),
+                     circuit.streams)
+
     def circuit_new(self, circuit):
         "ICircuitListener API"
-        if DEBUG: print "circuit_new:",circuit.id
+        txtorlog.msg("circuit_new:", circuit.id)
         self.circuits[circuit.id] = circuit
 
     def circuit_destroy(self, circuit):
         "For circuit_closed and circuit_failed"
-        if DEBUG: print "circuit_destroy:",circuit.id
+        txtorlog.msg("circuit_destroy:",circuit.id)
         del self.circuits[circuit.id]
 
     def circuit_closed(self, circuit):
         "ICircuitListener API"
-        if DEBUG: print "circuit_closed",circuit
+        txtorlog.msg("circuit_closed", circuit)
         self.circuit_destroy(circuit)
-        
+
     def circuit_failed(self, circuit, reason):
         "ICircuitListener API"
-        if DEBUG: print "circuit_failed",circuit,reason
+        txtorlog.msg("circuit_failed", circuit, reason)
         self.circuit_destroy(circuit)
-        
+

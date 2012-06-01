@@ -1,5 +1,7 @@
 from __future__ import with_statement
 
+import logging
+
 from twisted.python import log, failure
 from twisted.internet import defer, reactor
 from twisted.internet.interfaces import IProtocolFactory
@@ -12,6 +14,7 @@ from txtorcon.circuit import Circuit
 from txtorcon.router import Router
 from txtorcon.addrmap import AddrMap
 from txtorcon.util import hmac_sha256, compare_via_hash
+from txtorcon.log import txtorlog
 
 from interface import ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher, IRouterContainer, ITorControlProtocol
 from spaghetti import FSM, State, Transition
@@ -27,8 +30,8 @@ import hmac
 import hashlib
 import base64
 
-DEBUG = False
 DEFAULT_VALUE = 'DEFAULT'
+
 
 class TorProtocolError(RuntimeError):
     """
@@ -194,8 +197,6 @@ class TorControlProtocol(LineOnlyReceiver):
         self.valid_signals = []
         """A list of all valid signals we accept from Tor"""
 
-        self.log = open('torcontrollerfoo.log','w')
-
         self.post_bootstrap = defer.Deferred()
         """
         This Deferred is triggered when we're done setting up
@@ -261,9 +262,7 @@ class TorControlProtocol(LineOnlyReceiver):
         ## hand-set initial state default start state is first in the
         ## list; the above looks nice in dotty though
         self.fsm.state = idle
-        if DEBUG:
-            with open('fsm.dot', 'w') as fsmfile:
-                fsmfile.write(self.fsm.dotty())
+        # txtorlog.msg('FSM: ', self.fsm.dotty())
 
     ## see end of file for all the state machine matcher and
     ## transition methods.
@@ -449,16 +448,12 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def lineReceived(self, line):
         ":api:`twisted.protocols.basic.LineOnlyReceiver` API"
-#        print "LINE:",line
-        self.log.write(line+'\n')
-        self.log.flush()
-
+        txtorlog.msg(line)
         self.fsm.process(line)
-        return
 
     def connectionMade(self):
         "LineOnlyReceiver API (or parent?)"
-        if DEBUG: print "got connection, authenticating"
+        txtorlog.msg('got connection, authenticating')
         self.protocolinfo().addCallback(self._do_authenticate).addErrback(self._auth_failed)
 
     def _handle_notify(self, code, rest):
@@ -485,9 +480,8 @@ class TorControlProtocol(LineOnlyReceiver):
             self.command = self.commands.pop(0)
             (d, cmd, cmd_arg) = self.command
             self.defer = d
-            if DEBUG and 'AUTH' not in cmd: print "issue:",cmd
+            txtorlog.msg(cmd)
             self.transport.write(cmd + '\r\n')
-            self.log.write(cmd+'\n')
 
     def _auth_failed(self, fail):
         """
@@ -552,7 +546,7 @@ class TorControlProtocol(LineOnlyReceiver):
                 data = cookiefile.read()
             if len(data) != 32:
                 raise RuntimeError("Expected authentication cookie to be 32 bytes, got %d" % len(data))
-            if DEBUG: print "Using COOKIE authentication",cookie,len(data),"bytes"
+            txtorlog.msg("Using COOKIE authentication", cookie, len(data), "bytes")
             self.authenticate(data).addCallback(self._bootstrap).addErrback(self._auth_failed)
             return
 
@@ -586,7 +580,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
         self.version = yield self.get_info('version')
         self.version = self.version['version']
-        if DEBUG: print "Connected to a Tor with VERSION",self.version
+        txtorlog.msg("Connected to a Tor with VERSION", self.version)
         eventnames = yield self.get_info('events/names')
         eventnames = eventnames['events/names']
         self._set_valid_events(eventnames)

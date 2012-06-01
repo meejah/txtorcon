@@ -20,10 +20,10 @@ try:
             if not os.path.isfile(fname):
                 raise IOError("Can't find %s" % fname)
             return GeoIP.open(fname, GeoIP.GEOIP_STANDARD)
-        
+
         except GeoIP.error:
             raise IOError("Can't load %s" % fname)
-        
+
 except ImportError:
     import pygeoip
     create_geoip = pygeoip.GeoIP
@@ -57,30 +57,24 @@ def find_keywords(args):
     """
     This splits up strings like name=value, foo=bar into a dict. Does NOT deal
     with quotes in value (e.g. key="value with space" will not work
-    
+
     :return:
         a dict of key->value (both strings) of all name=value type keywords found in args.
     """
-    
-    kw = {}
-    for x in args:
-        if '=' in x:
-            (k,v) = x.split('=',1)
-            kw[k] = v
-    return kw
+    return dict(x.split('=', 1) for x in args if '=' in x)
 
 def delete_file_or_tree(*args):
     """
     For every path in args, try to delete it as a file or a directory
     tree. Ignores deletion errors.
     """
-    
+
     for f in args:
         try:
             os.unlink(f)
         except OSError:
             shutil.rmtree(f, ignore_errors=True)
-                
+
 def ip_from_int(self, ip):
         """ Convert long int back to dotted quad string """
         return socket.inet_ntoa(struct.pack('>I', ip))
@@ -95,7 +89,7 @@ def process_from_address(addr, port, torstate=None):
     returned.
 
     If psutil isn't installed, the PIDs are returned instead of
-    psutil.Process instances.    
+    psutil.Process instances.
     """
 
     if addr == None:
@@ -152,20 +146,20 @@ class NetLocation:
         self.countrycode = None
         self.city = None
         self.asn = None
-        
+
         if city:
             r = city.record_by_addr(self.ip)
             if r is not None:
                 self.countrycode = r['country_code']
                 self.latlng = (r['latitude'], r['longitude'])
                 self.city = (r['city'], r['region'])
-            
+
         elif country:
             self.countrycode = country.country_code_by_addr(ipaddr)
 
         else:
             self.countrycode = ''
-            
+
         if asn:
             self.asn = asn.org_by_addr(self.ip)
-                
+

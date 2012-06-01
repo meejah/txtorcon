@@ -6,17 +6,17 @@ __url__ = 'https://github.com/meejah/txtorcon'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2012'
 
-from router import Router
-from circuit import Circuit
-from stream import Stream
-from torcontrolprotocol import TorControlProtocol, TorProtocolFactory, DEFAULT_VALUE
-from torstate import TorState, build_tor_connection
-from torconfig import TorConfig, HiddenService, TorProcessProtocol, TCPHiddenServiceEndpoint, launch_tor
-from addrmap import AddrMap
-from addrmap import Addr
+from txtorcon.router import Router
+from txtorcon.circuit import Circuit
+from txtorcon.stream import Stream
+from txtorcon.torcontrolprotocol import TorControlProtocol, TorProtocolFactory, DEFAULT_VALUE
+from txtorcon.torstate import TorState, build_tor_connection
+from txtorcon.torconfig import TorConfig, HiddenService, TorProcessProtocol, TCPHiddenServiceEndpoint, launch_tor
+from txtorcon.addrmap import AddrMap
+from txtorcon.addrmap import Addr
 import util
 import interface
-from interface import *
+from txtorcon.interface import *
 
 __all__ = ["Router",
            "Circuit",
@@ -34,3 +34,4 @@ __all__ = ["Router",
            "ICircuitContainer", "ICircuitListener", "CircuitListenerMixin",
            "IRouterContainer"
            ]
+

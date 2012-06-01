@@ -1,7 +1,7 @@
 import sys
 import os
 import shutil
-from distutils.core import setup, Extension
+from setuptools import setup, find_packages
 
 from txtorcon import __version__, __author__, __contact__, __copyright__, __license__, __url__
 
@@ -21,7 +21,7 @@ setup(name = 'txtorcon',
                      'Programming Language :: Python',
                      'Topic :: Internet :: Proxy Servers',
                      'Topic :: Internet',
-                     'Topic :: Security'],                     
+                     'Topic :: Security'],
       author = __author__,
       author_email = __contact__,
       url = __url__,
@@ -34,7 +34,7 @@ setup(name = 'txtorcon',
       ## the first member of the tuple?
 
       data_files = [('share/txtorcon', ['INSTALL', 'README', 'TODO', 'meejah.asc']),
-                    
+
                     ## this includes pre-built single-page HTML docs
                     ## into the distribution. the map construct grabs
                     ## everything in doc_html/_static
