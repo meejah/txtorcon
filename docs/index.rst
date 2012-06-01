@@ -45,7 +45,7 @@ This documentation was generated |today|.
 Releases:
 ---------
 
-- **May 24, 2012**: `txtorcon-0.2.tar.gz <txtorcon-0.2.tar.gz>`_ (`txtorcon-0.2.tar.gz.sig <txtorcon-0.2.tar.gz.sig>`_)
+- **June 1, 2012**: `txtorcon-0.2.tar.gz <txtorcon-0.2.tar.gz>`_ (`txtorcon-0.2.tar.gz.sig <txtorcon-0.2.tar.gz.sig>`_)
   *This release adds*:
   incremental parsing;
   faster TorState startup;
@@ -54,6 +54,7 @@ Releases:
   options to :ref:`circuit_failure_rates.py` example to make it actually-useful;
   include built documentation + sources in tarball;
   include tests in tarball;
+  improved logging;
   patches from `mmaker <https://github.com/mmaker>`_ and `kneufeld <https://github.com/kneufeld>`_;
   ...
 
