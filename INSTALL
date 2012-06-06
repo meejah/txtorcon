@@ -4,7 +4,7 @@ See README for more information.
 To just install this as quickly as possible, using a Debian or Ubuntu
 system, run the following as root:
 
-   apt-get install twisted python-ipaddr python-geoip python-pydoctor python-psutil
+   apt-get install python-setuptools python-twisted python-ipaddr python-geoip python-psutil graphiz
 
    python setup.py install
 
