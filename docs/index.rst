@@ -45,6 +45,9 @@ This documentation was generated |today|.
 Releases:
 ---------
 
+- **June 6, 2012**: `txtorcon-0.3.tar.gz <txtorcon-0.3.tar.gz>`_ (`txtorcon-0.3.tar.gz.sig <txtorcon-0.3.tar.gz.sig>`_)
+  This release adds: remove built documentation from distribution; fix PyPI problems ("pip install txtorcon" now works)
+
 - **June 1, 2012**: `txtorcon-0.2.tar.gz <txtorcon-0.2.tar.gz>`_ (`txtorcon-0.2.tar.gz.sig <txtorcon-0.2.tar.gz.sig>`_)
   *This release adds*:
   incremental parsing;
