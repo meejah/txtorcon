@@ -35,14 +35,15 @@ setup(name = 'txtorcon',
 
       ## I'm a little unclear if I'm doing this "properly", especially
       ## the documentation etc. Do we really want "share/txtorcon" for
-      ## the first member of the tuple?
+      ## the first member of the tuple? Why does it seem I need to
+      ## duplicate this in MANIFEST.in?
 
       data_files = [('share/txtorcon', ['INSTALL', 'README', 'TODO', 'meejah.asc']),
 
                     ## this includes the Sphinx source for the
                     ## docs. The "map+filter" construct grabs all .rst
                     ## files and re-maps the path
-                    ('share/txtorcon', ['docs/apilinks_sphinxext.py', 'docs/conf.py', 'docs/Makefile', 'docs/avatar.png'] + map(lambda x: os.path.join('docs', x), filter(lambda x: x[-3:] == 'rst', os.listdir('docs'))) + map(lambda x: os.path.join('docs/_static', x), os.listdir('docs/_static'))),
+                    ('share/txtorcon', ['docs/apilinks_sphinxext.py', 'docs/conf.py', 'docs/Makefile'] + map(lambda x: os.path.join('docs', x), filter(lambda x: x[-3:] == 'rst', os.listdir('docs'))) + map(lambda x: os.path.join('docs/_static', x), os.listdir('docs/_static'))),
 
                     ## include all the examples
                     ('share/txtorcon/examples', map(lambda x: os.path.join('examples', x), filter(lambda x: x[-3:] == '.py', os.listdir('examples'))))
