@@ -11,3 +11,4 @@ include docs/avatar.png
 include docs/*.rst
 include docs/_static/*
 include examples/*
+include requirements.txt
