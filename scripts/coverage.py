@@ -30,8 +30,9 @@ for file in os.listdir(thedir):
                 int(line[:5])
                 covered += 1
                 this_cover += 1
-        this_cover = (float(this_cover)-this_uncover)/this_cover * 100.0
-        print '%65s: %03d of %03d (%02.1f%%)' % (file, this_cover, (this_uncover+this_cover), this_cover)
+        total_lines = this_cover + this_uncover
+        cover_percent = (float(this_cover) / total_lines) * 100.0
+        print '%65s: %03d of %03d (%02.1f%%)' % (file, this_cover, (total_lines), cover_percent)
 
 print "  covered:",covered
 print "uncovered:",uncovered
