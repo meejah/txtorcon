@@ -8,10 +8,7 @@ from twisted.internet import defer
 from txtorcon.router import Router
 
 class FakeController(object):
-    def get_info_raw(self, name):
-        d = defer.Deferred()
-        d.callback('127.0.0.1=ZZ\nOK')
-        return d
+    pass
 
 class RouterTests(unittest.TestCase):
 

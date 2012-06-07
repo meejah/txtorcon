@@ -106,15 +106,11 @@ class FakeEndpoint:
     implements(IStreamClientEndpoint)
 
     def get_info_raw(self, keys):
-        d = defer.Deferred()
-        d.callback('\r\n'.join(map(lambda k: '%s='%k, keys.split())))
-        return d
+        return defer.succeed('\r\n'.join(map(lambda k: '%s='%k, keys.split())))
 
     def get_info_incremental(self, key, linecb):
-        d = defer.Deferred()
         linecb('%s='%key)
-        d.callback('')
-        return d
+        return defer.succeed('')
 
     def connect(self, protocol_factory):
         self.proto = TorControlProtocol()
@@ -122,18 +118,15 @@ class FakeEndpoint:
         self.proto.get_info_raw = self.get_info_raw
         self.proto.get_info_incremental = self.get_info_incremental
         self.proto._set_valid_events('GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL')
-        
-        d = defer.Deferred()
-        d.callback(self.proto)
-        return d
+
+        return defer.succeed(self.proto)
 
 class FakeControlProtocol:
     implements(ITorControlProtocol)     # actually we don't, it's a lie
 
     def __init__(self):
         self.is_owned = None
-        self.post_bootstrap = defer.Deferred()
-        self.post_bootstrap.callback(self)
+        self.post_bootstrap = defer.succeed(self)
 
 class InternalMethodsTests(unittest.TestCase):
 
@@ -421,9 +414,7 @@ class StateTests(unittest.TestCase):
 
             def attach_stream(self, stream, circuits):
                 self.streams.append(stream)
-                d = defer.Deferred()
-                d.callback(self.answer)
-                return d
+                return defer.succeed(self.answer)
 
         self.state.circuits[1] = FakeCircuit(1)
         attacher = MyAttacher(self.state.circuits[1])

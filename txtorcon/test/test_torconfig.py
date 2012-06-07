@@ -35,8 +35,7 @@ class FakeControlProtocol:
     def __init__(self, answers):
         self.answers = answers
         self.pending = []
-        self.post_bootstrap = defer.Deferred()
-        self.post_bootstrap.callback(self)
+        self.post_bootstrap = defer.succeed(self)
         self.sets = []
 
     def answer_pending(self, answer):
@@ -50,8 +49,7 @@ class FakeControlProtocol:
             self.pending.append(d)
             return d
         
-        d = defer.Deferred()
-        d.callback(self.answers[0])
+        d = defer.succeed(self.answers[0])
         self.answers = self.answers[1:]
         return d
 
@@ -61,8 +59,7 @@ class FakeControlProtocol:
             self.pending.append(d)
             return d
         
-        d = defer.Deferred()
-        d.callback(self.answers[0])
+        d = defer.succeed(self.answers[0])
         self.answers = self.answers[1:]
         return d
 
@@ -71,9 +68,7 @@ class FakeControlProtocol:
     def set_conf(self, *args):
         for i in range(0, len(args), 2):
             self.sets.append((args[i], args[i+1]))
-        d = defer.Deferred()
-        d.callback('OK')
-        return d
+        return defer.succeed('OK')
 
 class CheckAnswer:
     def __init__(self, test, ans):
@@ -677,7 +672,7 @@ class LaunchTorTests(unittest.TestCase):
             proto._set_valid_events('STATUS_CLIENT')
             proto.makeConnection(trans)
             proto.post_bootstrap.callback(proto)
-            return defer.succeed(proto)
+            return proto.post_bootstrap
 
         class OnProgress:
             def __init__(self, test, expected):
@@ -717,7 +712,7 @@ class LaunchTorTests(unittest.TestCase):
             proto._set_valid_events('STATUS_CLIENT')
             proto.makeConnection(trans)
             proto.post_bootstrap.callback(proto)
-            return defer.succeed(proto)
+            return proto.post_bootstrap
             
         def on_protocol(proto):
             proto.outReceived('Bootstrapped 100%\n')
@@ -745,7 +740,7 @@ class LaunchTorTests(unittest.TestCase):
             proto._set_valid_events('STATUS_CLIENT')
             proto.makeConnection(trans)
             proto.post_bootstrap.callback(proto)
-            return defer.succeed(proto)
+            return proto.post_bootstrap
             
         def on_protocol(proto):
             proto.errReceived('Something went horribly wrong!\n')
@@ -781,7 +776,7 @@ class LaunchTorTests(unittest.TestCase):
                 proto._set_valid_events('STATUS_CLIENT')
                 proto.makeConnection(trans)
                 proto.post_bootstrap.callback(proto)
-                return defer.succeed(proto)
+                return proto.post_bootstrap
 
         def on_protocol(proto):
             proto.outReceived('Bootstrapped 90%\n')
