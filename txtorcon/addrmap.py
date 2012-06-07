@@ -114,5 +114,3 @@ class AddrMap(object):
         if not listener in self.listeners:
             #self.listeners.append(IAddrListener(listener))
             self.listeners.append(listener)
-
-    

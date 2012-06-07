@@ -131,3 +131,34 @@ class AddrMapTests(unittest.TestCase):
         ## it should vanish
         clock.advance(10)
         self.assertTrue(not am.addr.has_key('www.example.com'))
+
+    def addrmap_expired(self, name):
+        self.expires.append(name)
+
+    def addrmap_added(self, addr):
+        self.addrmap.append(addr)
+
+    def test_listeners(self):
+        self.expires = []
+        self.addrmap = []
+
+        clock = task.Clock()
+        am = AddrMap()
+        am.scheduler = IReactorTime(clock)
+        am.add_listener(self)
+
+        now = datetime.datetime.now() + datetime.timedelta(seconds=10)
+        nowutc = datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+        line = 'www.example.com 72.30.2.43 "%s" EXPIRES="%s"' % (now.strftime(self.fmt), nowutc.strftime(self.fmt))
+
+        am.update(line)
+
+        ## see if our listener got an update
+        a = am.find('www.example.com')
+        self.assertTrue(self.addrmap == [a])
+
+        ## advance time past when the expiry should have occurred
+        clock.advance(10)
+
+        ## check that our listener got an expires event
+        self.assertTrue(self.expires == ['www.example.com'])
