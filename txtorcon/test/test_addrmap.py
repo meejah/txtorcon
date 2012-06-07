@@ -4,13 +4,16 @@ import datetime
 from twisted.trial import unittest
 from twisted.internet import reactor, task
 from twisted.internet.interfaces import IReactorTime
+from zope.interface import implements
 
 # outside this package, you can do
 # from txtorcon import Circuit
 from txtorcon.addrmap import AddrMap
 from txtorcon.addrmap import Addr
+from txtorcon.interface import IAddrListener
 
 class AddrMapTests(unittest.TestCase):
+    implements(IAddrListener)
 
     fmt = '%Y-%m-%d %H:%M:%S'
 

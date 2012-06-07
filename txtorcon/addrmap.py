@@ -1,3 +1,4 @@
+from txtorcon.interface import IAddrListener
 
 from twisted.internet.interfaces import IReactorTime
 from twisted.internet import reactor
@@ -112,5 +113,4 @@ class AddrMap(object):
 
     def add_listener(self, listener):
         if not listener in self.listeners:
-            #self.listeners.append(IAddrListener(listener))
-            self.listeners.append(listener)
+            self.listeners.append(IAddrListener(listener))
