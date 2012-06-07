@@ -167,16 +167,15 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
                 self.attacher = attacher
                 self.d = d
                 self.stream_cc = stream_cc
-            def __call__(self, arg):
+            def __call__(self, circ):
                 """
-                return from build_circuit looks like: EXTENDED 1234
-                where 1234 is the circuit id. However, we want to wait
-                until it is built before we can issue an attach on it
-                and callback to the Deferred we issue here.
+                return from build_circuit is a Circuit. However, we
+                want to wait until it is built before we can issue an
+                attach on it and callback to the Deferred we issue
+                here.
                 """
-                circid = int(arg.split()[1])
-                print "  my circuit is in progress",circid
-                self.attacher.waiting_circuits.append((circid, self.d, self.stream_cc))
+                print "  my circuit is in progress",circ.id
+                self.attacher.waiting_circuits.append((circ.id, self.d, self.stream_cc))
                 
         return self.state.build_circuit(path).addCallback(AppendWaiting(self, deferred_to_callback, stream_cc)).addErrback(log.err)
 

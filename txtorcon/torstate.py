@@ -371,6 +371,15 @@ class TorState(object):
             stream.listen(listen)
         self.stream_listeners.append(listen)
 
+    def _find_circuit_after_extend(self, x):
+        ex, circ_id = x.split()
+        if ex != 'EXTENDED':
+            raise RuntimeError('Expected EXTENDED, got "%s"' % x)
+        circ_id = int(circ_id)
+        circ = self._maybe_create_circuit(circ_id)
+        circ.update([str(circ_id), 'EXTENDED'])
+        return circ
+
     def build_circuit(self, routers):
         """
         Builds a circuit consisting of exactly the routers specified,
@@ -380,7 +389,9 @@ class TorState(object):
         """
         if routers[0] not in self.entry_guards.values():
             warnings.warn("Building a circuit not starting with a guard: %s" % (str(routers),), RuntimeWarning)
-        return self.protocol.queue_command("EXTENDCIRCUIT 0 " + ','.join(map(lambda x: x.id_hex[1:], routers)))
+        d = self.protocol.queue_command("EXTENDCIRCUIT 0 " + ','.join(map(lambda x: x.id_hex[1:], routers)))
+        d.addCallback(self._find_circuit_after_extend)
+        return d
 
     DO_NOT_ATTACH = object()
     def _maybe_attach(self, stream):
@@ -487,20 +498,24 @@ class TorState(object):
         self.protocol.get_info_raw('ns/id/%s' % hsh[1:]).addCallback(self._update_network_status).addErrback(log.err)
         txtorlog.msg("NEWDESC", args)
 
+    def _maybe_create_circuit(self, circ_id):
+        if not self.circuits.has_key(circ_id):
+            c = self.circuit_factory(self)
+            c.listen(self)
+            [c.listen(x) for x in self.circuit_listeners]
+
+        else:
+            c = self.circuits[circ_id]
+        return c
+
     def _circuit_update(self, line):
         "Used internally as a callback to update Circuit information from CIRC events."
         #print "circuit_update",line
         args = line.split()
         circ_id = int(args[0])
 
-        if not self.circuits.has_key(circ_id):
-            c = self.circuit_factory(self)
-            c.listen(self)
-            [c.listen(x) for x in self.circuit_listeners]
-            c.update(args)
-
-        else:
-            self.circuits[circ_id].update(args)
+        c = self._maybe_create_circuit(circ_id)
+        c.update(args)
 
     def _stream_update(self, line):
         "Used internally as a callback to update Stream information from STREAM events."

@@ -80,6 +80,7 @@ class Circuit(object):
         if self.id is None:
             self.id = int(args[0])
             [x.circuit_new(self) for x in self.listeners]
+
         else:
             if int(args[0]) != self.id:
                 raise RuntimeError("Update for wrong circuit.")
@@ -93,7 +94,7 @@ class Circuit(object):
             self.path = []
             [x.circuit_launched(self) for x in self.listeners]
         else:
-            if self.state != 'FAILED' and self.state != 'CLOSED':
+            if self.state != 'FAILED' and self.state != 'CLOSED' and len(args) > 2:
                 self.update_path(args[2].split(','))
 
         if self.state == 'BUILT':

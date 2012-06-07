@@ -906,8 +906,9 @@ s Fast Guard Running Stable Valid
         ## guard
         self.assertEqual(len(self.flushWarnings()), 1)
 
-    def circuit_callback(self, x):
-        self.assertTrue(isinstance(x, Circuit))
+    def circuit_callback(self, circ):
+        self.assertTrue(isinstance(circ, Circuit))
+        self.assertTrue(circ.id == 1234)
 
     def test_build_circuit_final_callback(self):
         class FakeRouter:
@@ -921,6 +922,9 @@ s Fast Guard Running Stable Valid
         ## can't just check flags for guard status, need to know if
         ## it's in the running Tor's notion of Entry Guards
         path[0].flags = ['guard']
+
+        ## FIXME TODO we should verify we get a circuit_new event for
+        ## this circuit
 
         d = self.state.build_circuit(path)
         d.addCallback(self.circuit_callback)
