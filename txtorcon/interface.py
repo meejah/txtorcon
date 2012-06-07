@@ -8,22 +8,22 @@ class IStreamListener(Interface):
     see :meth:`txtorcon.TorState.add_stream_listener`.
     """
     
-    def stream_new(self, stream):
+    def stream_new(stream):
         "a new stream has been created"
     
-    def stream_succeeded(self, stream):
+    def stream_succeeded(stream):
         "stream has succeeded"
     
-    def stream_attach(self, stream, circuit):
+    def stream_attach(stream, circuit):
         "the stream has been attached to a circuit"
 
-    def stream_detach(self, stream, reason):
+    def stream_detach(stream, reason):
         "the stream has been detached from its circuit"
 
-    def stream_closed(self, stream):
+    def stream_closed(stream):
         "stream has been closed (won't be in controller's list anymore)"
 
-    def stream_failed(self, stream, reason, remote_reason):
+    def stream_failed(stream, reason, remote_reason):
         "stream failed for some reason (won't be in controller's list anymore)"
 
 class StreamListenerMixin(object):
@@ -58,7 +58,7 @@ class IStreamAttacher(Interface):
     :class:`txtorcon.Circuit` it should be attached to.
     """
 
-    def attach_stream(self, stream, circuits):
+    def attach_stream(stream, circuits):
         """
         :param stream: The stream to attach, which will be in NEW state.
 
@@ -95,7 +95,7 @@ class ICircuitContainer(Interface):
     them up by id.
     """
     
-    def find_circuit(self, id):
+    def find_circuit(id):
         ":return: a circuit for the id, or exception."
 
 class ICircuitListener(Interface):
@@ -103,24 +103,24 @@ class ICircuitListener(Interface):
     An interface to listen for updates to Circuits.
     """
     
-    def circuit_new(self, circuit):
+    def circuit_new(circuit):
         """A new circuit has been created.  You'll always get one of
         these for every Circuit even if it doesn't go through the "launched"
         state."""
         
-    def circuit_launched(self, circuit):
+    def circuit_launched(circuit):
         "A new circuit has been started."
 
-    def circuit_extend(self, circuit, router):
+    def circuit_extend(circuit, router):
         "A circuit has been extended to include a new router hop."
 
-    def circuit_built(self, circuit):
+    def circuit_built(circuit):
         "A circuit has been extended to all hops (usually 3 for user circuits)."
 
-    def circuit_closed(self, circuit):
+    def circuit_closed(circuit):
         "A circuit has been closed cleanly (won't be in controller's list any more)."
         
-    def circuit_failed(self, circuit, reason):
+    def circuit_failed(circuit, reason):
         """A circuit has been closed because something went wrong.
 
         The circuit won't be in the TorState's list anymore. The
@@ -160,25 +160,25 @@ class ITorControlProtocol(Interface):
     need to call methods outside this interface.
     """
 
-    def get_info(self, info):
+    def get_info(info):
         """
         :return: a Deferred which will callback with the info keys you
            asked for. For values ones, see control-spec.
         """
 
-    def get_conf(self, *args):
+    def get_conf(*args):
         """
         Returns one or many configuration values via Deferred. See
         control-spec for valid keys. The value will be a dictionary.
         """
 
-    def signal(self, signal_name):
+    def signal(signal_name):
         """
         Issues a signal to Tor. See control-spec or .valid_signals for
         which ones are available and their return values.
         """
 
-    def build_circuit(self, routers):
+    def build_circuit(routers):
         """
         Builds a circuit consisting of exactly the routers specified,
         in order.  This issues a series of EXTENDCIRCUIT calls to Tor;
@@ -188,21 +188,21 @@ class ITorControlProtocol(Interface):
         example.
         """
 
-    def add_circuit_listener(self, icircuitlistener):
+    def add_circuit_listener(icircuitlistener):
         """
         Add an implementor of :class:`txtorcon.interface.ICircuitListener` which will be
         added to all new circuits as well as all existing ones (you
         won't, however, get circuit_new calls for the existing ones)
         """
         
-    def add_stream_listener(self, istreamlistener):
+    def add_stream_listener(istreamlistener):
         """
         Add an implementor of :class:`txtorcon.interface.IStreamListener` which will be added to
         all new circuits as well as all existing ones (you won't,
         however, get stream_new calls for the existing ones)
         """
         
-    def add_event_listener(self, evt, callback):
+    def add_event_listener(evt, callback):
         """
         Add a listener to an Event object. This may be called multiple
         times for the same event. Every time the event happens, the
@@ -216,18 +216,18 @@ class IRouterContainer(Interface):
 
     unique_routers = Attribute("""unique_routers contains a list of all the Router instances""")
     
-    def router_from_id(self, routerid):
+    def router_from_id(routerid):
         """
         :return: a router by its ID.
         """
 
 class IAddrListener(Interface):
-    def addrmap_added(self, addr):
+    def addrmap_added(addr):
         """
         A new address was added to the address map.
         """
 
-    def addrmap_expired(self, name):
+    def addrmap_expired(name):
         """
         An address has expired from the address map.
         """

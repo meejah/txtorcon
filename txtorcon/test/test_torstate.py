@@ -1,4 +1,5 @@
 from zope.interface import implements
+from zope.interface.verify import verifyClass
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import task, defer, endpoints, reactor
@@ -7,7 +8,7 @@ import psutil
 import subprocess
 
 from txtorcon import TorControlProtocol, TorState, Stream, Circuit, build_tor_connection
-from txtorcon.interface import ITorControlProtocol, IStreamAttacher, ICircuitListener, IStreamListener
+from txtorcon.interface import ITorControlProtocol, IStreamAttacher, ICircuitListener, IStreamListener, StreamListenerMixin, CircuitListenerMixin
 
 def do_nothing(*args):
     pass
@@ -934,3 +935,19 @@ s Fast Guard Running Stable Valid
         ## guard
         self.assertEqual(len(self.flushWarnings()), 1)
         return d
+
+    def test_build_circuit_error(self):
+        """
+        tests that we check the callback properly
+        """
+
+        try:
+            self.state._find_circuit_after_extend("FOO 1234")
+            self.assertTrue(False)
+        except RuntimeError, e:
+            self.assertTrue('Expected EXTENDED' in e.message)
+
+    def test_listener_mixins(self):
+        smi = StreamListenerMixin
+        self.assertTrue(verifyClass(IStreamListener, StreamListenerMixin))
+        self.assertTrue(verifyClass(ICircuitListener, CircuitListenerMixin))
