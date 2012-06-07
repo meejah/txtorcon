@@ -42,9 +42,6 @@
       . TorControlProtocol needs some things marked read-only?
       . TorState.set_attacher
 
- . TorState.build_circuit should return the final Circuit instance,
-   not the final EXTEND message (like "EXTEND 1234")
-
  . put the nginx config for the hidden service somewhere in git; need
    to remember to change the redirect for "-latest" if releasing a new
    version...
