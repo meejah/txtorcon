@@ -10,7 +10,7 @@ install:
 docs/README.rst: README
 	pandoc -r markdown -w rst README -o docs/README.rst
 
-doc: dist/txtorcon-0.4.tar.gz.sig docs/*.rst docs/README.rst
+doc: docs/*.rst docs/README.rst
 	cd docs && make html
 	cp dist/txtorcon-0.4.tar.gz docs/_build/html
 	cp dist/txtorcon-0.4.tar.gz.sig docs/_build/html
