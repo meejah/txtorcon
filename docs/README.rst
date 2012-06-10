@@ -104,7 +104,7 @@ system, this should work:
 
 ::
 
-    apt-get install twisted python-ipaddr python-geoip python-pydoctor python-psutil graphviz
+    apt-get install python-setuptools python-twisted python-ipaddr python-geoip python-psutil graphviz
     apt-get install python-sphinx python-repoze.sphinx.autointerface # for documentation
 
 documentation

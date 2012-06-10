@@ -39,7 +39,7 @@ clean:
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-	-cp ../meejah.asc docs/_build/html/meejah.asc
+	-cp ../meejah.asc _build/html/meejah.asc
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 

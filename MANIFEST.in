@@ -1,3 +1,14 @@
 include Makefile
-include coverage.py
-include util.py
+include README
+include INSTALL
+include TODO
+include meejah.asc
+include scripts/*.py
+include docs/Makefile
+include docs/apilinks_sphinxext.py
+include docs/conf.py
+include docs/avatar.png
+include docs/*.rst
+include docs/_static/*
+include examples/*
+include requirements.txt

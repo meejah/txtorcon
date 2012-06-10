@@ -10,15 +10,19 @@ setup(name = 'txtorcon',
       description = 'Twisted-based Tor controller client, with state-tracking and configuration abstractions.',
       long_description = open('README','r').read(),
       keywords = ['python', 'twisted', 'tor', 'tor controller'],
-      requires = ['twisted (>10.1.0)',
-                  'GeoIP',
+      requires = ['twisted (>11.1.0)',
+                  'pygeoip',
+                  'psutil',
                   'ipaddr'],
       classifiers = ['Framework :: Twisted',
+                     'Development Status :: 4 - Beta',
+                     'Intended Audience :: Developers',
                      'License :: OSI Approved :: MIT License',
                      'Natural Language :: English',
                      'Operating System :: POSIX :: Linux',
                      'Operating System :: Unix',
                      'Programming Language :: Python',
+                     'Topic :: Software Development :: Libraries :: Python Modules',
                      'Topic :: Internet :: Proxy Servers',
                      'Topic :: Internet',
                      'Topic :: Security'],
@@ -31,19 +35,15 @@ setup(name = 'txtorcon',
 
       ## I'm a little unclear if I'm doing this "properly", especially
       ## the documentation etc. Do we really want "share/txtorcon" for
-      ## the first member of the tuple?
+      ## the first member of the tuple? Why does it seem I need to
+      ## duplicate this in MANIFEST.in?
 
       data_files = [('share/txtorcon', ['INSTALL', 'README', 'TODO', 'meejah.asc']),
-
-                    ## this includes pre-built single-page HTML docs
-                    ## into the distribution. the map construct grabs
-                    ## everything in doc_html/_static
-                    ('share/txtorcon', ['doc_html/index.html', 'doc_html/objects.inv'] + map(lambda x: os.path.join('doc_html/_static', x), os.listdir('doc_html/_static'))),
 
                     ## this includes the Sphinx source for the
                     ## docs. The "map+filter" construct grabs all .rst
                     ## files and re-maps the path
-                    ('share/txtorcon', ['docs/apilinks_sphinxext.py', 'docs/conf.py', 'docs/Makefile', 'docs/avatar.png'] + map(lambda x: os.path.join('docs', x), filter(lambda x: x[-3:] == 'rst', os.listdir('docs'))) + map(lambda x: os.path.join('docs/_static', x), os.listdir('docs/_static'))),
+                    ('share/txtorcon', ['docs/apilinks_sphinxext.py', 'docs/conf.py', 'docs/Makefile'] + map(lambda x: os.path.join('docs', x), filter(lambda x: x[-3:] == 'rst', os.listdir('docs'))) + map(lambda x: os.path.join('docs/_static', x), os.listdir('docs/_static'))),
 
                     ## include all the examples
                     ('share/txtorcon/examples', map(lambda x: os.path.join('examples', x), filter(lambda x: x[-3:] == '.py', os.listdir('examples'))))
