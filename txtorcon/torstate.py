@@ -92,7 +92,7 @@ class TorState(object):
 
     implements (ICircuitListener, ICircuitContainer, IRouterContainer, IStreamListener)
 
-    def __init__(self, protocol, bootstrap=True):
+    def __init__(self, protocol, bootstrap=True, write_state_diagram=False):
         self.protocol = ITorControlProtocol(protocol)
         self.protocol.connectionLost = self.connection_lost
 
@@ -123,6 +123,7 @@ class TorState(object):
         self.cleanup = None             # see set_attacher
 
         class die(object):
+            __name__ = 'die'            # FIXME? just to ease spagetti.py:82's pain
             def __init__(self, msg):
                 self.msg = msg
             def __call__(self, *args):
@@ -162,7 +163,7 @@ class TorState(object):
         waiting_p.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
 
         self._network_status_parser = FSM([waiting_r, waiting_s, waiting_w, waiting_p])
-        if False:
+        if write_state_diagram:
             with open('routerfsm.dot', 'w') as fsmfile:
                 fsmfile.write(self._network_status_parser.dotty())
 

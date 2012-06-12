@@ -4,6 +4,8 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import task, defer, endpoints, reactor
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
+
+import os
 import psutil
 import subprocess
 
@@ -184,6 +186,10 @@ class InternalMethodsTests(unittest.TestCase):
 
         self.assertTrue(len(procs) >= 2)
         self.assertTrue(state.tor_pid == 0)
+
+    def test_state_diagram(self):
+        state = TorState(FakeControlProtocol(), bootstrap=False, write_state_diagram=True)
+        self.assertTrue(os.path.exists('routerfsm.dot'))
         
 class BootstrapTests(unittest.TestCase):
 
