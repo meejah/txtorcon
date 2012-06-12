@@ -137,7 +137,7 @@ def parse_keywords(lines):
                         rtn[key] = [rtn[key], value]
                 else:
                     rtn[key] = value
-            (key, value) = line.split('=')
+            (key, value) = line.split('=', 1)
 
         else:
             if key is None:
