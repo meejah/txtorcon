@@ -599,6 +599,12 @@ OK""")
         self.assertTrue(x['events/names'] == 'CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET')
         self.assertTrue(len(x.keys()) == 1)
 
+    def test_keywords_mutli_equals(self):
+        x = parse_keywords('foo=something subvalue="foo"')
+        self.assertTrue(len(x) == 1)
+        self.assertTrue(x.has_key('foo'))
+        self.assertTrue(x['foo'] == 'something subvalue="foo"')
+
     def test_default_keywords(self):
         x = parse_keywords('foo')
         self.assertTrue(len(x) == 1)
