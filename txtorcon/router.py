@@ -58,7 +58,7 @@ class Router(object):
         self.location = NetLocation(self.ip)
         if self.location.countrycode is None:
             ## see if Tor is magic and knows more...
-            self.controller.get_info_raw('ip-to-country/'+self.ip).addCallback(self.set_country)
+            self.controller.get_info_raw('ip-to-country/'+self.ip).addCallback(self._set_country)
 
         self.id_hex = hexIdFromHash(self.id_hash)
 
@@ -92,8 +92,10 @@ class Router(object):
 
     @property
     def policy(self):
-        """Port policies for this Router."""
-        "return a string describing the policy"
+        """
+        Port policies for this Router.
+        :return: a string describing the policy
+        """
         if self.accepted_ports:
             ports = 'accept '
             target = self.accepted_ports
@@ -112,7 +114,7 @@ class Router(object):
     @policy.setter
     def policy(self, args):
         """
-        .. todo:: remove me, use descriptor
+        setter for the policy descriptor
         """
         
         word = args[0]
@@ -137,6 +139,10 @@ class Router(object):
                 target.append(int(port))
 
     def accepts_port(self, port):
+        """
+        Query whether this Router will accept the given port.
+        """
+        
         if self.rejected_ports is None and self.accepted_ports is None:
             raise RuntimeError("policy hasn't been set yet")
 
@@ -151,9 +157,9 @@ class Router(object):
                 return True
         return False
 
-    def set_country(self, c):
+    def _set_country(self, c):
         """
-        .. todo:: remove me, use descriptor
+        callback if we used Tor's GETINFO ip-to-country
         """
         
         self.location.countrycode = c[:-3].split('=')[1].strip().upper()
