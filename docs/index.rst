@@ -39,6 +39,7 @@ The canonical URI is https://timaq4ygg2iegci7.onion
 
 - meejah@meejah.ca (public key: `meejah.asc <meejah.asc>`_)
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
+- **``pip install txtorcon``**
 
 This documentation was generated |today|.
 

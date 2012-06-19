@@ -177,10 +177,10 @@ code itself is hosted via git:
     torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git
 
 You may contact me via meejah@meejah.ca with GPG key
-``128069A7 <http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>``\_
+``128069A7 <http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>``\ \_
 or see ``meejah.asc``. It is often possible to contact me as ``meejah``
-in #tor-dev on ``OFTC <http://www.oftc.net/oftc/>``\_ but be patient for
-replies (I do look at scrollback, so mention my nick).
+in #tor-dev on ``OFTC <http://www.oftc.net/oftc/>``\ \_ but be patient
+for replies (I do look at scrollback, so mention my nick).
 
 More conventionally, you may get the code at GitHub and documentation
 via ReadTheDocs:
