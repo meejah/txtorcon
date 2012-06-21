@@ -14,6 +14,7 @@ from txtorcon.router import Router
 from txtorcon.addrmap import AddrMap
 from txtorcon.torcontrolprotocol import parse_keywords
 from txtorcon.log import txtorlog
+from txtorcon.torcontrolprotocol import TorProtocolError
 
 from interface import ITorControlProtocol, IRouterContainer, ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher
 from spaghetti import FSM, State, Transition
@@ -278,30 +279,26 @@ class TorState(object):
             except KeyError:
                 self.unusable_entry_guards.append(line)
 
-        ## who our Tor process is (process/pid is fairly new, so we
-        ## guess at the Tor otherwise, by taking PID of the only
-        ## available "tor" process, not guessing at all if there's 0
-        ## or > 1 tor processes.
-        pid = yield self.protocol.get_info_raw("process/pid").addErrback(self.guess_tor_pid)
+        ## in case process/pid doesn't exist and we don't know the PID
+        ## because we own it, we just leave it as 0 (previously
+        ## guessed using psutil, but that only works if there's
+        ## exactly one tor running anyway)
+        try:
+            pid = yield self.protocol.get_info_raw("process/pid")
+        except TorProtocolError:
+            pid = None
+        self.tor_pid = 0
         if pid:
-            self.tor_pid = pid
+            try:
+                pid = parse_keywords(pid)['process/pid']
+                self.tor_pid = int(pid)
+            except KeyError:
+                self.tor_pid = 0
+        elif self.protocol.is_owned:
+            self.tor_pid = self.protocol.is_owned
 
         self.post_bootstrap.callback(self)
         self.post_boostrap = None
-
-    def guess_tor_pid(self, *args):
-        if self.protocol.is_owned:
-            self.tor_pid = self.protocol.is_owned
-
-        else:
-            self.tor_pid = 0
-            try:
-                procs = filter(lambda x: x.name.startswith(self.tor_binary),
-                               psutil.get_process_list())
-                if len(procs) == 1:
-                    self.tor_pid = procs[0].pid
-            except psutil.AccessDenied:
-                pass
 
     def undo_attacher(self):
         """

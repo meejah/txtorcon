@@ -9,7 +9,7 @@ import os
 import psutil
 import subprocess
 
-from txtorcon import TorControlProtocol, TorState, Stream, Circuit, build_tor_connection
+from txtorcon import TorControlProtocol, TorProtocolError, TorState, Stream, Circuit, build_tor_connection
 from txtorcon.interface import ITorControlProtocol, IStreamAttacher, ICircuitListener, IStreamListener, StreamListenerMixin, CircuitListenerMixin
 
 def do_nothing(*args):
@@ -123,6 +123,35 @@ class FakeEndpoint:
 
         return defer.succeed(self.proto)
 
+class FakeEndpointAnswers:
+    implements(IStreamClientEndpoint)
+
+    def __init__(self, answers):
+        self.answers = answers
+        # since we use pop() we need these to be "backwards"
+        self.answers.reverse()
+
+    def get_info_raw(self, keys):
+        ans = ''
+        for k in keys.split():
+            if len(self.answers) == 0:
+                raise TorProtocolError(551, "ran out of answers")
+            ans += '%s=%s\r\n' % (k, self.answers.pop())
+        return ans[:-2]                 # don't want trailing \r\n
+
+    def get_info_incremental(self, key, linecb):
+        linecb('%s=%s' % (key, self.answers.pop()))
+        return defer.succeed('')
+
+    def connect(self, protocol_factory):
+        self.proto = TorControlProtocol()
+        self.proto.transport = proto_helpers.StringTransport()
+        self.proto.get_info_raw = self.get_info_raw
+        self.proto.get_info_incremental = self.get_info_incremental
+        self.proto._set_valid_events('GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL')
+
+        return defer.succeed(self.proto)
+
 class FakeControlProtocol:
     implements(ITorControlProtocol)     # actually we don't, it's a lie
 
@@ -131,61 +160,6 @@ class FakeControlProtocol:
         self.post_bootstrap = defer.succeed(self)
 
 class InternalMethodsTests(unittest.TestCase):
-
-    def test_guess_pid_owned(self):
-        """
-        Make sure our PID-guessing code uses a known owned process
-        properly.
-        """
-        
-        state = TorState(FakeControlProtocol(), bootstrap=False)
-        state.protocol.is_owned = 1234
-
-        state.guess_tor_pid()
-        self.assertTrue(state.tor_pid == 1234)
-        
-    def test_guess_pid(self):
-        """
-        this is kind of hard to test, and borders on testing psutil.
-        """
-        
-        ## kneufeld points out there is no "init" on osx ("launchd")
-        ## or newer fedora ("systemd")...
-        torpid = 1
-
-        state = TorState(FakeControlProtocol(), bootstrap=False)
-        state.tor_binary = 'init'
-        state.guess_tor_pid()
-        guess = state.tor_pid
-        if guess == 0:
-            print "Didn't find any \"%s\" on this system." % state.tor_binary
-            ## unsupported system; we didn't find any 'init' process
-            return
-        self.assertTrue(guess == torpid)
-        
-    def test_guess_pid_multiple(self):
-        """
-        make at least two python processes, name the tor_binary to
-        'python' and ensure we don't try to report a PID in such a
-        case.
-        """
-
-        one = subprocess.Popen(['python'], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        two = subprocess.Popen(['python'], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        try:
-            procs = filter(lambda x: x.name.startswith('python'),
-                           psutil.get_process_list())
-
-            state = TorState(FakeControlProtocol(), bootstrap=False)
-            state.tor_binary = 'python'
-            state.guess_tor_pid()
-
-        finally:
-            one.kill()
-            two.kill()
-
-        self.assertTrue(len(procs) >= 2)
-        self.assertTrue(state.tor_pid == 0)
 
     def test_state_diagram(self):
         state = TorState(FakeControlProtocol(), bootstrap=False, write_state_diagram=True)
@@ -200,6 +174,7 @@ class BootstrapTests(unittest.TestCase):
     def confirm_state(self, x):
         self.assertTrue(isinstance(x, TorState))
         self.assertTrue(x.post_bootstrap.called)
+        return x
 
     def test_build(self):
         p = FakeEndpoint()
@@ -208,10 +183,38 @@ class BootstrapTests(unittest.TestCase):
         p.proto.post_bootstrap.callback(p.proto)
         return d
 
-    def test_build_state(self):
-        p = FakeEndpoint()
+    def confirm_pid(self, state):
+        self.assertTrue(state.tor_pid == 1234)
+
+    def confirm_no_pid(self, state):
+        self.assertTrue(state.tor_pid == 0)
+
+    def test_build_with_answers(self):
+        p = FakeEndpointAnswers(['',    # ns/all
+                                 '',    # circuit-status
+                                 '',    # stream-status
+                                 '',    # address-mappings/all
+                                 '',    # entry-guards
+                                 '1234' # PID
+                                 ])
+
+        d = build_tor_connection(p, build_state=True)
+        d.addCallback(self.confirm_state).addErrback(self.fail)
+        d.addCallback(self.confirm_pid).addErrback(self.fail)
+        p.proto.post_bootstrap.callback(p.proto)
+        return d
+
+    def test_build_with_answers_no_pid(self):
+        p = FakeEndpointAnswers(['',    # ns/all
+                                 '',    # circuit-status
+                                 '',    # stream-status
+                                 '',    # address-mappings/all
+                                 ''     # entry-guards
+                                 ])
+
         d = build_tor_connection(p, build_state=True)
         d.addCallback(self.confirm_state)
+        d.addCallback(self.confirm_no_pid)
         p.proto.post_bootstrap.callback(p.proto)
         return d
 
