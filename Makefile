@@ -12,8 +12,8 @@ docs/README.rst: README
 
 doc: docs/*.rst docs/README.rst
 	cd docs && make html
-	cp dist/txtorcon-0.4.tar.gz docs/_build/html
-	cp dist/txtorcon-0.4.tar.gz.sig docs/_build/html
+	cp dist/txtorcon-0.5.tar.gz docs/_build/html
+	cp dist/txtorcon-0.5.tar.gz.sig docs/_build/html
 
 coverage:
 	trial --reporter=bwverbose --coverage txtorcon
@@ -50,14 +50,18 @@ dist/txtorcon-0.4.tar.gz: sdist
 dist/txtorcon-0.4.tar.gz.sig: dist/txtorcon-0.4.tar.gz
 	gpg --verify dist/txtorcon-0.4.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.4.tar.gz
 
-release: dist/txtorcon-0.4.tar.gz.sig setup.py
+dist/txtorcon-0.5.tar.gz: sdist
+dist/txtorcon-0.5.tar.gz.sig: dist/txtorcon-0.5.tar.gz
+	gpg --verify dist/txtorcon-0.5.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.5.tar.gz
+
+release: dist/txtorcon-0.5.tar.gz.sig setup.py
 	python setup.py sdist upload
 
-html: dist/txtorcon-0.4.tar.gz.sig README index.md
+html: dist/txtorcon-0.5.tar.gz.sig README index.md
 	-mkdir html
 	python scripts/create-css.py > html/style.css
 	cp meejah.asc html/meejah.asc
 	python scripts/md-render.py index.md > html/index.html
 	python scripts/md-render.py README > html/README.html
-	cp dist/txtorcon-0.4.tar.gz html
-	cp dist/txtorcon-0.4.tar.gz.sig html
+	cp dist/txtorcon-0.5.tar.gz html
+	cp dist/txtorcon-0.5.tar.gz.sig html

@@ -46,7 +46,10 @@ This documentation was generated |today|.
 Releases:
 ---------
 
-- **June 6, 2012**: `txtorcon-0.4.tar.gz <txtorcon-0.4.tar.gz>`_ (`txtorcon-0.4.tar.gz.sig <txtorcon-0.4.tar.gz.sig>`_)
+- **June 20, 2012**: `txtorcon-0.5.tar.gz <txtorcon-0.5.tar.gz>`_ (`txtorcon-0.5.tar.gz.sig <txtorcon-0.5.tar.gz.sig>`_)
+  This release adds: remove psutil as a dependency, including from `util.process_from_address`
+
+- June 6, 2012: `txtorcon-0.4.tar.gz <txtorcon-0.4.tar.gz>`_ (`txtorcon-0.4.tar.gz.sig <txtorcon-0.4.tar.gz.sig>`_)
   This release adds: remove built documentation from distribution; fix PyPI problems ("pip install txtorcon" now works)
 
 - 0.3 was broken when released (docs couldn't build).
