@@ -86,10 +86,6 @@ dependencies
    doesn't have an answer but I haven't bothered removing the dependency
    yet..It also does ASN lookups if you installed that MaxMind database.
 
--  `psutil <http://code.google.com/p/psutil/>`_: used in
-   util.process\_from\_address and for guessing Tor's ip if "GETCONF
-   process/pid" isn't available.
-
 -  `Sphinx <http://sphinx.pocoo.org/>`_: Only if you want to build the
    documentation. In that case you'll also need something called
    ``python-repoze.sphinx.autointerface`` (at least in Debian) to build
@@ -104,7 +100,7 @@ system, this should work:
 
 ::
 
-    apt-get install python-setuptools python-twisted python-ipaddr python-geoip python-psutil graphviz
+    apt-get install python-setuptools python-twisted python-ipaddr python-geoip graphviz
     apt-get install python-sphinx python-repoze.sphinx.autointerface # for documentation
 
 documentation
