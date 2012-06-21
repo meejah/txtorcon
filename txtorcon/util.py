@@ -28,12 +28,6 @@ except ImportError:
     import pygeoip
     create_geoip = pygeoip.GeoIP
 
-try:
-    import psutil
-    process_factory = psutil.Process
-except ImportError:
-    process_factory = int
-
 city = None
 country = None
 asn = None
@@ -82,14 +76,12 @@ def ip_from_int(self, ip):
 def process_from_address(addr, port, torstate=None):
     """
     Determines the PID from the address/port provided by using lsof
-    and returns a psutil.Process object (or None). In the special case
-    the addr is '(Tor_internal)' then the Process having the PID of
-    the Tor process (as gotten from the torstate object) is
-    returned. In this case if no torstate instance is given, None is
-    returned.
-
-    If psutil isn't installed, the PIDs are returned instead of
-    psutil.Process instances.
+    and returns it as an int (or None if it couldn't be
+    determined). In the special case the addr is '(Tor_internal)' then
+    the PID of the Tor process (as gotten from the torstate object) is
+    returned (or 0 if unavailable, e.g. a Tor which doesn't implement
+    'GETINFO process/pid'). In this case if no TorState instance is
+    given, None is returned.
     """
 
     if addr == None:
@@ -98,15 +90,14 @@ def process_from_address(addr, port, torstate=None):
     if "(tor_internal)" == str(addr).lower():
         if torstate is None:
             return None
-        return process_factory(torstate.tor_pid)
+        return int(torstate.tor_pid)
 
     proc = subprocess.Popen(['lsof','-i','4tcp@%s:%s' % (addr,port)],
                             stdout = subprocess.PIPE)
     (stdout, stderr) = proc.communicate()
     lines = stdout.split('\n')
     if len(lines) > 1:
-        pid = int(lines[1].split()[1])
-        return process_factory(int(pid))
+        return int(lines[1].split()[1])
 
     return None
 
