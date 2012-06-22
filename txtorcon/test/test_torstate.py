@@ -945,7 +945,7 @@ s Fast Guard Running Stable Valid
             self.state._find_circuit_after_extend("FOO 1234")
             self.assertTrue(False)
         except RuntimeError, e:
-            self.assertTrue('Expected EXTENDED' in e.message)
+            self.assertTrue('Expected EXTENDED' in str(e))
 
     def test_listener_mixins(self):
         smi = StreamListenerMixin
