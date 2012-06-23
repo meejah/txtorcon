@@ -4,23 +4,24 @@ from twisted.web import server, resource, static
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
-from nevow import loaders, tags, livepage, inevow
+from nevow import loaders, tags, livepage
 
 import txtorcon
 
-torstate = None
-
-def set_state(state):
-    global torstate
-    torstate = state
+def setup_failed(fail):
+    print "It went sideways!",fail
+    return fail
 
 class TorPage(livepage.LivePage):
+    # override for Nevow/twisted.web
     addSlash = True
 
-    continuous_update = False
-    last_update = "Nothing yet..."
+    # defaults for this class
+    continuous_update = True
     ctx = None
-    
+    torstate = None
+
+    ## Could be done with XHTML 1.0, or a "real" templating language
     docFactory = loaders.stan(
         tags.html[
             tags.head[
@@ -28,8 +29,7 @@ class TorPage(livepage.LivePage):
             tags.body[
                 tags.h1["Tor Launching..."],
                 ## obviously you might want a javascript library or
-                ## something here instead of this hackery to get
-                ## actuall browser support, etc.
+                ## something here instead of this hackery...
                 tags.div(id='progress',style='position:absolute; left:20em; top:10px; width:300px; height:50px; border:2px solid black;background-color:#ffaaaa;')[
                     tags.div(id='progress_done',style='position:absolute; top:0px; left:0px; width:0%; height: 100%; background-color:#aaffaa;')],
 
@@ -39,58 +39,62 @@ class TorPage(livepage.LivePage):
             ]
         )
 
-    def handle_updateStatus(self, ctx, percent):
-        client = livepage.IClientHandle(ctx)
-
-        point = int(300 * (float(percent) / 100.0))
-        yield livepage.js('''document.getElementById('progress_done').style.width = "%dpx";''' % point)
-
-        
-        if percent == 100:
-            ## done, turn box green
-            yield livepage.js('''document.getElementById("status").style.backgroundColor="#aaffaa";''')
-            
-        if self.continuous_update:
-            ## add a text node for each update, creating a continuous list
-            yield livepage.js('''var newNode = document.createElement('div');
-newNode.appendChild(document.createTextNode("%s"));
-document.getElementById('status').appendChild(newNode);''' % self.last_update)
-            
-        else:
-            yield livepage.set('status', str(self.last_update))
-        
     def goingLive(self, ctx, client):
         '''
         Overrides nevow method; not really safe to just save ctx,
         client in self for multiple clients, but nice and simple.
         '''
-        
+
         self.ctx = ctx
         self.client = client
-        print 'going live:', client
-        client.send(self.handle_updateStatus(ctx, 0))
+
+    def set_tor_state(self, state):
+        self.tor_state = state
+
+    def tor_update(self, percent, tag, summary):
+        if self.ctx is None:
+            print "Tor update:",percent,tag,summary
+            return
         
-    def tor_update(self, prog, tag, summary):
-        '''
-        We've received an update from Tor.
-        '''
+        client = livepage.IClientHandle(self.ctx)
 
-        upd = "%d%%: %s" % (prog, summary)
-        print "tor update",upd
-        self.last_update = upd
-        if self.ctx:
-            self.client.send(self.handle_updateStatus(self.ctx, prog))
+        point = int(300 * (float(percent) / 100.0))
+        self.client.send(livepage.js('''document.getElementById('progress_done').style.width = "%dpx";''' % point))
 
+        if percent == 100:
+            ## done, turn message box green too
+            self.client.send(livepage.js('''document.getElementById("status").style.backgroundColor="#aaffaa";'''))
+
+        if self.continuous_update:
+            ## add a text node for each update, creating a continuous list
+            self.client.send(livepage.js('''var newNode = document.createElement('div');
+newNode.appendChild(document.createTextNode("%d%% -- %s"));
+document.getElementById('status').appendChild(newNode);''' % (percent, summary)))
+
+        else:
+            self.client.send(livepage.set('status', "%d%% &mdash; %s" % (percent, summary)))
+
+## This only properly works with one client (the last one to load the
+## page). To work with multiples, we'd have to track all clients so
+## sending async updates to them worked properly.
 top_level = TorPage()
 
+## minimal Tor configuration
 config = txtorcon.TorConfig()
 config.OrPort = 1234
 config.SocksPort = 9999
 
+## launch a Tor based on the above config; the callback will trigger
+## when the TorControlProtocol and TorState instances are up and
+## running (i.e. Tor process is launched, and we connected to it via
+## control protocol and bootstrapped our notion of its state).
 d = txtorcon.launch_tor(config, reactor, progress_updates=top_level.tor_update)
-d.addCallback(set_state)
-#d.addErrback(setup_failed)
+d.addCallback(top_level.set_tor_state)
+d.addErrback(setup_failed)
 
+print "Launching Tor and providing a Web interface on: \nhttp://localhost:8080"
+
+## Start up the Web server
 from nevow.appserver import NevowSite
 site = NevowSite(top_level)
 reactor.listenTCP(8080, site)
