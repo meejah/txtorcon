@@ -53,7 +53,7 @@ class TorPage(livepage.LivePage):
 
     def tor_update(self, percent, tag, summary):
         if self.ctx is None:
-            print "Tor update:",percent,tag,summary
+            print "I have no Web client yet, but got a Tor update:",percent,tag,summary
             return
         
         client = livepage.IClientHandle(self.ctx)
@@ -92,7 +92,7 @@ d = txtorcon.launch_tor(config, reactor, progress_updates=top_level.tor_update)
 d.addCallback(top_level.set_tor_state)
 d.addErrback(setup_failed)
 
-print "Launching Tor and providing a Web interface on: \nhttp://localhost:8080"
+print "Launching Tor and providing a Web interface on: \nhttp://localhost:8080\n"
 
 ## Start up the Web server
 from nevow.appserver import NevowSite
