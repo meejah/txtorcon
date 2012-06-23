@@ -11,7 +11,7 @@ from twisted.python import log
 from twisted.internet import reactor, defer
 from zope.interface import implements
 
-from txtorcon import TorProtocolFactory, TorConfig, TorState, DEFAULT_VALUE, launch_tor
+import txtorcon
 
 def state_complete(state):
     print "We've completely booted up a TorState to a Tor version %s at PID %d" % (state.protocol.version, state.tor_pid)
@@ -27,7 +27,7 @@ def state_complete(state):
 def setup_complete(proto):
     print "setup complete:",proto
     print "Building a TorState"
-    state = TorState(proto.tor_protocol)
+    state = txtorcon.TorState(proto.tor_protocol)
     state.post_bootstrap.addCallback(state_complete)
     state.post_bootstrap.addErrback(setup_failed)
 
@@ -40,18 +40,14 @@ def bootstrap(c):
     conf.post_bootstrap.addCallback(setup_complete).addErrback(setup_failed)
     print "Connection is live, bootstrapping state..."
 
-## FIXME need some way to make TorConfig slutty about accepting any
-## unknown attribute into its config if it has no attached
-## protocol...so we can set the config options we want
-    
-config = TorConfig()
+config = txtorcon.TorConfig()
 config.OrPort = 1234
 config.SocksPort = 9999
 
 def updates(prog, tag, summary):
     print "%d%%: %s" % (prog, summary)
 
-d = launch_tor(config, reactor, progress_updates=updates)
+d = txtorcon.launch_tor(config, reactor, progress_updates=updates)
 d.addCallback(setup_complete)
 d.addErrback(setup_failed)
 reactor.run()
