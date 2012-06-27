@@ -119,7 +119,7 @@ def parse_keywords(lines):
     string with newline-separated lines and expects at most one = sign
     per line. Accumulates multi-line values.
     """
-    
+
     rtn = {}
     key = None
     value = ''
@@ -127,7 +127,7 @@ def parse_keywords(lines):
     for line in lines.split('\n'):
         if line.strip() == 'OK':
             continue
-        
+
         if '=' in line:
             if key:
                 if rtn.has_key(key):
@@ -137,7 +137,7 @@ def parse_keywords(lines):
                         rtn[key] = [rtn[key], value]
                 else:
                     rtn[key] = value
-            (key, value) = line.split('=')
+            (key, value) = line.split('=', 1)
 
         else:
             if key is None:
@@ -453,11 +453,11 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         :api:`twisted.protocols.basic.LineOnlyReceiver` API
         """
-        
+
         if DEBUG:
             self.debuglog.write(line+'\n')
             self.debuglog.flush()
-            
+
         self.fsm.process(line)
 
     def connectionMade(self):
@@ -469,7 +469,7 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Internal method to deal with 600-level responses.
         """
-        
+
         firstline = rest[:rest.find('\n')]
         args = firstline.split()
         if self.events.has_key(args[0]):
@@ -521,7 +521,7 @@ class TorControlProtocol(LineOnlyReceiver):
         ## FIXME put string in global. or something.
         expected_server_hash = hmac_sha256("Tor safe cookie authentication server-to-controller hash",
                                            self.cookie_data + self.client_nonce + server_nonce)
-        
+
         if not compare_via_hash(expected_server_hash, server_hash):
             raise RuntimeError('Server hash not expected; wanted "%s" and got "%s".' % (base64.b16encode(expected_server_hash),
                                                                                         base64.b16encode(server_hash)))
