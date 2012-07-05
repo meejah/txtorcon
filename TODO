@@ -1,3 +1,11 @@
+ . strip OKs off the end of responses in TorControlProtocol -- should
+   simplify the rest, and testing. See FIXME in at least torinfo.py:89
+   or so
+
+ . look at get_info versus get_info_raw for entry_guards: parse
+   keywords needs to be more smarterer
+
+ . why doesn't TorInfo.network_status() work? (works for Stem)
 
  . looks like ~41 hours to do full scan of 850321 combinations, at 3.5
    seconds per combo and 20 outstanding requests (i.e. 20 in parallel at
