@@ -16,7 +16,8 @@ from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE, TorProtoc
 from txtorcon.util import delete_file_or_tree, find_keywords
 from txtorcon.log import txtorlog
 
-from interface import ITorControlProtocol, IRouterContainer, ICircuitListener, ICircuitContainer, IStreamListener, IStreamAttacher
+from txtorcon.interface import ITorControlProtocol, IRouterContainer, ICircuitListener
+from txtorcon.interface import ICircuitContainer, IStreamListener, IStreamAttacher
 from spaghetti import FSM, State, Transition
 
 import os
@@ -91,7 +92,7 @@ class TCPHiddenServiceEndpoint(object):
         self.data_dir = data_dir
         self.onion_uri = None
         self.onion_private_key = None
-        if self.data_dir != None:
+        if self.data_dir is not None:
             self._update_onion()
 
         else:
@@ -114,8 +115,8 @@ class TCPHiddenServiceEndpoint(object):
         `onion_private_key` members.
         """
 
-        hn = os.path.join(self.hiddenservice.dir,'hostname')
-        pk = os.path.join(self.hiddenservice.dir,'private_key')
+        hn = os.path.join(self.hiddenservice.dir, 'hostname')
+        pk = os.path.join(self.hiddenservice.dir, 'private_key')
         try:
             with open(hn, 'r') as hnfile:
                 self.onion_uri = hnfile.read().strip()
@@ -140,7 +141,8 @@ class TCPHiddenServiceEndpoint(object):
         self.listen_port = 80
 
         self.hiddenservice = HiddenService(self.config, self.data_dir,
-                                           ['%d 127.0.0.1:%d' % (self.public_port, self.listen_port)])
+                                           ['%d 127.0.0.1:%d' % (self.public_port,
+                                                                 self.listen_port)])
         self.config.HiddenServices.append(self.hiddenservice)
         return arg
 
@@ -149,7 +151,7 @@ class TCPHiddenServiceEndpoint(object):
         handle errors. FIXME
         """
 
-        print "ERROR",f
+        print "ERROR", f
         return f
 
     def listen(self, protocolfactory):
@@ -193,7 +195,8 @@ class TCPHiddenServiceEndpoint(object):
             return failure
         self.listen_port = self.port_generator()
         ## we do want to overwrite the whole list, not append
-        self.hiddenservice.ports = ['%d 127.0.0.1:%d' % (self.public_port, self.listen_port)]
+        self.hiddenservice.ports = ['%d 127.0.0.1:%d' % (self.public_port,
+                                                         self.listen_port)]
         d = self.config.save()
         d.addCallback(self._create_listener).addErrback(self._retry_local_port)
         return d
@@ -218,21 +221,24 @@ class TCPHiddenServiceEndpoint(object):
         port.onion_port = self.public_port
         return port
 
+
 class TorProcessProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, connection_creator, progress_updates = None):
+    def __init__(self, connection_creator, progress_updates=None):
         """
         This will read the output from a Tor process and attempt a
         connection to its control port when it sees any 'Bootstrapped'
         message on stdout. You probably don't need to use this
-        directly except as the return value from the :func:`txtorcon.launch_tor`
-        method. tor_protocol contains a valid :class:`txtorcon.TorControlProtocol`
-        instance by that point.
+        directly except as the return value from the
+        :func:`txtorcon.launch_tor` method. tor_protocol contains a
+        valid :class:`txtorcon.TorControlProtocol` instance by that
+        point.
 
         connection_creator is a callable that should return a Deferred
-        that callbacks with a :class:`txtorcon.TorControlProtocol`; see :func:`txtorcon.launch_tor` for
-        the default one which is a functools.partial that will call
-        .connect(TorProtocolFactory()) on an appropriate
+        that callbacks with a :class:`txtorcon.TorControlProtocol`;
+        see :func:`txtorcon.launch_tor` for the default one which is a
+        functools.partial that will call
+        ``connect(TorProtocolFactory())`` on an appropriate
         :api:`twisted.internet.endpoints.TCP4ClientEndpoint`
 
         :param connection_creator: A no-parameter callable which
@@ -242,7 +248,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             updates with three args: percent, tag, summary
 
         :ivar tor_protocol: The TorControlProtocol instance connected
-            to the Tor this :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` is speaking to. Will be valid
+            to the Tor this :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>`` is speaking to. Will be valid
             when the `connected_cb` callback runs.
 
         :ivar connected_cb: Triggered when the Tor process we
@@ -366,7 +372,7 @@ def launch_tor(config, reactor,
                control_port=9052,
                data_directory=None,
                tor_binary='/usr/sbin/tor',
-               progress_updates = None,
+               progress_updates=None,
                connection_creator=None):
     """
     launches a new Tor process with the given config.
@@ -374,11 +380,12 @@ def launch_tor(config, reactor,
     If Tor prints anything on stderr, we kill off the process, close
     the TorControlProtocol and raise an exception.
 
-    :param config: an instance of :class:`txtorcon.TorConfig` with any configuration
-        values you want. :meth:`txtorcon.TorConfig.save` should have been
-        called already (anything unsaved won't make it into the torrc
-        produced). Note that the control_port and data_directory
-        parameters to this method override anything in the config.
+    :param config: an instance of :class:`txtorcon.TorConfig` with any
+        configuration values you want. :meth:`txtorcon.TorConfig.save`
+        should have been called already (anything unsaved won't make
+        it into the torrc produced). Note that the control_port and
+        data_directory parameters to this method override anything in
+        the config.
 
     :param reactor: a Twisted IReactorCore implementation (usually
         twisted.internet.reactor)
@@ -393,9 +400,9 @@ def launch_tor(config, reactor,
 
     :param connection_creator: is mostly available to ease testing, so
         you probably don't want to supply this. If supplied, it is a
-        callable that should return a Deferred that delivers an :api:`twisted.internet.interfaces.IProtocol <IProtocol>`
-        or ConnectError. See
-        :api:`twisted.internet.interfaces.IStreamClientEndpoint`.connect
+        callable that should return a Deferred that delivers an
+        :api:`twisted.internet.interfaces.IProtocol <IProtocol>` or ConnectError.
+        See :api:`twisted.internet.interfaces.IStreamClientEndpoint`.connect
 
     :return: a Deferred which callbacks with a TorProcessProtocol
         connected to the fully-bootstrapped Tor; this has a
@@ -452,7 +459,9 @@ def launch_tor(config, reactor,
     # triggered
     process_protocol.to_delete = [torrc, data_directory]
     reactor.addSystemEventTrigger('before', 'shutdown',
-                                  functools.partial(delete_file_or_tree, torrc, data_directory))
+                                  functools.partial(delete_file_or_tree,
+                                                    torrc,
+                                                    data_directory))
 
     try:
         transport = reactor.spawnProcess(process_protocol, tor_binary,
@@ -466,7 +475,6 @@ def launch_tor(config, reactor,
         process_protocol.connected_cb.errback(e)
 
     return process_protocol.connected_cb
-
 
 
 class TorConfigType(object):
@@ -489,50 +497,63 @@ class TorConfigType(object):
         """
         return s
 
+
 class Boolean(TorConfigType):
     def parse(self, s):
         if int(s):
             return True
         return False
 
+
 class Integer(TorConfigType):
     def parse(self, s):
         return int(s)
 
+
 class Port(Integer):
     pass
 
+
 class TimeInterval(Integer):
     pass
+
 
 ## not actually used?
 class TimeMsecInterval(TorConfigType):
     pass
 
+
 class DataSize(Integer):
     pass
+
 
 class Float(TorConfigType):
     def parse(self, s):
         return float(s)
 
+
 ## unused also?
 class Time(TorConfigType):
     pass
+
 
 class CommaList(TorConfigType):
     def parse(self, s):
         return map(string.strip, s.split(','))
 
+
 ## FIXME: is this really a comma-list?
 class RouterList(CommaList):
     pass
 
+
 class String(TorConfigType):
     pass
 
+
 class Filename(String):
     pass
+
 
 class LineList(TorConfigType):
     def parse(self, s):
@@ -545,7 +566,10 @@ class LineList(TorConfigType):
             raise ValueError("Not valid for %s: %s" % (self.__class__, obj))
         return _ListWrapper(obj, functools.partial(instance.mark_unsaved, name))
 
-config_types = [Boolean, LineList, Integer, Port, TimeInterval, TimeMsecInterval, DataSize, Float, Time, CommaList, String, LineList, Filename, RouterList]
+config_types = [Boolean, LineList, Integer, Port, TimeInterval, TimeMsecInterval,
+                DataSize, Float, Time, CommaList, String, LineList, Filename,
+                RouterList]
+
 
 def _wrapture(orig):
     """
@@ -561,6 +585,7 @@ def _wrapture(orig):
         obj.on_modify()
         return orig(*args)
     return foo
+
 
 class _ListWrapper(list):
     """
@@ -585,6 +610,7 @@ class _ListWrapper(list):
 
     def __repr__(self):
         return '_ListWrapper' + super(_ListWrapper, self).__repr__()
+
 
 class HiddenService(object):
     """
@@ -628,7 +654,8 @@ class HiddenService(object):
 
         if not isinstance(ports, types.ListType):
             ports = [ports]
-        self.ports = _ListWrapper(ports, functools.partial(self.conf.mark_unsaved, 'HiddenServices'))
+        self.ports = _ListWrapper(ports, functools.partial(self.conf.mark_unsaved,
+                                                           'HiddenServices'))
 
     def __setattr__(self, name, value):
         """
@@ -640,7 +667,8 @@ class HiddenService(object):
         if name in ['dir', 'version', 'authorize_client', 'ports'] and self.conf:
             self.conf.mark_unsaved('HiddenServices')
         if isinstance(value, types.ListType):
-            value = _ListWrapper(value, functools.partial(self.conf.mark_unsaved, 'HiddenServices'))
+            value = _ListWrapper(value, functools.partial(self.conf.mark_unsaved,
+                                                          'HiddenServices'))
         self.__dict__[name] = value
 
     def __getattr__(self, name):
@@ -662,6 +690,7 @@ class HiddenService(object):
         if self.authorize_client:
             rtn.append(('HiddenServiceAuthorizeClient', self.authorize_client))
         return rtn
+
 
 class TorConfig(object):
     """
@@ -738,9 +767,9 @@ class TorConfig(object):
         all over the place.
         """
 
-        if self.__dict__.has_key('_setup_'):
+        if '_setup_' in self.__dict__:
             name = self._find_real_name(name)
-            if not self.__dict__.has_key('_slutty_') and name.lower() != 'hiddenservices':
+            if '_slutty_' not in self.__dict__ and name.lower() != 'hiddenservices':
                 value = self.parsers[name].validate(value, self, name)
             if isinstance(value, types.ListType):
                 value = _ListWrapper(value, functools.partial(self.mark_unsaved, name))
@@ -750,7 +779,6 @@ class TorConfig(object):
 
         else:
             super(TorConfig, self).__setattr__(name, value)
-
 
     def __getattr__(self, name):
         """
@@ -789,7 +817,7 @@ class TorConfig(object):
 
     def mark_unsaved(self, name):
         name = self._find_real_name(name)
-        if self.config.has_key(name) and not self.unsaved.has_key(name):
+        if name in self.config and name not in self.unsaved:
             self.unsaved[name] = self.config[self._find_real_name(name)]
 
     def save(self):
@@ -908,7 +936,7 @@ class TorConfig(object):
                 continue
             k, v = line.split('=')
             if k == 'HiddenServiceDir':
-                if directory != None:
+                if directory is not None:
                     hs.append(HiddenService(self, directory, ports, auth, ver))
                 directory = v
                 ports = []

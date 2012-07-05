@@ -12,6 +12,7 @@ import subprocess
 
 try:
     import GeoIP
+
     def create_geoip(fname):
         try:
             ## It's more "pythonic" to just wait for the exception,
@@ -47,15 +48,18 @@ try:
 except IOError:
     country = None
 
+
 def find_keywords(args):
     """
     This splits up strings like name=value, foo=bar into a dict. Does NOT deal
     with quotes in value (e.g. key="value with space" will not work
 
     :return:
-        a dict of key->value (both strings) of all name=value type keywords found in args.
+        a dict of key->value (both strings) of all name=value type
+        keywords found in args.
     """
     return dict(x.split('=', 1) for x in args if '=' in x)
+
 
 def delete_file_or_tree(*args):
     """
@@ -69,9 +73,11 @@ def delete_file_or_tree(*args):
         except OSError:
             shutil.rmtree(f, ignore_errors=True)
 
+
 def ip_from_int(self, ip):
         """ Convert long int back to dotted quad string """
         return socket.inet_ntoa(struct.pack('>I', ip))
+
 
 def process_from_address(addr, port, torstate=None):
     """
@@ -84,7 +90,7 @@ def process_from_address(addr, port, torstate=None):
     given, None is returned.
     """
 
-    if addr == None:
+    if addr is None:
         return None
 
     if "(tor_internal)" == str(addr).lower():
@@ -92,14 +98,15 @@ def process_from_address(addr, port, torstate=None):
             return None
         return int(torstate.tor_pid)
 
-    proc = subprocess.Popen(['lsof','-i','4tcp@%s:%s' % (addr,port)],
-                            stdout = subprocess.PIPE)
+    proc = subprocess.Popen(['lsof', '-i', '4tcp@%s:%s' % (addr, port)],
+                            stdout=subprocess.PIPE)
     (stdout, stderr) = proc.communicate()
     lines = stdout.split('\n')
     if len(lines) > 1:
         return int(lines[1].split()[1])
 
     return None
+
 
 def hmac_sha256(key, msg):
     """
@@ -109,7 +116,10 @@ def hmac_sha256(key, msg):
 
     return hmac.new(key, msg, hashlib.sha256).digest()
 
+
 CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
+
+
 def compare_via_hash(x, y):
     """
     Taken from rrandom's tor-utils git repository, to compare two
@@ -119,9 +129,6 @@ def compare_via_hash(x, y):
     return (hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
             hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
 
-##
-## classes
-##
 
 class NetLocation:
     """
@@ -153,4 +160,3 @@ class NetLocation:
 
         if asn:
             self.asn = asn.org_by_addr(self.ip)
-

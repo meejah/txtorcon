@@ -1,5 +1,6 @@
 from zope.interface import implements, Interface, Attribute
 
+
 class IStreamListener(Interface):
     """
     Notifications about changes to a :class:`txtorcon.Stream`.
@@ -7,13 +8,13 @@ class IStreamListener(Interface):
     If you wish for your listener to be added to *all* new streams,
     see :meth:`txtorcon.TorState.add_stream_listener`.
     """
-    
+
     def stream_new(stream):
         "a new stream has been created"
-    
+
     def stream_succeeded(stream):
         "stream has succeeded"
-    
+
     def stream_attach(stream, circuit):
         "the stream has been attached to a circuit"
 
@@ -26,6 +27,7 @@ class IStreamListener(Interface):
     def stream_failed(stream, reason, remote_reason):
         "stream failed for some reason (won't be in controller's list anymore)"
 
+
 class StreamListenerMixin(object):
     """
     Implements all of :class:`txtorcon.IStreamListener` with no-op
@@ -34,7 +36,7 @@ class StreamListenerMixin(object):
     """
 
     implements(IStreamListener)
-    
+
     def stream_new(self, stream):
         pass
     def stream_succeeded(self, stream):
@@ -47,6 +49,7 @@ class StreamListenerMixin(object):
         pass
     def stream_failed(self, stream, reason, remote_reason):
         pass
+
 
 class IStreamAttacher(Interface):
     """
@@ -63,17 +66,17 @@ class IStreamAttacher(Interface):
         :param stream: The stream to attach, which will be in NEW state.
 
         :param circuits: all currently available :class:`txtorcon.Circuit`
-            objects in the :class:`txtorcon.TorState` in a dict indexed by id. Note
-            they are not limited to BUILT circuits.
+            objects in the :class:`txtorcon.TorState` in a dict indexed by id.
+            Note they are not limited to BUILT circuits.
 
         You should return a :class:`txtorcon.Circuit` instance which
         should be at state BUILT in the currently running Tor. You may
         also return a Deferred which will callback with the desired
         circuit. In this case, you will probably need to be aware that
-        the callback from :meth:`txtorcon.TorState.build_circuit` does NOT call back
-        with a Circuit (just Tor's response of 'EXTEND 1234') and any
-        circuit you do return must be in the BUILT state anyway (which
-        the above will not).
+        the callback from :meth:`txtorcon.TorState.build_circuit` does
+        NOT call back with a Circuit (just Tor's response of 'EXTEND
+        1234') and any circuit you do return must be in the BUILT
+        state anyway (which the above will not).
 
         See :ref:`attach_streams_by_country.py` for a complete
         example of using a Deferred in an IStreamAttacher.
@@ -89,25 +92,27 @@ class IStreamAttacher(Interface):
         to attach .onion addresses anyway.
         """
 
+
 class ICircuitContainer(Interface):
     """
     An interface that contains a bunch of Circuit objects and can look
     them up by id.
     """
-    
+
     def find_circuit(id):
         ":return: a circuit for the id, or exception."
+
 
 class ICircuitListener(Interface):
     """
     An interface to listen for updates to Circuits.
     """
-    
+
     def circuit_new(circuit):
         """A new circuit has been created.  You'll always get one of
         these for every Circuit even if it doesn't go through the "launched"
         state."""
-        
+
     def circuit_launched(circuit):
         "A new circuit has been started."
 
@@ -115,11 +120,16 @@ class ICircuitListener(Interface):
         "A circuit has been extended to include a new router hop."
 
     def circuit_built(circuit):
-        "A circuit has been extended to all hops (usually 3 for user circuits)."
+        """
+        A circuit has been extended to all hops (usually 3 for user
+        circuits).
+        """
 
     def circuit_closed(circuit):
-        "A circuit has been closed cleanly (won't be in controller's list any more)."
-        
+        """
+        A circuit has been closed cleanly (won't be in controller's list any more).
+        """
+
     def circuit_failed(circuit, reason):
         """A circuit has been closed because something went wrong.
 
@@ -130,8 +140,9 @@ class ICircuitListener(Interface):
         INTERNAL,RESOURCELIMIT, CONNRESET, TORPROTOCOL, NOTDIRECTORY,
         END, PRIVATE_ADDR.
 
-        However, don't depend on that: it could be anything.        
+        However, don't depend on that: it could be anything.
         """
+
 
 class CircuitListenerMixin(object):
     """
@@ -141,16 +152,22 @@ class CircuitListenerMixin(object):
     implements(ICircuitListener)
     def circuit_new(self, circuit):
         pass
+    
     def circuit_launched(self, circuit):
         pass
+    
     def circuit_extend(self, circuit, router):
         pass
+    
     def circuit_built(self, circuit):
         pass
+    
     def circuit_closed(self, circuit):
         pass
+    
     def circuit_failed(self, circuit, reason):
         pass
+
 
 class ITorControlProtocol(Interface):
     """
@@ -190,36 +207,41 @@ class ITorControlProtocol(Interface):
 
     def add_circuit_listener(icircuitlistener):
         """
-        Add an implementor of :class:`txtorcon.interface.ICircuitListener` which will be
-        added to all new circuits as well as all existing ones (you
-        won't, however, get circuit_new calls for the existing ones)
+        Add an implementor of :class:`txtorcon.interface.ICircuitListener`
+        which will be added to all new circuits as well as all
+        existing ones (you won't, however, get circuit_new calls for
+        the existing ones)
         """
-        
+
     def add_stream_listener(istreamlistener):
         """
-        Add an implementor of :class:`txtorcon.interface.IStreamListener` which will be added to
-        all new circuits as well as all existing ones (you won't,
-        however, get stream_new calls for the existing ones)
+        Add an implementor of :class:`txtorcon.interface.IStreamListener`
+        which will be added to all new circuits as well as all
+        existing ones (you won't, however, get stream_new calls for
+        the existing ones)
         """
-        
+
     def add_event_listener(evt, callback):
         """
         Add a listener to an Event object. This may be called multiple
         times for the same event. Every time the event happens, the
         callback method will be called. The callback has one argument
-        (a string, the contents of the event, minus the "650" and the name of the event)
+        (a string, the contents of the event, minus the '650' and the
+        name of the event)
 
         FIXME: should have an interface for the callback.
         """
 
+
 class IRouterContainer(Interface):
 
-    unique_routers = Attribute("""unique_routers contains a list of all the Router instances""")
-    
+    unique_routers = Attribute("contains a list of all the Router instances")
+
     def router_from_id(routerid):
         """
         :return: a router by its ID.
         """
+
 
 class IAddrListener(Interface):
     def addrmap_added(addr):

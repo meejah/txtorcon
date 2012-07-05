@@ -1,33 +1,43 @@
 from util import NetLocation
 import types
 
+
 def hexIdFromHash(hash):
-    "From the base-64 encoded hashes Tor uses, this produces the longer hex-encoded hashes."
+    """
+    From the base-64 encoded hashes Tor uses, this produces the longer
+    hex-encoded hashes.
+    """
     return '$' + (hash + "=").decode("base64").encode("hex").upper()
 
+
 class PortRange(object):
-    "Represents a range of ports for Router policies."
+    """
+    Represents a range of ports for Router policies.
+    """
     def __init__(self, a, b):
         self.min = a
         self.max = b
+        
     def __cmp__(self, b):
         if b >= self.min and b <= self.max:
             return 0
         return 1
+    
     def __str__(self):
         return "%d-%d" % (self.min, self.max)
+
 
 class Router(object):
     """
     Represents a Tor Router, including location.
 
     The controller you pass in is really only used to do get_info
-    calls for ip-to-country/IP in case the :class:`txtorcon.util.NetLocation` stuff fails to
-    find a country.
+    calls for ip-to-country/IP in case the
+    :class:`txtorcon.util.NetLocation` stuff fails to find a country.
 
     After an .update() call, the id_hex attribute contains a
-    hex-encoded long hash (suitable, for example, to use in a ``GETINFO ns/id/*``
-    call).
+    hex-encoded long hash (suitable, for example, to use in a
+    ``GETINFO ns/id/*`` call).
 
     After setting the policy property you may call accepts_port() to
     find out if the router will accept a given port. This works with
@@ -45,7 +55,7 @@ class Router(object):
         self.location = NetLocation('0.0.0.0')
 
     unique_name = property(lambda x: x.name_is_unique and x.name or x.id_hex)
-    """has the hex id if this router's name is not unique, or it's name otherwise"""
+    "has the hex id if this router's name is not unique, or its name otherwise"
 
     def update(self, name, idhash, orhash, modified, ip, orport, dirport):
         self.name = name
@@ -58,13 +68,16 @@ class Router(object):
         self.location = NetLocation(self.ip)
         if self.location.countrycode is None:
             ## see if Tor is magic and knows more...
-            self.controller.get_info_raw('ip-to-country/'+self.ip).addCallback(self._set_country)
+            self.controller.get_info_raw('ip-to-country/' + self.ip).addCallback(self._set_country)
 
         self.id_hex = hexIdFromHash(self.id_hash)
 
     @property
     def flags(self):
-        """A list of all the flags for this Router, each one an all-lower-case string"""
+        """
+        A list of all the flags for this Router, each one an
+        all-lower-case string.
+        """
         return self._flags
 
     @flags.setter
@@ -77,7 +90,7 @@ class Router(object):
         There is some current work in Twisted for open-ended constants
         (enums) support however, it seems.
         """
-        if type(flags) == types.StringType:
+        if isinstance(flags, types.StringType):
             flags = flags.split()
         self._flags = map(lambda x: x.lower(), flags)
         self.name_is_unique = 'named' in self._flags
@@ -86,6 +99,7 @@ class Router(object):
     def bandwidth(self):
         """The reported bandwidth of this Router."""
         return self._bandwidth
+    
     @bandwidth.setter
     def bandwidth(self, bw):
         self._bandwidth = int(bw)
@@ -105,7 +119,7 @@ class Router(object):
 
         if target is None:
             return ''
-        
+
         last = None
         for x in target:
             ports = ports + str(x) + ','
@@ -116,13 +130,13 @@ class Router(object):
         """
         setter for the policy descriptor
         """
-        
+
         word = args[0]
         if word == 'reject':
             self.accepted_ports = None
             self.rejected_ports = []
             target = self.rejected_ports
-            
+
         elif word == 'accept':
             self.accepted_ports = []
             self.rejected_ports = None
@@ -130,10 +144,10 @@ class Router(object):
 
         else:
             raise RuntimeError("Don't understand policy word \"%s\"" % word)
-            
+
         for port in args[1].split(','):
             if '-' in port:
-                (a,b) = port.split('-')
+                (a, b) = port.split('-')
                 target.append(PortRange(int(a), int(b)))
             else:
                 target.append(int(port))
@@ -142,7 +156,7 @@ class Router(object):
         """
         Query whether this Router will accept the given port.
         """
-        
+
         if self.rejected_ports is None and self.accepted_ports is None:
             raise RuntimeError("policy hasn't been set yet")
 
@@ -161,7 +175,7 @@ class Router(object):
         """
         callback if we used Tor's GETINFO ip-to-country
         """
-        
+
         self.location.countrycode = c[:-3].split('=')[1].strip().upper()
 
     def __repr__(self):
@@ -170,4 +184,3 @@ class Router(object):
             n = self.name
         return "<Router %s %s %s>" % (n, self.location.countrycode,
                                       self.policy)
-

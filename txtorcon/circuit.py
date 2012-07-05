@@ -5,6 +5,7 @@ from interface import IRouterContainer
 
 from txtorcon.util import find_keywords
 
+
 class Circuit(object):
     """
     Used by :class:`txtorcon.TorState` to represent one of Tor's circuits.
@@ -58,7 +59,8 @@ class Circuit(object):
 
     def __init__(self, routercontainer):
         """
-        :param routercontainer: should implement :class:`txtorcon.interface.IRouterContainer`
+        :param routercontainer: should implement
+        :class:`txtorcon.interface.IRouterContainer`
         """
         self.listeners = []
         self.router_container = IRouterContainer(routercontainer)
@@ -67,14 +69,14 @@ class Circuit(object):
         self.purpose = None
         self.id = None
         self.state = 'UNKNOWN'
-        
+
     def listen(self, listener):
         if listener not in self.listeners:
             self.listeners.append(listener)
 
     def unlisten(self, listener):
         self.listeners.remove(listener)
-                    
+
     def update(self, args):
         ##print "Circuit.update:",args
         if self.id is None:
@@ -87,9 +89,9 @@ class Circuit(object):
         self.state = args[1]
 
         kw = find_keywords(args)
-        if kw.has_key('PURPOSE'):
+        if 'PURPOSE' in kw:
             self.purpose = kw['PURPOSE']
-            
+
         if self.state == 'LAUNCHED':
             self.path = []
             [x.circuit_launched(self) for x in self.listeners]
@@ -102,14 +104,16 @@ class Circuit(object):
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:
-                log.err(RuntimeError("Circuit is %s but still has %d streams" % (self.state, len(self.streams))))
+                log.err(RuntimeError("Circuit is %s but still has %d streams" %
+                                     (self.state, len(self.streams))))
             [x.circuit_closed(self) for x in self.listeners]
 
         elif self.state == 'FAILED':
             if len(self.streams) > 0:
-                log.err(RuntimeError("Circuit is %s but still has %d streams" % (self.state, len(self.streams))))
+                log.err(RuntimeError("Circuit is %s but still has %d streams" %
+                                     (self.state, len(self.streams))))
             reason = 'unknown'
-            if kw.has_key('REASON'):
+            if 'REASON' in kw:
                 reason = kw['REASON']
             [x.circuit_failed(self, reason) for x in self.listeners]
 
@@ -123,7 +127,6 @@ class Circuit(object):
             if len(self.path) > len(oldpath):
                 [x.circuit_extend(self, router) for x in self.listeners]
                 oldpath = self.path
-        
+
     def __str__(self):
-        #return "<Circuit %d %s [%s]>" % (self.id, self.state, ' '.join(map(lambda x: x.name, self.path)))
         return "<Circuit %d %s [%s] for %s>" % (self.id, self.state, ' '.join(map(lambda x: x.ip, self.path)), self.purpose)

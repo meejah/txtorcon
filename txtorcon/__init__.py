@@ -34,4 +34,3 @@ __all__ = ["Router",
            "ICircuitContainer", "ICircuitListener", "CircuitListenerMixin",
            "IRouterContainer", "IAddrListener"
            ]
-

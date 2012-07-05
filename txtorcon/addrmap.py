@@ -7,18 +7,20 @@ import ipaddr
 import datetime
 import shlex
 
+
 class Addr(object):
     """
     One address mapping (e.g. example.com -> 127.0.0.1)
     """
-    
+
     def __init__(self, map):
         """
-        map is an AddrMap instance, used for scheduling expiries and updating the map.
+        map is an AddrMap instance, used for scheduling expiries and
+        updating the map.
         """
-        
+
         self.map = map
-        
+
         self.ip = None
         self.name = None
         self.expiry = None
@@ -42,7 +44,7 @@ class Addr(object):
         ## properly delay our timeout
 
         oldexpires = self.expires
-        
+
         key = 'EXPIRES='
         if gmtexpires.find(key) == 0:
             gmtexpires = gmtexpires[len(key):]
@@ -52,7 +54,6 @@ class Addr(object):
         else:
             self.expires = datetime.datetime.strptime(gmtexpires, fmt)
         self.created = datetime.datetime.utcnow()
-        #print "ADDRMAP",self.name,"->",self.ip,self.created,"expires",diff.seconds,"seconds"
 
         if self.expires is not None:
             if oldexpires is None:
@@ -73,9 +74,11 @@ class Addr(object):
         del self.map.addr[self.name]
         self.map.notify("addrmap_expired", *[self.name], **{})
 
+
 class AddrMap(object):
     """
-    A collection of Addr objects mapping domains to addresses, with automatic expiry.
+    A collection of Addr objects mapping domains to addresses, with
+    automatic expiry.
 
     FIXME: need listener interface, so far:
 
@@ -92,11 +95,11 @@ class AddrMap(object):
         Deal with an update from Tor; either creates a new Addr object
         or find existing one and calls update() on it.
         """
-        
+
         params = shlex.split(update)
-        if self.addr.has_key(params[0]):
+        if params[0] in self.addr:
             self.addr[params[0]].update(*params)
-            
+
         else:
             a = Addr(self)
             self.addr[params[0]] = a

@@ -3,6 +3,7 @@ import warnings
 
 from twisted.python import log
 
+
 class FSM(object):
     """
     Override Matcher and Handler and pass instances to add_handler to
@@ -47,6 +48,7 @@ class FSM(object):
         r = r + '\n}\n'
         return r
 
+
 class State(object):
     def __init__(self, name):
         self.name = name
@@ -63,6 +65,7 @@ class State(object):
     def add_transition(self, t):
         self.transitions.append(t)
         t.start_state = self
+        
     def add_transitions(self, transitions):
         for t in transitions:
             self.add_transition(t)
@@ -79,9 +82,12 @@ class State(object):
         r = r + 'edge [fontsize=8]\n'
         r = r + 'rankdir=TB;\nnodesep=2;\n'
         for t in self.transitions:
-            r = r + '%s -> %s [label="%s\\n%s"]\n' % (self.name, t.next_state.name, t.matcher.__name__, t.handler.__name__)
-        return r;
-        
+            r = r + '%s -> %s [label="%s\\n%s"]\n' % (self.name,
+                                                      t.next_state.name,
+                                                      t.matcher.__name__,
+                                                      t.handler.__name__)
+        return r
+
 
 class Transition(object):
     def __init__(self, next_state, matcher, handler):
@@ -126,5 +132,6 @@ class Transition(object):
 
     def __str__(self):
         if self.start_state:
-            return "<Transition %s->%s>" % (self.start_state.name, self.next_state.name)
+            return "<Transition %s->%s>" % (self.start_state.name,
+                                            self.next_state.name)
         return "<Transition ->%s>" % (self.next_state.name,)
