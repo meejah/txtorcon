@@ -71,7 +71,7 @@ class StreamTests(unittest.TestCase):
         stream.circuit = FakeCircuit(1)
         stream.update("1 NEW 0 94.23.164.42.$43ED8310EB968746970896E8835C2F1991E50B69.exit:9001 SOURCE_ADDR=(Tor_internal):0 PURPOSE=DIR_FETCH".split())
         errs = self.flushLoggedErrors()
-        self.assertTrue(len(errs) == 1)
+        self.assertEqual(len(errs), 1)
         self.assertTrue('Weird' in errs[0].getErrorMessage())
 
     def test_magic_circuit_detach(self):
@@ -84,13 +84,13 @@ class StreamTests(unittest.TestCase):
     def test_args_in_ctor(self):
         stream = Stream(self)
         stream.update("1 NEW 0 94.23.164.42.$43ED8310EB968746970896E8835C2F1991E50B69.exit:9001 SOURCE_ADDR=(Tor_internal):0 PURPOSE=DIR_FETCH".split())
-        self.assertTrue(stream.id == 1)
-        self.assertTrue(stream.state == 'NEW')
+        self.assertEqual(stream.id, 1)
+        self.assertEqual(stream.state, 'NEW')
 
     def test_parse_resolve(self):
         stream = Stream(self)
         stream.update("1604 NEWRESOLVE 0 www.google.ca:0 PURPOSE=DNS_REQUEST".split())
-        self.assertTrue(stream.state == 'NEWRESOLVE')
+        self.assertEqual(stream.state, 'NEWRESOLVE')
     
     def test_listener_new(self):
         listener = Listener([('new', {'target_port':9001})])
@@ -110,7 +110,7 @@ class StreamTests(unittest.TestCase):
         stream.update("316 NEW 0 www.yahoo.com:80 SOURCE_ADDR=127.0.0.1:55877 PURPOSE=USER".split())
         stream.update("316 REMAP 186 1.2.3.4:80 SOURCE=EXIT".split())
 
-        self.assertTrue(self.circuits[186].streams[0] == stream)
+        self.assertEqual(self.circuits[186].streams[0], stream)
     
     def test_listener_attach_no_remap(self):
         "Attachment is via SENTCONNECT on .onion addresses (for example)"
@@ -124,7 +124,7 @@ class StreamTests(unittest.TestCase):
         stream.update("316 NEW 0 www.yahoo.com:80 SOURCE_ADDR=127.0.0.1:55877 PURPOSE=USER".split())
         stream.update("316 SENTCONNECT 186 1.2.3.4:80 SOURCE=EXIT".split())
 
-        self.assertTrue(self.circuits[186].streams[0] == stream)
+        self.assertEqual(self.circuits[186].streams[0], stream)
     
     def test_update_wrong_stream(self):
         self.circuits[186] = FakeCircuit(186)
@@ -155,7 +155,7 @@ class StreamTests(unittest.TestCase):
         stream = Stream(self)
         stream.listen(listener)
         stream.unlisten(listener)
-        self.assertTrue(len(stream.listeners) == 0)
+        self.assertEqual(len(stream.listeners), 0)
 
     def test_stream_changed(self):
         "Change a stream-id mid-stream."
@@ -169,12 +169,12 @@ class StreamTests(unittest.TestCase):
         stream.listen(listener)
         stream.update("316 NEW 0 www.yahoo.com:80 SOURCE_ADDR=127.0.0.1:55877 PURPOSE=USER".split())
         stream.update("316 SENTCONNECT 186 1.2.3.4:80 SOURCE=EXIT".split())
-        self.assertTrue(self.circuits[186].streams[0] == stream)
+        self.assertEqual(self.circuits[186].streams[0], stream)
 
         # magically change circuit ID without a DETACHED, should fail
         stream.update("316 SUCCEEDED 999 1.2.3.4:80 SOURCE=EXIT".split())
         errs = self.flushLoggedErrors()
-        self.assertTrue(len(errs) == 1)
+        self.assertEqual(len(errs), 1)
         # kind of fragile to look at strings, but...
         self.assertTrue('186 to 999' in str(errs[0]))
     
@@ -192,15 +192,15 @@ class StreamTests(unittest.TestCase):
         stream.listen(listener)
         stream.update("999 NEW 0 www.yahoo.com:80 SOURCE_ADDR=127.0.0.1:55877 PURPOSE=USER".split())
         stream.update("999 SENTCONNECT 123 1.2.3.4:80".split())
-        self.assertTrue(len(self.circuits[123].streams) == 1)
-        self.assertTrue(self.circuits[123].streams[0] == stream)
+        self.assertEqual(len(self.circuits[123].streams), 1)
+        self.assertEqual(self.circuits[123].streams[0], stream)
 
         stream.update("999 DETACHED 123 1.2.3.4:80 REASON=END REMOTE_REASON=MISC".split())
-        self.assertTrue(len(self.circuits[123].streams) == 0)
+        self.assertEqual(len(self.circuits[123].streams), 0)
         
         stream.update("999 SENTCONNECT 456 1.2.3.4:80 SOURCE=EXIT".split())
-        self.assertTrue(len(self.circuits[456].streams) == 1)
-        self.assertTrue(self.circuits[456].streams[0] == stream)
+        self.assertEqual(len(self.circuits[456].streams), 1)
+        self.assertEqual(self.circuits[456].streams[0], stream)
     
     def test_listener_close(self):
         self.circuits[186] = FakeCircuit(186)
@@ -214,7 +214,7 @@ class StreamTests(unittest.TestCase):
         stream.update("316 REMAP 186 1.2.3.4:80 SOURCE=EXIT".split())
         stream.update("316 CLOSED 186 1.2.3.4:80 REASON=END REMOTE_REASON=DONE".split())
         
-        self.assertTrue(len(self.circuits[186].streams) == 0)
+        self.assertEqual(len(self.circuits[186].streams), 0)
         
     def test_listener_fail(self):
         listener = Listener([('new', {'target_host':'www.yahoo.com', 'target_port':80}),
@@ -243,7 +243,7 @@ class StreamTests(unittest.TestCase):
     def test_ipv6_remap(self):
         stream = Stream(self)
         stream.update("1234 REMAP 0 ::1:80 SOURCE_ADDR=127.0.0.1:57349 PURPOSE=USER".split())
-        self.assertTrue(stream.target_addr == ipaddr.IPAddress('::1'))
+        self.assertEqual(stream.target_addr, ipaddr.IPAddress('::1'))
 
     def test_ipv6_source(self):
         listener = Listener([('new', {'source_addr':ipaddr.IPAddress('::1'), 'source_port':12345})])
@@ -266,4 +266,4 @@ class StreamTests(unittest.TestCase):
                           'DETACHED', 'NEWRESOLVE', 'SENTRESOLVE',
                           'FAILED', 'CLOSED']:
                 stream.update((line % (state, address)).split(' '))
-                self.assertTrue(stream.state == state)
+                self.assertEqual(stream.state, state)

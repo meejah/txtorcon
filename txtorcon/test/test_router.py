@@ -22,8 +22,8 @@ class RouterTests(unittest.TestCase):
                       "2011-12-16 15:11:34",
                       "77.183.225.114",
                       "24051", "24052")
-        self.assertTrue(router.id_hex == "$00786E43CCC5409753F25E36031C5CEA6EA43702")
-        self.assertTrue(router.policy == '')
+        self.assertEqual(router.id_hex, "$00786E43CCC5409753F25E36031C5CEA6EA43702")
+        self.assertEqual(router.policy, '')
 
     def test_unique_name(self):
         controller = object()
@@ -34,10 +34,10 @@ class RouterTests(unittest.TestCase):
                       "2011-12-16 15:11:34",
                       "77.183.225.114",
                       "24051", "24052")
-        self.assertTrue(router.id_hex == "$00786E43CCC5409753F25E36031C5CEA6EA43702")
-        self.assertTrue(router.unique_name == "$00786E43CCC5409753F25E36031C5CEA6EA43702")
+        self.assertEqual(router.id_hex, "$00786E43CCC5409753F25E36031C5CEA6EA43702")
+        self.assertEqual(router.unique_name, "$00786E43CCC5409753F25E36031C5CEA6EA43702")
         router.flags = ['Named']
-        self.assertTrue(router.unique_name == "foo")
+        self.assertEqual(router.unique_name, "foo")
 
     def test_flags(self):
         controller = object()
@@ -49,7 +49,7 @@ class RouterTests(unittest.TestCase):
                       "77.183.225.114",
                       "24051", "24052")
         router.flags = "Exit Fast Named Running V2Dir Valid".split()
-        self.assertTrue(router.name_is_unique == True)
+        self.assertEqual(router.name_is_unique, True)
 
     def test_flags_from_string(self):
         controller = object()
@@ -61,7 +61,7 @@ class RouterTests(unittest.TestCase):
                       "77.183.225.114",
                       "24051", "24052")
         router.flags = "Exit Fast Named Running V2Dir Valid"
-        self.assertTrue(router.name_is_unique == True)
+        self.assertEqual(router.name_is_unique, True)
 
     def test_policy_accept(self):
         controller = object()
@@ -77,7 +77,7 @@ class RouterTests(unittest.TestCase):
         for x in range(128,256):
             self.assertTrue(router.accepts_port(x))
         self.assertTrue(not router.accepts_port(26))
-        self.assertTrue(router.policy == 'accept 25,128-256')
+        self.assertEqual(router.policy, 'accept 25,128-256')
         
     def test_policy_reject(self):
         controller = object()
@@ -94,7 +94,7 @@ class RouterTests(unittest.TestCase):
         for x in range(500,601):
             self.assertTrue(not router.accepts_port(x))
 
-        self.assertTrue(router.policy == 'reject 500-600,655,7766')
+        self.assertEqual(router.policy, 'reject 500-600,655,7766')
 
     def test_countrycode(self):
         controller = FakeController()

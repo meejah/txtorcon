@@ -76,7 +76,7 @@ class CheckAnswer:
         self.test = test
 
     def __call__(self, x):
-        self.test.assertTrue(x == self.answer)
+        self.test.assertEqual(x, self.answer)
 
 class ConfigTests(unittest.TestCase):
     """
@@ -94,7 +94,7 @@ OK''')
         self.protocol.answers.append({'foo':'bar'})
         conf = TorConfig(self.protocol)
         errs = self.flushLoggedErrors(ValueError)
-        self.assertTrue(len(errs) == 1)
+        self.assertEqual(len(errs), 1)
         ## dunno if asserting strings in messages is a good idea...
         self.assertTrue('invalid literal' in errs[0].getErrorMessage())
     
@@ -118,7 +118,7 @@ foo String
 OK''')
         self.protocol.answers.append({'foo':'bar'})
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.foo == 'bar')        
+        self.assertEqual(conf.foo, 'bar')        
 
     def test_int_parser(self):
         self.protocol.answers.append('''config/names=
@@ -126,7 +126,7 @@ foo Integer
 OK''')
         self.protocol.answers.append({'foo':'123'})
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.foo == 123)
+        self.assertEqual(conf.foo, 123)
         
     def test_int_parser_error(self):
         self.protocol.answers.append('''config/names=
@@ -135,7 +135,7 @@ OK''')
         self.protocol.answers.append({'foo':'123foo'})
         conf = TorConfig(self.protocol)
         errs = self.flushLoggedErrors(ValueError)
-        self.assertTrue(len(errs) == 1)
+        self.assertEqual(len(errs), 1)
         self.assertTrue(isinstance(errs[0].value, ValueError))
 
     def test_int_parser_error_2(self):
@@ -145,7 +145,7 @@ OK''')
         self.protocol.answers.append({'foo':'1.23'})
         conf = TorConfig(self.protocol)
         errs = self.flushLoggedErrors(ValueError)
-        self.assertTrue(len(errs) == 1)
+        self.assertEqual(len(errs), 1)
         self.assertTrue(isinstance(errs[0].value, ValueError))
 
     def test_linelist_parser(self):
@@ -154,14 +154,14 @@ foo LineList
 OK''')
         self.protocol.answers.append({'foo':'bar\nbaz'})
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.foo == ['bar', 'baz'])
+        self.assertEqual(conf.foo, ['bar', 'baz'])
 
     def test_listlist_parser_with_list(self):
         self.protocol.answers.append('config/names=\nfoo LineList\nOK')
         self.protocol.answers.append({'foo': [1,2,3]})
         
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.foo == ['1', '2', '3'])
+        self.assertEqual(conf.foo, ['1', '2', '3'])
 
     def test_float_parser(self):
         self.protocol.answers.append('''config/names=
@@ -169,7 +169,7 @@ foo Float
 OK''')
         self.protocol.answers.append({'foo':'1.23'})
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.foo == 1.23)
+        self.assertEqual(conf.foo, 1.23)
 
     def test_float_parser_error(self):
         self.protocol.answers.append('''config/names=
@@ -178,7 +178,7 @@ OK''')
         self.protocol.answers.append({'foo':'1.23fff'})
         conf = TorConfig(self.protocol)
         errs = self.flushLoggedErrors(ValueError)
-        self.assertTrue(len(errs) == 1)
+        self.assertEqual(len(errs), 1)
         self.assertTrue(isinstance(errs[0].value, ValueError))
 
     def test_list(self):
@@ -187,8 +187,8 @@ bing CommaList
 OK''')
         self.protocol.answers.append({'bing':'foo,bar,baz'})
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.config['bing'] == ['foo','bar','baz'])
-#        self.assertTrue(conf.bing == ['foo','bar','baz'])
+        self.assertEqual(conf.config['bing'], ['foo','bar','baz'])
+#        self.assertEqual(conf.bing, ['foo','bar','baz'])
         
     def test_single_list(self):
         self.protocol.answers.append('''config/names=
@@ -196,7 +196,7 @@ bing CommaList
 OK''')
         self.protocol.answers.append({'bing':'foo'})
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.config['bing'] == ['foo'])
+        self.assertEqual(conf.config['bing'], ['foo'])
 
     def test_multi_list_space(self):
         self.protocol.answers.append('''config/names=
@@ -204,7 +204,7 @@ bing CommaList
 OK''')
         self.protocol.answers.append({'bing':'foo, bar , baz'})
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.bing == ['foo', 'bar', 'baz'])
+        self.assertEqual(conf.bing, ['foo', 'bar', 'baz'])
 
     def test_descriptor_access(self):
         self.protocol.answers.append('''config/names=
@@ -213,17 +213,17 @@ OK''')
         self.protocol.answers.append({'bing':'foo,bar'})
         
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.config['bing'] == ['foo','bar'])
-        self.assertTrue(conf.bing == ['foo','bar'])
+        self.assertEqual(conf.config['bing'], ['foo','bar'])
+        self.assertEqual(conf.bing, ['foo','bar'])
 
         self.protocol.answers.append('250 OK')
         conf.bing = ['a','b']
-        self.assertTrue(conf.bing == ['foo','bar'])
+        self.assertEqual(conf.bing, ['foo','bar'])
         
         d = conf.save()
         def confirm(conf):
-            self.assertTrue(conf.config['bing'] == ['a','b'])
-            self.assertTrue(conf.bing == ['a','b'])
+            self.assertEqual(conf.config['bing'], ['a','b'])
+            self.assertEqual(conf.bing, ['a','b'])
         d.addCallbacks(confirm, self.fail)
         return d
 
@@ -246,7 +246,7 @@ SomethingExciting NonExistantParserType
 OK''')
         conf = TorConfig(self.protocol)
         errs = self.flushLoggedErrors()
-        self.assertTrue(len(errs) == 1)
+        self.assertEqual(len(errs), 1)
         self.assertTrue('NonExistantParserType' in str(errs[0]))
 
     def foo(self, *args):
@@ -289,8 +289,8 @@ OK''')
 
         conf.save()
         
-        self.assertTrue(len(self.protocol.sets) == 1)
-        self.assertTrue(self.protocol.sets[0] == ('AwesomeKey', 'pac man'))
+        self.assertEqual(len(self.protocol.sets), 1)
+        self.assertEqual(self.protocol.sets[0], ('AwesomeKey', 'pac man'))
 
     def test_log_double_save(self):
         self.protocol.answers.append('''config/names=
@@ -310,7 +310,7 @@ OK''')
         self.assertTrue(not conf.needs_save())
         self.protocol.sets = []
         conf.save()
-        self.assertTrue(self.protocol.sets == [])
+        self.assertEqual(self.protocol.sets, [])
 
     def test_set_save_modify(self):
         self.protocol.answers.append('''config/names=
@@ -336,9 +336,9 @@ OK''')
         conf.log.append('bar')
         conf.save()
 
-        self.assertTrue(len(self.protocol.sets) == 2)
-        self.assertTrue(self.protocol.sets[0] == ('Log', 'foo'))
-        self.assertTrue(self.protocol.sets[1] == ('Log', 'bar'))
+        self.assertEqual(len(self.protocol.sets), 2)
+        self.assertEqual(self.protocol.sets[0], ('Log', 'foo'))
+        self.assertEqual(self.protocol.sets[1], ('Log', 'bar'))
         
 class LogTests(unittest.TestCase):
     
@@ -356,8 +356,8 @@ OK''')
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(self.protocol.sets[0] == ('Log', 'notice file /var/log/tor/notices.log'))
-        self.assertTrue(self.protocol.sets[1] == ('Log', 'info file /tmp/foo.log'))
+        self.assertEqual(self.protocol.sets[0], ('Log', 'notice file /var/log/tor/notices.log'))
+        self.assertEqual(self.protocol.sets[1], ('Log', 'info file /tmp/foo.log'))
 
     def test_log_set_capital(self):
         conf = TorConfig(self.protocol)
@@ -366,8 +366,8 @@ OK''')
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(self.protocol.sets[0] == ('Log', 'notice file /var/log/tor/notices.log'))
-        self.assertTrue(self.protocol.sets[1] == ('Log', 'info file /tmp/foo.log'))
+        self.assertEqual(self.protocol.sets[0], ('Log', 'notice file /var/log/tor/notices.log'))
+        self.assertEqual(self.protocol.sets[1], ('Log', 'info file /tmp/foo.log'))
 
     def test_log_set_index(self):
         conf = TorConfig(self.protocol)
@@ -376,7 +376,7 @@ OK''')
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(self.protocol.sets[0] == ('Log', 'info file /tmp/foo.log'))
+        self.assertEqual(self.protocol.sets[0], ('Log', 'info file /tmp/foo.log'))
 
     def test_log_set_slice(self):
         conf = TorConfig(self.protocol)
@@ -385,68 +385,68 @@ OK''')
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(self.protocol.sets[0] == ('Log', 'info file /tmp/foo.log'))
+        self.assertEqual(self.protocol.sets[0], ('Log', 'info file /tmp/foo.log'))
         
     def test_log_set_pop(self):
         conf = TorConfig(self.protocol)
 
-        self.assertTrue(len(conf.log) == 1)
+        self.assertEqual(len(conf.log), 1)
         conf.log.pop()
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(len(conf.log) == 0)
-        self.assertTrue(len(self.protocol.sets) == 0)
+        self.assertEqual(len(conf.log), 0)
+        self.assertEqual(len(self.protocol.sets), 0)
         
     def test_log_set_extend(self):
         conf = TorConfig(self.protocol)
 
-        self.assertTrue(len(conf.log) == 1)
+        self.assertEqual(len(conf.log), 1)
         conf.log.extend(['info file /tmp/foo'])
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(len(conf.log) == 2)
-        self.assertTrue(len(self.protocol.sets) == 2)
-        self.assertTrue(self.protocol.sets[0] == ('Log', 'notice file /var/log/tor/notices.log'))
-        self.assertTrue(self.protocol.sets[1] == ('Log', 'info file /tmp/foo'))
+        self.assertEqual(len(conf.log), 2)
+        self.assertEqual(len(self.protocol.sets), 2)
+        self.assertEqual(self.protocol.sets[0], ('Log', 'notice file /var/log/tor/notices.log'))
+        self.assertEqual(self.protocol.sets[1], ('Log', 'info file /tmp/foo'))
         
     def test_log_set_insert(self):
         conf = TorConfig(self.protocol)
 
-        self.assertTrue(len(conf.log) == 1)
+        self.assertEqual(len(conf.log), 1)
         conf.log.insert(0, 'info file /tmp/foo')
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(len(conf.log) == 2)
-        self.assertTrue(len(self.protocol.sets) == 2)
-        self.assertTrue(self.protocol.sets[1] == ('Log', 'notice file /var/log/tor/notices.log'))
-        self.assertTrue(self.protocol.sets[0] == ('Log', 'info file /tmp/foo'))
+        self.assertEqual(len(conf.log), 2)
+        self.assertEqual(len(self.protocol.sets), 2)
+        self.assertEqual(self.protocol.sets[1], ('Log', 'notice file /var/log/tor/notices.log'))
+        self.assertEqual(self.protocol.sets[0], ('Log', 'info file /tmp/foo'))
         
     def test_log_set_remove(self):
         conf = TorConfig(self.protocol)
 
-        self.assertTrue(len(conf.log) == 1)
+        self.assertEqual(len(conf.log), 1)
         conf.log.remove('notice file /var/log/tor/notices.log')
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(len(conf.log) == 0)
-        self.assertTrue(len(self.protocol.sets) == 0)
+        self.assertEqual(len(conf.log), 0)
+        self.assertEqual(len(self.protocol.sets), 0)
 
     def test_log_set_multiple(self):
         conf = TorConfig(self.protocol)
 
-        self.assertTrue(len(conf.log) == 1)
+        self.assertEqual(len(conf.log), 1)
         conf.log[0] = 'foo'
         self.assertTrue(conf.needs_save())
         conf.log[0] = 'heavy'
         conf.log[0] = 'round'
         conf.save()
 
-        self.assertTrue(len(self.protocol.sets) == 1)
-        self.assertTrue(self.protocol.sets[0] == ('Log', 'round'))
+        self.assertEqual(len(self.protocol.sets), 1)
+        self.assertEqual(self.protocol.sets[0], ('Log', 'round'))
 
     def test_set_wrong_object(self):
         conf = TorConfig(self.protocol)
@@ -466,7 +466,7 @@ class CreateTorrcTests(unittest.TestCase):
                                                'auth', 2)]
         config.Log = ['80 127.0.0.1:80', '90 127.0.0.1:90']
         torrc = config.create_torrc()
-        self.assertTrue(torrc == '''HiddenServiceDir /some/dir
+        self.assertEqual(torrc, '''HiddenServiceDir /some/dir
 HiddenServicePort 80 127.0.0.1:1234
 HiddenServiceVersion 2
 HiddenServiceAuthorizeClient auth
@@ -489,7 +489,7 @@ OK''')
         
         conf = TorConfig(self.protocol)
         self.assertTrue(not conf.config.has_key('HiddenServiceOptions'))
-        self.assertTrue(len(conf.HiddenServices) == 1)
+        self.assertEqual(len(conf.HiddenServices), 1)
 
         self.assertTrue(not conf.needs_save())
         conf.hiddenservices.append(HiddenService(conf, '/some/dir', '80 127.0.0.1:2345', 'auth', 2))
@@ -497,14 +497,14 @@ OK''')
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(len(self.protocol.sets) == 7)
-        self.assertTrue(self.protocol.sets[0] == ('HiddenServiceDir', '/fake/path'))
-        self.assertTrue(self.protocol.sets[1] == ('HiddenServicePort', '80 127.0.0.1:1234'))
-        self.assertTrue(self.protocol.sets[2] == ('HiddenServicePort', '443 127.0.0.1:443'))
-        self.assertTrue(self.protocol.sets[3] == ('HiddenServiceDir', '/some/dir'))
-        self.assertTrue(self.protocol.sets[4] == ('HiddenServicePort', '80 127.0.0.1:2345'))
-        self.assertTrue(self.protocol.sets[5] == ('HiddenServiceVersion', '2'))
-        self.assertTrue(self.protocol.sets[6] == ('HiddenServiceAuthorizeClient', 'auth'))
+        self.assertEqual(len(self.protocol.sets), 7)
+        self.assertEqual(self.protocol.sets[0], ('HiddenServiceDir', '/fake/path'))
+        self.assertEqual(self.protocol.sets[1], ('HiddenServicePort', '80 127.0.0.1:1234'))
+        self.assertEqual(self.protocol.sets[2], ('HiddenServicePort', '443 127.0.0.1:443'))
+        self.assertEqual(self.protocol.sets[3], ('HiddenServiceDir', '/some/dir'))
+        self.assertEqual(self.protocol.sets[4], ('HiddenServicePort', '80 127.0.0.1:2345'))
+        self.assertEqual(self.protocol.sets[5], ('HiddenServiceVersion', '2'))
+        self.assertEqual(self.protocol.sets[6], ('HiddenServiceAuthorizeClient', 'auth'))
 
     def test_save_no_protocol(self):
 
@@ -523,8 +523,8 @@ OK''')
             conf = TorConfig(self.protocol)
             hs = HiddenService(conf, d, [])
 
-            self.assertTrue(hs.hostname == 'public')
-            self.assertTrue(hs.private_key == 'private')
+            self.assertEqual(hs.hostname, 'public')
+            self.assertEqual(hs.private_key, 'private')
             
         finally:
             shutil.rmtree(d, ignore_errors=True)
@@ -546,18 +546,18 @@ HiddenServiceDir=/some/other/fake/path
 HiddenServicePort=80 127.0.0.1:1234
 HiddenServicePort=90 127.0.0.1:2345''')
 
-        self.assertTrue(len(conf.hiddenservices) == 2)
+        self.assertEqual(len(conf.hiddenservices), 2)
 
-        self.assertTrue(conf.hiddenservices[0].dir == '/fake/path')
-        self.assertTrue(conf.hiddenservices[0].version == 2)
-        self.assertTrue(conf.hiddenservices[0].authorize_client == 'basic')
-        self.assertTrue(len(conf.hiddenservices[0].ports) == 1)
-        self.assertTrue(conf.hiddenservices[0].ports[0] == '80 127.0.0.1:1234')
+        self.assertEqual(conf.hiddenservices[0].dir, '/fake/path')
+        self.assertEqual(conf.hiddenservices[0].version, 2)
+        self.assertEqual(conf.hiddenservices[0].authorize_client, 'basic')
+        self.assertEqual(len(conf.hiddenservices[0].ports), 1)
+        self.assertEqual(conf.hiddenservices[0].ports[0], '80 127.0.0.1:1234')
         
-        self.assertTrue(conf.hiddenservices[1].dir == '/some/other/fake/path')
-        self.assertTrue(len(conf.hiddenservices[1].ports) == 2)
-        self.assertTrue(conf.hiddenservices[1].ports[0] == '80 127.0.0.1:1234')
-        self.assertTrue(conf.hiddenservices[1].ports[1] == '90 127.0.0.1:2345')
+        self.assertEqual(conf.hiddenservices[1].dir, '/some/other/fake/path')
+        self.assertEqual(len(conf.hiddenservices[1].ports), 2)
+        self.assertEqual(conf.hiddenservices[1].ports[0], '80 127.0.0.1:1234')
+        self.assertEqual(conf.hiddenservices[1].ports[1], '90 127.0.0.1:2345')
         
     def test_hidden_service_parse_error(self):
         conf = TorConfig(FakeControlProtocol(['config/names=']))
@@ -576,12 +576,12 @@ HiddenServicePort=90 127.0.0.1:2345''')
         conf.hiddenservices[0].version = 4
         conf.hiddenservices[0].version = 5
 
-        self.assertTrue(conf.hiddenservices[0].version == 5)
+        self.assertEqual(conf.hiddenservices[0].version, 5)
         conf.save()
-        self.assertTrue(len(self.protocol.sets) == 3)
-        self.assertTrue(self.protocol.sets[0] == ('HiddenServiceDir', '/fake/path'))
-        self.assertTrue(self.protocol.sets[1] == ('HiddenServicePort', '80 127.0.0.1:1234'))
-        self.assertTrue(self.protocol.sets[2] == ('HiddenServiceVersion', '5'))
+        self.assertEqual(len(self.protocol.sets), 3)
+        self.assertEqual(self.protocol.sets[0], ('HiddenServiceDir', '/fake/path'))
+        self.assertEqual(self.protocol.sets[1], ('HiddenServicePort', '80 127.0.0.1:1234'))
+        self.assertEqual(self.protocol.sets[2], ('HiddenServiceVersion', '5'))
         
     def test_set_save_modify(self):
         self.protocol.answers.append('')
@@ -592,10 +592,10 @@ HiddenServicePort=90 127.0.0.1:2345''')
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        self.assertTrue(len(conf.hiddenservices) == 1)
-        self.assertTrue(conf.hiddenservices[0].dir == '/fake/path')
-        self.assertTrue(conf.hiddenservices[0].version == 3)
-        self.assertTrue(conf.hiddenservices[0].authorize_client == '')
+        self.assertEqual(len(conf.hiddenservices), 1)
+        self.assertEqual(conf.hiddenservices[0].dir, '/fake/path')
+        self.assertEqual(conf.hiddenservices[0].version, 3)
+        self.assertEqual(conf.hiddenservices[0].authorize_client, '')
         conf.hiddenservices[0].ports = ['123 127.0.0.1:4321']
         conf.save()
 
@@ -618,8 +618,8 @@ class FakeReactor:
         return self.transport
         
     def addSystemEventTrigger(self, *args):
-        self.test.assertTrue(args[0] == 'before')
-        self.test.assertTrue(args[1] == 'shutdown')
+        self.test.assertEqual(args[0], 'before')
+        self.test.assertEqual(args[1], 'shutdown')
         ## we know this is just for the temporary file cleanup, so we
         ## nuke it right away to avoid polluting /tmp but calling the
         ## callback now.
@@ -650,7 +650,7 @@ class LaunchTorTests(unittest.TestCase):
         todel = proto.to_delete
         self.assertTrue(len(todel) > 0)
         proto.processEnded(Failure(error.ProcessDone(0)))
-        self.assertTrue(len(proto.to_delete) == 0)
+        self.assertEqual(len(proto.to_delete), 0)
         for f in todel:
             self.assertTrue(not os.path.exists(f))
 
@@ -659,7 +659,7 @@ class LaunchTorTests(unittest.TestCase):
         self.assertTrue(len(todel) > 0)
         ## the "12" is just arbitrary, we check it later in the error-message
         proto.processEnded(Failure(error.ProcessTerminated(12, None, 'statusFIXME')))
-        self.assertTrue(len(proto.to_delete) == 0)
+        self.assertEqual(len(proto.to_delete), 0)
         for f in todel:
             self.assertTrue(not os.path.exists(f))
 
@@ -680,7 +680,7 @@ class LaunchTorTests(unittest.TestCase):
                 self.expected = expected
 
             def __call__(self, percent, tag, summary):
-                self.test.assertTrue(self.expected[0] == (percent, tag, summary))
+                self.test.assertEqual(self.expected[0], (percent, tag, summary))
                 self.expected = self.expected[1:]
                 self.test.assertTrue('"' not in summary)
                 self.test.assertTrue(percent >= 0 and percent <= 100)            
@@ -792,7 +792,7 @@ class LaunchTorTests(unittest.TestCase):
         return d
 
     def confirm_progress(self, exp, *args, **kwargs):
-        self.assertTrue(exp == args)
+        self.assertEqual(exp, args)
         self.got_progress = True
         
     def test_progress_updates(self):
@@ -883,7 +883,7 @@ OK''')
         return d
 
     def check_error(self, failure):
-        self.assertTrue(failure.type == error.CannotListenError)
+        self.assertEqual(failure.type, error.CannotListenError)
         return None
 
     def test_too_many_failures(self):

@@ -66,7 +66,7 @@ class FsmTests(unittest.TestCase):
         self.assertTrue("digraph" in fsm.dotty())
         fname = tempfile.mktemp() + '.dot'
         open(fname, 'w').write(fsm.dotty())
-        self.assertTrue(os.system("dot %s > /dev/null" % fname) == 0)
+        self.assertEqual(os.system("dot %s > /dev/null" % fname), 0)
         os.unlink(fname)
 
     def test_handler_state(self):
@@ -81,9 +81,9 @@ class FsmTests(unittest.TestCase):
         
         fsm = FSM([idle, cmd])
         self.commands = []
-        self.assertTrue(fsm.state == idle)
+        self.assertEqual(fsm.state, idle)
         fsm.process("250 OK\n")
-        self.assertTrue(fsm.state == idle)
+        self.assertEqual(fsm.state, idle)
     
     def test_simple_machine(self):
         idle = State("I")
@@ -95,9 +95,9 @@ class FsmTests(unittest.TestCase):
         
         fsm = FSM([idle, cmd])
         self.commands = []
-        self.assertTrue(fsm.state == idle)
+        self.assertEqual(fsm.state, idle)
         fsm.process("250 OK\n")
-        self.assertTrue(fsm.state == cmd)
+        self.assertEqual(fsm.state, cmd)
 
     def doCommand(self, data):
         print "transition:",data

@@ -66,7 +66,7 @@ class AuthenticationTests(unittest.TestCase):
         
     def test_authenticate_cookie(self):
         self.protocol.makeConnection(self.transport)
-        self.assertTrue(self.transport.value() == 'PROTOCOLINFO 1\r\n')
+        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
         self.transport.clear()
         cookie_data = 'cookiedata!cookiedata!cookiedata'
         open('authcookie', 'w').write(cookie_data)
@@ -75,19 +75,19 @@ class AuthenticationTests(unittest.TestCase):
         self.send('250-VERSION Tor="0.2.2.34"')
         self.send('250 OK')
 
-        self.assertTrue(self.transport.value() == 'AUTHENTICATE %s\r\n' % cookie_data.encode("hex"))
+        self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % cookie_data.encode("hex"))
 
     def test_authenticate_password(self):
         self.protocol.password = 'foo'
         self.protocol.makeConnection(self.transport)
-        self.assertTrue(self.transport.value() == 'PROTOCOLINFO 1\r\n')
+        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
         self.transport.clear()
         self.send('250-PROTOCOLINFO 1')
         self.send('250-AUTH METHODS=HASHEDPASSWORD')
         self.send('250-VERSION Tor="0.2.2.34"')
         self.send('250 OK')
 
-        self.assertTrue(self.transport.value() == 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
+        self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
 
     def confirmAuthFailed(self, *args):
         self.auth_failed = True
@@ -97,7 +97,7 @@ class AuthenticationTests(unittest.TestCase):
         self.auth_failed = False
         
         self.protocol.makeConnection(self.transport)
-        self.assertTrue(self.transport.value() == 'PROTOCOLINFO 1\r\n')
+        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
         
         self.send('250-PROTOCOLINFO 1')
         self.send('250-AUTH METHODS=HASHEDPASSWORD')
@@ -161,7 +161,7 @@ class ProtocolTests(unittest.TestCase):
             self.assertTrue('Unexpected code' in str(e))
 
     def auth_failed(self, msg):
-        self.assertTrue(str(msg.value) == '551 go away')
+        self.assertEqual(str(msg.value), '551 go away')
         self.got_auth_failed = True
 
     def test_authenticate_fail(self):
@@ -252,9 +252,9 @@ OK''' % cookietmp.name)
             self.assertTrue('hash not expected' in str(e))
 
     def confirm_version_events(self, arg):
-        self.assertTrue(self.protocol.version == 'foo')
+        self.assertEqual(self.protocol.version, 'foo')
         events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'.split()
-        self.assertTrue(len(self.protocol.valid_events) == len(events))
+        self.assertEqual(len(self.protocol.valid_events), len(events))
         [self.assertTrue(self.protocol.valid_events.has_key(x)) for x in events]
             
     def test_bootstrap_callback(self):
@@ -327,7 +327,7 @@ OK''' % cookietmp.name)
     def incremental_check(self, expected, actual):
         if '=' in actual or actual == 'OK':
             return
-        self.assertTrue(expected == actual)
+        self.assertEqual(expected, actual)
 
     def test_getinfo_incremental(self):
         d = self.protocol.get_info_incremental("FOO", functools.partial(self.incremental_check, "bar"))
@@ -362,25 +362,25 @@ OK''' % cookietmp.name)
         return d
 
     def response_ok(self, v):
-        self.assertTrue(v == 'OK')
+        self.assertEqual(v, 'OK')
 
     def test_setconf(self):
         d = self.protocol.set_conf("foo", "bar").addCallback(functools.partial(self.response_ok))
         self.send("250 OK")
         self._wait(d)
-        self.assertTrue(self.transport.value() == "SETCONF foo=bar\r\n")
+        self.assertEqual(self.transport.value(), "SETCONF foo=bar\r\n")
 
     def test_setconf_with_space(self):
         d = self.protocol.set_conf("foo", "a value with a space").addCallback(functools.partial(self.response_ok))
         self.send("250 OK")
         self._wait(d)
-        self.assertTrue(self.transport.value() == 'SETCONF foo="a value with a space"\r\n')
+        self.assertEqual(self.transport.value(), 'SETCONF foo="a value with a space"\r\n')
 
     def test_setconf_multi(self):
         d = self.protocol.set_conf("foo", "bar", "baz", 1)
         self.send("250 OK")
         self._wait(d)
-        self.assertTrue(self.transport.value() == "SETCONF foo=bar baz=1\r\n")
+        self.assertEqual(self.transport.value(), "SETCONF foo=bar baz=1\r\n")
 
     def error(self, failure):
         print "ERROR",failure
@@ -412,7 +412,7 @@ OK''' % cookietmp.name)
     def test_signal(self):
         self.protocol.valid_signals = ['NEWNYM']
         self.protocol.signal('NEWNYM')
-        self.assertTrue(self.transport.value() == 'SIGNAL NEWNYM\r\n')
+        self.assertEqual(self.transport.value(), 'SIGNAL NEWNYM\r\n')
 
     def test_notify_after_getinfo(self):
         self.protocol._set_valid_events('CIRC')
@@ -443,7 +443,7 @@ OK''' % cookietmp.name)
         self.send("250-version=0.2.2.34")
         self.send("250 OK")
 
-        self.assertTrue(self.transport.value() == "GETINFO version\r\n")
+        self.assertEqual(self.transport.value(), "GETINFO version\r\n")
         return d
 
     def test_addevent(self):
@@ -455,7 +455,7 @@ OK''' % cookietmp.name)
         d = self.protocol.defer
         self.send("250 OK")
         self._wait(d)
-        self.assertTrue(self.transport.value().split('\r\n')[-2] == "SETEVENTS FOO")
+        self.assertEqual(self.transport.value().split('\r\n')[-2], "SETEVENTS FOO")
         self.transport.clear()
 
         self.protocol.add_event_listener('BAR', do_nothing)
@@ -485,7 +485,7 @@ OK''' % cookietmp.name)
         self._wait(d)
         self.send("650 STREAM 1234 NEW 4321 1.2.3.4:555 REASON=MISC")
         self.send("650 STREAM 2345 NEW 4321 2.3.4.5:666 REASON=MISC")
-        self.assertTrue(listener.stream_events == 2)
+        self.assertEqual(listener.stream_events, 2)
 
     def test_remove_eventlistener(self):
         self.protocol._set_valid_events('STREAM')
@@ -495,11 +495,11 @@ OK''' % cookietmp.name)
                 self.stream_events += 1
         listener = EventListener()
         evt = self.protocol.add_event_listener('STREAM', listener)
-        self.assertTrue(self.transport.value() == 'SETEVENTS STREAM\r\n')
+        self.assertEqual(self.transport.value(), 'SETEVENTS STREAM\r\n')
         self.protocol.lineReceived("250 OK")
         self.transport.clear()
         self.protocol.remove_event_listener('STREAM', listener)
-        self.assertTrue(self.transport.value() == 'SETEVENTS \r\n')
+        self.assertEqual(self.transport.value(), 'SETEVENTS \r\n')
 
     def test_remove_eventlistener_multiple(self):
         self.protocol._set_valid_events('STREAM')
@@ -510,20 +510,20 @@ OK''' % cookietmp.name)
         listener0 = EventListener()
         listener1 = EventListener()
         evt = self.protocol.add_event_listener('STREAM', listener0)
-        self.assertTrue(self.transport.value() == 'SETEVENTS STREAM\r\n')
+        self.assertEqual(self.transport.value(), 'SETEVENTS STREAM\r\n')
         self.protocol.lineReceived("250 OK")
         self.transport.clear()
         ## add another one, shouldn't issue a tor command
         evt = self.protocol.add_event_listener('STREAM', listener1)
-        self.assertTrue(self.transport.value() == '')
+        self.assertEqual(self.transport.value(), '')
 
         ## remove one, should still not issue a tor command
         self.protocol.remove_event_listener('STREAM', listener0)
-        self.assertTrue(self.transport.value() == '')
+        self.assertEqual(self.transport.value(), '')
 
         ## remove the other one, NOW should issue a command
         self.protocol.remove_event_listener('STREAM', listener1)        
-        self.assertTrue(self.transport.value() == 'SETEVENTS \r\n')
+        self.assertEqual(self.transport.value(), 'SETEVENTS \r\n')
 
         ## try removing invalid event
         try:
@@ -533,7 +533,7 @@ OK''' % cookietmp.name)
             self.assertTrue('FOO' in str(e))
 
     def checkContinuation(self, v):
-        self.assertTrue(v == "key=\nvalue0\nvalue1\nOK")
+        self.assertEqual(v, "key=\nvalue0\nvalue1\nOK")
 
     def test_continuationLine(self):
         d = self.protocol.get_info_raw("key")
@@ -596,60 +596,60 @@ class ParseTests(unittest.TestCase):
         x = parse_keywords("""events/names=CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET
 OK""")
         self.assertTrue(x.has_key("events/names"))
-        self.assertTrue(x['events/names'] == 'CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET')
-        self.assertTrue(len(x.keys()) == 1)
+        self.assertEqual(x['events/names'], 'CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET')
+        self.assertEqual(len(x.keys()), 1)
 
     def test_keywords_mutli_equals(self):
         x = parse_keywords('foo=something subvalue="foo"')
-        self.assertTrue(len(x) == 1)
+        self.assertEqual(len(x), 1)
         self.assertTrue(x.has_key('foo'))
-        self.assertTrue(x['foo'] == 'something subvalue="foo"')
+        self.assertEqual(x['foo'], 'something subvalue="foo"')
 
     def test_default_keywords(self):
         x = parse_keywords('foo')
-        self.assertTrue(len(x) == 1)
+        self.assertEqual(len(x), 1)
         self.assertTrue(x.has_key('foo'))
-        self.assertTrue(x['foo'] == DEFAULT_VALUE)
+        self.assertEqual(x['foo'], DEFAULT_VALUE)
 
     def test_multientry_keywords_2(self):
         x = parse_keywords('''foo=bar
 foo=zarimba''')
-        self.assertTrue(len(x) == 1)
+        self.assertEqual(len(x), 1)
         self.assertTrue(isinstance(x['foo'], types.ListType))
-        self.assertTrue(len(x['foo']) == 2)
-        self.assertTrue(x['foo'][0] == 'bar')
-        self.assertTrue(x['foo'][1] == 'zarimba')
+        self.assertEqual(len(x['foo']), 2)
+        self.assertEqual(x['foo'][0], 'bar')
+        self.assertEqual(x['foo'][1], 'zarimba')
 
     def test_multientry_keywords_3(self):
         x = parse_keywords('''foo=bar
 foo=baz
 foo=zarimba''')
-        self.assertTrue(len(x) == 1)
+        self.assertEqual(len(x), 1)
         self.assertTrue(isinstance(x['foo'], types.ListType))
-        self.assertTrue(len(x['foo']) == 3)
-        self.assertTrue(x['foo'][0] == 'bar')
-        self.assertTrue(x['foo'][1] == 'baz')
-        self.assertTrue(x['foo'][2] == 'zarimba')
+        self.assertEqual(len(x['foo']), 3)
+        self.assertEqual(x['foo'][0], 'bar')
+        self.assertEqual(x['foo'][1], 'baz')
+        self.assertEqual(x['foo'][2], 'zarimba')
 
     def test_multientry_keywords_4(self):
         x = parse_keywords('''foo=bar
 foo=baz
 foo=zarimba
 foo=foo''')
-        self.assertTrue(len(x) == 1)
+        self.assertEqual(len(x), 1)
         self.assertTrue(isinstance(x['foo'], types.ListType))
-        self.assertTrue(len(x['foo']) == 4)
-        self.assertTrue(x['foo'][0] == 'bar')
-        self.assertTrue(x['foo'][1] == 'baz')
-        self.assertTrue(x['foo'][2] == 'zarimba')
-        self.assertTrue(x['foo'][3] == 'foo')
+        self.assertEqual(len(x['foo']), 4)
+        self.assertEqual(x['foo'][0], 'bar')
+        self.assertEqual(x['foo'][1], 'baz')
+        self.assertEqual(x['foo'][2], 'zarimba')
+        self.assertEqual(x['foo'][3], 'foo')
 
     def test_multiline_keywords(self):
         x = parse_keywords('''foo=bar
 baz''')
-        self.assertTrue(len(x) == 1)
+        self.assertEqual(len(x), 1)
         self.assertTrue(x.has_key('foo'))
-        self.assertTrue(x['foo'] == 'bar\nbaz')
+        self.assertEqual(x['foo'], 'bar\nbaz')
 
     def test_network_status(self):
         self.controller._update_network_status("""ns/all=
@@ -662,7 +662,7 @@ s Exit Fast Running V2Dir Valid
 w Bandwidth=33
 p reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999""")
         ## the routers list is always keyed with both name and hash
-        self.assertTrue(len(self.controller.routers_by_name) == 2)
+        self.assertEqual(len(self.controller.routers_by_name), 2)
         self.assertTrue(self.controller.routers.has_key("right2privassy3"))
         self.assertTrue(self.controller.routers.has_key("Unnamed"))
 
@@ -686,7 +686,7 @@ p reject 1-65535""")
         self.controller._circuit_status("""250+circuit-status=
 4472 BUILT $FF1003D2D14B4B9D03933F8EDFBC46C952E82A59=Tecumseh,$C185D4A4B069CD559FCD548C8063B475385D777F=l0l,$7FE4F2FFE07A96062BD0DB5B7FAECEFCBD8CF192=wildnl PURPOSE=GENERAL
 """)
-        self.assertTrue(len(self.controller.circuits) == 1)
+        self.assertEqual(len(self.controller.circuits), 1)
         self.assertTrue(self.controller.circuits.has_key(4472))
 
         self.controller.routers.clear()

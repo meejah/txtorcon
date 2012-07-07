@@ -64,9 +64,9 @@ class CircuitTests(unittest.TestCase):
         circuit.update('1 LAUNCHED PURPOSE=GENERAL'.split())
         circuit.unlisten(tor)
         circuit.update('1 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL'.split())
-        self.assertTrue(len(tor.circuits) == 1)
+        self.assertEqual(len(tor.circuits), 1)
         self.assertTrue(tor.circuits.has_key(1))
-        self.assertTrue(len(tor.extend) == 0)
+        self.assertEqual(len(tor.extend), 0)
         
     def test_wrong_update(self):
         tor = FakeTorController()
@@ -83,12 +83,12 @@ class CircuitTests(unittest.TestCase):
         stream = Stream(tor)
         stream.update("1 NEW 0 94.23.164.42.$43ED8310EB968746970896E8835C2F1991E50B69.exit:9001 SOURCE_ADDR=(Tor_internal):0 PURPOSE=DIR_FETCH".split())
         circuit.streams.append(stream)
-        self.assertTrue(len(circuit.streams) == 1)
+        self.assertEqual(len(circuit.streams), 1)
 
         circuit.update('1 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=FINISHED'.split())
         circuit.update('1 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=TIMEOUT'.split())
         errs = self.flushLoggedErrors()
-        self.assertTrue(len(errs) == 2)
+        self.assertEqual(len(errs), 2)
         
     def test_updates(self):
         tor = FakeTorController()
@@ -100,14 +100,14 @@ class CircuitTests(unittest.TestCase):
 
         for ex in examples[:-1]:
             circuit.update(ex.split()[1:])
-            self.assertTrue(circuit.state == ex.split()[2])
-            self.assertTrue(circuit.purpose == 'GENERAL')
+            self.assertEqual(circuit.state, ex.split()[2])
+            self.assertEqual(circuit.purpose, 'GENERAL')
 
             if '$' in ex:
-                self.assertTrue(len(circuit.path) == len(ex.split()[3].split(',')))
+                self.assertEqual(len(circuit.path), len(ex.split()[3].split(',')))
                 for (r,p) in zip(ex.split()[3].split(','), circuit.path):
                     d = r.split('=')[0]
-                    self.assertTrue(d == p.hash)
+                    self.assertEqual(d, p.hash)
 
     def test_extend_messages(self):
         tor = FakeTorController()
@@ -122,21 +122,21 @@ class CircuitTests(unittest.TestCase):
         circuit.listen(tor)
 
         circuit.update('365 LAUNCHED PURPOSE=GENERAL'.split())
-        self.assertTrue(tor.extend == [])
+        self.assertEqual(tor.extend, [])
         circuit.update('365 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL'.split())
-        self.assertTrue(len(tor.extend) == 1)
-        self.assertTrue(tor.extend[0] == (circuit, a))
+        self.assertEqual(len(tor.extend), 1)
+        self.assertEqual(tor.extend[0], (circuit, a))
         
         circuit.update('365 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus PURPOSE=GENERAL'.split())
-        self.assertTrue(len(tor.extend) == 2)
-        self.assertTrue(tor.extend[0] == (circuit, a))
-        self.assertTrue(tor.extend[1] == (circuit, b))
+        self.assertEqual(len(tor.extend), 2)
+        self.assertEqual(tor.extend[0], (circuit, a))
+        self.assertEqual(tor.extend[1], (circuit, b))
         
         circuit.update('365 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL'.split())
-        self.assertTrue(len(tor.extend) == 3)
-        self.assertTrue(tor.extend[0] == (circuit, a))
-        self.assertTrue(tor.extend[1] == (circuit, b))
-        self.assertTrue(tor.extend[2] == (circuit, c))
+        self.assertEqual(len(tor.extend), 3)
+        self.assertEqual(tor.extend[0], (circuit, a))
+        self.assertEqual(tor.extend[1], (circuit, b))
+        self.assertEqual(tor.extend[2], (circuit, c))
 
     def test_str(self):
         tor = FakeTorController()
@@ -149,5 +149,5 @@ class CircuitTests(unittest.TestCase):
         circuit = Circuit(tor)
         circuit.listen(tor)
         circuit.update('1 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL REASON=TIMEOUT'.split())
-        self.assertTrue(len(tor.failed) == 1)
-        self.assertTrue(tor.failed[0] == (circuit, 'TIMEOUT'))
+        self.assertEqual(len(tor.failed), 1)
+        self.assertEqual(tor.failed[0], (circuit, 'TIMEOUT'))

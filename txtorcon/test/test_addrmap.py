@@ -34,7 +34,7 @@ class AddrMapTests(unittest.TestCase):
         ## maybe not the most robust, should convert to
         ## seconds-since-epoch instead? the net result of the parsing
         ## is we've rounded to seconds...
-        self.assertTrue(addr.expires.ctime() == nowutc.ctime())
+        self.assertEqual(addr.expires.ctime(), nowutc.ctime())
 
         ## this will have resulted in an expiry call, which we need to
         ## cancel to keep the reactor clean. for consistency, we use
@@ -78,7 +78,7 @@ class AddrMapTests(unittest.TestCase):
         am.update(line)
 
         self.assertTrue(am.addr.has_key('www.example.com'))
-        self.assertTrue(len(clock.getDelayedCalls()) == 0)
+        self.assertEqual(len(clock.getDelayedCalls()), 0)
 
     def test_expires_old(self):
         """
@@ -158,10 +158,10 @@ class AddrMapTests(unittest.TestCase):
 
         ## see if our listener got an update
         a = am.find('www.example.com')
-        self.assertTrue(self.addrmap == [a])
+        self.assertEqual(self.addrmap, [a])
 
         ## advance time past when the expiry should have occurred
         clock.advance(10)
 
         ## check that our listener got an expires event
-        self.assertTrue(self.expires == ['www.example.com'])
+        self.assertEqual(self.expires, ['www.example.com'])

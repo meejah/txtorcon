@@ -32,13 +32,13 @@ class TestProcessFromUtil(unittest.TestCase):
         self.fakestate = FakeState()
 
     def test_none(self):
-        self.assertTrue(process_from_address(None, 80, self.fakestate) == None)
+        self.assertEqual(process_from_address(None, 80, self.fakestate), None)
 
     def test_internal(self):
         pfa = process_from_address('(Tor_internal)', 80, self.fakestate)
         # depends on whether you have psutil installed or not, and on
         # whether your system always has a PID 0 process...
-        self.assertTrue(pfa == self.fakestate.tor_pid)
+        self.assertEqual(pfa, self.fakestate.tor_pid)
 
     @defer.inlineCallbacks
     def test_real_addr(self):
@@ -55,7 +55,7 @@ class TestProcessFromUtil(unittest.TestCase):
         finally:
             listener.stopListening()
 
-        self.assertTrue(pid == os.getpid())
+        self.assertEqual(pid, os.getpid())
 
 class TestDelete(unittest.TestCase):
 
