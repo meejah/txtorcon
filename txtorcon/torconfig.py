@@ -710,6 +710,9 @@ class TorConfig(object):
     config items they will reflect the current state of Tor
     (i.e. *not* what's been set since the last save())
 
+    Note that you do not need to call save() if you're just using
+    TorConfig to create a .torrc file or for input to launch_tor().
+
     FIXME: It also listens on the CONF_CHANGED event to update the
     cached data in the event other controllers (etc) changed it. (Only
     exists in Git versions?)
@@ -871,9 +874,11 @@ class TorConfig(object):
             return d
 
         else:
+            self._save_completed()
             return defer.succeed(self)
 
-    def _save_completed(self, foo):
+    def _save_completed(self, *args):
+        '''internal callback'''
         self.__dict__['unsaved'] = {}
         return self
 
