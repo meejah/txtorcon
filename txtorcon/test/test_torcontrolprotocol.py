@@ -605,6 +605,12 @@ OK""")
         self.assertTrue(x.has_key('foo'))
         self.assertEqual(x['foo'], 'something subvalue="foo"')
 
+    def test_keywords_mutli_equals(self):
+        x = parse_keywords('foo=something subvalue="foo"')
+        self.assertTrue(len(x) == 1)
+        self.assertTrue(x.has_key('foo'))
+        self.assertTrue(x['foo'] == 'something subvalue="foo"')
+
     def test_default_keywords(self):
         x = parse_keywords('foo')
         self.assertEqual(len(x), 1)
