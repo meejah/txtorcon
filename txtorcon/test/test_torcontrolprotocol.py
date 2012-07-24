@@ -665,6 +665,13 @@ baz''')
         self.assertTrue(x.has_key('foo'))
         self.assertEqual(x['foo'], 'bar\nbaz')
 
+    def test_multiline_keywords(self):
+        x = parse_keywords('''Foo=bar\nBar''')
+        self.assertEqual(x, {'Foo': 'bar\nBar'})
+        x = parse_keywords('''Foo=bar\nBar''', multiline_values=False)
+        self.assertEqual(x, {'Foo': 'bar',
+                             'Bar': DEFAULT_VALUE})
+
     def test_network_status(self):
         self.controller._update_network_status("""ns/all=
 r right2privassy3 ADQ6gCT3DiFHKPDFr3rODBUI8HM JehnjB8l4Js47dyjLCEmE8VJqao 2011-12-02 03:36:40 50.63.8.215 9023 0
