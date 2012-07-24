@@ -807,8 +807,37 @@ class TorConfig(object):
             return HiddenService
         return type(self.parsers[name])
 
+    def _conf_changed(self, arg):
+        """
+        internal callback. from control-spec:
+
+        4.1.18. Configuration changed
+
+          The syntax is:
+             StartReplyLine *(MidReplyLine) EndReplyLine
+
+             StartReplyLine = "650-CONF_CHANGED" CRLF
+             MidReplyLine = "650-" KEYWORD ["=" VALUE] CRLF
+             EndReplyLine = "650 OK"
+
+          Tor configuration options have changed (such as via a SETCONF or RELOAD
+          signal). KEYWORD and VALUE specify the configuration option that was changed.
+          Undefined configuration options contain only the KEYWORD.
+        """
+
+        conf = parse_keywords(arg, multiline_values=False)
+        for (k, v) in conf.items():
+            ## v will be txtorcon.DEFAULT_VALUE already from
+            ## parse_keywords if it was unspecified
+            self.config[self._find_real_name(k)] = v
+
     def bootstrap(self, *args):
-##        self.protocol.add_event_listener('CONF_CHANGED', self._conf_changed)
+        try:
+            self.protocol.add_event_listener('CONF_CHANGED', self._conf_changed)
+        except (RuntimeError, e):
+            ## for Tor versions which don't understand CONF_CHANGED
+            ## there's nothing we can really do.
+            log.warning("Can't listen for CONF_CHANGED event; won't stay up-to-date with other clients.")
         return self.protocol.get_info_raw("config/names").addCallbacks(self._do_setup, log.err).addCallback(self.do_post_bootstrap).addErrback(log.err)
 
     def do_post_bootstrap(self, *args):
