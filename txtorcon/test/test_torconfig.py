@@ -37,6 +37,7 @@ class FakeControlProtocol:
         self.pending = []
         self.post_bootstrap = defer.succeed(self)
         self.sets = []
+        self.events = {}
 
     def answer_pending(self, answer):
         d = self.pending[0]
@@ -69,6 +70,9 @@ class FakeControlProtocol:
         for i in range(0, len(args), 2):
             self.sets.append((args[i], args[i+1]))
         return defer.succeed('OK')
+
+    def add_event_listener(self, nm, cb):
+        self.events[nm] = cb
 
 class CheckAnswer:
     def __init__(self, test, ans):
@@ -471,6 +475,22 @@ OK''')
             self.fail()
         except ValueError, e:
             self.assertTrue('Not valid' in str(e))
+
+
+class EventTests(unittest.TestCase):
+
+    def test_conf_changed(self):
+        control = FakeControlProtocol([])
+        config = TorConfig(control)
+        self.assertTrue(control.events.has_key('CONF_CHANGED'))
+
+        control.events['CONF_CHANGED']('Foo=bar\nBar')
+        self.assertEqual(len(config.config), 2)
+        self.assertEqual(config.Foo, 'bar')
+        self.assertEqual(config.Bar, DEFAULT_VALUE)
+
+        
+
 
 class CreateTorrcTests(unittest.TestCase):
     
