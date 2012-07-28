@@ -414,6 +414,14 @@ OK''' % cookietmp.name)
         self.protocol.signal('NEWNYM')
         self.assertEqual(self.transport.value(), 'SIGNAL NEWNYM\r\n')
 
+    def test_650_after_authenticate(self):
+        self.protocol._set_valid_events('CONF_CHANGED')
+        self.protocol.add_event_listener('CONF_CHANGED', CallbackChecker("Foo=bar"))
+        self.send("250 OK")
+
+        self.send("650-CONF_CHANGED")
+        self.send("650-Foo=bar")
+
     def test_notify_after_getinfo(self):
         self.protocol._set_valid_events('CIRC')
         self.protocol.add_event_listener('CIRC', CallbackChecker("1000 EXTENDED moria1,moria2"))
