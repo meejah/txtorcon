@@ -505,9 +505,28 @@ class Boolean(TorConfigType):
         return False
 
 
+class Boolean_Auto(TorConfigType):
+    """
+    weird class-name, but see the parser for these which is *mostly*
+    just the classname <==> string from Tor, except for something
+    called Boolean+Auto which is replace()d to be Boolean_Auto
+    """
+
+    def parse(self, s):
+        if s == 'auto' or int(s) < 0:
+            return -1
+        if int(s):
+            return 1
+        return 0
+
+
 class Integer(TorConfigType):
     def parse(self, s):
         return int(s)
+
+
+class SignedInteger(Integer):
+    pass
 
 
 class Port(Integer):
@@ -566,7 +585,8 @@ class LineList(TorConfigType):
             raise ValueError("Not valid for %s: %s" % (self.__class__, obj))
         return _ListWrapper(obj, functools.partial(instance.mark_unsaved, name))
 
-config_types = [Boolean, LineList, Integer, Port, TimeInterval, TimeMsecInterval,
+config_types = [Boolean, Boolean_Auto, LineList, Integer, SignedInteger, Port,
+                TimeInterval, TimeMsecInterval,
                 DataSize, Float, Time, CommaList, String, LineList, Filename,
                 RouterList]
 
@@ -904,6 +924,11 @@ class TorConfig(object):
             if value == 'Dependant':
                 continue
 
+            ## there's a thing called "Boolean+Auto" which is -1 for
+            ## auto, 0 for false and 1 for true. could be nicer if it
+            ## was called AutoBoolean or something, but...
+            value = value.replace('+', '_')
+            
             inst = None
             # FIXME: put parser classes in dict instead?
             for cls in config_types:
