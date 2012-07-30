@@ -138,6 +138,18 @@ class CircuitTests(unittest.TestCase):
         self.assertEqual(tor.extend[1], (circuit, b))
         self.assertEqual(tor.extend[2], (circuit, c))
 
+    def test_extends_no_path(self):
+        '''
+        without connectivity, it seems you get EXTENDS messages with no path update.
+        '''
+        tor = FakeTorController()
+        circuit = Circuit(tor)
+        circuit.listen(tor)
+        
+        circuit.update('753 EXTENDED BUILD_FLAGS=IS_INTERNAL,NEED_CAPACITY,NEED_UPTIME PURPOSE=MEASURE_TIMEOUT TIME_CREATED=2012-07-30T18:23:18.956704'.split())
+        self.assertEqual(tor.extend, [])
+        self.assertEqual(circuit.path, [])
+
     def test_str(self):
         tor = FakeTorController()
         circuit = Circuit(tor)

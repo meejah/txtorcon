@@ -118,11 +118,24 @@ class Circuit(object):
             [x.circuit_failed(self, reason) for x in self.listeners]
 
     def update_path(self, path):
+        """
+        Unfortunately, there are types of messages for EXTEND which
+        have no path, but that are very hard to distinguish from a
+        path update except by detecting that the router can't be
+        found. FIXME should find a better solution. Can we integrate
+        stems parser now, if it handles this
+        """
+        
         oldpath = self.path
         self.path = []
         for router in path:
             p = router[:41]
-            router = self.router_container.router_from_id(p)
+            try:
+                router = self.router_container.router_from_id(p)
+            except KeyError:
+                log.err('Skipping path update because a router is missing from my router_container: %s' % str(path))
+                return
+            
             self.path.append(router)
             if len(self.path) > len(oldpath):
                 [x.circuit_extend(self, router) for x in self.listeners]
