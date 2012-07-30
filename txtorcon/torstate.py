@@ -1,6 +1,3 @@
-
-import psutil
-
 from twisted.python import log, failure
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory, IReactorCore
