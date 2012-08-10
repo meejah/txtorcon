@@ -3,13 +3,32 @@ txtorcon README
 
 Full documentation at ReadTheDocs <http://txtorcon.rtfd.org>
 
+quick start
+-----------
+
+For the impatient, there are two quick ways to install this:
+
+   $ pip install txtorcon
+
+or, if you checked out or downloaded the source:
+
+   $ python setup.py install
+
+To avoid installing, you can just add the base of the source to your
+PYTHONPATH:
+
+   $ export PYTHONPATH=`pwd`:$PYTHONPATH
+
+Then, you will want to explore the examples. Try "python
+examples/stream_circuit_logger.py" for instance.
+
 overview
 --------
 
 txtorcon is a Twisted-based asynchronous Tor control protocol
 implementation. Twisted is an event-driven networking engine written
 in Python and Tor is an onion-routing network designed to improve
-people's privacy and security on the Internet.
+people's privacy and anonymity on the Internet.
 
 The main abstraction of this library is txtorcon.TorControlProtocol
 which presents an asynchronous API to speak the Tor client protocol in
@@ -49,31 +68,22 @@ which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
 
     $ make test
-    Ran 186 tests in 0.426s
+    Ran 197 tests in 0.328s
 
     $ make coverage
     ## ...deleted lots of output...
-    covered: 1675
-    uncovered: 57
-    96.60% test coverage
+    covered: 1747
+    uncovered: 65
+    96.28% test coverage
 
 Tor itself is not required to be running for any of the tests. There
 are no integration tests. ohcount claims under 2000 lines of code for
-the core bit; around 4000 including tests.
-
-I would also **note** that I was experimenting with underscores
-instead of camelCase for the method names; since Twisted is camelCase
-it might make sense to switch especially if anyone has strong feelings
-on this. On the other hand, it makes it obvious which calls are
-Twisted and which are txtorcon.
+the core bit; around 4000 including tests. About 35% comments in the
+not-test code.
 
 
 dependencies
 ------------
-
- * [python-ipaddr](http://code.google.com/p/ipaddr-py/): Google's
-   IP address manipulation code. Could easily just use string if this
-   dependency is a problem; see addrmap.py
 
  * [twisted](http://twistedmatrix.com): I am working against
    Twisted 11.1.0 on Debian with Python 2.7.2.
@@ -86,6 +96,9 @@ dependencies
    doesn't have an answer but I haven't bothered removing the
    dependency yet..It also does ASN lookups if you installed that
    MaxMind database.
+
+ * [python-ipaddr](http://code.google.com/p/ipaddr-py/): **optional**. Google's
+   IP address manipulation code. 
 
  * [Sphinx](http://sphinx.pocoo.org/): Only if you want to build the documentation.
    In that case you'll also need something called
@@ -105,10 +118,6 @@ system, this should work:
 
 documentation
 -------------
-
-**FIXME** **NOTE** I'm planning to possibly re-organize which .py
-files the classes are in. If you know some best practices on this, or
-have specific suggestions please email me.
 
 It is likely that you will need to read at least some of
 [control-spec.txt](https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt)
