@@ -119,22 +119,29 @@ class Circuit(object):
 
     def update_path(self, path):
         """
-        Unfortunately, there are types of messages for EXTEND which
-        have no path, but that are very hard to distinguish from a
-        path update except by detecting that the router can't be
-        found. FIXME should find a better solution. Can we integrate
-        stems parser now, if it handles this
+        There are EXTENDED messages which don't include any routers at
+        all, and any of the EXTENDED messages may have some arbitrary
+        flags in them. So far, they're all upper-case and none start
+        with $ luckily. The routers in the path should all be
+        LongName-style router names (this depends on them starting
+        with $).
+
+        For further complication, it's possible to extend a circuit to
+        a router which isn't in the consensus. nickm via #tor thought
+        this might happen in the case of hidden services choosing a
+        rendevouz point not in the current consensus.
         """
         
         oldpath = self.path
         self.path = []
         for router in path:
             p = router[:41]
-            try:
-                router = self.router_container.router_from_id(p)
-            except KeyError:
-                log.err('Skipping path update because a router is missing from my router_container: %s' % str(path))
-                return
+            if p[0] != '$':
+                break
+
+            ## this will create a Router if we give it a router
+            ## LongName that doesn't yet exist
+            router = self.router_container.router_from_id(p)
             
             self.path.append(router)
             if len(self.path) > len(oldpath):

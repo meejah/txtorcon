@@ -239,6 +239,17 @@ class IRouterContainer(Interface):
 
     def router_from_id(routerid):
         """
+        Note that this method MUST always return a Router instance --
+        if you ask for a router ID that didn't yet exist, it is
+        created (although without IP addresses and such because it
+        wasn't in the consensus). You may find out if a Router came
+        from the 'GETINFO ns/all' list by checking the from_consensus
+        attribute. This is to simplify code like in Circuit.update()
+        that needs to handle the case where an EXTENDED circuit event
+        is the only time we've seen a Router -- it's possible for Tor
+        to do things with routers not in the consensus (like extend
+        circuits to them).
+        
         :return: a router by its ID.
         """
 
