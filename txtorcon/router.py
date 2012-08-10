@@ -10,6 +10,15 @@ def hexIdFromHash(hash):
     return '$' + (hash + "=").decode("base64").encode("hex").upper()
 
 
+def hashFromHexId(hexid):
+    """
+    From a hex fingerprint id, convert back to base-64 encoded value.
+    """
+    if hexid[0] == '$':
+        hexid = hexid[1:]
+    return hexid.decode("hex").encode("base64")[:-2]
+
+
 class PortRange(object):
     """
     Represents a range of ports for Router policies.
@@ -53,6 +62,7 @@ class Router(object):
         self.rejected_ports = None
         self.id_hex = None
         self.location = NetLocation('0.0.0.0')
+        self.from_consensus = False
 
     unique_name = property(lambda x: x.name_is_unique and x.name or x.id_hex)
     "has the hex id if this router's name is not unique, or its name otherwise"

@@ -293,15 +293,21 @@ class StateTests(unittest.TestCase):
         self.send(".")
         self.send("250 OK")
 
+        ## implicitly created Router object for the $1111...11 lookup
+        ## but 0.0.0.0 will have to country, so Router will ask Tor
+        ## for one via GETINFO ip-to-country
+        self.send("250-ip-to-country/0.0.0.0=??")
         self.send("250 OK")
 
-        self.assertEqual(len(self.state.entry_guards), 1)
-        self.assertTrue(self.state.entry_guards.has_key('$0000000000000000000000000000000000000000'))
-        self.assertEqual(self.state.entry_guards.values()[0], fakerouter)
+        self.send("250 OK")
 
-        self.assertEqual(len(self.state.unusable_entry_guards), 2)
-        self.assertTrue('$1111111111111111111111111111111111111111' in self.state.unusable_entry_guards[0])
-        self.assertTrue('$9999999999999999999999999999999999999999' in self.state.unusable_entry_guards[1])
+        self.assertEqual(len(self.state.entry_guards), 2)
+        self.assertTrue(self.state.entry_guards.has_key('$0000000000000000000000000000000000000000'))
+        self.assertEqual(self.state.entry_guards['$0000000000000000000000000000000000000000'], fakerouter)
+        self.assertTrue(self.state.entry_guards.has_key('$1111111111111111111111111111111111111111'))
+
+        self.assertEqual(len(self.state.unusable_entry_guards), 1)
+        self.assertTrue('$9999999999999999999999999999999999999999' in self.state.unusable_entry_guards[0])
         
         return d
         
