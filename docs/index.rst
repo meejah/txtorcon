@@ -48,7 +48,7 @@ Releases:
 
 ..comment:
   - **XXX, 2012**: `txtorcon-0.6.tar.gz <txtorcon-0.6.tar.gz>`_ (`txtorcon-0.6.tar.gz.sig <txtorcon-0.6.tar.gz.sig>`_)
-    This release adds: debian packaging (mmaker); psutil fully gone; TorConfig.save() works properly with no connected Tor; fix incorrect handling of 650 immediately after connect; pep8 compliance; use assertEqual in tests; messages with embdedded keywords work properly; ...
+    This release adds: debian packaging (mmaker); psutil fully gone; TorConfig.save() works properly with no connected Tor; fix incorrect handling of 650 immediately after connect; pep8 compliance; use assertEqual in tests; messages with embdedded keywords work properly; add TorInfo class; handle CONF_CHANGED event to keep TorConfig up-to-date; ...
 
 - **June 20, 2012**: `txtorcon-0.5.tar.gz <txtorcon-0.5.tar.gz>`_ (`txtorcon-0.5.tar.gz.sig <txtorcon-0.5.tar.gz.sig>`_)
   This release adds: remove psutil as a dependency, including from `util.process_from_address`
