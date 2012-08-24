@@ -671,6 +671,13 @@ baz''')
         self.assertTrue(x.has_key('foo'))
         self.assertEqual(x['foo'], 'bar\nbaz')
 
+    def test_multiline_keywords(self):
+        x = parse_keywords('''Foo=bar\nBar''')
+        self.assertEqual(x, {'Foo': 'bar\nBar'})
+        x = parse_keywords('''Foo=bar\nBar''', multiline_values=False)
+        self.assertEqual(x, {'Foo': 'bar',
+                             'Bar': DEFAULT_VALUE})
+
     def test_unquoted_keywords(self):
         x = parse_keywords('''Tor="0.1.2.3.4-rc44"''')
         self.assertEqual(x, {'Tor': '0.1.2.3.4-rc44'})
