@@ -690,6 +690,10 @@ foo=foo''')
         x = parse_keywords('''Tor="0.1.2.3.4-rc44"''')
         self.assertEqual(x, {'Tor': '0.1.2.3.4-rc44'})
 
+    def test_unquoted_keywords_empty(self):
+        x = parse_keywords('foo=')
+        self.assertEqual(x, {'foo': ''})
+
     def test_network_status(self):
         self.controller._update_network_status("""ns/all=
 r right2privassy3 ADQ6gCT3DiFHKPDFr3rODBUI8HM JehnjB8l4Js47dyjLCEmE8VJqao 2011-12-02 03:36:40 50.63.8.215 9023 0
