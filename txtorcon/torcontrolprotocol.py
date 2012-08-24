@@ -118,17 +118,26 @@ class Event(object):
             cb(data)
 
 def unquote(word):
+    if len(word) == 0:
+        return word
     if word[0] == '"' and word[-1] == '"':
         return word[1:-1]
     elif word[0] == "'" and word[-1] == "'":
         return word[1:-1]
     return word
 
-def parse_keywords(lines):
+def parse_keywords(lines, multiline_values=True):
     """
     Utility method to parse name=value pairs (GETINFO etc). Takes a
     string with newline-separated lines and expects at most one = sign
     per line. Accumulates multi-line values.
+
+    :param multiline_values:
+        The default is True which allows for multi-line values until a
+        line with the next = sign on it. So: '''Foo=bar\nBar'''
+        produces one key, 'Foo', with value 'bar\nBar' -- set to
+        False, there would be two keys: 'Foo' with value 'bar' and
+        'Bar' with value DEFAULT_VALUE.
     """
 
     rtn = {}
@@ -153,7 +162,13 @@ def parse_keywords(lines):
         else:
             if key is None:
                 rtn[line.strip()] = DEFAULT_VALUE
-                #raise RuntimeError('Should have had a key by now: ' + lines)
+
+            elif multiline_values is False:
+                rtn[key] = value
+                rtn[line.strip()] = DEFAULT_VALUE
+                key = None
+                value = ''
+
             else:
                 value = value + '\n' + line
     if key:
