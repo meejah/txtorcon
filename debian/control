@@ -10,12 +10,12 @@ Package: python-txtorcon
 Architecture: all
 Homepage: http://github.com/meejah/txtorcon
 Description: Twisted-based asynchronous Tor control protocol implementation
- The main abstraction of this library is txtorcon.TorControlProtocol which presents 
+ The main abstraction of this library is txtorcon.TorControlProtocol which presents
  an asynchronous API to speak the Tor client protocol in Python. txtorcon also
  provides abstractions to track and get updates about Tor's state (txtorcon.TorState)
  and current configuration (including writing it to Tor or disk) in txtorcon.TorConfig,
  along with helpers to asynchronously launch slave instances of Tor including Twisted endpoint support.
-Depends: ${misc:Depends}, ${python:Depends}, python-twisted (>= 11.1.0), python-six, python-ipaddr 
+Depends: ${misc:Depends}, ${python:Depends}, python-twisted (>= 11.1.0), python-geoip, python-ipaddr (>=2.1.10)
 XB-Python-Version: ${python:Versions}
 Provides: ${python:Provides}
 

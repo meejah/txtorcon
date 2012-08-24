@@ -117,6 +117,12 @@ class Event(object):
         for cb in self.callbacks:
             cb(data)
 
+def unquote(word):
+    if word[0] == '"' and word[-1] == '"':
+        return word[1:-1]
+    elif word[0] == "'" and word[-1] == "'":
+        return word[1:-1]
+    return word
 
 def parse_keywords(lines, multiline_values=True):
     """
@@ -144,11 +150,11 @@ def parse_keywords(lines, multiline_values=True):
             if key:
                 if key in rtn:
                     if isinstance(rtn[key], types.ListType):
-                        rtn[key].append(value)
+                        rtn[key].append(unquote(value))
                     else:
-                        rtn[key] = [rtn[key], value]
+                        rtn[key] = [rtn[key], unquote(value)]
                 else:
-                    rtn[key] = value
+                    rtn[key] = unquote(value)
             (key, value) = line.split('=', 1)
 
         else:
@@ -166,11 +172,11 @@ def parse_keywords(lines, multiline_values=True):
     if key:
         if key in rtn:
             if isinstance(rtn[key], types.ListType):
-                rtn[key].append(value)
+                rtn[key].append(unquote(value))
             else:
-                rtn[key] = [rtn[key], value]
+                rtn[key] = [rtn[key], unquote(value)]
         else:
-            rtn[key] = value
+            rtn[key] = unquote(value)
     return rtn
 
 

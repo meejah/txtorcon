@@ -5,11 +5,20 @@ from twisted.trial import unittest
 from twisted.internet import defer
 
 # outside this package, you can do
-from txtorcon.router import Router
+from txtorcon.router import Router, hexIdFromHash, hashFromHexId
 
 class FakeController(object):
     def get_info_raw(self, i):
         return defer.succeed('250-ip-to-country/something=XX\r\n250 OK')
+
+class UtilityTests(unittest.TestCase):
+
+    def test_hex_converters(self):
+        self.assertEqual(hexIdFromHash('AHhuQ8zFQJdT8l42Axxc6m6kNwI'), '$00786E43CCC5409753F25E36031C5CEA6EA43702')
+        self.assertEqual(hashFromHexId('$00786E43CCC5409753F25E36031C5CEA6EA43702'), 'AHhuQ8zFQJdT8l42Axxc6m6kNwI')
+        ## should work with or without leading $
+        self.assertEqual(hexIdFromHash(hashFromHexId('00786E43CCC5409753F25E36031C5CEA6EA43702')), '$00786E43CCC5409753F25E36031C5CEA6EA43702')
+
 
 class RouterTests(unittest.TestCase):
 

@@ -116,6 +116,21 @@ OK''')
         self.assertTrue(conf.foo is False)
         self.assertTrue(conf.bar is True)
 
+    def test_boolean_auto_parser(self):
+        self.protocol.answers.append('''config/names=
+foo Boolean+Auto
+bar Boolean+Auto
+baz Boolean+Auto
+OK''')
+        self.protocol.answers.append({'foo':'0'})
+        self.protocol.answers.append({'bar':'1'})
+        self.protocol.answers.append({'baz':'auto'})
+
+        conf = TorConfig(self.protocol)
+        self.assertTrue(conf.foo is 0)
+        self.assertTrue(conf.bar is 1)
+        self.assertTrue(conf.baz is -1)
+
     def test_string_parser(self):
         self.protocol.answers.append('''config/names=
 foo String

@@ -1,6 +1,3 @@
-
-import psutil
-
 from twisted.python import log, failure
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory, IReactorCore
@@ -10,7 +7,7 @@ from zope.interface import implements
 ## outside this module, you can do "from txtorcon import Stream" etc.
 from txtorcon.stream import Stream
 from txtorcon.circuit import Circuit
-from txtorcon.router import Router
+from txtorcon.router import Router, hashFromHexId
 from txtorcon.addrmap import AddrMap
 from txtorcon.torcontrolprotocol import parse_keywords
 from txtorcon.log import txtorlog
@@ -190,6 +187,7 @@ class TorState(object):
     def _router_begin(self, data):
         args = data.split()
         self._router = Router(self.protocol)
+        self._router.from_consensus = True
         self._router.update(args[1],         # nickname
                             args[2],         # idhash
                             args[3],         # orhash
@@ -610,8 +608,24 @@ class TorState(object):
     ## IRouterContainer
 
     def router_from_id(self, routerid):
-        "IRouterContainer API"
-        return self.routers[routerid]
+        """IRouterContainer API"""
+
+        try:
+            return self.routers[routerid]
+
+        except KeyError:
+            router = Router(self.protocol)
+            if routerid[0] != '$':
+                raise                   # just re-raise the KeyError
+
+            idhash = routerid[1:41]
+            nick = ''
+            is_named = False
+            if len(routerid) > 41:
+                nick = routerid[42:]
+                is_named = routerid[42] is '='
+            router.update(nick, hashFromHexId(idhash), '0'*27, 'unknown', 'unknown', '0', '0')
+            return router
 
     ## implement IStreamListener
 

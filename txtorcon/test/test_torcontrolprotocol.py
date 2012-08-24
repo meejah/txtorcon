@@ -619,6 +619,12 @@ OK""")
         self.assertTrue(x.has_key('foo'))
         self.assertTrue(x['foo'] == 'something subvalue="foo"')
 
+    def test_keywords_mutli_equals(self):
+        x = parse_keywords('foo=something subvalue="foo"')
+        self.assertTrue(len(x) == 1)
+        self.assertTrue(x.has_key('foo'))
+        self.assertTrue(x['foo'] == 'something subvalue="foo"')
+
     def test_default_keywords(self):
         x = parse_keywords('foo')
         self.assertEqual(len(x), 1)
@@ -671,6 +677,10 @@ baz''')
         x = parse_keywords('''Foo=bar\nBar''', multiline_values=False)
         self.assertEqual(x, {'Foo': 'bar',
                              'Bar': DEFAULT_VALUE})
+
+    def test_unquoted_keywords(self):
+        x = parse_keywords('''Tor="0.1.2.3.4-rc44"''')
+        self.assertEqual(x, {'Tor': '0.1.2.3.4-rc44'})
 
     def test_network_status(self):
         self.controller._update_network_status("""ns/all=

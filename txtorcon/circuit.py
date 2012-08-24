@@ -118,11 +118,31 @@ class Circuit(object):
             [x.circuit_failed(self, reason) for x in self.listeners]
 
     def update_path(self, path):
+        """
+        There are EXTENDED messages which don't include any routers at
+        all, and any of the EXTENDED messages may have some arbitrary
+        flags in them. So far, they're all upper-case and none start
+        with $ luckily. The routers in the path should all be
+        LongName-style router names (this depends on them starting
+        with $).
+
+        For further complication, it's possible to extend a circuit to
+        a router which isn't in the consensus. nickm via #tor thought
+        this might happen in the case of hidden services choosing a
+        rendevouz point not in the current consensus.
+        """
+        
         oldpath = self.path
         self.path = []
         for router in path:
             p = router[:41]
+            if p[0] != '$':
+                break
+
+            ## this will create a Router if we give it a router
+            ## LongName that doesn't yet exist
             router = self.router_container.router_from_id(p)
+            
             self.path.append(router)
             if len(self.path) > len(oldpath):
                 [x.circuit_extend(self, router) for x in self.listeners]
