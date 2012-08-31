@@ -12,6 +12,7 @@ from txtorcon.stream import Stream
 from txtorcon.torcontrolprotocol import TorControlProtocol, TorProtocolError, TorProtocolFactory, DEFAULT_VALUE
 from txtorcon.torstate import TorState, build_tor_connection
 from txtorcon.torconfig import TorConfig, HiddenService, TorProcessProtocol, TCPHiddenServiceEndpoint, launch_tor
+from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.addrmap import Addr
 import util
@@ -23,6 +24,7 @@ __all__ = ["Router",
            "Stream",
            "TorControlProtocol", "TorProtocolError",
            "TorState", "DEFAULT_VALUE",
+           "TorInfo",
            "build_tor_connection", "launch_tor",
            "TorConfig", "HiddenService", "TorProcessProtocol",
            "TCPHiddenServiceEndpoint",
