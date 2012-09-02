@@ -6,7 +6,6 @@ from twisted.internet import task, defer, endpoints, reactor
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 
 import os
-import psutil
 import subprocess
 
 from txtorcon import TorControlProtocol, TorProtocolError, TorState, Stream, Circuit, build_tor_connection
@@ -299,7 +298,7 @@ class StateTests(unittest.TestCase):
         self.send("250-ip-to-country/0.0.0.0=??")
         self.send("250 OK")
 
-        self.send("250 OK")
+#        self.send("250 OK")
 
         self.assertEqual(len(self.state.entry_guards), 2)
         self.assertTrue(self.state.entry_guards.has_key('$0000000000000000000000000000000000000000'))
