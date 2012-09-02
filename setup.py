@@ -3,7 +3,14 @@ import os
 import shutil
 from setuptools import setup, find_packages
 
-from txtorcon import __version__, __author__, __contact__, __copyright__, __license__, __url__
+## can't just naively import these from txtorcon, as that will only
+## work if you already installed the dependencies
+__version__ = '0.5'
+__author__ = 'meejah'
+__contact__ = 'meejah@meejah.ca'
+__url__ = 'https://github.com/meejah/txtorcon'
+__license__ = 'MIT'
+__copyright__ = 'Copyright 2012'
 
 setup(name = 'txtorcon',
       version = __version__,
