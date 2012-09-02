@@ -6,7 +6,6 @@ from twisted.internet import task, defer, endpoints, reactor
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 
 import os
-import psutil
 import subprocess
 
 from txtorcon import TorControlProtocol, TorProtocolError, TorState, Stream, Circuit, build_tor_connection
