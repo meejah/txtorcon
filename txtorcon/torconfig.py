@@ -369,8 +369,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
 
 def launch_tor(config, reactor,
-               control_port=9052,
-               data_directory=None,
                tor_binary='/usr/sbin/tor',
                progress_updates=None,
                connection_creator=None):
@@ -383,9 +381,9 @@ def launch_tor(config, reactor,
     :param config: an instance of :class:`txtorcon.TorConfig` with any
         configuration values you want. :meth:`txtorcon.TorConfig.save`
         should have been called already (anything unsaved won't make
-        it into the torrc produced). Note that the control_port and
-        data_directory parameters to this method override anything in
-        the config.
+        it into the torrc produced). If ControlPort isn't set, 9052 is
+        used; if DataDirectory isn't set, tempdir is used to create
+        one.
 
     :param reactor: a Twisted IReactorCore implementation (usually
         twisted.internet.reactor)
@@ -432,13 +430,22 @@ def launch_tor(config, reactor,
     ## config and get Tor to load that...which might be the best
     ## option anyway.
 
-    if data_directory is None:
+
+    try:
+        data_directory = config.DataDirectory
+    except KeyError:
         data_directory = tempfile.mkdtemp(prefix='tortmp')
+        config.DataDirectory = data_directory
 
     (fd, torrc) = tempfile.mkstemp(prefix='tortmp')
 
     config.DataDirectory = data_directory
-    config.ControlPort = control_port
+    try:
+        control_port = config.ControlPort
+    except KeyError:
+        control_port = 9052
+        config.ControlPort = control_port
+
     config.CookieAuthentication = 1
     config.SocksPort = 0
     config.__OwningControllerProcess = os.getpid()
