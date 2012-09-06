@@ -717,7 +717,7 @@ class TorConfig(object):
     This class abstracts out Tor's config so that you don't have to
     realize things like: in order to successfully set multiple listen
     addresses, you must put them all (and the or-ports) in one SETCONF
-    call. (FIXME: this isn't true yet)
+    call.
 
     Also, it gives easy access to all the configuration options
     present. This is done with lazy caching: the first time you access
