@@ -664,6 +664,13 @@ foo=foo''')
         self.assertEqual(x['foo'][2], 'zarimba')
         self.assertEqual(x['foo'][3], 'foo')
 
+    def test_multiline_keywords(self):
+        x = parse_keywords('''Foo=bar\nBar''')
+        self.assertEqual(x, {'Foo': 'bar\nBar'})
+        x = parse_keywords('''Foo=bar\nBar''', multiline_values=False)
+        self.assertEqual(x, {'Foo': 'bar',
+                             'Bar': DEFAULT_VALUE})
+
     def test_unquoted_keywords(self):
         x = parse_keywords('''Tor="0.1.2.3.4-rc44"''')
         self.assertEqual(x, {'Tor': '0.1.2.3.4-rc44'})
@@ -671,13 +678,6 @@ foo=foo''')
     def test_unquoted_keywords_empty(self):
         x = parse_keywords('foo=')
         self.assertEqual(x, {'foo': ''})
-
-    def test_multiline_keywords(self):
-        x = parse_keywords('''Foo=bar\nBar''')
-        self.assertEqual(x, {'Foo': 'bar\nBar'})
-        x = parse_keywords('''Foo=bar\nBar''', multiline_values=False)
-        self.assertEqual(x, {'Foo': 'bar',
-                             'Bar': DEFAULT_VALUE})
 
     def test_network_status(self):
         self.controller._update_network_status("""ns/all=

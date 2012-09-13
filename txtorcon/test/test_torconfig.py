@@ -293,6 +293,18 @@ OK''')
         conf = TorConfig(self.protocol)
         self.assertTrue(conf.config.has_key('foo'))
 
+    def test_multiple_orports(self):
+        self.protocol.post_bootstrap = None
+        self.protocol.answers.append('''config/names=
+OrPort CommaList
+OK''')
+        self.protocol.answers.append({'OrPort':'1234'})
+        conf = TorConfig(self.protocol)
+        conf.OrPort = ['1234', '4321']
+        conf.save()
+        self.assertEqual(self.protocol.sets, [('OrPort', '1234'),
+                                              ('OrPort', '4321')])
+
     def test_set_multiple(self):
         self.protocol.answers.append('''config/names=
 AwesomeKey String
