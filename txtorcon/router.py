@@ -76,7 +76,7 @@ class Router(object):
         self.or_port = orport
         self.dir_port = dirport
         self.location = NetLocation(self.ip)
-        if self.location.countrycode is None:
+        if self.location.countrycode is None and self.ip != 'unknown':
             ## see if Tor is magic and knows more...
             self.controller.get_info_raw('ip-to-country/' + self.ip).addCallback(self._set_country)
 
