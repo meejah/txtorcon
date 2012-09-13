@@ -64,8 +64,13 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
         rtn = '%02.1f%% of all circuits have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.built_circuits)
         for g in self.per_guard_built.keys():
             per_guard_percent = 100.0*(self.per_guard_failed[g]/(self.per_guard_built[g]+self.per_guard_failed[g]))
-            rtn = rtn + '\n  %s: %d built, %d failed: %02.1f%%' % (g, self.per_guard_built[g], self.per_guard_failed[g],
-                                                                   per_guard_percent)
+            current = ' '
+            for guard in self.state.entry_guards.values():
+                if g == guard.name or g == guard.id_hex:
+                    current = '*'
+                    break
+            rtn = rtn + '\n %s %s: %d built, %d failed: %02.1f%%' % (current, g, self.per_guard_built[g], self.per_guard_failed[g],
+                                                                     per_guard_percent)
         return rtn
 
     def circuit_built(self, circuit):
@@ -81,7 +86,7 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
             if len(circuit.path) != 3 and len(circuit.path) != 4:
                 print "WEIRD: circuit has odd pathlength:",circuit,circuit.path
             try:
-                self.per_guard_built[circuit.path[0].unique_name] += 1
+                self.per_guard_built[circuit.path[0].unique_name] += 1.0
             except KeyError:
                 self.per_guard_built[circuit.path[0].unique_name] = 1.0
                 self.per_guard_failed[circuit.path[0].unique_name] = 0.0
@@ -105,7 +110,7 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
             if len(circuit.path) > 0:
                 try:
-                    self.per_guard_failed[circuit.path[0].unique_name] += 1
+                    self.per_guard_failed[circuit.path[0].unique_name] += 1.0
                 except KeyError:
                     self.per_guard_failed[circuit.path[0].unique_name] = 1.0
                     self.per_guard_built[circuit.path[0].unique_name] = 0.0
@@ -121,8 +126,8 @@ def setup(state):
     listener.built_circuits = int(options['built'])
     listener.state = state              # FIXME use ctor (ditto for options, probably)
     for name, built, failed in options['guards']:
-        listener.per_guard_built[name] = built
-        listener.per_guard_failed[name] = failed
+        listener.per_guard_built[name] = float(built)
+        listener.per_guard_failed[name] = float(failed)
     
     for circ in filter(lambda x: x.purpose == 'GENERAL', state.circuits.values()):
         if circ.state == 'BUILT':
