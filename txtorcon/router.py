@@ -2,12 +2,12 @@ from util import NetLocation
 import types
 
 
-def hexIdFromHash(hash):
+def hexIdFromHash(thehash):
     """
     From the base-64 encoded hashes Tor uses, this produces the longer
     hex-encoded hashes.
     """
-    return '$' + (hash + "=").decode("base64").encode("hex").upper()
+    return "$" + (thehash + "=").decode("base64").encode("hex").upper()
 
 
 def hashFromHexId(hexid):
