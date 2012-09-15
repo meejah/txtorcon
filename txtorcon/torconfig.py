@@ -430,24 +430,31 @@ def launch_tor(config, reactor,
     ## config and get Tor to load that...which might be the best
     ## option anyway.
 
-
     try:
+        user_set_data_directory = True
         data_directory = config.DataDirectory
     except KeyError:
+        user_set_data_directory = False
         data_directory = tempfile.mkdtemp(prefix='tortmp')
-        config.DataDirectory = data_directory
 
-    (fd, torrc) = tempfile.mkstemp(prefix='tortmp')
-
-    config.DataDirectory = data_directory
     try:
         control_port = config.ControlPort
     except KeyError:
         control_port = 9052
-        config.ControlPort = control_port
+
+    try:
+        socks_port = config.SocksPort
+    except KeyError:
+        socks_port = 9049
+
+    config.ControlPort = control_port
+    config.SocksPort = socks_port
+    config.DataDirectory = data_directory
+
+    (fd, torrc) = tempfile.mkstemp(prefix='tortmp')
 
     config.CookieAuthentication = 1
-    config.SocksPort = 0
+    #config.SocksPort = 0
     config.__OwningControllerProcess = os.getpid()
 
     os.write(fd, config.create_torrc())
@@ -464,11 +471,20 @@ def launch_tor(config, reactor,
     # the reactor, but if the reactor bombs out without the subprocess
     # getting closed cleanly, we'll want the system shutdown events
     # triggered
-    process_protocol.to_delete = [torrc, data_directory]
-    reactor.addSystemEventTrigger('before', 'shutdown',
-                                  functools.partial(delete_file_or_tree,
-                                                    torrc,
-                                                    data_directory))
+
+    # we don't want to delete the user's directories, just our
+    # temporary ones
+    if user_set_data_directory:
+        process_protocol.to_delete = [torrc]
+        reactor.addSystemEventTrigger('before', 'shutdown',
+                                      functools.partial(delete_file_or_tree,
+                                                        torrc))
+    else:
+        process_protocol.to_delete = [torrc, data_directory]
+        reactor.addSystemEventTrigger('before', 'shutdown',
+                                      functools.partial(delete_file_or_tree,
+                                                        torrc,
+                                                        data_directory))
 
     try:
         transport = reactor.spawnProcess(process_protocol, tor_binary,
