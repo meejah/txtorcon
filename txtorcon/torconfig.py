@@ -876,7 +876,7 @@ class TorConfig(object):
         except (RuntimeError, e):
             ## for Tor versions which don't understand CONF_CHANGED
             ## there's nothing we can really do.
-            log.warning("Can't listen for CONF_CHANGED event; won't stay up-to-date with other clients.")
+            log.msg("Can't listen for CONF_CHANGED event; won't stay up-to-date with other clients.")
         return self.protocol.get_info_raw("config/names").addCallbacks(self._do_setup, log.err).addCallback(self.do_post_bootstrap).addErrback(log.err)
 
     def do_post_bootstrap(self, *args):
