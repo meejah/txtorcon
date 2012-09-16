@@ -12,6 +12,8 @@ from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactor
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
 
+from txtorcon.util import delete_file_or_tree
+
 def do_nothing(*args):
     pass
 
@@ -837,6 +839,49 @@ class LaunchTorTests(unittest.TestCase):
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
         d.addCallback(self.setup_complete_fails)
         d.addErrback(self.check_setup_failure)
+        return d
+
+        
+    def test_tor_connection_user_data_dir(self):
+        """
+        We fail to connect once, and then successfully connect --
+        testing whether we're retrying properly on each Bootstrapped
+        line from stdout.
+        """
+        
+        config = TorConfig()
+        config.OrPort = 1234
+
+        class Connector:
+            count = 0
+
+            def __call__(self, proto, trans):
+                self.count += 1
+                if self.count < 2:
+                    return defer.fail(error.CannotListenError(None, None, None))
+
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+
+        my_dir = tempfile.mkdtemp(prefix='tortmp')
+        config.DataDirectory = my_dir
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        self.othertrans = trans
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+        def still_have_data_dir(proto, tester):
+            proto.cleanup()             # FIXME? not really unit-testy as this is sort of internal function
+            tester.assertTrue(os.path.exists(my_dir))
+            delete_file_or_tree(my_dir)
+        d.addCallback(still_have_data_dir, self)
+        d.addErrback(self.fail)
         return d
 
     def confirm_progress(self, exp, *args, **kwargs):
