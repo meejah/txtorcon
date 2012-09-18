@@ -875,6 +875,41 @@ class LaunchTorTests(unittest.TestCase):
         d.addErrback(self.fail)
         return d
 
+    def test_tor_connection_user_control_port(self):
+        """
+        Confirm we use a user-supplied control-port properly
+        """
+        
+        config = TorConfig()
+        config.OrPort = 1234
+        config.ControlPort = 4321
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        self.othertrans = trans
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+
+        def check_control_port(proto, tester):
+            ## we just want to ensure launch_tor() didn't mess with
+            ## the controlport we set
+            tester.assertEquals(config.ControlPort, 4321)
+
+        d.addCallback(check_control_port, self)
+        d.addErrback(self.fail)
+        return d
+
     def confirm_progress(self, exp, *args, **kwargs):
         self.assertEqual(exp, args)
         self.got_progress = True
