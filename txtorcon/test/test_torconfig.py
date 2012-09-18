@@ -12,6 +12,8 @@ from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactor
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
 
+from txtorcon.util import delete_file_or_tree
+
 def do_nothing(*args):
     pass
 
@@ -837,6 +839,107 @@ class LaunchTorTests(unittest.TestCase):
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
         d.addCallback(self.setup_complete_fails)
         d.addErrback(self.check_setup_failure)
+        return d
+
+    def test_tor_connection_user_data_dir(self):
+        """
+        Test that we don't delete a user-supplied data directory.
+        """
+
+        config = TorConfig()
+        config.OrPort = 1234
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+
+        my_dir = tempfile.mkdtemp(prefix='tortmp')
+        config.DataDirectory = my_dir
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        self.othertrans = trans
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+        def still_have_data_dir(proto, tester):
+            proto.cleanup()             # FIXME? not really unit-testy as this is sort of internal function
+            tester.assertTrue(os.path.exists(my_dir))
+            delete_file_or_tree(my_dir)
+        d.addCallback(still_have_data_dir, self)
+        d.addErrback(self.fail)
+        return d
+
+    def test_tor_connection_user_control_port(self):
+        """
+        Confirm we use a user-supplied control-port properly
+        """
+
+        config = TorConfig()
+        config.OrPort = 1234
+        config.ControlPort = 4321
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        self.othertrans = trans
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+
+        def check_control_port(proto, tester):
+            ## we just want to ensure launch_tor() didn't mess with
+            ## the controlport we set
+            tester.assertEquals(config.ControlPort, 4321)
+
+        d.addCallback(check_control_port, self)
+        d.addErrback(self.fail)
+        return d
+
+    def test_tor_connection_default_control_port(self):
+        """
+        Confirm a default control-port is set if not user-supplied.
+        """
+
+        config = TorConfig()
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        self.othertrans = trans
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+
+        def check_control_port(proto, tester):
+            ## ensure ControlPort was set to a default value
+            tester.assertEquals(config.ControlPort, 9052)
+
+        d.addCallback(check_control_port, self)
+        d.addErrback(self.fail)
         return d
 
     def confirm_progress(self, exp, *args, **kwargs):
