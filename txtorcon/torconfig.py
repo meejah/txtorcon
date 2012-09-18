@@ -388,9 +388,6 @@ def launch_tor(config, reactor,
     :param reactor: a Twisted IReactorCore implementation (usually
         twisted.internet.reactor)
 
-    :param control_port: which port the launched Tor process will
-        listen on; anything set in config is overridden.
-
     :param tor_binary: path to the Tor binary to run.
 
     :param progress_updates: a callback which gets progress updates; gets as
@@ -446,10 +443,11 @@ def launch_tor(config, reactor,
         control_port = config.ControlPort
     except KeyError:
         control_port = 9052
+        config.ControlPort = control_port
 
-    config.ControlPort = control_port
     config.CookieAuthentication = 1
     config.__OwningControllerProcess = os.getpid()
+    config.save()
 
     (fd, torrc) = tempfile.mkstemp(prefix='tortmp')
     os.write(fd, config.create_torrc())

@@ -879,7 +879,7 @@ class LaunchTorTests(unittest.TestCase):
         """
         Confirm we use a user-supplied control-port properly
         """
-        
+
         config = TorConfig()
         config.OrPort = 1234
         config.ControlPort = 4321
@@ -905,6 +905,38 @@ class LaunchTorTests(unittest.TestCase):
             ## we just want to ensure launch_tor() didn't mess with
             ## the controlport we set
             tester.assertEquals(config.ControlPort, 4321)
+
+        d.addCallback(check_control_port, self)
+        d.addErrback(self.fail)
+        return d
+
+    def test_tor_connection_default_control_port(self):
+        """
+        Confirm a default control-port is set if not user-supplied.
+        """
+
+        config = TorConfig()
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        self.othertrans = trans
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+
+        def check_control_port(proto, tester):
+            ## ensure ControlPort was set to a default value
+            tester.assertEquals(config.ControlPort, 9052)
 
         d.addCallback(check_control_port, self)
         d.addErrback(self.fail)
