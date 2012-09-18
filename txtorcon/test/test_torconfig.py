@@ -841,25 +841,16 @@ class LaunchTorTests(unittest.TestCase):
         d.addErrback(self.check_setup_failure)
         return d
 
-        
     def test_tor_connection_user_data_dir(self):
         """
-        We fail to connect once, and then successfully connect --
-        testing whether we're retrying properly on each Bootstrapped
-        line from stdout.
+        Test that we don't delete a user-supplied data directory.
         """
-        
+
         config = TorConfig()
         config.OrPort = 1234
 
         class Connector:
-            count = 0
-
             def __call__(self, proto, trans):
-                self.count += 1
-                if self.count < 2:
-                    return defer.fail(error.CannotListenError(None, None, None))
-
                 proto._set_valid_events('STATUS_CLIENT')
                 proto.makeConnection(trans)
                 proto.post_bootstrap.callback(proto)
