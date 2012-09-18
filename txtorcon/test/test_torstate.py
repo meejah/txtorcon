@@ -298,8 +298,6 @@ class StateTests(unittest.TestCase):
         self.send("250-ip-to-country/0.0.0.0=??")
         self.send("250 OK")
 
-        self.send("250 OK")
-
         self.assertEqual(len(self.state.entry_guards), 2)
         self.assertTrue(self.state.entry_guards.has_key('$0000000000000000000000000000000000000000'))
         self.assertEqual(self.state.entry_guards['$0000000000000000000000000000000000000000'], fakerouter)
