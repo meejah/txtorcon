@@ -18,12 +18,12 @@ setup(name = 'txtorcon',
       long_description = open('README','r').read(),
       keywords = ['python', 'twisted', 'tor', 'tor controller'],
       
-      ## warning, need to sync with "requirements.txt" also
-      requires = ['twisted (>11.1.0)',
+      install_requires = ['twisted>=11.1.0',
                   'pygeoip',
                   'sphinx',
-                  'zope.interface',
-                  'ipaddr'],
+                  'repoze.sphinx.autointerface>=0.4',
+                  'zope.interface>=3.6.1',
+                  'ipaddr>=2.1.10'],
       
       classifiers = ['Framework :: Twisted',
                      'Development Status :: 4 - Beta',
