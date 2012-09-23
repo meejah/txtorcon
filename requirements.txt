@@ -1,0 +1,6 @@
+pygeoip
+Sphinx
+Twisted>=11.1.0
+ipaddr>=2.1.10
+repoze.sphinx.autointerface>=0.4
+zope.interface>=3.6.1
