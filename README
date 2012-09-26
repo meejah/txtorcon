@@ -74,13 +74,13 @@ which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
 
     $ make test
-    Ran 213 tests in 0.394s
+    Ran 217 tests in 0.394s
 
     $ make coverage
     ## ...deleted lots of output...
-    covered: 1905
-    uncovered: 68
-    96.43% test coverage
+    covered: 1922
+    uncovered: 69
+    96.41% test coverage
 
 Tor itself is not required to be running for any of the tests. There
 are no integration tests. ohcount claims under 2000 lines of code for
