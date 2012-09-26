@@ -5,8 +5,6 @@
  . look at get_info versus get_info_raw for entry_guards: parse
    keywords needs to be more smarterer
 
- . why doesn't TorInfo.network_status() work? (works for Stem)
-
  . looks like ~41 hours to do full scan of 850321 combinations, at 3.5
    seconds per combo and 20 outstanding requests (i.e. 20 in parallel at
    3.5 seconds each).
@@ -138,11 +136,3 @@ getinfo stream-status
    TorController are up and running AND Tor is fully bootstrapped, if
    we connected while it was still starting up). What to do if Tor
    starts bootstrapping (again) while we're running?
-
- . implement some magic for "getinfo info/names" and "getinfo
-   config/names" so that we can do things like:
-
-      con = TorController()
-      info = TorInfo(con)
-      info.process.pid() # same as "GETINFO process/pid"
-      info.ns.name("OR_Nick") # same as "GETINFO ns/name/OR_Nick"
