@@ -57,6 +57,8 @@ Releases:
    use assertEqual in tests;
    messages with embdedded keywords work properly;
    fix bug with setup.py + pip;
+   `issue #15 <https://github.com/meejah/txtorcon/issues/15>`_ reported along with patch by `Isis Lovecruft <https://github.com/isislovecruft>`_;
+   consolidate requirements (from `aagbsn <https://github.com/aagbsn>`_);
    ...
 
 - June 20, 2012: `txtorcon-0.5.tar.gz <txtorcon-0.5.tar.gz>`_ (`txtorcon-0.5.tar.gz.sig <txtorcon-0.5.tar.gz.sig>`_)
