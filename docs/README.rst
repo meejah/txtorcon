@@ -32,6 +32,9 @@ fairly regularly push code to both.
 txtorcon runs all test cleanly on both Debian stable (squeeze) and
 testing (wheezy). Reports from other OSes appreciated.
 
+If instead you want a synchronous Python controller library, check out
+Stem at http://stem.readthedocs.org/en/latest/
+
 quick implementation overview
 -----------------------------
 
