@@ -48,7 +48,7 @@ This documentation was generated |today|.
 Releases:
 ---------
 
- - *Not Yet Released*: `txtorcon-0.6.tar.gz <txtorcon-0.6.tar.gz>`_ (`txtorcon-0.6.tar.gz.sig <txtorcon-0.6.tar.gz.sig>`_)
+ - *September 26, 2012*: `txtorcon-0.6.tar.gz <txtorcon-0.6.tar.gz>`_ (`txtorcon-0.6.tar.gz.sig <txtorcon-0.6.tar.gz.sig>`_)
    *This release adds*:
    debian packaging (mmaker);
    psutil fully gone;
