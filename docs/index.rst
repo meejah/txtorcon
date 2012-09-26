@@ -41,6 +41,7 @@ Code available at https://github.com/meejah/txtorcon
 - meejah@meejah.ca (public key: `meejah.asc <meejah.asc>`_)
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
 - **``pip install txtorcon``**
+- ``git clone git://github.com/meejah/txtorcon.git``
 
 This documentation was generated |today|.
 
