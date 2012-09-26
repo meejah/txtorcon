@@ -1,7 +1,7 @@
 txtorcon README
 ===============
 
-Full documentation at ReadTheDocs <http://txtorcon.rtfd.org>
+Full documentation at ReadTheDocs <https://txtorcon.readthedocs.org>
 
 quick start
 -----------
@@ -56,7 +56,7 @@ txtorcon runs all tests cleanly on:
  * Reports from other OSes appreciated.
 
 If instead you want a synchronous Python controller library, check out
-Stem at http://stem.readthedocs.org/en/latest/
+Stem at https://stem.readthedocs.org/en/latest/
 
 quick implementation overview
 -----------------------------
@@ -131,7 +131,7 @@ from the torspec git repository so you know what's being abstracted by
 this library.
 
 Run "make doc" to build the Sphinx documentation locally, or rely on
-ReadTheDocs <http://txtorcon.rtfd.org> which builds each tagged release.
+ReadTheDocs <https://txtorcon.readthedocs.org> which builds each tagged release.
 
 There is also a directory of examples/ scripts, which have inline
 documentation explaining their use. You may also use pydoc:
@@ -192,7 +192,7 @@ More conventionally, you may get the code at GitHub and documentation
 via ReadTheDocs:
 
  * https://github.com/meejah/txtorcon
- * http://readthedocs.org/docs/txtorcon/en/latest/
+ * https://txtorcon.readthedocs.org
 
 Please do use the GitHub issue-tracker to report bugs. Patches,
 pull-requests, comments and criticisms are all welcomed and
