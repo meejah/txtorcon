@@ -48,9 +48,15 @@ depend on txtorcon as a controller library, it Very Highly Recommended
 that you follow the source at github (or via the hidden service). I
 fairly regularly push code to both.
 
-txtorcon runs all test cleanly on both Debian stable (squeeze) and
-testing (wheezy). Reports from other OSes appreciated.
+txtorcon runs all tests cleanly on:
 
+ * Debian stable (squeeze)
+ * Debian testing (wheezy)
+ * naif reports OS X 10.4 works
+ * Reports from other OSes appreciated.
+
+If instead you want a synchronous Python controller library, check out
+Stem at http://stem.readthedocs.org/en/latest/
 
 quick implementation overview
 -----------------------------
@@ -109,8 +115,8 @@ dependencies
    diagrams, if you like). If you don't have/want it see
    ``txtorcon/test/test_fsm.py`` around line 62 to disable the test
 
-In any case, on a [Debian](http://www.debian.org/) wheezy or Ubuntu
-system, this should work:
+In any case, on a [Debian](http://www.debian.org/) wheezy, squeeze or
+Ubuntu system, this should work:
 
     apt-get install python-setuptools python-twisted python-ipaddr python-geoip graphviz
     apt-get install python-sphinx python-repoze.sphinx.autointerface # for documentation
@@ -123,6 +129,9 @@ It is likely that you will need to read at least some of
 [control-spec.txt](https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt)
 from the torspec git repository so you know what's being abstracted by
 this library.
+
+Run "make doc" to build the Sphinx documentation locally, or rely on
+ReadTheDocs <http://txtorcon.rtfd.org> which builds each tagged release.
 
 There is also a directory of examples/ scripts, which have inline
 documentation explaining their use. You may also use pydoc:
@@ -173,10 +182,10 @@ although the code itself is hosted via git:
 
     torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git
 
-You may contact me via meejah@meejah.ca with GPG key
-`128069A7 <http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>`_
+You may contact me via ``meejah at meejah dot ca`` with GPG key
+[128069A7]<http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>
 or see ``meejah.asc``. It is often possible to contact me as
-``meejah`` in #tor-dev on `OFTC <http://www.oftc.net/oftc/>`_ but be
+``meejah`` in #tor-dev on [OFTC]<http://www.oftc.net/oftc/> but be
 patient for replies (I do look at scrollback, so mention my nick).
 
 More conventionally, you may get the code at GitHub and documentation
@@ -186,5 +195,6 @@ via ReadTheDocs:
  * http://readthedocs.org/docs/txtorcon/en/latest/
 
 Please do use the GitHub issue-tracker to report bugs. Patches,
-comments, criticisms all welcomed and appreciated. See TODO for notes
-on deficiencies, planned features, lunatic raving, etc.
+pull-requests, comments and criticisms are all welcomed and
+appreciated. See TODO for notes on deficiencies, planned features,
+lunatic raving, etc.
