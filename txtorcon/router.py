@@ -1,7 +1,8 @@
 from twisted.internet import defer
 from util import NetLocation
-import types
 
+import types
+import datetime
 
 def hexIdFromHash(thehash):
     """
