@@ -55,7 +55,7 @@ def load_routers_from_consensus(file_or_fname):
 
     routers = []
     current_router = None
-    
+
     for line in f.readlines():
         args = line.split()
         if args[0] == 'r':
@@ -77,7 +77,7 @@ def load_routers_from_consensus(file_or_fname):
             current_router.set_policy(args[1:])
         ## FIXME not parsing version lines
     routers.append(current_router)
-    return routers        
+    return routers
 
 class Router(object):
     """
@@ -102,7 +102,7 @@ class Router(object):
             a callable that takes an IP address and returns a Deferred
             that callbacks with None or a country-code.
         """
-       
+
         self.country_finder = country_finder
         self._flags = []
         self.bandwidth = 0

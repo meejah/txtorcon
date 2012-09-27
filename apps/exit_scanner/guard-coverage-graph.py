@@ -31,7 +31,7 @@ for line in failed:
 print "Reaons for failure:"
 for (k,v) in counts.items():
     print "  %s: %f%%" % (k, 100.0 * (float(v) / len(failed)))
-                                                    
+
 print "average build time:",numpy.average(map(lambda x: float(x.split(',')[4]), success))
 print "standard deviation:",numpy.std(map(lambda x: float(x.split(',')[4]),success))
 #print filter(lambda x: x > (4.518+(2*2.245)), success)
@@ -75,7 +75,7 @@ for i in range(4):
     for reason in reasons:
         quartiles.write(' %f' % (100.0*(float(len(filter(lambda x: x[5].strip() == reason, fail))/tot))))
     quartiles.write('\n')
-    
+
 quartiles.close()
 
 print "min, max BW:",min_bw,max_bw
@@ -94,7 +94,7 @@ set grid nopolar
 set grid noxtics nomxtics ytics nomytics noztics nomztics \
  nox2tics nomx2tics noy2tics nomy2tics nocbtics nomcbtics
 set grid layerdefault   linetype 0 linewidth 1.000,  linetype 0 linewidth 1.000
-set key invert samplen 4 spacing 1 width 0 height 0 
+set key invert samplen 4 spacing 1 width 0 height 0
 #set xtics border in scale 0,0 nomirror rotate by -45  offset character 0, 0, 0
 set xtics  norangelimit font ",8"
 set xtics   ()

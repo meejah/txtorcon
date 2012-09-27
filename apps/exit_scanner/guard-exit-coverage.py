@@ -3,7 +3,7 @@
 ##
 ## Determine if all exits can be reached from everything marked as a
 ## guard.
-## 
+##
 
 import os
 import sys
@@ -30,7 +30,7 @@ def weighted_choice(routers):
     routers, based on bandwidth.
     http://stackoverflow.com/a/526300/84322
     """
-    
+
     added_weights = []
     last_sum = 0
 
@@ -86,7 +86,7 @@ class CircuitProber(object):
 
         """All the circuits we will test."""
         self.circuits = self._create_possible_circuits()
-        
+
         print "I have %d guards and %d exits (that's %d combinations)" % (len(self.guards), len(self.exits), len(self.guards)*len(self.exits))
         print "We will test %d circuits." % len(self.circuits)
 
@@ -100,10 +100,10 @@ class CircuitProber(object):
         (also weighted by bandwidth, from the set of all routers
         tagged Fast).
         """
-        
+
         weighted_exit_chooser = weighted_choice(self.exits)
         weighted_middle_chooser = weighted_choice(self.middles)
-        
+
         circs = []
         for g in self.guards:
             for _ in range(5):          # 5 exits per entry
@@ -111,7 +111,7 @@ class CircuitProber(object):
                 while e == g:
                     e = weighted_exit_chooser()
                     ## some guards are also exits
-                    
+
                 circs.append((g, weighted_middle_chooser(), e))
 
         return circs
@@ -126,7 +126,7 @@ class CircuitProber(object):
         pass
     def circuit_extend(self, circuit, router):
         pass
-    
+
     def circuit_built(self, circuit):
         try:
             circ, started = self.outstanding_circuit_ids[circuit.id]
@@ -134,15 +134,15 @@ class CircuitProber(object):
             self.succeeded.append((circuit.id, circ, diff))
             del self.outstanding_circuit_ids[circuit.id]
             self.circuit_build_requests -= 1
-            
+
         except KeyError:
             # this will happen for the circuits Tor built by itself.
             pass#print "wasn't waiting for circuit:",circuit
         self._maybe_launch_circuits()
-        
+
     def circuit_closed(self, circuit):
         pass
-    
+
     def circuit_failed(self, circuit, reason):
         #print "FAILED:",circuit,reason
         try:
@@ -151,7 +151,7 @@ class CircuitProber(object):
             self.failed.append((reason, circ, diff))
             del self.outstanding_circuit_ids[circuit.id]
             self.circuit_build_requests -= 1
-            
+
         except KeyError:
             pass#print "wasn't waiting for circuit:",circuit
         self._maybe_launch_circuits()
@@ -160,7 +160,7 @@ class CircuitProber(object):
         """
         Callback when our request to build a circuit succeeded.
         """
-        
+
         if DEBUG: print "COMPLETE",arg,circ
         self.outstanding_circuit_ids[int(arg.split()[1])] = (circ, self.reactor.seconds())
 
@@ -173,12 +173,12 @@ class CircuitProber(object):
             self.rejected[circ[0]] += 1
         except KeyError:
             self.rejected[circ[0]] = 1
-            
+
         try:
             self.rejected[circ[2]] += 1
         except KeyError:
             self.rejected[circ[2]] = 1
-            
+
         print "Even our request to build a circuit was rejected:",arg.getErrorMessage()
         print circ,arg.getErrorMessage()
         self.circuit_build_requests -= 1
@@ -187,7 +187,7 @@ class CircuitProber(object):
             print "...trying again, with a different middle"
             circ = (circ[0], random.choice(self.middles), circ[2])
             self.circuits.append(circ)
-            
+
         return
 
     def _output_results(self):
@@ -198,7 +198,7 @@ class CircuitProber(object):
         print "Couldn't successfully ask Tor to build with these:"
         print self.rejected
         print
-        
+
         print "%d successful, %d failed" % (len(self.succeeded), len(self.failed))
 
         def write_csv(fname, thelist):
@@ -221,15 +221,15 @@ class CircuitProber(object):
         FIXME: change how we exit; this method should only be for new
         requests.
         """
-        
+
         if len(self.circuits) == 0 and self.circuit_build_requests == 0:
             print "All done"
             self._output_results()
             reactor.stop()
             return
-            
+
         while self.circuit_build_requests < self.max_circuit_build_requests and len(self.circuits) > 0:
-            self.circuit_build_requests += 1            
+            self.circuit_build_requests += 1
             circ = self.circuits[0]
             self.circuits = self.circuits[1:]
             ##print "requesting:",circ
