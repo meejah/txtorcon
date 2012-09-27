@@ -75,11 +75,15 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
     def circuit_built(self, circuit):
         """ICircuitListener API"""
+        # older tor versions will have empty build_flags
+        if 'ONEHOP_TUNNEL' in circuit.build_flags:
+            return
+
         if circuit.purpose == 'GENERAL':
             if len(circuit.path) > 0 and circuit.path[0] not in self.state.entry_guards.values():
-                print "WEIRD: first circuit hop not in entry guards:",circuit,circuit.path
+                print "WEIRD: first circuit hop not in entry guards:",circuit,circuit.path,circuit.purpose
                 return
-            
+
             self.built_circuits += 1
             self.update_percent()
 
@@ -90,9 +94,17 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
             except KeyError:
                 self.per_guard_built[circuit.path[0].unique_name] = 1.0
                 self.per_guard_failed[circuit.path[0].unique_name] = 0.0
-        
+
     def circuit_failed(self, circuit, reason):
         """ICircuitListener API"""
+
+        if reason == 'MEASUREMENT_FAILED':
+            return
+
+        # older tor versions will have empty build_flags
+        if 'ONEHOP_TUNNEL' in circuit.build_flags:
+            return
+
         if circuit.purpose == 'GENERAL':
             if len(circuit.path) > 1 and circuit.path[0] not in self.state.entry_guards.values():
                 ## note that single-hop circuits are built for various
@@ -100,7 +112,7 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
                 ## GENERAL anyway)
                 print "WEIRD: first circuit hop not in entry guards:",circuit,circuit.path
                 return
-            
+
             self.failed_circuits += 1
             print "failed",circuit.id
             if not circuit.id in self.failed_circuit_ids:
