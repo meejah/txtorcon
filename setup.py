@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 ## can't just naively import these from txtorcon, as that will only
 ## work if you already installed the dependencies
-__version__ = '0.5'
+__version__ = '0.6'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/txtorcon'
