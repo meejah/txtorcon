@@ -98,7 +98,7 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
     def circuit_failed(self, circuit, reason):
         """ICircuitListener API"""
 
-        if reason == 'MEASUREMENT_FAILED':
+        if reason != 'MEASUREMENT_FAILED':
             return
 
         # older tor versions will have empty build_flags
