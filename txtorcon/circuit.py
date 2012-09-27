@@ -69,6 +69,7 @@ class Circuit(object):
         self.purpose = None
         self.id = None
         self.state = 'UNKNOWN'
+        self.build_flags = []
 
     def listen(self, listener):
         if listener not in self.listeners:
@@ -91,6 +92,8 @@ class Circuit(object):
         kw = find_keywords(args)
         if 'PURPOSE' in kw:
             self.purpose = kw['PURPOSE']
+        if 'BUILD_FLAGS' in kw:
+            self.build_flags = kw['BUILD_FLAGS'].split(',')
 
         if self.state == 'LAUNCHED':
             self.path = []

@@ -149,6 +149,9 @@ class CircuitTests(unittest.TestCase):
         circuit.update('753 EXTENDED BUILD_FLAGS=IS_INTERNAL,NEED_CAPACITY,NEED_UPTIME PURPOSE=MEASURE_TIMEOUT TIME_CREATED=2012-07-30T18:23:18.956704'.split())
         self.assertEqual(tor.extend, [])
         self.assertEqual(circuit.path, [])
+        self.assertTrue('IS_INTERNAL' in circuit.build_flags)
+        self.assertTrue('NEED_CAPACITY' in circuit.build_flags)
+        self.assertTrue('NEED_UPTIME' in circuit.build_flags)
 
     def test_str(self):
         tor = FakeTorController()
