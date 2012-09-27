@@ -28,7 +28,7 @@ class PortRange(object):
     def __init__(self, a, b):
         self.min = a
         self.max = b
-        
+
     def __cmp__(self, b):
         if b >= self.min and b <= self.max:
             return 0
@@ -65,7 +65,7 @@ def load_routers_from_consensus(file_or_fname):
             current_router.update(args[1],         # nickname
                                   args[2],         # idhash
                                   args[3],         # orhash
-                                  datetime.datetime.strptime(args[4]+args[5], '%Y-%m-%f%H:%M:%S'),
+                                  datetime.datetime.strptime(args[4] + args[5], '%Y-%m-%f%H:%M:%S'),
                                   args[6],         # ip address
                                   args[7],         # ORPort
                                   args[8])         # DirPort

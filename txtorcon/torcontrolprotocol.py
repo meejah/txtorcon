@@ -743,7 +743,7 @@ class TorControlProtocol(LineOnlyReceiver):
         self.response = ''
         if self.code >= 200 and self.code < 300:
             if self.defer is None:
-                raise RuntimeError("Got a response, but didn't issue a command.");
+                raise RuntimeError("Got a response, but didn't issue a command.")
             self.defer.callback(resp)
         elif self.code >= 500 and self.code < 600:
             err = TorProtocolError(self.code, resp)

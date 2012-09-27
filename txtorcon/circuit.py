@@ -79,7 +79,7 @@ class Circuit(object):
         self.listeners.remove(listener)
 
     def update(self, args):
-        print "Circuit.update:",args
+        #print "Circuit.update:",args
         if self.id is None:
             self.id = int(args[0])
             [x.circuit_new(self) for x in self.listeners]
@@ -134,7 +134,7 @@ class Circuit(object):
         this might happen in the case of hidden services choosing a
         rendevouz point not in the current consensus.
         """
-        
+
         oldpath = self.path
         self.path = []
         for router in path:
