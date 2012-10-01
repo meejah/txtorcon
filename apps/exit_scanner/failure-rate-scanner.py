@@ -42,15 +42,28 @@ import txtorcon
 
 class Options(usage.Options):
 
+    optFlags = [
+        ['launch', 'L', 'Launch a new Tor process for the scan, rather than connecting to an existing one.']
+        ]
+
     optParameters = [
-        ['guards', 'G', 10, 'Total number of Guards to choose.', int],
-        ['circuits', 'C', 100, 'Total number of circuits to set up (distributed evenly over Guards).', int],
-        ['address', 'a', "localhost:9051", 'Tor control socket to connect to in host:port format, like "localhost:9051" (the default).'],
-        ['max-outstanding', 'x', 10, "Maximum number of circuits we'll ask Tor to build at one time."]
+        ['guards', 'G', 0, 'Total number of Guards to choose (takes the first N from the consensus). 0 means all.', int],
+        ['circuits', 'C', 0, 'Total number of circuits to set up (distributed evenly over Guards).', int],
+        ['circuits-per-guard', 'c', 10, 'Circuits per guard to set up; takes precedent over --circuits.', int],
+        ['address', 'a', "localhost:9051", 'Tor control socket to connect to in host:port format.'],
+        ['max-outstanding', 'x', 10, "Maximum number of circuits we'll ask Tor to build at one time.", int]
         ]
 
     def __init__(self):
         usage.Options.__init__(self)
+
+    def postOptions(self):
+        ## FIXME is there a way to tell if the user specified an
+        ## option, versus getting the default? i.e. we want to throw
+        ## even if the user did: --launch --address localhost:9051
+        if self.opts.has_key('launch') and self.opts['address'] != 'localhost:9051':
+            raise RuntimeError("Doesn't make sense to specify both --launch and --address")
+
 
 class GuardStatistics:
     id_hex = ''
@@ -68,7 +81,7 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
             already
 
         :param guards:
-            list of Guard node IDs to use
+            list of Guard nodes (Router instances) to use.
 
         :param total_circuits:
             total number of circuits to ask Tor to create
@@ -109,7 +122,7 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
     def dump_statistics(self):
         print "statistics:"
         with open('stats.data', 'w') as statsfile:
-            statsfile.write('#guard_id built failed success_rate create_errors NOPATH\n\n')
+            statsfile.write('#guard_id built failed success_rate guard_bandwidth create_errors NOPATH\n\n')
 
             for (hexid, stats) in self.statistics.items():
                 print " ",hexid
@@ -119,7 +132,7 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
                 print "    built:",stats.success,"failed:",stats.failure,"failure rate:",(rate*100.0),"%",
                 print "  errors=%d, NOPATH=%d" % (stats.errors, stats.nopath)
 
-                statsfile.write('%s %d %d %f %d %d\n' % (hexid, stats.success, stats.failure, rate, stats.errors, stats.nopath))
+                statsfile.write('%s %d %d %f %f %d %d\n' % (hexid, stats.success, stats.failure, rate, stats.guard.bandwidth, stats.errors, stats.nopath))
 
     def _error(self, f):
         print "ERROR",f
@@ -142,11 +155,11 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
         self.current_guard_circuits = 0
         self.guards = self.guards[1:]
         gs = GuardStatistics()
-        gs.id_hex = self.current_guard
-        self.statistics[self.current_guard] = gs
+        gs.guard = self.current_guard
+        self.statistics[self.current_guard.id_hex] = gs
 
-        print "setting up to use guard:",self.current_guard
-        d = self.protocol.set_conf("StrictNodes", 1, "EntryNodes", str(self.current_guard))
+        print "setting up to use guard:",self.current_guard.name
+        d = self.protocol.set_conf("StrictNodes", 1, "EntryNodes", str(self.current_guard.id_hex))
         d.addCallback(self._setup_circuit).addErrback(self._error)
         return d
 
@@ -157,7 +170,7 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
         # failures on creating a new circuit, but this waits at least
         # 2 seconds before doing another setup on two errors in a row
         if isinstance(arg, failure.Failure):
-            self.statistics[self.current_guard].errors += 1
+            self.statistics[self.current_guard.id_hex].errors += 1
 
             timediff = self.reactor.seconds() - self.last_circuit_extend
             if timediff < 2.0:
@@ -193,7 +206,7 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
         # dump stats and stop the reactor
 
         self.current_guard_circuits += 1
-        print "We've tried",self.current_guard_circuits,"for guard",self.current_guard
+        print "We've tried",self.current_guard_circuits,"for guard",self.current_guard.name
         if self.current_guard_circuits >= self.circuits_per_guard:
             print "rotating guard"
             return self._try_next_guard()
@@ -211,12 +224,12 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
             ##print "   found it",circuit.id
             self.outstanding_circuits.remove(circuit.id)
 
-        if len(circuit.path) and circuit.path[0].id_hex == self.current_guard:
+        if len(circuit.path) and circuit.path[0].id_hex == self.current_guard.id_hex:
             ##print "DINGDINGDING!"
-            self.statistics[self.current_guard].success += 1
+            self.statistics[self.current_guard.id_hex].success += 1
             self._increment_circuit_count()
 
-        print self.current_guard, "awaiting:", self.outstanding_circuits
+        print self.current_guard.name, "awaiting:", self.outstanding_circuits
         if build_again:
             return self._setup_circuit(None)
 
@@ -235,15 +248,15 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
                 build_again = True
             self.outstanding_circuits.remove(circuit.id)
 
-        if len(circuit.path) and circuit.path[0].id_hex[1:] == self.current_guard:
-            self.statistics[self.current_guard].failure += 1
+        if len(circuit.path) and circuit.path[0].id_hex[1:] == self.current_guard.id_hex:
+            self.statistics[self.current_guard.id_hex].failure += 1
             self._increment_circuit_count()
 
         if reason == 'NOPATH':
             # presuming it's the current guard's circuit that failed...
-            self.statistics[self.current_guard].nopath += 1
+            self.statistics[self.current_guard.id_hex].nopath += 1
 
-        print self.current_guard, "awaiting:", self.outstanding_circuits
+        print self.current_guard.name, "awaiting:", self.outstanding_circuits
         if build_again:
             return self._setup_circuit(None)
 
@@ -253,12 +266,21 @@ def setup(processprotocol):
     state.post_bootstrap.addCallback(really_setup).addErrback(setup_failed)
 
 creator = None
-def really_setup(state):
+def really_setup(state, options):
     print 'Connected to a Tor version %s' % state.protocol.version
-    guards = state.guards.keys()
+    guards = state.guards.values()
+
     global creator
-    creator = CircuitCreator(reactor, state.protocol, guards[:10], 100, 5)
-    print "circuits per guard:", creator.circuits_per_guard
+    if options['guards'] > 0:
+        guards = guards[:options['guards']]
+
+    total_circuits = options['circuits']
+    if options['circuits-per-guard']:
+        total_circuits = len(guards) * options['circuits-per-guard']
+
+    print "Attempting with %d guards over %d circuits." % (len(guards), total_circuits)
+
+    creator = CircuitCreator(reactor, state.protocol, guards, total_circuits, options['max-outstanding'])
     state.add_circuit_listener(creator)
 
 def on_shutdown(*args):
@@ -277,16 +299,32 @@ def setup_failed(arg):
 def update(percent, tag, summary):
     print "  %d%% %s" % (int(percent), summary)
 
-if False:
-    print "Launching new Tor instance:"
-    config = txtorcon.TorConfig()
-    config.SOCKSPort = 9999
-    config.ControlPort = 1234
-    d = txtorcon.launch_tor(config, reactor, progress_updates=update)
-    d.addCallback(setup).addErrback(setup_failed)
+if __name__ == '__main__':
+    try:
+        options = Options()
+        options.parseOptions(sys.argv[1:])
 
-else:
-    d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051))
-    d.addCallback(really_setup).addErrback(setup_failed)
+        if options['launch']:
+            print "Launching new Tor instance:"
+            config = txtorcon.TorConfig()
+            # FIXME could make this better (e.g. random, and/or check if it's taken first)
+            config.SOCKSPort = 9999
+            config.ControlPort = 1234
+            d = txtorcon.launch_tor(config, reactor, progress_updates=update)
+            d.addCallback(setup).addErrback(setup_failed)
 
-reactor.run()
+        else:
+            host, port = options['address'].split(':')
+            d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, host, int(port)))
+            d.addCallback(really_setup, options).addErrback(setup_failed)
+
+        reactor.run()
+
+    except usage.UsageError:
+        print options.getUsage()
+        sys.exit(-1)
+
+    except Exception, e:
+        print options.getUsage()
+        print "ERROR:",e
+        sys.exit(-2)
