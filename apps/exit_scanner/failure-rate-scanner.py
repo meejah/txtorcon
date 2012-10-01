@@ -32,6 +32,7 @@
 import os
 import sys
 import math
+import random
 
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -206,7 +207,7 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
         # dump stats and stop the reactor
 
         self.current_guard_circuits += 1
-        print "We've tried",self.current_guard_circuits,"for guard",self.current_guard.name
+        print "We've tried",self.current_guard_circuits,"for guard",self.current_guard.unique_name
         if self.current_guard_circuits >= self.circuits_per_guard:
             print "rotating guard"
             return self._try_next_guard()
@@ -229,7 +230,7 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
             self.statistics[self.current_guard.id_hex].success += 1
             self._increment_circuit_count()
 
-        print self.current_guard.name, "awaiting:", self.outstanding_circuits
+        print self.current_guard.unique_name, "awaiting:", self.outstanding_circuits
         if build_again:
             return self._setup_circuit(None)
 
@@ -256,7 +257,7 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
             # presuming it's the current guard's circuit that failed...
             self.statistics[self.current_guard.id_hex].nopath += 1
 
-        print self.current_guard.name, "awaiting:", self.outstanding_circuits
+        print self.current_guard.unique_name, "awaiting:", self.outstanding_circuits
         if build_again:
             return self._setup_circuit(None)
 
@@ -269,6 +270,10 @@ creator = None
 def really_setup(state, options):
     print 'Connected to a Tor version %s' % state.protocol.version
     guards = state.guards.values()
+    random.shuffle(guards)
+
+    # FIXME should probably randomize the guard node order in a
+    # cryptographically secure fasion.
 
     global creator
     if options['guards'] > 0:
