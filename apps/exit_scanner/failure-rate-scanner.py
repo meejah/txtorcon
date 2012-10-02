@@ -265,10 +265,10 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
         if build_again:
             return self._setup_circuit(None)
 
-def setup(processprotocol):
+def setup(processprotocol, options):
     proto = processprotocol.tor_protocol
     state = txtorcon.TorState(proto)
-    state.post_bootstrap.addCallback(really_setup).addErrback(setup_failed)
+    state.post_bootstrap.addCallback(really_setup, options).addErrback(setup_failed)
 
 creator = None
 def really_setup(state, options):
@@ -320,7 +320,7 @@ if __name__ == '__main__':
             config.SOCKSPort = 9999
             config.ControlPort = 1234
             d = txtorcon.launch_tor(config, reactor, progress_updates=update)
-            d.addCallback(setup).addErrback(setup_failed)
+            d.addCallback(setup, options).addErrback(setup_failed)
 
         else:
             host, port = options['address'].split(':')
