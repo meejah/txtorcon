@@ -195,6 +195,10 @@ class CircuitCreator(txtorcon.CircuitListenerMixin):
         # StrictNodes we should get a random (albeit tor-selected)
         # route using that guard.
 
+        if self.current_guard_circuits + len(self.outstanding_circuits) >= self.circuits_per_guard:
+            print "already requested enough"
+            return
+
         self.last_circuit_extend = self.reactor.seconds()
         d = self.protocol.queue_command("EXTENDCIRCUIT 0")
         d.addBoth(self._setup_circuit)
