@@ -5,23 +5,12 @@
 ## algorithms to set up circuits. Then, failure rates are counted.
 ##
 ## TODO:
-##  . maybe better to just use circuit_failure_rate.py to count up the
-##    statistics (and improve its statistics-handling to be moar-bettar)
-##
-##  . we don't do any proper time handling, nor set up multiple
-##    circuits at once
-##
 ##  . can we do something better when Tor says "can't do it" (i.e. 551
 ##    respose to the EXTEND 0)?
 ##
 ##  . are the NOPATH failures things we should count as failures? I
 ##    doubt it since it seems it's not even contacting the first hop.
-##
-##  . actually use the options
-##
-##  . the $ on (or not on) the beginning of node IDs is really
-##    annoying. Can I do anything about that? Can I just always use
-##    it?
+##    not seeing this very often.
 ##
 ## NOTES:
 ##
