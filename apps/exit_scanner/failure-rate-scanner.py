@@ -338,8 +338,9 @@ def really_setup(state, options):
 def on_shutdown(*args):
     global creator
     if creator:
-        print "shutting down, dumping statistics:"
+        print 'shutting down, dumping statistics a final time "stats.data".'
         creator.dump_statistics()
+        print "average failure rate %3.2f" % (sum(map(lambda x: x.failure_rate(), creator.statistics.values())) / len(creator.statistics))*100.0
 reactor.addSystemEventTrigger('before', 'shutdown', on_shutdown)
     
 
