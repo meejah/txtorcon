@@ -675,6 +675,10 @@ foo=foo''')
         x = parse_keywords('''Tor="0.1.2.3.4-rc44"''')
         self.assertEqual(x, {'Tor': '0.1.2.3.4-rc44'})
 
+    def test_unquoted_keywords_singlequote(self):
+        x = parse_keywords("Tor='0.1.2.3.4-rc44'")
+        self.assertEqual(x, {'Tor': '0.1.2.3.4-rc44'})
+
     def test_unquoted_keywords_empty(self):
         x = parse_keywords('foo=')
         self.assertEqual(x, {'foo': ''})
