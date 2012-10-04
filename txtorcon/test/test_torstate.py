@@ -573,6 +573,14 @@ p reject 1-65535""")
         self.protocol.dataReceived("650 CIRC 123 EXTENDED $D82183B1C09E1D7795FF2D7116BAB5106AA3E60E~PPrivCom012 PURPOSE=GENERAL\r\n")
         self.assertEqual(len(listen.expected), 0)
 
+    def test_router_from_id_invalid_key(self):
+        self.failUnlessRaises(KeyError, self.state.router_from_id, 'somethingcompletelydifferent..thatis42long')
+
+    def test_router_from_named_router(self):
+        r = self.state.router_from_id('$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=foo')
+        self.assertEqual(r.id_hex, '$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        self.assertEqual(r.unique_name, 'foo')
+
     def confirm_router_state(self, x):
         self.assertTrue(self.state.routers.has_key('$624926802351575FF7E4E3D60EFA3BFB56E67E8A'))
         router = self.state.routers['$624926802351575FF7E4E3D60EFA3BFB56E67E8A']
