@@ -93,7 +93,7 @@ class AuthenticationTests(unittest.TestCase):
         self.auth_failed = True
         
     def test_authenticate_no_password(self):
-        self.protocol._auth_failed = self.confirmAuthFailed
+        self.protocol.post_bootstrap.addErrback(self.confirmAuthFailed)
         self.auth_failed = False
         
         self.protocol.makeConnection(self.transport)
