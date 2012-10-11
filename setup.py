@@ -1,6 +1,7 @@
 import sys
 import os
 import shutil
+import re
 from setuptools import setup, find_packages
 
 ## can't just naively import these from txtorcon, as that will only
@@ -12,12 +13,23 @@ __url__ = 'https://github.com/meejah/txtorcon'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2012'
 
+def pip_to_requirements(s):
+    """
+    Change a PIP-style requirements.txt string into one suitable for setup.py
+    """
+
+    m = re.match('(.*)\(([>=]=[.0-9]*).*', s)
+    if m:
+        return '%s (%s)' % (m.group(1), m.group(2))
+    return s.strip()
+
+
 setup(name = 'txtorcon',
       version = __version__,
       description = 'Twisted-based Tor controller client, with state-tracking and configuration abstractions.',
       long_description = open('README','r').read(),
       keywords = ['python', 'twisted', 'tor', 'tor controller'],
-      requires=open('requirements.txt').readlines(),
+      requires = map(pip_to_requirements, open('requirements.txt').readlines()),
       classifiers = ['Framework :: Twisted',
                      'Development Status :: 4 - Beta',
                      'Intended Audience :: Developers',
