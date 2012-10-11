@@ -74,13 +74,13 @@ which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
 
     $ make test
-    Ran 217 tests in 0.394s
+    Ran 220 tests in 0.394s
 
     $ make coverage
     ## ...deleted lots of output...
     covered: 1922
     uncovered: 69
-    96.41% test coverage
+    96.79% test coverage
 
 Tor itself is not required to be running for any of the tests. There
 are no integration tests. ohcount claims under 2000 lines of code for
@@ -92,7 +92,7 @@ dependencies
 ------------
 
  * [twisted](http://twistedmatrix.com): I am working against
-   Twisted 11.1.0 on Debian with Python 2.7.2.
+   Twisted 11.1.0 on Debian with Python 2.7.2. Twisted 12 works fine as well.
 
  * [GeoIP](https://www.maxmind.com/app/python): provides location information for ip addresses; you will
    want to download GeoLite City from
