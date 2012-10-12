@@ -31,6 +31,8 @@ clean:
 counts:
 	ohcount -s txtorcon/*.py
 
+dist: dist/txtorcon-0.6.tar.gz.sig
+
 sdist: setup.py 
 	python setup.py sdist
 
