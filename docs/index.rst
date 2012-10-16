@@ -47,6 +47,8 @@ This documentation was generated |today|.
 
 Releases:
 ---------
+- **unreleased**: git master will become v0.7; 
+  *This release adds*:
 
 - *October 10, 2012*: `txtorcon-0.6.tar.gz <https://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz>`_ (`txtorcon-0.6.tar.gz.sig <https://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz.sig>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.6>`_)
   *This release adds*:

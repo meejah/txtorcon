@@ -12,7 +12,7 @@ docs/README.rst: README
 
 doc: docs/*.rst docs/README.rst
 	cd docs && make html
-	cp dist/txtorcon-0.6.tar.gz docs/_build/html
+	cp dist/txtorcon-0.7.tar.gz docs/_build/html
 	cp dist/txtorcon-0.6.tar.gz.sig docs/_build/html
 
 coverage:
@@ -31,36 +31,16 @@ clean:
 counts:
 	ohcount -s txtorcon/*.py
 
-dist: dist/txtorcon-0.6.tar.gz.sig
+dist: dist/txtorcon-0.7.tar.gz.sig
 
 sdist: setup.py 
 	python setup.py sdist
 
-dist/txtorcon-0.1.tar.gz: sdist
-dist/txtorcon-0.1.tar.gz.sig: dist/txtorcon-0.1.tar.gz
-	gpg --verify dist/txtorcon-0.1.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.1.tar.gz
+dist/txtorcon-0.7.tar.gz: sdist
+dist/txtorcon-0.7.tar.gz.sig: dist/txtorcon-0.7.tar.gz
+	gpg --verify dist/txtorcon-0.7.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.7.tar.gz
 
-dist/txtorcon-0.2.tar.gz: sdist
-dist/txtorcon-0.2.tar.gz.sig: dist/txtorcon-0.2.tar.gz
-	gpg --verify dist/txtorcon-0.2.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.2.tar.gz
-
-dist/txtorcon-0.3.tar.gz: sdist
-dist/txtorcon-0.3.tar.gz.sig: dist/txtorcon-0.3.tar.gz
-	gpg --verify dist/txtorcon-0.3.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.3.tar.gz
-
-dist/txtorcon-0.4.tar.gz: sdist
-dist/txtorcon-0.4.tar.gz.sig: dist/txtorcon-0.4.tar.gz
-	gpg --verify dist/txtorcon-0.4.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.4.tar.gz
-
-dist/txtorcon-0.5.tar.gz: sdist
-dist/txtorcon-0.5.tar.gz.sig: dist/txtorcon-0.5.tar.gz
-	gpg --verify dist/txtorcon-0.5.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.5.tar.gz
-
-dist/txtorcon-0.6.tar.gz: sdist
-dist/txtorcon-0.6.tar.gz.sig: dist/txtorcon-0.6.tar.gz
-	gpg --verify dist/txtorcon-0.6.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.6.tar.gz
-
-release: dist/txtorcon-0.6.tar.gz.sig setup.py
+release: dist/txtorcon-0.7.tar.gz.sig setup.py
 	python setup.py sdist upload
 
 html: dist/txtorcon-0.6.tar.gz.sig README index.md

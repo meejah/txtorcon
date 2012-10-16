@@ -1,7 +1,7 @@
 
 ## for now, this needs to be changed in setup.py also until I find a
 ## better solution
-__version__ = '0.6'
+__version__ = '0.7'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/txtorcon'
