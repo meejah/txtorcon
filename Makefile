@@ -43,11 +43,5 @@ dist/txtorcon-0.7.tar.gz.sig: dist/txtorcon-0.7.tar.gz
 release: dist/txtorcon-0.7.tar.gz.sig setup.py
 	python setup.py sdist upload
 
-html: dist/txtorcon-0.6.tar.gz.sig README index.md
-	-mkdir html
-	python scripts/create-css.py > html/style.css
-	cp meejah.asc html/meejah.asc
-	python scripts/md-render.py index.md > html/index.html
-	python scripts/md-render.py README > html/README.html
-	cp dist/txtorcon-0.6.tar.gz html
-	cp dist/txtorcon-0.6.tar.gz.sig html
+html:
+	cd doc && make html
