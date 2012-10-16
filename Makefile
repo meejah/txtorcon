@@ -43,5 +43,5 @@ dist/txtorcon-0.7.tar.gz.sig: dist/txtorcon-0.7.tar.gz
 release: dist/txtorcon-0.7.tar.gz.sig setup.py
 	python setup.py sdist upload
 
-html:
-	cd doc && make html
+html: docs/README.rst
+	cd docs && make html
