@@ -466,8 +466,15 @@ class TorState(object):
                     self.protocol.queue_command("ATTACHSTREAM %d %d" % (stream.id, circ.id))
 
     def _circuit_status(self, data):
-        "Used internally as a callback for updating Circuit information"
-        for line in data.split('\n')[1:-1]:
+        """Used internally as a callback for updating Circuit information"""
+
+        data = data[len('circuit-status='):].split('\n')[:-1]
+        ## sometimes there's a newline after circuit-status= and
+        ## sometimes not, so we get rid of it
+        if len(data) and len(data[0].strip()) == 0:
+            data = data[1:]
+
+        for line in data:
             self._circuit_update(line)
 
     def _stream_status(self, data):

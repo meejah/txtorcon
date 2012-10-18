@@ -353,6 +353,47 @@ class StateTests(unittest.TestCase):
 
         return d
 
+    def test_bootstrap_single_existing_circuit(self):
+        '''
+        test with exactly one circuit. should probably test with 2 as
+        well, since there was a bug with the handling of just one.
+        '''
+        
+        d = self.state.post_bootstrap
+
+        clock = task.Clock()
+        self.state.addrmap.scheduler = clock
+        
+        self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
+        self.state._bootstrap()
+
+        self.send("250+ns/all=")
+        self.send(".")
+        self.send("250 OK")
+
+        self.send("250-circuit-status=123 BUILT PURPOSE=GENERAL")
+        self.send("250 OK")
+
+        self.send("250-stream-status=")
+        self.send("250 OK")
+
+        self.send("250+address-mappings/all=")
+        self.send('.')
+        self.send('250 OK')
+
+        for ignored in self.state.event_map.items():
+            self.send("250 OK")
+
+        self.send("250-entry-guards=")
+        self.send("250 OK")
+
+        self.send("250 OK")
+
+        self.assertTrue(self.state.find_circuit(123))
+        self.assertEquals(len(self.state.circuits), 1)
+
+        return d
+
     def test_unset_attacher(self):
         class MyAttacher(object):
             implements(IStreamAttacher)

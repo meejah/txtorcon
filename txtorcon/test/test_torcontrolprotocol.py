@@ -715,7 +715,7 @@ r Tecumseh /xAD0tFLS50Dkz+O37xGyVLoKlk yJHbad7MFl1VW2/23RxrPKBTOIE 2011-12-02 09
 s Fast Guard HSDir Named Running Stable V2Dir Valid
 w Bandwidth=18700
 p reject 1-65535""")
-        self.controller._circuit_status("""250+circuit-status=
+        self.controller._circuit_status("""circuit-status=
 4472 BUILT $FF1003D2D14B4B9D03933F8EDFBC46C952E82A59=Tecumseh,$C185D4A4B069CD559FCD548C8063B475385D777F=l0l,$7FE4F2FFE07A96062BD0DB5B7FAECEFCBD8CF192=wildnl PURPOSE=GENERAL
 """)
         self.assertEqual(len(self.controller.circuits), 1)
