@@ -86,12 +86,16 @@ def setup_failed(arg):
 
 log.startLogging(sys.stdout)
 
-if os.stat('/var/run/tor/control').st_mode & (stat.S_IRGRP | stat.S_IRUSR | stat.S_IROTH):
-    print "using control socket"
-    d = txtorcon.build_tor_connection(UNIXClientEndpoint(reactor, "/var/run/tor/control"))
-    
-else:
+d = None
+try:
+    if os.stat('/var/run/tor/control').st_mode & (stat.S_IRGRP | stat.S_IRUSR | stat.S_IROTH):
+        print "using control socket"
+        d = txtorcon.build_tor_connection(UNIXClientEndpoint(reactor, "/var/run/tor/control"))
+except OSError:
+    pass
+
+if d is None:
     d = txtorcon.build_tor_connection(TCP4ClientEndpoint(reactor, "localhost", 9051))
-    
+
 d.addCallback(setup).addErrback(setup_failed)
 reactor.run()
