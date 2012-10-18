@@ -329,7 +329,7 @@ def on_shutdown(*args):
     if creator:
         print 'shutting down, dumping statistics a final time "stats.data".'
         creator.dump_statistics()
-        print "average failure rate %3.2f" % (sum(map(lambda x: x.failure_rate(), creator.statistics.values())) / len(creator.statistics))*100.0
+        print "average failure rate %3.2f%%" % ((sum(map(lambda x: x.failure_rate(), creator.statistics.values())) / len(creator.statistics))*100.0)
 reactor.addSystemEventTrigger('before', 'shutdown', on_shutdown)
     
 
