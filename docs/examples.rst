@@ -152,3 +152,15 @@ for logging things INFO, NOTICE, WARN, ERR.
 .. literalinclude:: ../examples/circuit_failure_rates.py
 
 
+
+.. _txtorcon.tac:
+
+:file:`txtorcon.tac`
+--------------------
+
+:download:`Download the example <../examples/txtorcon.tac>`
+
+Create your own twisted `Service` for deploying using ``twistd``.
+
+.. literalinclude:: ../examples/txtorcon.tac
+
