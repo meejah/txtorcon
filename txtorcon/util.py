@@ -29,26 +29,6 @@ except ImportError:
     import pygeoip
     create_geoip = pygeoip.GeoIP
 
-city = None
-country = None
-asn = None
-
-try:
-    city = create_geoip("/usr/share/GeoIP/GeoLiteCity.dat")
-except IOError:
-    city = None
-
-try:
-    asn = create_geoip("/usr/share/GeoIP/GeoIPASNum.dat")
-except IOError:
-    asn = None
-
-try:
-    country = create_geoip("/usr/share/GeoIP/IP.dat")
-except IOError:
-    country = None
-
-
 def find_keywords(args):
     """
     This splits up strings like name=value, foo=bar into a dict. Does NOT deal
@@ -137,8 +117,36 @@ class NetLocation:
     the ASN database is available you get that also.
     """
 
-    def __init__(self, ipaddr):
-        "ipaddr should be a dotted-quad"
+    def __init__(self, ipaddr, geoip_data_dir="/usr/share/GeoIP/"):
+        """
+        ipaddr: should be a dotted-quad
+
+        geoip_data_dir: the path to where the geoip data files from maxmind are
+                        stored.
+                        The IP and country data file can be downloaded from:
+                        http://dev.maxmind.com/geoip/geolite
+
+                        The ASN number files may be downloaded from:
+                        http://www.maxmind.com/download/geoip/database/asnum/
+        """
+        try:
+            data_file = os.path.join(geoip_data_dir, "GeoLiteCity.dat")
+            city = create_geoip(data_file)
+        except IOError:
+            city = None
+
+        try:
+            data_file = os.path.join(geoip_data_dir, "GeoIPASNum.dat")
+            asn = create_geoip(data_file)
+        except IOError:
+            asn = None
+
+        try:
+            data_file = os.path.join(geoip_data_dir, "IP.dat")
+            country = create_geoip(data_file)
+        except IOError:
+            country = None
+
         self.ip = ipaddr
         self.latlng = (None, None)
         self.countrycode = None
@@ -150,7 +158,10 @@ class NetLocation:
             if r is not None:
                 self.countrycode = r['country_code']
                 self.latlng = (r['latitude'], r['longitude'])
-                self.city = (r['city'], r['region'])
+                try:
+                    self.city = (r['city'], r['region'])
+                except KeyError:
+                    self.city = (r['city'], r['region_name'])
 
         elif country:
             self.countrycode = country.country_code_by_addr(ipaddr)
@@ -160,3 +171,7 @@ class NetLocation:
 
         if asn:
             self.asn = asn.org_by_addr(self.ip)
+
+    def __str__(self):
+        return  str({'ip': self.ip, 'latlng': self.latlng,
+                'countrycode': self.countrycode, 'asn': self.asn})
