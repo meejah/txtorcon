@@ -6,6 +6,7 @@ from twisted.internet.interfaces import IProtocolFactory
 from zope.interface import implements
 
 from txtorcon.util import process_from_address, delete_file_or_tree
+from txtorcon.util import NetLocation
 
 import os
 import tempfile
@@ -21,7 +22,7 @@ class FakeProtocolFactory:
 
     def doStop(self):
         "IProtocolFactory API"
-        
+
     def buildProtocol(self, addr):
         "IProtocolFactory API"
         return None
@@ -49,13 +50,18 @@ class TestProcessFromUtil(unittest.TestCase):
         ## preferable.
         from twisted.internet import reactor
         listener = yield TCP4ServerEndpoint(reactor, 9887).listen(FakeProtocolFactory())
-        
+
         try:
             pid = process_from_address('0.0.0.0', 9887, self.fakestate)
         finally:
             listener.stopListening()
 
         self.assertEqual(pid, os.getpid())
+
+class TestNetLocation(unittest.TestCase):
+    def test_lookup_it_ip(self):
+        location = NetLocation('151.10.0.0')
+        self.assertEqual(location.countrycode, 'IT')
 
 class TestDelete(unittest.TestCase):
 
@@ -76,9 +82,9 @@ class TestDelete(unittest.TestCase):
         self.assertTrue(os.path.exists(d))
         self.assertTrue(os.path.isdir(d))
         self.assertTrue(os.path.exists(os.path.join(d,'foo')))
-        
+
         delete_file_or_tree(d)
-        
+
         self.assertTrue(not os.path.exists(d))
         self.assertTrue(not os.path.exists(os.path.join(d,'foo')))
 
