@@ -224,7 +224,7 @@ class TCPHiddenServiceEndpoint(object):
 
 class TorProcessProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, connection_creator, progress_updates=None):
+    def __init__(self, connection_creator, progress_updates=None, config=None):
         """
         This will read the output from a Tor process and attempt a
         connection to its control port when it sees any 'Bootstrapped'
@@ -247,6 +247,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         :param progress_updates: A callback which received progress
             updates with three args: percent, tag, summary
 
+        :param config: a TorConfig object to connect to the
+            TorControlProtocl from the launched tor (should it succeed)
+
         :ivar tor_protocol: The TorControlProtocol instance connected
             to the Tor this :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>`` is speaking to. Will be valid
             when the `connected_cb` callback runs.
@@ -254,8 +257,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         :ivar connected_cb: Triggered when the Tor process we
             represent is fully bootstrapped
 
-       """
+        """
 
+        self.config = config
         self.tor_protocol = None
         self.connection_creator = connection_creator
         self.progress_updates = progress_updates
@@ -354,6 +358,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         txtorlog.msg("tor_connected %s" % proto)
 
         self.tor_protocol = proto
+        if self.config is not None:
+            self.config._update_proto(proto)
         self.tor_protocol.is_owned = self.transport.pid
         self.tor_protocol.post_bootstrap.addCallback(self.protocol_bootstrapped).addErrback(self.tor_connection_failed)
 
@@ -458,7 +464,7 @@ def launch_tor(config, reactor,
     if connection_creator is None:
         connection_creator = functools.partial(TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
                                                TorProtocolFactory())
-    process_protocol = TorProcessProtocol(connection_creator, progress_updates)
+    process_protocol = TorProcessProtocol(connection_creator, progress_updates, config)
 
     # we set both to_delete and the shutdown events because this
     # process might be shut down way before the reactor, but if the
@@ -796,6 +802,12 @@ class TorConfig(object):
             self.post_bootstrap.callback(self)
 
         self.__dict__['_setup_'] = None
+
+    def _update_proto(self, proto):
+        """
+        internal method, used by launch_tor to update the protocol after we're set up.
+        """
+        self.__dict__['protocol'] = proto
 
     def __setattr__(self, name, value):
         """
