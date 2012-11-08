@@ -696,13 +696,17 @@ class LaunchTorTests(unittest.TestCase):
         self.transport = proto_helpers.StringTransport()
         self.protocol.makeConnection(self.transport)
 
-    def setup_complete_no_errors(self, proto):
+    def setup_complete_no_errors(self, proto, config):
         todel = proto.to_delete
         self.assertTrue(len(todel) > 0)
         proto.processEnded(Failure(error.ProcessDone(0)))
         self.assertEqual(len(proto.to_delete), 0)
         for f in todel:
             self.assertTrue(not os.path.exists(f))
+
+        ## make sure we set up the config to track the created tor
+        ## protocol connection
+        self.assertEquals(config.protocol, proto.tor_protocol)
 
     def setup_complete_fails(self, proto):
         todel = proto.to_delete
@@ -745,7 +749,7 @@ class LaunchTorTests(unittest.TestCase):
         self.othertrans = trans
         creator = functools.partial(connector, self.protocol, self.transport)
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
-        d.addCallback(self.setup_complete_no_errors)
+        d.addCallback(self.setup_complete_no_errors, config)
         return d
         
     def check_setup_failure(self, fail):
