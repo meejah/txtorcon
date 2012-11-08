@@ -12,6 +12,16 @@ from zope.interface import implements
 
 import txtorcon
 
+def finished(answer):
+    print "Answer:", answer
+    print "We could now do any sort of exciting thing we wanted..."
+    print "...but instead, we'll just exit."
+    reactor.stop()
+
+def query_changed_config(answer, state):
+    # now we'll ask for the ORPort back to prove it changed
+    state.protocol.get_conf("ORPort").addCallback(finished)
+
 def state_complete(state):
     print "We've completely booted up a TorState to a Tor version %s at PID %d" % (state.protocol.version, state.tor_pid)
 
@@ -19,9 +29,13 @@ def state_complete(state):
     for c in state.circuits.values():
         print c
 
-    print "We could now do any sort of exciting thing we wanted..."
-    print "...but instead, we'll just exit."
-    reactor.stop()
+    # we're using the global to demonstrate that the config we passed
+    # to launch_tor can be used after the Tor has been started
+    global config
+    config.ORPort = 9090
+    # "save" may be poorly-named API; it serializes the options to the
+    # running Tor (via SETCONF calls)
+    config.save().addCallback(query_changed_config, state)
 
 def setup_complete(proto):
     print "setup complete:",proto
