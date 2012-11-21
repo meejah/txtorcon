@@ -92,10 +92,7 @@ class TCPHiddenServiceEndpoint(object):
         self.data_dir = data_dir
         self.onion_uri = None
         self.onion_private_key = None
-        if self.data_dir is not None:
-            self._update_onion()
-
-        else:
+        if not self.data_dir:
             self.data_dir = tempfile.mkdtemp(prefix='tortmp')
 
         # shouldn't need to use these
