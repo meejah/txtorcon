@@ -586,6 +586,14 @@ OK''')
         conf.hiddenservices[0].version = 3
         self.assertTrue(conf.needs_save())
         
+    def test_add_hidden_service_to_empty_config(self):
+        conf = TorConfig()
+        h = HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)
+        conf.hiddenservices.append(h)
+        self.assertEqual(len(conf.hiddenservices), 1)
+        self.assertEqual(h, conf.hiddenservices[0])
+        self.assertTrue(conf.needs_save())
+
     def test_multiple_startup_services(self):
         conf = TorConfig(FakeControlProtocol(['config/names=']))
         conf._setup_hidden_services('''HiddenServiceDir=/fake/path

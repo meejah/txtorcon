@@ -776,14 +776,16 @@ class TorConfig(object):
     """
 
     def __init__(self, control=None):
+        self.config = {}
+        '''Current configuration, by keys.'''
+
         if control is None:
             self.protocol = None
             self.__dict__['_slutty_'] = None
+            self.__dict__['config']['HiddenServices'] = _ListWrapper([], functools.partial(self.mark_unsaved, 'HiddenServices'))
+
         else:
             self.protocol = ITorControlProtocol(control)
-
-        self.config = {}
-        '''Current configuration, by keys.'''
 
         self.unsaved = {}
         '''Configuration that has been changed since last save().'''
