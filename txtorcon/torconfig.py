@@ -92,7 +92,10 @@ class TCPHiddenServiceEndpoint(object):
         self.data_dir = data_dir
         self.onion_uri = None
         self.onion_private_key = None
-        if not self.data_dir:
+        if self.data_dir:
+            self._update_onion(self.data_dir)
+
+        else:
             self.data_dir = tempfile.mkdtemp(prefix='tortmp')
 
         # shouldn't need to use these
@@ -106,14 +109,14 @@ class TCPHiddenServiceEndpoint(object):
 
         self.defer = defer.Deferred()
 
-    def _update_onion(self):
+    def _update_onion(self, thedir):
         """
         Used internally to update the `onion_uri` and
         `onion_private_key` members.
         """
 
-        hn = os.path.join(self.hiddenservice.dir, 'hostname')
-        pk = os.path.join(self.hiddenservice.dir, 'private_key')
+        hn = os.path.join(thedir, 'hostname')
+        pk = os.path.join(thedir, 'private_key')
         try:
             with open(hn, 'r') as hnfile:
                 self.onion_uri = hnfile.read().strip()
@@ -206,7 +209,7 @@ class TCPHiddenServiceEndpoint(object):
         against it (adds `onion_uri` and `onion_private_key` members).
         """
 
-        self._update_onion()
+        self._update_onion(self.hiddenservice.dir)
 
         self.tcp_endpoint = TCP4ServerEndpoint(self.reactor, self.listen_port)
         d = self.tcp_endpoint.listen(self.protocolfactory)

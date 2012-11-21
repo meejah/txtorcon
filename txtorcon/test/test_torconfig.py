@@ -1023,6 +1023,34 @@ OK''')
 
         return d
 
+    def test_explicit_data_dir(self):
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, '/mumble/mumble')
+        d = ep.listen(FakeProtocolFactory())
+
+        self.protocol.answers.append('''config/names=
+HiddenServiceOptions Virtual
+OK''')
+        self.protocol.answers.append('HiddenServiceOptions')
+        
+        self.config.bootstrap()
+
+        return d
+
+    def test_explicit_data_dir_valid_hostname(self):
+        datadir = tempfile.mkdtemp()
+        with open(os.path.join(datadir, 'hostname'), 'w') as f:
+            f.write('timaq4ygg2iegci7.onion')
+        with open(os.path.join(datadir, 'private_key'), 'w') as f:
+            f.write('foo\nbar')
+
+        try:
+            ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, datadir)
+            self.assertEqual(ep.onion_uri, 'timaq4ygg2iegci7.onion')
+            self.assertEqual(ep.onion_private_key, 'foo\nbar')
+
+        finally:
+            shutil.rmtree(datadir, ignore_errors=True)
+
     def test_failure(self):
         self.reactor.failures = 2
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
