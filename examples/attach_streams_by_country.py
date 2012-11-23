@@ -87,9 +87,9 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
                 self.waiting_circuits.remove((circid,d,stream_cc))
                 d.callback(circuit)
 
-    def circuit_failed(self, circuit, reason):
+    def circuit_failed(self, circuit, kw):
         if self.waiting_on(circuit):
-            print "A circuit we requested",circuit.id,"has failed. Reason:",reason
+            print "A circuit we requested", circuit.id, "has failed. Reason:", kw['REASON']
 
             circid, d, stream_cc = None, None, None
             for x in self.waiting_circuits:

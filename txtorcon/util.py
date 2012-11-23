@@ -49,16 +49,18 @@ except IOError:
     country = None
 
 
-def find_keywords(args):
+def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
     """
     This splits up strings like name=value, foo=bar into a dict. Does NOT deal
     with quotes in value (e.g. key="value with space" will not work
+
+    By default, note that it takes OUT any key which starts with $ (i.e. a single dollar sign) since for many use-cases the way Tor encodes nodes with "$hash=name" looks like a keyword argument (but it isn't). If you don't want this, override the "key_filter" argument to this method.
 
     :return:
         a dict of key->value (both strings) of all name=value type
         keywords found in args.
     """
-    return dict(x.split('=', 1) for x in args if '=' in x)
+    return dict(x.split('=', 1) for x in args if '=' in x and key_filter(x.split('=')[0]))
 
 
 def delete_file_or_tree(*args):

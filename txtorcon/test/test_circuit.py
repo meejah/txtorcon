@@ -26,8 +26,8 @@ class FakeTorController(object):
     def circuit_closed(self, circuit):
         if self.circuits.has_key(circuit.id):
             del self.circuits[circuit.id]
-    def circuit_failed(self, circuit, reason):
-        self.failed.append((circuit,reason))
+    def circuit_failed(self, circuit, flags):
+        self.failed.append((circuit, flags))
         if self.circuits.has_key(circuit.id):
             del self.circuits[circuit.id]
     def find_circuit(self, circid):
@@ -165,4 +165,4 @@ class CircuitTests(unittest.TestCase):
         circuit.listen(tor)
         circuit.update('1 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL REASON=TIMEOUT'.split())
         self.assertEqual(len(tor.failed), 1)
-        self.assertEqual(tor.failed[0], (circuit, 'TIMEOUT'))
+        self.assertEqual(tor.failed[0], (circuit, {'PURPOSE': 'GENERAL', 'REASON': 'TIMEOUT'}))

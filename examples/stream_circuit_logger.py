@@ -57,8 +57,8 @@ class StreamCircuitLogger(txtorcon.StreamListenerMixin, txtorcon.CircuitListener
     
     def circuit_built(self, circuit):
         logCircuit(circuit)
-    def circuit_failed(self, circuit, reason):
-        log.msg('circuit %d failed "%s"' % (circuit.id, reason))
+    def circuit_failed(self, circuit, kw):
+        log.msg('circuit %d failed "%s"' % (circuit.id, kw['REASON']))
 
 def setup(state):
     log.msg('Connected to a Tor version %s' % state.protocol.version)
