@@ -26,8 +26,8 @@ class FakeTorController(object):
     def circuit_closed(self, circuit):
         if self.circuits.has_key(circuit.id):
             del self.circuits[circuit.id]
-    def circuit_failed(self, circuit, reason):
-        self.failed.append((circuit,reason))
+    def circuit_failed(self, circuit, flags):
+        self.failed.append((circuit, flags))
         if self.circuits.has_key(circuit.id):
             del self.circuits[circuit.id]
     def find_circuit(self, circid):

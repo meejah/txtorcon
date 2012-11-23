@@ -47,8 +47,8 @@ class CircuitListener(object):
     def circuit_closed(self, circuit):
         self.checker('closed', circuit)
         
-    def circuit_failed(self, circuit, reason):
-        self.checker('failed', circuit, reason)
+    def circuit_failed(self, circuit, flags):
+        self.checker('failed', circuit, flags)
     
 class StreamListener(object):
     implements(IStreamListener)

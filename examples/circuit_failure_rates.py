@@ -95,10 +95,10 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
                 self.per_guard_built[circuit.path[0].unique_name] = 1.0
                 self.per_guard_failed[circuit.path[0].unique_name] = 0.0
 
-    def circuit_failed(self, circuit, reason):
+    def circuit_failed(self, circuit, kw):
         """ICircuitListener API"""
 
-        if reason != 'MEASUREMENT_EXPIRED':
+        if kw['REASON'] != 'MEASUREMENT_EXPIRED':
             return
 
         # older tor versions will have empty build_flags
