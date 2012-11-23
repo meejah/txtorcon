@@ -165,4 +165,4 @@ class CircuitTests(unittest.TestCase):
         circuit.listen(tor)
         circuit.update('1 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL REASON=TIMEOUT'.split())
         self.assertEqual(len(tor.failed), 1)
-        self.assertEqual(tor.failed[0], (circuit, 'TIMEOUT'))
+        self.assertEqual(tor.failed[0], (circuit, {'PURPOSE': 'GENERAL', 'REASON': 'TIMEOUT'}))

@@ -5,7 +5,7 @@ from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.internet.interfaces import IProtocolFactory
 from zope.interface import implements
 
-from txtorcon.util import process_from_address, delete_file_or_tree
+from txtorcon.util import process_from_address, delete_file_or_tree, find_keywords
 
 import os
 import tempfile
@@ -26,6 +26,12 @@ class FakeProtocolFactory:
         "IProtocolFactory API"
         return None
 
+class TestFindKeywords(unittest.TestCase):
+
+    def test_filter(self):
+        self.assertEqual(find_keywords("foo=bar $1234567890=routername baz=quux".split()),
+                         {'foo': 'bar', 'baz': 'quux'})
+    
 class TestProcessFromUtil(unittest.TestCase):
 
     def setUp(self):

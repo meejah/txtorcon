@@ -710,7 +710,7 @@ class TorState(object):
         txtorlog.msg("circuit_closed", circuit)
         self.circuit_destroy(circuit)
 
-    def circuit_failed(self, circuit, reason):
+    def circuit_failed(self, circuit, kw):
         "ICircuitListener API"
-        txtorlog.msg("circuit_failed", circuit, reason)
+        txtorlog.msg("circuit_failed", circuit, str(kw))
         self.circuit_destroy(circuit)
