@@ -1,7 +1,7 @@
 from __future__ import with_statement
 
 from twisted.python import log, failure
-from twisted.internet import defer, error, protocol
+from twisted.internet import defer, error, protocol, task
 from twisted.internet.interfaces import IProtocolFactory, IStreamServerEndpoint
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.protocols.basic import LineOnlyReceiver
@@ -30,7 +30,10 @@ import random
 import tempfile
 from StringIO import StringIO
 import shlex
+import time
 
+class TorSetupTimeout(Exception):
+    pass
 
 class TCPHiddenServiceEndpoint(object):
     """
@@ -221,7 +224,8 @@ class TCPHiddenServiceEndpoint(object):
 
 class TorProcessProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, connection_creator, progress_updates=None):
+    def __init__(self, connection_creator, progress_updates=None,
+            timeout=None):
         """
         This will read the output from a Tor process and attempt a
         connection to its control port when it sees any 'Bootstrapped'
@@ -244,6 +248,10 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         :param progress_updates: A callback which received progress
             updates with three args: percent, tag, summary
 
+        :param timeout: An int representing the timeout in seconds. If we are
+            unable to reach 100% by this time we will consider the setting up of
+            Tor to have failed.
+
         :ivar tor_protocol: The TorControlProtocol instance connected
             to the Tor this :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>`` is speaking to. Will be valid
             when the `connected_cb` callback runs.
@@ -263,6 +271,13 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.to_delete = []
         self.stderr = []
         self.stdout = []
+
+        self._setup_complete = False
+        self._timeout = timeout
+        self._start_time = time.time()
+        self._check_timeout = task.LoopingCall(self.checkTimeout)
+        if timeout:
+            self._check_timeout.start(0.5)
 
     def outReceived(self, data):
         """
@@ -284,6 +299,16 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             d = self.connection_creator()
             d.addCallback(self.tor_connected)
             d.addErrback(self.tor_connection_failed)
+
+
+    def checkTimeout(self):
+        if self._setup_complete:
+            self._check_timeout.stop()
+
+        if (time.time() - self._start_time) > self._timeout:
+            self.connected_cb.errback(failure.Failure(TorSetupTimeout))
+            self._check_timeout.stop()
+            self.transport.loseConnection()
 
     def errReceived(self, data):
         """
@@ -325,13 +350,12 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     ## the below are all callbacks
 
-    def tor_connection_failed(self, fail):
+    def tor_connection_failed(self, failure):
         ## FIXME more robust error-handling please, like a timeout so
         ## we don't just wait forever after 100% bootstrapped (that
         ## is, we're ignoring these errors, but shouldn't do so after
         ## we'll stop trying)
         self.attempted_connect = False
-        return None
 
     def status_client(self, arg):
         args = shlex.split(arg)
@@ -368,7 +392,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 def launch_tor(config, reactor,
                tor_binary='/usr/sbin/tor',
                progress_updates=None,
-               connection_creator=None):
+               connection_creator=None,
+               timeout=None):
     """
     launches a new Tor process with the given config.
 
@@ -455,7 +480,8 @@ def launch_tor(config, reactor,
     if connection_creator is None:
         connection_creator = functools.partial(TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
                                                TorProtocolFactory())
-    process_protocol = TorProcessProtocol(connection_creator, progress_updates)
+    process_protocol = TorProcessProtocol(connection_creator,
+            progress_updates, timeout)
 
     # we set both to_delete and the shutdown events because this
     # process might be shut down way before the reactor, but if the
