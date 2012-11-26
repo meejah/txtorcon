@@ -6,11 +6,13 @@ import functools
 from zope.interface import implements
 from twisted.trial import unittest
 from twisted.test import proto_helpers
-from twisted.internet import defer, error
+from twisted.internet import defer, error, task
 from twisted.python.failure import Failure
 from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
+
+from txtorcon.torconfig import TorSetupTimeout
 
 from txtorcon.util import delete_file_or_tree
 
@@ -695,6 +697,11 @@ class LaunchTorTests(unittest.TestCase):
         self.protocol.connectionMade = do_nothing
         self.transport = proto_helpers.StringTransport()
         self.protocol.makeConnection(self.transport)
+        self.clock = task.Clock()
+
+    def setup_complete_with_timer(self, proto):
+        proto._check_timeout.stop()
+        proto.checkTimeout()
 
     def setup_complete_no_errors(self, proto):
         todel = proto.to_delete
@@ -703,6 +710,8 @@ class LaunchTorTests(unittest.TestCase):
         self.assertEqual(len(proto.to_delete), 0)
         for f in todel:
             self.assertTrue(not os.path.exists(f))
+        if proto._timeout:
+            proto._check_timeout.stop()
 
     def setup_complete_fails(self, proto):
         todel = proto.to_delete
@@ -773,14 +782,47 @@ class LaunchTorTests(unittest.TestCase):
         creator = functools.partial(connector, self.protocol, self.transport)
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
         d.addCallback(self.setup_complete_fails)
-        d.addErrback(self.check_setup_failure)
+        return self.assertFailure(d, Exception)
+
+    def test_launch_with_timeout(self):
+        config = TorConfig()
+        config.OrPort = 1234
+        config.SocksPort = 9999
+        timeout = 5
+
+        def connector(proto, trans):
+            proto._set_valid_events('STATUS_CLIENT')
+            proto.makeConnection(trans)
+            proto.post_bootstrap.callback(proto)
+            return proto.post_bootstrap
+
+        class OnProgress:
+            def __init__(self, test, expected):
+                self.test = test
+                self.expected = expected
+
+            def __call__(self, percent, tag, summary):
+                self.test.assertEqual(self.expected[0], (percent, tag, summary))
+                self.expected = self.expected[1:]
+                self.test.assertTrue('"' not in summary)
+                self.test.assertTrue(percent >= 0 and percent <= 100)
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        self.othertrans = trans
+        creator = functools.partial(connector, self.protocol, self.transport)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, timeout=timeout)
+        d.addCallback(self.setup_complete_no_errors)
         return d
 
     def setup_fails_stderr(self, fail):
         self.assertTrue('Something went horribly wrong!' in fail.getErrorMessage())
         ## cancel the errback chain, we wanted this
         return None
-        
+
     def test_tor_produces_stderr_output(self):
         config = TorConfig()
         config.OrPort = 1234
@@ -838,8 +880,7 @@ class LaunchTorTests(unittest.TestCase):
         creator = functools.partial(Connector(), self.protocol, self.transport)
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
         d.addCallback(self.setup_complete_fails)
-        d.addErrback(self.check_setup_failure)
-        return d
+        return self.assertFailure(d, Exception)
 
     def test_tor_connection_user_data_dir(self):
         """
