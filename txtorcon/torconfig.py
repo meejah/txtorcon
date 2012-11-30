@@ -30,7 +30,6 @@ import random
 import tempfile
 from StringIO import StringIO
 import shlex
-import time
 
 
 class TorSetupTimeout(Exception):
