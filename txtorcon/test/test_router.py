@@ -4,7 +4,6 @@ import datetime
 from twisted.trial import unittest
 from twisted.internet import defer
 
-# outside this package, you can do
 from txtorcon.router import Router, hexIdFromHash, hashFromHexId
 
 class FakeController(object):
