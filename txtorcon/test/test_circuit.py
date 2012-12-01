@@ -3,7 +3,7 @@ from twisted.trial import unittest
 from zope.interface import implements
 
 from txtorcon import Circuit, Stream
-from txtorcon.interface import IRouterContainer, ICircuitListener, ICircuitContainer
+from txtorcon.interface import IRouterContainer, ICircuitListener, ICircuitContainer, CircuitListenerMixin
 
 class FakeTorController(object):
     implements(IRouterContainer, ICircuitListener, ICircuitContainer)
@@ -54,6 +54,19 @@ examples = [
     ]
 
 class CircuitTests(unittest.TestCase):
+
+    def test_listener_mixin(self):
+        listener = CircuitListenerMixin()
+        from zope.interface.verify import verifyObject
+        self.assertTrue(verifyObject(ICircuitListener, listener))
+
+        ## call all the methods with None for each arg. This is mostly
+        ## just to gratuitously increase test coverage, but also
+        ## serves to ensure these methods don't just blow up
+        for (methodname, desc) in ICircuitListener.namesAndDescriptions():
+            method = getattr(listener, methodname)
+            args = [None] * len(desc.positional)
+            method(*args)
 
     def test_unlisten(self):
         tor = FakeTorController()

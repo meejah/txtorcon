@@ -6,7 +6,7 @@ from twisted.trial import unittest
 from twisted.internet import reactor
 from zope.interface import implements
 
-from txtorcon import Stream, IStreamListener, ICircuitContainer
+from txtorcon import Stream, IStreamListener, ICircuitContainer, StreamListenerMixin
 
 class FakeCircuit:
     def __init__(self, id=-999):
@@ -65,6 +65,19 @@ class StreamTests(unittest.TestCase):
 
     def setUp(self):
         self.circuits = {}
+
+    def test_listener_mixin(self):
+        listener = StreamListenerMixin()
+        from zope.interface.verify import verifyObject
+        self.assertTrue(verifyObject(IStreamListener, listener))
+
+        ## call all the methods with None for each arg. This is mostly
+        ## just to gratuitously increase test coverage, but also
+        ## serves to ensure these methods don't just blow up
+        for (methodname, desc) in IStreamListener.namesAndDescriptions():
+            method = getattr(listener, methodname)
+            args = [None] * len(desc.positional)
+            method(*args)
 
     def test_circuit_already_valid_in_new(self):
         stream = Stream(self)
