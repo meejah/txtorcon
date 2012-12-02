@@ -12,8 +12,6 @@ from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactor
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
 
-from txtorcon.torconfig import TorSetupTimeout
-
 from txtorcon.util import delete_file_or_tree
 
 def do_nothing(*args):
