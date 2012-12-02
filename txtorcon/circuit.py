@@ -115,10 +115,7 @@ class Circuit(object):
             if len(self.streams) > 0:
                 log.err(RuntimeError("Circuit is %s but still has %d streams" %
                                      (self.state, len(self.streams))))
-            reason = 'unknown'
-            if 'REASON' in kw:
-                reason = kw['REASON']
-            [x.circuit_failed(self, reason) for x in self.listeners]
+            [x.circuit_failed(self, kw) for x in self.listeners]
 
     def update_path(self, path):
         """

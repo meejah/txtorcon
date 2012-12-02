@@ -130,17 +130,21 @@ class ICircuitListener(Interface):
         A circuit has been closed cleanly (won't be in controller's list any more).
         """
 
-    def circuit_failed(circuit, reason):
-        """A circuit has been closed because something went wrong.
+    def circuit_failed(circuit, flags):
+        """
+        A circuit has been closed because something went wrong.
 
-        The circuit won't be in the TorState's list anymore. The
-        reason comes from Tor (see tor-spec.txt). It is one of the
-        following strings: MISC, RESOLVEFAILED, CONNECTREFUSED,
-        EXITPOLICY, DESTROY, DONE, TIMEOUT, NOROUTE, HIBERNATING,
-        INTERNAL,RESOURCELIMIT, CONNRESET, TORPROTOCOL, NOTDIRECTORY,
-        END, PRIVATE_ADDR.
+        The circuit won't be in the TorState's list anymore.
 
-        However, don't depend on that: it could be anything.
+        :param flags:
+            A dict of additional args. REASON is usually included, and
+            often REMOTE_REASON also. See the control-spec
+            documentation.  As of this writing, REASON is one of the
+            following strings: MISC, RESOLVEFAILED, CONNECTREFUSED,
+            EXITPOLICY, DESTROY, DONE, TIMEOUT, NOROUTE, HIBERNATING,
+            INTERNAL,RESOURCELIMIT, CONNRESET, TORPROTOCOL,
+            NOTDIRECTORY, END, PRIVATE_ADDR. However, don't depend on
+            that: it could be anything.
         """
 
 
@@ -165,7 +169,7 @@ class CircuitListenerMixin(object):
     def circuit_closed(self, circuit):
         pass
     
-    def circuit_failed(self, circuit, reason):
+    def circuit_failed(self, circuit, flags):
         pass
 
 
