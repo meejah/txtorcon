@@ -1,8 +1,8 @@
 from __future__ import with_statement
 
 from twisted.python import log, failure
-from twisted.internet import defer, error, protocol
-from twisted.internet.interfaces import IProtocolFactory, IStreamServerEndpoint
+from twisted.internet import defer, error, protocol, task
+from twisted.internet.interfaces import IProtocolFactory, IStreamServerEndpoint, IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.protocols.basic import LineOnlyReceiver
 from zope.interface import implements
@@ -224,7 +224,8 @@ class TCPHiddenServiceEndpoint(object):
 
 class TorProcessProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, connection_creator, progress_updates=None, config=None):
+    def __init__(self, connection_creator, progress_updates=None, config=None
+                 ireactortime=None, timeout=None):
         """
         This will read the output from a Tor process and attempt a
         connection to its control port when it sees any 'Bootstrapped'
@@ -250,6 +251,16 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         :param config: a TorConfig object to connect to the
             TorControlProtocl from the launched tor (should it succeed)
 
+        :param ireactortime:
+            An object implementing IReactorTime (i.e. a reactor) which
+            needs to be supplied if you pass a timeout.
+
+        :param timeout:
+            An int representing the timeout in seconds. If we are
+            unable to reach 100% by this time we will consider the
+            setting up of Tor to have failed. Must supply ireactortime
+            if you supply this.
+
         :ivar tor_protocol: The TorControlProtocol instance connected
             to the Tor this :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>`` is speaking to. Will be valid
             when the `connected_cb` callback runs.
@@ -271,6 +282,14 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.stderr = []
         self.stdout = []
 
+        self._setup_complete = False
+        self._timeout_delayed_call = None
+        if timeout:
+            if not ireactortime:
+                raise RuntimeError('Must supply an IReactorTime object when supplying a timeout')
+            ireactortime = IReactorTime(ireactortime)
+            self._timeout_delayed_call = ireactortime.callLater(timeout, self.timeout_expired)
+
     def outReceived(self, data):
         """
         :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
@@ -291,6 +310,14 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             d = self.connection_creator()
             d.addCallback(self.tor_connected)
             d.addErrback(self.tor_connection_failed)
+
+    def timeout_expired(self):
+        """
+        A timeout was supplied during setup, and the time has run out.
+        """
+
+        self.connected_cb.errback(RuntimeError("Timed out waiting for Tor to launch."))
+        self.transport.loseConnection()
 
     def errReceived(self, data):
         """
@@ -332,13 +359,12 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     ## the below are all callbacks
 
-    def tor_connection_failed(self, fail):
+    def tor_connection_failed(self, failure):
         ## FIXME more robust error-handling please, like a timeout so
         ## we don't just wait forever after 100% bootstrapped (that
         ## is, we're ignoring these errors, but shouldn't do so after
         ## we'll stop trying)
         self.attempted_connect = False
-        return None
 
     def status_client(self, arg):
         args = shlex.split(arg)
@@ -352,6 +378,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.progress(prog, tag, summary)
 
         if prog == 100:
+            if self._timeout_delayed_call:
+                self._timeout_delayed_call.cancel()
+                self._timeout_delayed_call = None
             self.connected_cb.callback(self)
 
     def tor_connected(self, proto):
@@ -377,7 +406,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 def launch_tor(config, reactor,
                tor_binary='/usr/sbin/tor',
                progress_updates=None,
-               connection_creator=None):
+               connection_creator=None,
+               timeout=None):
     """
     launches a new Tor process with the given config.
 
@@ -464,7 +494,7 @@ def launch_tor(config, reactor,
     if connection_creator is None:
         connection_creator = functools.partial(TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
                                                TorProtocolFactory())
-    process_protocol = TorProcessProtocol(connection_creator, progress_updates, config)
+    process_protocol = TorProcessProtocol(connection_creator, progress_updates, config, reactor, timeout)
 
     # we set both to_delete and the shutdown events because this
     # process might be shut down way before the reactor, but if the
