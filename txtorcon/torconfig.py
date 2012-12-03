@@ -224,7 +224,7 @@ class TCPHiddenServiceEndpoint(object):
 
 class TorProcessProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, connection_creator, progress_updates=None, config=None
+    def __init__(self, connection_creator, progress_updates=None, config=None,
                  ireactortime=None, timeout=None):
         """
         This will read the output from a Tor process and attempt a
