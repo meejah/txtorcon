@@ -353,6 +353,38 @@ class StateTests(unittest.TestCase):
 
         return d
 
+    def test_unique_routers(self):
+        """
+        not really unit-testy as we use an internal method, but that's
+        the method we're testing, so...
+        this tests with a single duplicate
+        """
+
+        self.state._update_network_status("""r fakeone YkkmgCNRV1/35OPWDvo7+1bmfoo sanLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 12.45.56.78 443 80
+s Exit Fast Guard HSDir Running Stable V2Dir Valid
+w Bandwidth=518000
+p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863,2082-2083,2086-2087,2095-2096,3128,4321,5050,5190,5222-5223,6679,6697,7771,8000,8008,8080-8081,8090,8118,8123,8181,8300,8443,8888""")
+        self.state._update_network_status("""r fakeone zkkmgCNRV1/35OPWDvo7+1bmfoo tanLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 12.45.56.78 443 80
+s Exit Fast Guard HSDir Running Stable V2Dir Valid
+w Bandwidth=518000
+p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863,2082-2083,2086-2087,2095-2096,3128,4321,5050,5190,5222-5223,6679,6697,7771,8000,8008,8080-8081,8090,8118,8123,8181,8300,8443,8888
+r fakeone zkkmgCNRV1/35OPWDvo7+1bmfoo xxxLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 12.45.56.78 443 80
+s Exit Fast Guard HSDir Running Stable V2Dir Valid
+w Bandwidth=518000
+p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863,2082-2083,2086-2087,2095-2096,3128,4321,5050,5190,5222-5223,6679,6697,7771,8000,8008,8080-8081,8090,8118,8123,8181,8300,8443,8888
+""")
+        self.state._update_network_status("""r fakeone zkkmgCNRV1/35OPWDvo7+1bmfoo tanLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 12.45.56.78 443 80
+s Exit Fast Guard HSDir Running Stable V2Dir Valid
+w Bandwidth=518000
+p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863,2082-2083,2086-2087,2095-2096,3128,4321,5050,5190,5222-5223,6679,6697,7771,8000,8008,8080-8081,8090,8118,8123,8181,8300,8443,8888
+r fakeone zkkmgCNRV1/35OPWDvo7+1bmfoo xxxLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 12.45.56.78 443 80
+s Exit Fast Guard HSDir Running Stable V2Dir Valid
+w Bandwidth=518000
+p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863,2082-2083,2086-2087,2095-2096,3128,4321,5050,5190,5222-5223,6679,6697,7771,8000,8008,8080-8081,8090,8118,8123,8181,8300,8443,8888
+""")
+        self.assertEquals(len(self.state.unique_routers), 2)
+
+
     def test_unset_attacher(self):
         class MyAttacher(object):
             implements(IStreamAttacher)

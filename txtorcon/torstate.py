@@ -506,7 +506,8 @@ class TorState(object):
             if v is None:
                 txtorlog.msg(len(self.routers_by_name[k]), "dups:", k)
                 del self.routers[k]
-            if not v in self.unique_routers:
+
+            elif not v in self.unique_routers:
                 self.unique_routers.append(v)
 
         txtorlog.msg(len(self.guards), "GUARDs")

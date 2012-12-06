@@ -258,6 +258,9 @@ def update(percent, tag, summary):
 
 print "Launching new Tor instance:"
 config = txtorcon.TorConfig()
+config.ControlPort = 9876
+config.ORPort = 9002
+config.SocksPort = 0
 d = txtorcon.launch_tor(config, reactor, progress_updates=update)
 d.addCallback(setup).addErrback(setup_failed)
 reactor.run()
