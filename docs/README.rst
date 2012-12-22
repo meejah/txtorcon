@@ -76,16 +76,16 @@ code is at least exercised somehow by the unit tests.
 ::
 
     $ make test
-    Ran 220 tests in 0.394s
+    **Ran 229 tests in 1.394s**
 
     $ make coverage
     ## ...deleted lots of output...
-    covered: 1922
-    uncovered: 69
-    96.79% test coverage
+      covered: 1969
+    uncovered: 45
+    97.71% test coverage
 
 Tor itself is not required to be running for any of the tests. There are
-no integration tests. ohcount claims under 2000 lines of code for the
+no integration tests. ohcount claims around 2000 lines of code for the
 core bit; around 4000 including tests. About 37% comments in the
 not-test code.
 
