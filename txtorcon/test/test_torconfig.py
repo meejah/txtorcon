@@ -1086,6 +1086,18 @@ OK''')
 
         return d
 
+    def test_already_bootstrapped(self):
+        self.protocol.answers.append('''config/names=
+HiddenServiceOptions Virtual
+OK''')
+        self.protocol.answers.append('HiddenServiceOptions')
+        
+        self.config.bootstrap()
+        
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
+        d = ep.listen(FakeProtocolFactory())
+        return d
+
     def test_explicit_data_dir(self):
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, '/mumble/mumble')
         d = ep.listen(FakeProtocolFactory())
