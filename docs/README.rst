@@ -1,7 +1,26 @@
 txtorcon README
 ===============
 
-Full documentation at ReadTheDocs http://txtorcon.rtfd.org
+Full documentation at ReadTheDocs https://txtorcon.readthedocs.org
+
+quick start
+-----------
+
+For the impatient, there are two quick ways to install this:
+
+$ pip install txtorcon
+
+or, if you checked out or downloaded the source:
+
+$ python setup.py install
+
+To avoid installing, you can just add the base of the source to your
+PYTHONPATH:
+
+$ export PYTHONPATH=\ ``pwd``:$PYTHONPATH
+
+Then, you will want to explore the examples. Try "python
+examples/stream\_circuit\_logger.py" for instance.
 
 overview
 --------
@@ -9,7 +28,7 @@ overview
 txtorcon is a Twisted-based asynchronous Tor control protocol
 implementation. Twisted is an event-driven networking engine written in
 Python and Tor is an onion-routing network designed to improve people's
-privacy and security on the Internet.
+privacy and anonymity on the Internet.
 
 The main abstraction of this library is txtorcon.TorControlProtocol
 which presents an asynchronous API to speak the Tor client protocol in
@@ -29,11 +48,15 @@ depend on txtorcon as a controller library, it Very Highly Recommended
 that you follow the source at github (or via the hidden service). I
 fairly regularly push code to both.
 
-txtorcon runs all test cleanly on both Debian stable (squeeze) and
-testing (wheezy). Reports from other OSes appreciated.
+txtorcon runs all tests cleanly on:
+
+-  Debian stable (squeeze)
+-  Debian testing (wheezy)
+-  naif reports OS X 10.4 works
+-  Reports from other OSes appreciated.
 
 If instead you want a synchronous Python controller library, check out
-Stem at http://stem.readthedocs.org/en/latest/
+Stem at https://stem.readthedocs.org/en/latest/
 
 quick implementation overview
 -----------------------------
@@ -46,37 +69,28 @@ making changes). txtorcon.TorState provides txtorcon.Router,
 txtorcon.Circuit and txtorcon.Stream objects which implement a listener
 interface so client code may receive updates.
 
-txtorcon uses **trial for unit-tests** and has 98% test-coverage --
+txtorcon uses **trial for unit-tests** and has 96% test-coverage --
 which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
 
 ::
 
     $ make test
-    Ran 186 tests in 0.426s
+    Ran 217 tests in 0.394s
 
     $ make coverage
     ## ...deleted lots of output...
-    covered: 1675
-    uncovered: 57
-    96.60% test coverage
+    covered: 1922
+    uncovered: 69
+    96.41% test coverage
 
 Tor itself is not required to be running for any of the tests. There are
 no integration tests. ohcount claims under 2000 lines of code for the
-core bit; around 4000 including tests.
-
-I would also **note** that I was experimenting with underscores instead
-of camelCase for the method names; since Twisted is camelCase it might
-make sense to switch especially if anyone has strong feelings on this.
-On the other hand, it makes it obvious which calls are Twisted and which
-are txtorcon.
+core bit; around 4000 including tests. About 37% comments in the
+not-test code.
 
 dependencies
 ------------
-
--  `python-ipaddr <http://code.google.com/p/ipaddr-py/>`_: Google's IP
-   address manipulation code. Could easily just use string if this
-   dependency is a problem; see addrmap.py
 
 -  `twisted <http://twistedmatrix.com>`_: I am working against Twisted
    11.1.0 on Debian with Python 2.7.2.
@@ -89,6 +103,9 @@ dependencies
    doesn't have an answer but I haven't bothered removing the dependency
    yet..It also does ASN lookups if you installed that MaxMind database.
 
+-  `python-ipaddr <http://code.google.com/p/ipaddr-py/>`_: **optional**.
+   Google's IP address manipulation code.
+
 -  `Sphinx <http://sphinx.pocoo.org/>`_: Only if you want to build the
    documentation. In that case you'll also need something called
    ``python-repoze.sphinx.autointerface`` (at least in Debian) to build
@@ -98,8 +115,8 @@ dependencies
    diagrams, if you like). If you don't have/want it see
    ``txtorcon/test/test_fsm.py`` around line 62 to disable the test
 
-In any case, on a `Debian <http://www.debian.org/>`_ wheezy or Ubuntu
-system, this should work:
+In any case, on a `Debian <http://www.debian.org/>`_ wheezy, squeeze or
+Ubuntu system, this should work:
 
 ::
 
@@ -109,14 +126,14 @@ system, this should work:
 documentation
 -------------
 
-**FIXME** **NOTE** I'm planning to possibly re-organize which .py files
-the classes are in. If you know some best practices on this, or have
-specific suggestions please email me.
-
 It is likely that you will need to read at least some of
 `control-spec.txt <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
 from the torspec git repository so you know what's being abstracted by
 this library.
+
+Run "make doc" to build the Sphinx documentation locally, or rely on
+ReadTheDocs https://txtorcon.readthedocs.org which builds each tagged
+release.
 
 There is also a directory of examples/ scripts, which have inline
 documentation explaining their use. You may also use pydoc:
@@ -175,18 +192,19 @@ code itself is hosted via git:
 
     torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git
 
-You may contact me via meejah@meejah.ca with GPG key
-``128069A7 <http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>``\ \_
+You may contact me via ``meejah at meejah dot ca`` with GPG key
+[128069A7]\ http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7
 or see ``meejah.asc``. It is often possible to contact me as ``meejah``
-in #tor-dev on ``OFTC <http://www.oftc.net/oftc/>``\ \_ but be patient
-for replies (I do look at scrollback, so mention my nick).
+in #tor-dev on [OFTC]\ http://www.oftc.net/oftc/ but be patient for
+replies (I do look at scrollback, so mention my nick).
 
 More conventionally, you may get the code at GitHub and documentation
 via ReadTheDocs:
 
 -  https://github.com/meejah/txtorcon
--  http://readthedocs.org/docs/txtorcon/en/latest/
+-  https://txtorcon.readthedocs.org
 
 Please do use the GitHub issue-tracker to report bugs. Patches,
-comments, criticisms all welcomed and appreciated. See TODO for notes on
-deficiencies, planned features, lunatic raving, etc.
+pull-requests, comments and criticisms are all welcomed and appreciated.
+See TODO for notes on deficiencies, planned features, lunatic raving,
+etc.
