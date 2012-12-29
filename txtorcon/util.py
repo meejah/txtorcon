@@ -9,6 +9,7 @@ import hashlib
 import shutil
 import socket
 import subprocess
+import struct
 
 try:
     import GeoIP
@@ -76,7 +77,7 @@ def delete_file_or_tree(*args):
             shutil.rmtree(f, ignore_errors=True)
 
 
-def ip_from_int(self, ip):
+def ip_from_int(ip):
         """ Convert long int back to dotted quad string """
         return socket.inet_ntoa(struct.pack('>I', ip))
 
