@@ -19,6 +19,18 @@ coverage:
 	trial --reporter=bwverbose --coverage txtorcon
 	python scripts/coverage.py
 
+pep8:
+	find txtorcon/*.py txtorcon/test/*.py | xargs pep8 --ignore=E501
+
+pep8count:
+	find txtorcon/*.py txtorcon/test/*.py | xargs pep8 --ignore=E501 | wc -l
+
+pyflakes:
+	pyflakes txtorcon
+
+pyflakescount:
+	pyflakes txtorcon | wc -l
+
 clean:
 	-rm -rf _trial_temp
 	-rm -rf build
