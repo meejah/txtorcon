@@ -1,14 +1,13 @@
-
-import time
-import datetime
 from twisted.trial import unittest
 from twisted.internet import defer
 
 from txtorcon.router import Router, hexIdFromHash, hashFromHexId
 
+
 class FakeController(object):
     def get_info_raw(self, i):
         return defer.succeed('250-ip-to-country/something=XX\r\n250 OK')
+
 
 class UtilityTests(unittest.TestCase):
 
@@ -82,11 +81,11 @@ class RouterTests(unittest.TestCase):
                       "24051", "24052")
         router.policy = "accept 25,128-256".split()
         self.assertTrue(router.accepts_port(25))
-        for x in range(128,256):
+        for x in range(128, 256):
             self.assertTrue(router.accepts_port(x))
         self.assertTrue(not router.accepts_port(26))
         self.assertEqual(router.policy, 'accept 25,128-256')
-        
+
     def test_policy_reject(self):
         controller = object()
         router = Router(controller)
@@ -97,9 +96,9 @@ class RouterTests(unittest.TestCase):
                       "77.183.225.114",
                       "24051", "24052")
         router.policy = "reject 500-600,655,7766".split()
-        for x in range(1,500):
+        for x in range(1, 500):
             self.assertTrue(router.accepts_port(x))
-        for x in range(500,601):
+        for x in range(500, 601):
             self.assertTrue(not router.accepts_port(x))
 
         self.assertEqual(router.policy, 'reject 500-600,655,7766')
@@ -139,9 +138,8 @@ class RouterTests(unittest.TestCase):
                       "1.2.3.4",
                       "24051", "24052")
         router.flags = ['Named']
-        r = repr(router)
-        
+        repr(router)
+
     def test_repr_no_update(self):
         router = Router(FakeController())
-        r = repr(router)
-        
+        repr(router)

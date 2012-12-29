@@ -39,14 +39,19 @@ class StreamListenerMixin(object):
 
     def stream_new(self, stream):
         pass
+
     def stream_succeeded(self, stream):
         pass
+
     def stream_attach(self, stream, circuit):
         pass
+
     def stream_detach(self, stream, reason):
         pass
+
     def stream_closed(self, stream):
         pass
+
     def stream_failed(self, stream, reason, remote_reason):
         pass
 
@@ -154,21 +159,22 @@ class CircuitListenerMixin(object):
     from this if you don't care about most of the notifications.
     """
     implements(ICircuitListener)
+
     def circuit_new(self, circuit):
         pass
-    
+
     def circuit_launched(self, circuit):
         pass
-    
+
     def circuit_extend(self, circuit, router):
         pass
-    
+
     def circuit_built(self, circuit):
         pass
-    
+
     def circuit_closed(self, circuit):
         pass
-    
+
     def circuit_failed(self, circuit, flags):
         pass
 
@@ -253,7 +259,7 @@ class IRouterContainer(Interface):
         is the only time we've seen a Router -- it's possible for Tor
         to do things with routers not in the consensus (like extend
         circuits to them).
-        
+
         :return: a router by its ID.
         """
 

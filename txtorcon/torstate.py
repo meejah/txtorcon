@@ -1,7 +1,6 @@
-from twisted.python import log, failure
+from twisted.python import log
 from twisted.internet import defer
-from twisted.internet.interfaces import IProtocolFactory, IReactorCore
-from twisted.protocols.basic import LineOnlyReceiver
+from twisted.internet.interfaces import IReactorCore
 from zope.interface import implements
 
 ## outside this module, you can do "from txtorcon import Stream" etc.
@@ -17,11 +16,9 @@ from txtorcon.interface import ITorControlProtocol, IRouterContainer, ICircuitLi
 from txtorcon.interface import ICircuitContainer, IStreamListener, IStreamAttacher
 from spaghetti import FSM, State, Transition
 
-import functools
 import datetime
 import warnings
 import types
-import os
 
 
 def _build_state(proto):
@@ -118,24 +115,24 @@ class TorState(object):
         self.stream_listeners = []
 
         self.addrmap = AddrMap()
-        self.circuits = {}              # keys on id (integer)
-        self.streams = {}               # keys on id (integer)
+        self.circuits = {}               # keys on id (integer)
+        self.streams = {}                # keys on id (integer)
 
-        self.routers = {}               # keys by hexid (string) and by unique names
-        self.routers_by_name = {}       # keys on name, value always list (many duplicate "Unnamed" routers, for example)
-        self.guards = {}                # potentially-usable as entry guards, I think? (any router with 'Guard' flag)
-        self.entry_guards = {}          # from GETINFO entry-guards, our current entry guards
-        self.unusable_entry_guards = [] # list of entry guards we didn't parse out
-        self.authorities = {}           # keys by name
+        self.routers = {}                # keys by hexid (string) and by unique names
+        self.routers_by_name = {}        # keys on name, value always list (many duplicate "Unnamed" routers, for example)
+        self.guards = {}                 # potentially-usable as entry guards, I think? (any router with 'Guard' flag)
+        self.entry_guards = {}           # from GETINFO entry-guards, our current entry guards
+        self.unusable_entry_guards = []  # list of entry guards we didn't parse out
+        self.authorities = {}            # keys by name
 
-        self.cleanup = None             # see set_attacher
+        self.cleanup = None              # see set_attacher
 
         class die(object):
-            __name__ = 'die'            # FIXME? just to ease spagetti.py:82's pain
+            __name__ = 'die'             # FIXME? just to ease spagetti.py:82's pain
 
             def __init__(self, msg):
                 self.msg = msg
-                
+
             def __call__(self, *args):
                 raise RuntimeError(self.msg % tuple(args))
 
@@ -162,13 +159,13 @@ class TorState(object):
 
         waiting_w.add_transition(Transition(waiting_p, lambda x: x[:2] == 'w ', self._router_bandwidth))
         waiting_w.add_transition(Transition(waiting_r, ignorable_line, nothing))
-        waiting_w.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin)) # "w" lines are optional
+        waiting_w.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin))  # "w" lines are optional
         waiting_w.add_transition(Transition(waiting_r, lambda x: x[:2] != 'w ', die('Expected "w " while parsing routers not "%s"')))
         waiting_w.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
 
         waiting_p.add_transition(Transition(waiting_r, lambda x: x[:2] == 'p ', self._router_policy))
         waiting_p.add_transition(Transition(waiting_r, ignorable_line, nothing))
-        waiting_p.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin)) # "p" lines are optional
+        waiting_p.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin))  # "p" lines are optional
         waiting_p.add_transition(Transition(waiting_r, lambda x: x[:2] != 'p ', die('Expected "p " while parsing routers not "%s"')))
         waiting_p.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
 
@@ -360,8 +357,7 @@ class TorState(object):
         'REASON_RESOURCELIMIT': 11,     # (OR has no resources to fulfill request)
         'REASON_CONNRESET': 12,         # (Connection was unexpectedly reset)
         'REASON_TORPROTOCOL': 13,       # (Sent when closing connection because of Tor protocol violations.)
-        'REASON_NOTDIRECTORY': 14,      # (Client sent RELAY_BEGIN_DIR to a non-directory relay.)
-        }
+        'REASON_NOTDIRECTORY': 14}      # (Client sent RELAY_BEGIN_DIR to a non-directory relay.)
 
     def close_stream(self, stream, reason='REASON_MISC'):
         if stream.id not in self.streams:
@@ -451,11 +447,11 @@ class TorState(object):
                         def __init__(self, state, streamid):
                             self.stream_id = streamid
                             self.state = state
-                            
+
                         def __call__(self, arg):
                             circid = arg.id
                             self.state.protocol.queue_command("ATTACHSTREAM %d %d" % (self.stream_id, circid))
-                            
+
                     circ.addCallback(IssueStreamAttach(self, stream.id)).addErrback(log.err)
 
                 else:
@@ -543,7 +539,7 @@ class TorState(object):
         Used internally as a callback to update Circuit information
         from CIRC events.
         """
-        
+
         #print "circuit_update",line
         args = line.split()
         circ_id = int(args[0])
@@ -556,7 +552,7 @@ class TorState(object):
         Used internally as a callback to update Stream information
         from STREAM events.
         """
-        
+
         #print "stream_update",line
         if line.strip() == 'stream-status=':
             ## this happens if there are no active streams
@@ -586,14 +582,12 @@ class TorState(object):
         txtorlog.msg(" --> addr_map", addr)
         self.addrmap.update(addr)
 
-    event_map = {
-        'STREAM': _stream_update,
-        'CIRC': _circuit_update,
-        'NS': _update_network_status,
-        'NEWCONSENSUS': _update_network_status,
-        'NEWDESC': _newdesc_update,
-        'ADDRMAP': _addr_map
-        }
+    event_map = {'STREAM': _stream_update,
+                 'CIRC': _circuit_update,
+                 'NS': _update_network_status,
+                 'NEWCONSENSUS': _update_network_status,
+                 'NEWDESC': _newdesc_update,
+                 'ADDRMAP': _addr_map}
     """event_map used by add_events to map event_name -> unbound method"""
     @defer.inlineCallbacks
     def _add_events(self):
@@ -631,7 +625,8 @@ class TorState(object):
             if len(routerid) > 41:
                 nick = routerid[42:]
                 is_named = routerid[41] is '='
-            router.update(nick, hashFromHexId(idhash), '0'*27, 'unknown', 'unknown', '0', '0')
+            router.update(nick, hashFromHexId(idhash), '0' * 27, 'unknown',
+                          'unknown', '0', '0')
             router.name_is_unique = is_named
             return router
 
@@ -665,7 +660,7 @@ class TorState(object):
         IStreamListener: stream has been closed (won't be in
         controller's list anymore)
         """
-        
+
         txtorlog.msg("stream_closed", stream.id)
         del self.streams[stream.id]
 
@@ -674,7 +669,7 @@ class TorState(object):
         IStreamListener: stream failed for some reason (won't be in
         controller's list anymore)
         """
-        
+
         txtorlog.msg("stream_failed", stream.id)
         del self.streams[stream.id]
 

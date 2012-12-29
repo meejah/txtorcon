@@ -1,5 +1,3 @@
-import sys
-
 from twisted.python import log
 from interface import IRouterContainer
 
@@ -131,7 +129,7 @@ class Circuit(object):
         this might happen in the case of hidden services choosing a
         rendevouz point not in the current consensus.
         """
-        
+
         oldpath = self.path
         self.path = []
         for router in path:
@@ -142,7 +140,7 @@ class Circuit(object):
             ## this will create a Router if we give it a router
             ## LongName that doesn't yet exist
             router = self.router_container.router_from_id(p)
-            
+
             self.path.append(router)
             if len(self.path) > len(oldpath):
                 [x.circuit_extend(self, router) for x in self.listeners]
