@@ -26,12 +26,12 @@ class PortRange(object):
     def __init__(self, a, b):
         self.min = a
         self.max = b
-        
+
     def __cmp__(self, b):
         if b >= self.min and b <= self.max:
             return 0
         return 1
-    
+
     def __str__(self):
         return "%d-%d" % (self.min, self.max)
 
@@ -109,7 +109,7 @@ class Router(object):
     def bandwidth(self):
         """The reported bandwidth of this Router."""
         return self._bandwidth
-    
+
     @bandwidth.setter
     def bandwidth(self, bw):
         self._bandwidth = int(bw)
@@ -121,19 +121,11 @@ class Router(object):
         :return: a string describing the policy
         """
         if self.accepted_ports:
-            ports = 'accept '
-            target = self.accepted_ports
+            return 'accept ' + ','.join(map(str, self.accepted_ports))
+        elif self.rejected_ports:
+            return 'reject ' + ','.join(map(str, self.rejected_ports))
         else:
-            ports = 'reject '
-            target = self.rejected_ports
-
-        if target is None:
             return ''
-
-        last = None
-        for x in target:
-            ports = ports + str(x) + ','
-        return ports[:-1]
 
     @policy.setter
     def policy(self, args):

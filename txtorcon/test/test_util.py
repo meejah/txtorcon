@@ -1,37 +1,46 @@
 from twisted.trial import unittest
-from twisted.test import proto_helpers
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.internet.interfaces import IProtocolFactory
 from zope.interface import implements
 
-from txtorcon.util import process_from_address, delete_file_or_tree, find_keywords
+from txtorcon.util import process_from_address, delete_file_or_tree, find_keywords, ip_from_int
 
 import os
 import tempfile
-import subprocess
+
 
 class FakeState:
     tor_pid = 0
 
+
 class FakeProtocolFactory:
     implements(IProtocolFactory)
+
     def doStart(self):
         "IProtocolFactory API"
 
     def doStop(self):
         "IProtocolFactory API"
-        
+
     def buildProtocol(self, addr):
         "IProtocolFactory API"
         return None
+
+
+class TestIPFromInt(unittest.TestCase):
+
+    def test_cast(self):
+        self.assertEqual(ip_from_int(0x7f000001), '127.0.0.1')
+
 
 class TestFindKeywords(unittest.TestCase):
 
     def test_filter(self):
         self.assertEqual(find_keywords("foo=bar $1234567890=routername baz=quux".split()),
                          {'foo': 'bar', 'baz': 'quux'})
-    
+
+
 class TestProcessFromUtil(unittest.TestCase):
 
     def setUp(self):
@@ -55,13 +64,14 @@ class TestProcessFromUtil(unittest.TestCase):
         ## preferable.
         from twisted.internet import reactor
         listener = yield TCP4ServerEndpoint(reactor, 9887).listen(FakeProtocolFactory())
-        
+
         try:
             pid = process_from_address('0.0.0.0', 9887, self.fakestate)
         finally:
             listener.stopListening()
 
         self.assertEqual(pid, os.getpid())
+
 
 class TestDelete(unittest.TestCase):
 
@@ -81,10 +91,9 @@ class TestDelete(unittest.TestCase):
 
         self.assertTrue(os.path.exists(d))
         self.assertTrue(os.path.isdir(d))
-        self.assertTrue(os.path.exists(os.path.join(d,'foo')))
-        
-        delete_file_or_tree(d)
-        
-        self.assertTrue(not os.path.exists(d))
-        self.assertTrue(not os.path.exists(os.path.join(d,'foo')))
+        self.assertTrue(os.path.exists(os.path.join(d, 'foo')))
 
+        delete_file_or_tree(d)
+
+        self.assertTrue(not os.path.exists(d))
+        self.assertTrue(not os.path.exists(os.path.join(d, 'foo')))
