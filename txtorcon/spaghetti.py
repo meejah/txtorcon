@@ -1,7 +1,4 @@
-import types
 import warnings
-
-from twisted.python import log
 
 
 class FSM(object):
@@ -65,7 +62,7 @@ class State(object):
     def add_transition(self, t):
         self.transitions.append(t)
         t.start_state = self
-        
+
     def add_transitions(self, transitions):
         for t in transitions:
             self.add_transition(t)

@@ -1,35 +1,29 @@
 from __future__ import with_statement
 
-from twisted.python import log, failure
-from twisted.internet import defer, error, protocol, task
-from twisted.internet.interfaces import IProtocolFactory, IStreamServerEndpoint, IReactorTime
+from twisted.python import log
+from twisted.internet import defer, error, protocol
+from twisted.internet.interfaces import IStreamServerEndpoint, IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
-from twisted.protocols.basic import LineOnlyReceiver
 from zope.interface import implements
 
 ## outside this module, you can do "from txtorcon import Stream" etc.
-from txtorcon.stream import Stream
-from txtorcon.circuit import Circuit
-from txtorcon.router import Router
-from txtorcon.addrmap import AddrMap
-from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE, TorProtocolFactory
+from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory
 from txtorcon.util import delete_file_or_tree, find_keywords
 from txtorcon.log import txtorlog
 
-from txtorcon.interface import ITorControlProtocol, IRouterContainer, ICircuitListener
-from txtorcon.interface import ICircuitContainer, IStreamListener, IStreamAttacher
-from spaghetti import FSM, State, Transition
+from txtorcon.interface import ITorControlProtocol
 
 import os
 import sys
 import string
-import itertools
 import types
 import functools
 import random
 import tempfile
 from StringIO import StringIO
 import shlex
+if sys.platform in ('linux2', 'darwin'):
+    import pwd
 
 
 class TCPHiddenServiceEndpoint(object):
@@ -475,6 +469,16 @@ def launch_tor(config, reactor,
         data_directory = tempfile.mkdtemp(prefix='tortmp')
         config.DataDirectory = data_directory
 
+        # Set ownership on the temp-dir to the user tor will drop privileges to
+        # when executing as root.
+        try:
+            user = config.User
+        except KeyError:
+            pass
+        else:
+            if sys.platform in ('linux2', 'darwin') and os.geteuid() == 0:
+                os.chown(data_directory, pwd.getpwnam(user).pw_uid, -1)
+
     try:
         control_port = config.ControlPort
     except KeyError:
@@ -871,8 +875,16 @@ class TorConfig(object):
         ``things which might get into the running Tor if save() were
         to be called''
         """
-
-        return self.config[self._find_real_name(name)]
+        if name.startswith('__') and name.endswith('__'):
+            # Special case __foobar__ attributes to go for the real dict
+            # instead of self.config and raise AttributeError instead
+            # of KeyError
+            try:
+                return self.__dict__[name]
+            except KeyError, e:
+                raise AttributeError(str(e))
+        else:
+            return self.config[self._find_real_name(name)]
 
     def get_type(self, name):
         """
@@ -915,7 +927,7 @@ class TorConfig(object):
     def bootstrap(self, *args):
         try:
             self.protocol.add_event_listener('CONF_CHANGED', self._conf_changed)
-        except RuntimeError, e:
+        except RuntimeError:
             ## for Tor versions which don't understand CONF_CHANGED
             ## there's nothing we can really do.
             log.msg("Can't listen for CONF_CHANGED event; won't stay up-to-date with other clients.")
@@ -1018,7 +1030,7 @@ class TorConfig(object):
             ## auto, 0 for false and 1 for true. could be nicer if it
             ## was called AutoBoolean or something, but...
             value = value.replace('+', '_')
-            
+
             inst = None
             # FIXME: put parser classes in dict instead?
             for cls in config_types:

@@ -1,20 +1,14 @@
-import os
-import shutil
-import tempfile
-import functools
-
 from zope.interface import implements
 from twisted.trial import unittest
-from twisted.test import proto_helpers
-from twisted.internet import defer, error
-from twisted.python.failure import Failure
+from twisted.internet import defer
 
-from txtorcon import TorControlProtocol, ITorControlProtocol, TorInfo
+from txtorcon import ITorControlProtocol, TorInfo
+
 
 class FakeControlProtocol:
     """
     """
-    
+
     implements(ITorControlProtocol)
 
     def __init__(self, answers):
@@ -32,6 +26,7 @@ class FakeControlProtocol:
         return d
     get_info = get_info_raw
 
+
 class CheckAnswer:
     def __init__(self, test, ans):
         self.answer = ans
@@ -40,6 +35,7 @@ class CheckAnswer:
     def __call__(self, x):
         self.test.assertEqual(x, self.answer)
 
+
 class MagicContainerTests(unittest.TestCase):
 
     def test_repr(self):
@@ -47,12 +43,12 @@ class MagicContainerTests(unittest.TestCase):
         m = MagicContainer('foo')
         self.assertTrue(repr(m) == 'foo')
         self.assertTrue(str(m) == 'foo')
-        
+
         m._setup_complete()
         self.assertTrue(repr(m) == 'foo')
         self.assertTrue(str(m) == 'foo')
-        
-    
+
+
 class InfoTests(unittest.TestCase):
 
     def setUp(self):
@@ -66,7 +62,7 @@ multi/path a documentation string
         info = TorInfo(self.protocol)
         self.assertTrue(hasattr(info, 'something'))
         self.assertTrue(hasattr(info, 'multi'))
-        self.assertTrue(hasattr(getattr(info,'multi'), 'path'))
+        self.assertTrue(hasattr(getattr(info, 'multi'), 'path'))
 
         self.protocol.answers.append('something=\nfoo\nOK')
 
@@ -81,7 +77,7 @@ something/two a second documentation string
 ''')
         info = TorInfo(self.protocol)
 
-        self.assertTrue(hasattr(info,'something'))
+        self.assertTrue(hasattr(info, 'something'))
         self.assertTrue(hasattr(info.something, 'one'))
         self.assertTrue(hasattr(info.something, 'two'))
 
@@ -104,7 +100,7 @@ something/two a second documentation string
         info = TorInfo(self.protocol)
 
         self.assertTrue(dir(info) == ['something'])
-        self.assertTrue(dir(info.something) == ['one', 'two'] or \
+        self.assertTrue(dir(info.something) == ['one', 'two'] or
                         dir(info.something) == ['two', 'one'])
 
     def test_iterator_access(self):
@@ -136,20 +132,20 @@ something/two a second documentation string
 
     def test_prefix_error(self):
         self.protocol.answers.append('''info/names=
-something not allowed I hope    
+something not allowed I hope
 something/one a documentation string
 ''')
         self.error_happened = False
-        info = TorInfo(self.protocol, self.handle_error)
+        TorInfo(self.protocol, self.handle_error)
         self.assertTrue(self.error_happened)
 
     def test_prefix_error_other_order(self):
         self.protocol.answers.append('''info/names=
 other/one a documentation string
-other not allowed I hope    
+other not allowed I hope
 ''')
         self.error_happened = False
-        info = TorInfo(self.protocol, self.handle_error)
+        TorInfo(self.protocol, self.handle_error)
         self.assertTrue(self.error_happened)
 
     def test_with_arg(self):
@@ -158,17 +154,17 @@ multi/path/arg/* a documentation string
 ''')
         info = TorInfo(self.protocol)
         self.assertTrue(hasattr(info, 'multi'))
-        self.assertTrue(hasattr(getattr(info,'multi'), 'path'))
-        self.assertTrue(hasattr(getattr(getattr(info,'multi'), 'path'), 'arg'))
+        self.assertTrue(hasattr(getattr(info, 'multi'), 'path'))
+        self.assertTrue(hasattr(getattr(getattr(info, 'multi'), 'path'), 'arg'))
 
         self.protocol.answers.append('multi/path/arg/quux=\nbar\nbaz\nquux\nOK')
 
         try:
             info.multi.path.arg()
             self.assertTrue(False)
-        except TypeError, e:
+        except TypeError:
             pass
-        
+
         d = info.multi.path.arg('quux')
         d.addCallback(CheckAnswer(self, 'bar\nbaz\nquux'))
         return d
@@ -178,11 +174,11 @@ multi/path/arg/* a documentation string
 multi/no-arg docstring
 ''')
         info = TorInfo(self.protocol)
-    
+
         try:
             info.multi.no_arg('an argument')
             self.assertTrue(False)
-        except TypeError, e:
+        except TypeError:
             pass
 
     def test_dump(self):
@@ -196,7 +192,7 @@ multi/path/arg/* a documentation string
         '''
         ensure we ignore config/* for now
         '''
-        
+
         self.protocol.answers.append('''info/names=
 config/* a documentation string
 ''')
@@ -208,7 +204,7 @@ config/* a documentation string
 multi/path/arg/* a documentation string
 ''')
         self.protocol.post_bootstrap = None
-        info = TorInfo(self.protocol)
+        TorInfo(self.protocol)
 
     def test_str(self):
         '''rather silly test to cover string creation'''

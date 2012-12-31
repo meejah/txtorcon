@@ -3,6 +3,7 @@ from twisted.internet import defer
 
 from txtorcon.interface import ITorControlProtocol
 
+
 class MagicContainer(object):
     """
     This merely contains 1 or more methods or further MagicContainer
@@ -15,7 +16,7 @@ class MagicContainer(object):
 
     See TorInfo.
     """
-    
+
     def __init__(self, n):
         self._txtorcon_name = n
         self.attrs = {}
@@ -32,12 +33,13 @@ class MagicContainer(object):
 
     def __getitem__(self, idx):
         return object.__getattribute__(self, 'attrs').items()[idx][1]
+
     def __len__(self):
         return len(object.__getattribute__(self, 'attrs'))
 
     def __getattribute__(self, name):
         sup = super(MagicContainer, self)
-        if sup.__getattribute__('_setup') == False:
+        if sup.__getattribute__('_setup') is False:
             return sup.__getattribute__(name)
 
         attrs = sup.__getattribute__('attrs')
@@ -57,6 +59,7 @@ class MagicContainer(object):
         for x in object.__getattribute__(self, 'attrs').values():
             x.dump(prefix)
 
+
 class ConfigMethod(object):
     def __init__(self, info_key, protocol, takes_arg=False):
         self.info_key = info_key
@@ -65,22 +68,21 @@ class ConfigMethod(object):
 
     def dump(self, prefix):
         n = self.info_key.replace('/', '.')
-        n = n.replace('-','_')
-        arg = ''
-        if self.takes_arg:
-            arg = 'arg'
-        #print '%s(%s)' % (n, arg)
-            
+        n = n.replace('-', '_')
+        s = '%s(%s)' % (n, 'arg' if self.takes_arg else '')
+        #print s
+        return s
+
     def __call__(self, *args):
         if self.takes_arg:
             if len(args) != 1:
                 raise TypeError('"%s" takes exactly one argument' % self.info_key)
             req = '%s/%s' % (self.info_key, str(args[0]))
-            
+
         else:
             if len(args) != 0:
                 raise TypeError('"%s" takes no arguments' % self.info_key)
-            
+
             req = self.info_key
 
         def stripper(key, arg):
@@ -88,7 +90,7 @@ class ConfigMethod(object):
             ## OK, which is a FIXME/TODO item
             ## strip "keyname=" and the trailing newline + OK
             ## sometimes keyname= is followed by a newline, so the final .strip()
-            return arg.strip()[len(key)+1:-3].strip()
+            return arg.strip()[len(key) + 1:-3].strip()
 
         return self.proto.get_info_raw(req).addCallback(functools.partial(stripper, req))
 
@@ -96,7 +98,8 @@ class ConfigMethod(object):
         arg = ''
         if self.takes_arg:
             arg = 'arg'
-        return '%s(%s)' % (self.info_key.replace('-','_'), arg)
+        return '%s(%s)' % (self.info_key.replace('-', '_'), arg)
+
 
 class TorInfo(object):
     """
@@ -139,7 +142,7 @@ class TorInfo(object):
         self._setup = False
         self.attrs = {}
         '''After _setup is True, these are all we show as attributes.'''
-        
+
         self.protocol = ITorControlProtocol(control)
         self.errback = errback
 
@@ -157,6 +160,7 @@ class TorInfo(object):
 
     def __getitem__(self, idx):
         return object.__getattribute__(self, 'attrs').items()[idx][1]
+
     def __len__(self):
         return len(object.__getattribute__(self, 'attrs'))
 
@@ -164,7 +168,7 @@ class TorInfo(object):
 
     def __getattribute__(self, name):
         sup = super(TorInfo, self)
-        if sup.__getattribute__('_setup') == False:
+        if sup.__getattribute__('_setup') is False:
             return sup.__getattribute__(name)
 
         attrs = sup.__getattribute__('attrs')
@@ -174,13 +178,13 @@ class TorInfo(object):
         else:
             try:
                 return attrs[name]
-            
+
             except KeyError:
                 if name == 'dump':
                     return object.__getattribute__(self, name)
 
         raise AttributeError(name)
-            
+
     def bootstrap(self, *args):
         d = self.protocol.get_info_raw("info/names").addCallback(self._do_setup)
         if self.errback:
@@ -223,18 +227,18 @@ class TorInfo(object):
             mine = self
             for bit in bits[:-1]:
                 bit = bit.replace('-', '_')
-                if mine.attrs.has_key(bit):
+                if bit in mine.attrs:
                     mine = mine.attrs[bit]
                     if not isinstance(mine, MagicContainer):
                         raise RuntimeError("Already had something: %s for %s" % (bit, name))
-                    
+
                 else:
                     c = MagicContainer(bit)
                     added_magic.append(c)
                     mine._add_attribute(bit, c)
                     mine = c
             n = bits[-1].replace('-', '_')
-            if mine.attrs.has_key(n):
+            if n in mine.attrs:
                 raise RuntimeError("Already had something: %s for %s" % (n, name))
             mine._add_attribute(n, ConfigMethod('/'.join(bits), self.protocol, takes_arg))
 

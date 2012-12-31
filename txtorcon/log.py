@@ -8,6 +8,7 @@ __all__ = ['txtorlog']
 
 txtorlog = twlog.LogPublisher()
 
+
 def debug_logging():
     stdobserver = twlog.PythonLoggingObserver('txtorcon')
     fileobserver = twlog.FileLogObserver(open('txtorcon.log', 'w'))
