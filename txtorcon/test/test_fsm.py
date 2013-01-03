@@ -67,15 +67,16 @@ class FsmTests(unittest.TestCase):
             f.write(fsm.dotty())
             f.close()
             try:
-                try:
-                    subprocess.check_output(("dot", fname))
-                except AttributeError:
-                    print "Skipping graphviz test on pre-2.7 Python" # FIXME stopgap; fix the test!
+                proc = subprocess.Popen(('dot', fname), stdout=subprocess.PIPE)
             except OSError:
                 # Graphviz probably not available; skip
                 return
-            except subprocess.CalledProcessError, e:
-                self.fail(str(e))
+            else:
+                stdout, _ = proc.communicate()
+                retcode = proc.poll()
+                if retcode:
+                    self.fail('Calling dot returned %i (%s)' % (retcode,
+                                                                stdout))
         finally:
             os.unlink(fname)
 
