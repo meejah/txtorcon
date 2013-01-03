@@ -70,7 +70,8 @@ class FsmTests(unittest.TestCase):
                 try:
                     subprocess.check_output(("dot", fname))
                 except AttributeError:
-                    print "Skipping graphviz test on pre-2.7 Python" # FIXME stopgap; fix the test!
+                    if os.system('dot "%s" > /dev/null 2>&1' % fname):
+                        self.fail('Running GraphViz "dot" failed.')
             except OSError:
                 # Graphviz probably not available; skip
                 return
