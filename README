@@ -1,7 +1,7 @@
 txtorcon README
 ===============
 
-Full documentation at ReadTheDocs <https://txtorcon.readthedocs.org>
+Full, built **documentation at ReadTheDocs <https://txtorcon.readthedocs.org>**
 
 quick start
 -----------
@@ -69,7 +69,7 @@ state (including making changes). txtorcon.TorState provides
 txtorcon.Router, txtorcon.Circuit and txtorcon.Stream objects which
 implement a listener interface so client code may receive updates.
 
-txtorcon uses **trial for unit-tests** and has 96% test-coverage --
+txtorcon uses **trial for unit-tests** and has 97% test-coverage --
 which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
 
@@ -181,6 +181,10 @@ forth) can be viewed via Tor at https://timaq4ygg2iegci7.onion
 although the code itself is hosted via git:
 
     torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git
+
+or:
+
+    git clone git://github.com/meejah/txtorcon.git
 
 You may contact me via ``meejah at meejah dot ca`` with GPG key
 [128069A7]<http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>
