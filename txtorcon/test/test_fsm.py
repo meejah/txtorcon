@@ -67,16 +67,18 @@ class FsmTests(unittest.TestCase):
             f.write(fsm.dotty())
             f.close()
             try:
-                proc = subprocess.Popen(('dot', fname), stdout=subprocess.PIPE)
+                proc = subprocess.Popen(('dot', fname),
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
             except OSError:
                 # Graphviz probably not available; skip
                 return
             else:
-                stdout, _ = proc.communicate()
+                _, stderr = proc.communicate()
                 retcode = proc.poll()
                 if retcode:
                     self.fail('Calling dot returned %i (%s)' % (retcode,
-                                                                stdout))
+                                                                stderr))
         finally:
             os.unlink(fname)
 
