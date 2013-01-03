@@ -11,21 +11,7 @@ to attach streams to circuits "by hand"
 
 from twisted.python import log
 from txtorcon.interface import ICircuitContainer, IStreamListener
-import ipaddr
-
-from txtorcon.util import find_keywords
-
-
-def maybe_ip_addr(addr):
-    """
-    Tries to return an IPAddress, otherwise returns a string. I could
-    explicitly check for .exit or .onion at the end instead.
-    """
-
-    try:
-        return ipaddr.IPAddress(addr)
-    except ValueError:
-        return str(addr)
+from txtorcon.util import find_keywords, maybe_ip_addr
 
 
 class Stream(object):

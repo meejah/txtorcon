@@ -49,6 +49,25 @@ try:
 except IOError:
     country = None
 
+try:
+    import ipaddr
+except ImportError:
+    ipaddr = None
+
+
+def maybe_ip_addr(addr):
+    """
+    Tries to return an IPAddress, otherwise returns a string. I could
+    explicitly check for .exit or .onion at the end instead.
+    """
+
+    if ipaddr is not None:
+        try:
+            return ipaddr.IPAddress(addr)
+        except ValueError:
+            pass
+    return str(addr)
+
 
 def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
     """

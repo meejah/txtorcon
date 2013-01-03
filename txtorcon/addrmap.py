@@ -1,8 +1,8 @@
 from txtorcon.interface import IAddrListener
+from txtorcon.util import maybe_ip_addr
 
 from twisted.internet.interfaces import IReactorTime
 from twisted.internet import reactor
-import ipaddr
 
 import datetime
 import shlex
@@ -37,7 +37,7 @@ class Addr(object):
         else:
             (name, ip, _, gmtexpires) = args[:4]
         self.name = name                # "www.example.com"
-        self.ip = ipaddr.IPAddress(ip)  # IPV4Address instance, probably
+        self.ip = maybe_ip_addr(ip)     # IPV4Address instance, or string
         fmt = "%Y-%m-%d %H:%M:%S"
 
         ## if we already have expiry times, etc then we want to

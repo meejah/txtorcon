@@ -26,7 +26,7 @@ class AddrMapTests(unittest.TestCase):
         am.update(line)
         addr = am.find('www.example.com')
 
-        self.assertTrue(addr.ip.exploded == '72.30.2.43')
+        self.assertTrue(addr.ip == '72.30.2.43' or addr.ip.exploded == '72.30.2.43')
         ## maybe not the most robust, should convert to
         ## seconds-since-epoch instead? the net result of the parsing
         ## is we've rounded to seconds...
