@@ -41,11 +41,11 @@ class CircuitListener(object):
     def circuit_built(self, circuit):
         self.checker('built', circuit)
 
-    def circuit_closed(self, circuit):
-        self.checker('closed', circuit)
+    def circuit_closed(self, circuit, **kw):
+        self.checker('closed', circuit, **kw)
 
-    def circuit_failed(self, circuit, flags):
-        self.checker('failed', circuit, flags)
+    def circuit_failed(self, circuit, **kw):
+        self.checker('failed', circuit, **kw)
 
 
 class StreamListener(object):

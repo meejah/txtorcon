@@ -29,12 +29,12 @@ class FakeTorController(object):
     def circuit_built(self, circuit):
         pass
 
-    def circuit_closed(self, circuit):
+    def circuit_closed(self, circuit, **kw):
         if circuit.id in self.circuits:
             del self.circuits[circuit.id]
 
-    def circuit_failed(self, circuit, flags):
-        self.failed.append((circuit, flags))
+    def circuit_failed(self, circuit, **kw):
+        self.failed.append((circuit, kw))
         if circuit.id in self.circuits:
             del self.circuits[circuit.id]
 
@@ -188,4 +188,9 @@ class CircuitTests(unittest.TestCase):
         circuit.listen(tor)
         circuit.update('1 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL REASON=TIMEOUT'.split())
         self.assertEqual(len(tor.failed), 1)
-        self.assertEqual(tor.failed[0], (circuit, {'PURPOSE': 'GENERAL', 'REASON': 'TIMEOUT'}))
+        circ, kw = tor.failed[0]
+        self.assertEqual(circ, circuit)
+        self.assertTrue('PURPOSE' in kw)
+        self.assertTrue('REASON' in kw)
+        self.assertEqual(kw['PURPOSE'], 'GENERAL')
+        self.assertEqual(kw['REASON'], 'TIMEOUT')

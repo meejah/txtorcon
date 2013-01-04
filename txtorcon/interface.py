@@ -18,14 +18,30 @@ class IStreamListener(Interface):
     def stream_attach(stream, circuit):
         "the stream has been attached to a circuit"
 
-    def stream_detach(stream, reason):
+    def stream_detach(stream, **kw):
         "the stream has been detached from its circuit"
 
-    def stream_closed(stream):
-        "stream has been closed (won't be in controller's list anymore)"
+    def stream_closed(stream, **kw):
+        """
+        stream has been closed (won't be in controller's list anymore).
 
-    def stream_failed(stream, reason, remote_reason):
-        "stream failed for some reason (won't be in controller's list anymore)"
+        :param kwargs:
+            provides any flags for this event, which will include at
+            least REASON (but may include anything). See control-spec.
+        """
+
+    def stream_failed(stream, **kw):
+        """
+        stream failed for some reason (won't be in controller's list anymore).
+
+        :param kwargs: a dict of all the flags for the stream failure;
+        see control-spec but these will include REASON and sometimes
+        REMOTE_REASON (if the remote Tor closed the connection). Both
+        an all-uppercase and all-lowercase version of each keyword is
+        supplied (by the library; Tor provides all-uppercase
+        only). Others may include BUILD_FLAGS, PURPOSE, HS_STATE,
+        REND_QUERY, TIME_CREATED (or anything else).
+        """
 
 
 class StreamListenerMixin(object):
@@ -46,13 +62,13 @@ class StreamListenerMixin(object):
     def stream_attach(self, stream, circuit):
         pass
 
-    def stream_detach(self, stream, reason):
+    def stream_detach(self, stream, **kw):
         pass
 
-    def stream_closed(self, stream):
+    def stream_closed(self, stream, **kw):
         pass
 
-    def stream_failed(self, stream, reason, remote_reason):
+    def stream_failed(self, stream, **kw):
         pass
 
 
@@ -130,19 +146,12 @@ class ICircuitListener(Interface):
         circuits).
         """
 
-    def circuit_closed(circuit):
+    def circuit_closed(circuit, **kw):
         """
         A circuit has been closed cleanly (won't be in controller's list any more).
-        """
 
-    def circuit_failed(circuit, flags):
-        """
-        A circuit has been closed because something went wrong.
-
-        The circuit won't be in the TorState's list anymore.
-
-        :param flags:
-            A dict of additional args. REASON is usually included, and
+        :param **kw:
+            A dict of additional args. REASON is alsways included, and
             often REMOTE_REASON also. See the control-spec
             documentation.  As of this writing, REASON is one of the
             following strings: MISC, RESOLVEFAILED, CONNECTREFUSED,
@@ -150,6 +159,35 @@ class ICircuitListener(Interface):
             INTERNAL,RESOURCELIMIT, CONNRESET, TORPROTOCOL,
             NOTDIRECTORY, END, PRIVATE_ADDR. However, don't depend on
             that: it could be anything.
+
+            To facilitate declaring args you want in the method
+            (e.g. circuit_failed(self, circuit, reason=None,
+            remote_reason=None, **kw)) lower-case versions of all the
+            keys are also provided (pointing to the same -- usually
+            UPPERCASE -- strings as the upper-case keys).
+        """
+
+    def circuit_failed(circuit, **kw):
+        """
+        A circuit has been closed because something went wrong.
+
+        The circuit won't be in the TorState's list anymore.
+
+        :param **kw:
+            A dict of additional args. REASON is alsways included, and
+            often REMOTE_REASON also. See the control-spec
+            documentation.  As of this writing, REASON is one of the
+            following strings: MISC, RESOLVEFAILED, CONNECTREFUSED,
+            EXITPOLICY, DESTROY, DONE, TIMEOUT, NOROUTE, HIBERNATING,
+            INTERNAL,RESOURCELIMIT, CONNRESET, TORPROTOCOL,
+            NOTDIRECTORY, END, PRIVATE_ADDR. However, don't depend on
+            that: it could be anything.
+
+            To facilitate declaring args you want in the method
+            (e.g. circuit_failed(self, circuit, reason=None,
+            remote_reason=None, **kw)) lower-case versions of all the
+            keys are also provided (pointing to the same -- usually
+            UPPERCASE -- strings as the upper-case keys).
         """
 
 
@@ -172,10 +210,10 @@ class CircuitListenerMixin(object):
     def circuit_built(self, circuit):
         pass
 
-    def circuit_closed(self, circuit):
+    def circuit_closed(self, circuit, **kw):
         pass
 
-    def circuit_failed(self, circuit, flags):
+    def circuit_failed(self, circuit, **kw):
         pass
 
 
