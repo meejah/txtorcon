@@ -20,16 +20,16 @@ coverage:
 	python scripts/coverage.py
 
 pep8:
-	find txtorcon/*.py txtorcon/test/*.py | xargs pep8 --ignore=E501
+	find txtorcon/*.py txtorcon/test/*.py examples/*.py | xargs pep8 --ignore=E501
 
 pep8count:
-	find txtorcon/*.py txtorcon/test/*.py | xargs pep8 --ignore=E501 | wc -l
+	find txtorcon/*.py txtorcon/test/*.py examples/* | xargs pep8 --ignore=E501 | wc -l
 
 pyflakes:
-	pyflakes txtorcon
+	pyflakes txtorcon examples
 
 pyflakescount:
-	pyflakes txtorcon | wc -l
+	pyflakes txtorcon examples | wc -l
 
 clean:
 	-rm -rf _trial_temp
