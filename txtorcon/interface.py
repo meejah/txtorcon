@@ -19,13 +19,19 @@ class IStreamListener(Interface):
         "the stream has been attached to a circuit"
 
     def stream_detach(stream, **kw):
-        "the stream has been detached from its circuit"
+        """
+        the stream has been detached from its circuit
+
+        :param kw:
+            provides any flags for this event, which will include at
+            least REASON (but may include anything). See control-spec.
+        """
 
     def stream_closed(stream, **kw):
         """
         stream has been closed (won't be in controller's list anymore).
 
-        :param kwargs:
+        :param kw:
             provides any flags for this event, which will include at
             least REASON (but may include anything). See control-spec.
         """
@@ -34,13 +40,15 @@ class IStreamListener(Interface):
         """
         stream failed for some reason (won't be in controller's list anymore).
 
-        :param kwargs: a dict of all the flags for the stream failure;
-        see control-spec but these will include REASON and sometimes
-        REMOTE_REASON (if the remote Tor closed the connection). Both
-        an all-uppercase and all-lowercase version of each keyword is
-        supplied (by the library; Tor provides all-uppercase
-        only). Others may include BUILD_FLAGS, PURPOSE, HS_STATE,
-        REND_QUERY, TIME_CREATED (or anything else).
+        :param kw:
+            a dict of all the flags for the stream failure; see
+            control-spec but these will include REASON and sometimes
+            REMOTE_REASON (if the remote Tor closed the
+            connection). Both an all-uppercase and all-lowercase
+            version of each keyword is supplied (by the library; Tor
+            provides all-uppercase only). Others may include
+            BUILD_FLAGS, PURPOSE, HS_STATE, REND_QUERY, TIME_CREATED
+            (or anything else).
         """
 
 
@@ -150,7 +158,7 @@ class ICircuitListener(Interface):
         """
         A circuit has been closed cleanly (won't be in controller's list any more).
 
-        :param **kw:
+        :param kw:
             A dict of additional args. REASON is alsways included, and
             often REMOTE_REASON also. See the control-spec
             documentation.  As of this writing, REASON is one of the
@@ -173,7 +181,7 @@ class ICircuitListener(Interface):
 
         The circuit won't be in the TorState's list anymore.
 
-        :param **kw:
+        :param kw:
             A dict of additional args. REASON is alsways included, and
             often REMOTE_REASON also. See the control-spec
             documentation.  As of this writing, REASON is one of the
