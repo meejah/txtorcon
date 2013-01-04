@@ -56,6 +56,7 @@ Releases:
    issue #26 fix from lukaslueg;
    pep8 and whitespace targets plus massive cleanup (now pep8 clean, from lukaslueg);
    issue #30 fix reported by webmesiter making ipaddr actually-optional;
+   example using synchronous web server (built-in SimpleHTTPServer) with txtorcon (from lukaslueg);
 
 - *November 21, 2012*: `txtorcon-0.7.tar.gz <https://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz>`_ (`txtorcon-0.7.tar.gz.sig <https://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz.sig>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.7>`_)
   *This release adds*:
