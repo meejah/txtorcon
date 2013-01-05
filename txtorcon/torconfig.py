@@ -1,18 +1,5 @@
 from __future__ import with_statement
 
-from twisted.python import log
-from twisted.internet import defer, error, protocol
-from twisted.internet.interfaces import IStreamServerEndpoint, IReactorTime
-from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
-from zope.interface import implements
-
-## outside this module, you can do "from txtorcon import Stream" etc.
-from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory
-from txtorcon.util import delete_file_or_tree, find_keywords
-from txtorcon.log import txtorlog
-
-from txtorcon.interface import ITorControlProtocol
-
 import os
 import sys
 import string
@@ -24,6 +11,25 @@ from StringIO import StringIO
 import shlex
 if sys.platform in ('linux2', 'darwin'):
     import pwd
+
+from twisted.python import log
+from twisted.internet import defer, error, protocol
+from twisted.internet.interfaces import IStreamServerEndpoint, IReactorTime
+from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
+from zope.interface import implements
+
+from txtorcon import find_tor_binary, check_tor_binary
+from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory
+from txtorcon.util import delete_file_or_tree, find_keywords
+from txtorcon.log import txtorlog
+from txtorcon.interface import ITorControlProtocol
+
+
+class TorNotFound(RuntimeError):
+    """
+    Raised by launch_tor() in case the tor binary was unspecified and could
+    not be found by consulting the shell.
+    """
 
 
 class TCPHiddenServiceEndpoint(object):
@@ -398,7 +404,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
 
 def launch_tor(config, reactor,
-               tor_binary='/usr/sbin/tor',
+               tor_binary=None,
                progress_updates=None,
                connection_creator=None,
                timeout=None):
@@ -418,7 +424,8 @@ def launch_tor(config, reactor,
     :param reactor: a Twisted IReactorCore implementation (usually
         twisted.internet.reactor)
 
-    :param tor_binary: path to the Tor binary to run.
+    :param tor_binary: path to the Tor binary to run. Tries to find the tor
+        binary if unset.
 
     :param progress_updates: a callback which gets progress updates; gets as
          args: percent, tag, summary (FIXME make an interface for this).
@@ -456,6 +463,12 @@ def launch_tor(config, reactor,
     ## the other option here is to simply write a torrc version of our
     ## config and get Tor to load that...which might be the best
     ## option anyway.
+
+    if tor_binary is None:
+        tor_binary = find_tor_binary()
+    if not check_tor_binary(tor_binary):
+        # We fail right here instead of waiting for the reactor to start
+        raise TorNotFound('Tor binary could not be found')
 
     if config.needs_save():
         log.msg("Config was unsaved when launch_tor() called; calling save().")
