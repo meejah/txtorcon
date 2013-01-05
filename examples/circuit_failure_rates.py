@@ -4,34 +4,29 @@
 ## This example uses ICircuitListener to monitor how many circuits have
 ## failed since the monitor started up. If this figure is more than 50%,
 ## a warning-level message is logged.
-## 
+##
 ## Like the :ref:`stream_circuit_logger.py` example, we also log all new
 ## circuits.
-## 
+##
 
-import os
+import functools
 import sys
-import stat
-import random
 import time
-
-from twisted.internet import reactor, task, endpoints
+from twisted.internet import reactor, task
 from twisted.python import usage
-from zope.interface import implements
-
 import txtorcon
+
 
 class Options(usage.Options):
     """
     command-line options we understand
     """
-    
+
     optParameters = [
         ['failed', 'f', 0, 'Starting value for number of failed circuits.', int],
         ['built', 'b', 0, 'Starting value for the total number of built cicuits.', int],
         ['connect', 'c', None, 'Tor control socket to connect to in host:port format, like "localhost:9051" (the default).'],
-        ['delay', 'n', 60, 'Seconds to wait between status updates.', int],
-        ]
+        ['delay', 'n', 60, 'Seconds to wait between status updates.', int]]
 
     def __init__(self):
         usage.Options.__init__(self)
@@ -41,7 +36,7 @@ class Options(usage.Options):
     def opt_guard(self, value):
         name, built, failed = value.split(',')
         self['guards'].append((name, int(built), int(failed)))
-        
+
 
 class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
@@ -56,14 +51,18 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
         print time.ctime(reactor.seconds()) + ': ' + self.information()
 
     def update_percent(self):
-        self.percent = 100.0 * (float(self.failed_circuits) / float(self.built_circuits + self.failed_circuits))
+        self.percent = 100.0 * (float(self.failed_circuits) /
+                                float(self.built_circuits +
+                                      self.failed_circuits))
         if self.percent > 50.0:
             print 'WARNING: %02.1f percent of all routes have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.built_circuits)
 
     def information(self):
         rtn = '%02.1f%% of all circuits have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.built_circuits)
         for g in self.per_guard_built.keys():
-            per_guard_percent = 100.0*(self.per_guard_failed[g]/(self.per_guard_built[g]+self.per_guard_failed[g]))
+            per_guard_percent = 100.0 * (self.per_guard_failed[g] /
+                                         (self.per_guard_built[g] +
+                                          self.per_guard_failed[g]))
             current = ' '
             for guard in self.state.entry_guards.values():
                 if g == guard.name or g == guard.id_hex:
@@ -81,14 +80,14 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
         if circuit.purpose == 'GENERAL':
             if len(circuit.path) > 0 and circuit.path[0] not in self.state.entry_guards.values():
-                print "WEIRD: first circuit hop not in entry guards:",circuit,circuit.path,circuit.purpose
+                print "WEIRD: first circuit hop not in entry guards:", circuit, circuit.path, circuit.purpose
                 return
 
             self.built_circuits += 1
             self.update_percent()
 
             if len(circuit.path) != 3 and len(circuit.path) != 4:
-                print "WEIRD: circuit has odd pathlength:",circuit,circuit.path
+                print "WEIRD: circuit has odd pathlength:", circuit, circuit.path
             try:
                 self.per_guard_built[circuit.path[0].unique_name] += 1.0
             except KeyError:
@@ -110,15 +109,15 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
                 ## note that single-hop circuits are built for various
                 ## internal reasons (and it seems they somtimes use
                 ## GENERAL anyway)
-                print "WEIRD: first circuit hop not in entry guards:",circuit,circuit.path
+                print "WEIRD: first circuit hop not in entry guards:", circuit, circuit.path
                 return
 
             self.failed_circuits += 1
-            print "failed",circuit.id
+            print "failed", circuit.id
             if not circuit.id in self.failed_circuit_ids:
                 self.failed_circuit_ids.append(circuit.id)
             else:
-                print "WARNING: duplicate message for",circuit
+                print "WARNING: duplicate message for", circuit
 
             if len(circuit.path) > 0:
                 try:
@@ -126,32 +125,34 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
                 except KeyError:
                     self.per_guard_failed[circuit.path[0].unique_name] = 1.0
                     self.per_guard_built[circuit.path[0].unique_name] = 0.0
-                
+
             self.update_percent()
 
-listener = CircuitFailureWatcher()
-def setup(state):
-    print 'Connected to a Tor version %s' % state.protocol.version
-    global options, listener
 
+def setup(options, listener, state):
+    print 'Connected to a Tor version %s at %s' % (state.protocol.version,
+                                                   state.protocol.transport.addr)
     listener.failed_circuits = int(options['failed'])
     listener.built_circuits = int(options['built'])
-    listener.state = state              # FIXME use ctor (ditto for options, probably)
+    listener.state = state  # FIXME use ctor (ditto for options, probably)
     for name, built, failed in options['guards']:
         listener.per_guard_built[name] = float(built)
         listener.per_guard_failed[name] = float(failed)
-    
-    for circ in filter(lambda x: x.purpose == 'GENERAL', state.circuits.values()):
+
+    for circ in filter(lambda x: x.purpose == 'GENERAL',
+                       state.circuits.values()):
         if circ.state == 'BUILT':
             listener.circuit_built(circ)
     state.add_circuit_listener(listener)
     # print an update every minute
     task.LoopingCall(listener.print_update).start(options['delay'])
 
+
 def setup_failed(arg):
-    print "SETUP FAILED",arg
+    print "SETUP FAILED", arg
     print arg
     reactor.stop()
+
 
 options = Options()
 try:
@@ -171,35 +172,30 @@ except usage.UsageError:
     print options.getUsage()
     sys.exit(-1)
 
-def on_shutdown(*args):
-    global listener
+
+def on_shutdown(listener, *args):
     print '\nTo carry on where you left off, run:'
-    print '  %s --failed %d --built %d' % (sys.argv[0], listener.failed_circuits, listener.built_circuits),
+    print '  %s --failed %d --built %d' % (sys.argv[0],
+                                           listener.failed_circuits,
+                                           listener.built_circuits),
     for name in listener.per_guard_built.keys():
-        print '--guard %s,%d,%d' % (name, listener.per_guard_built[name], listener.per_guard_failed[name]),
+        print '--guard %s,%d,%d' % (name, listener.per_guard_built[name],
+                                    listener.per_guard_failed[name]),
     print
-reactor.addSystemEventTrigger('before', 'shutdown', on_shutdown)
+
+listener = CircuitFailureWatcher()
+
+reactor.addSystemEventTrigger('before', 'shutdown',
+                              functools.partial(on_shutdown, listener))
 
 if options['connect']:
     host, port = options['connect'].split(':')
     port = int(port)
-    print "Connecting to %s:%d..." % (host, port)
-    endpoint = endpoints.clientFromString(reactor, 'tcp:host=%s:port=%d' % (host, port))
-
+    print 'Connecting to %s:%i...' % (host, port)
+    d = txtorcon.build_local_tor_connection(reactor, host=host, port=port)
 else:
-    endpoint = None
-    try:
-        ## FIXME more Pythonic to not check, and accept more exceptions?
-        if os.stat('/var/run/tor/control').st_mode & (stat.S_IRGRP | stat.S_IRUSR | stat.S_IROTH):
-            print "using control socket"
-            endpoint = endpoints.UNIXClientEndpoint(reactor, "/var/run/tor/control")
-    except OSError:
-        pass
+    d = txtorcon.build_local_tor_connection(reactor)
+d.addCallback(functools.partial(setup, options, listener))
+d.addErrback(setup_failed)
 
-    if endpoint is None:
-        endpoint = endpoints.TCP4ClientEndpoint(reactor, "localhost", 9051)
-
-print "Connecting via", endpoint
-d = txtorcon.build_tor_connection(endpoint, build_state=True)
-d.addCallback(setup).addErrback(setup_failed)
 reactor.run()
