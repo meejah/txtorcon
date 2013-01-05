@@ -33,7 +33,8 @@ def _wait_for_proto(proto):
     return proto.post_bootstrap
 
 
-def build_tor_connection(connection, build_state=True, password=None):
+def build_tor_connection(connection, build_state=True, wait_for_proto=True,
+                         password=None):
     """
     This is used to build a valid TorState (which has .protocol for
     the TorControlProtocol). For example::
@@ -85,11 +86,13 @@ def build_tor_connection(connection, build_state=True, password=None):
                         'port)-tuple or an object implementing IStreamClient'
                         'Endpoint for argument "connection", got %s' %
                         (connection, ))
+
     d = endpoint.connect(TorProtocolFactory(password=password))
     if build_state:
-        d.addCallback(_build_state)
-    else:
-        d.addCallback(_wait_for_proto)
+        d.addCallback(build_state if callable(build_state) else _build_state)
+    elif wait_for_proto:
+        d.addCallback(wait_for_proto if callable(wait_for_proto) else
+                      _wait_for_proto)
     return d
 
 
