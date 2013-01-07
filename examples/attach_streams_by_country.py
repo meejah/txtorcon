@@ -24,33 +24,31 @@
 ## step will make "the site" appear to be there.
 ##
 ## The only "solution" for this would be to do the lookup locally, but
-## that defeats the purpose of Tor. 
+## that defeats the purpose of Tor.
 ##
 
-import os
-import sys
-import stat
 import random
 
 from twisted.python import log
 from twisted.internet import reactor, defer
-from twisted.internet.endpoints import UNIXClientEndpoint
-from twisted.internet.endpoints import TCP4ClientEndpoint
 from zope.interface import implements
 
 import txtorcon
 
+
 class MyStreamListener(txtorcon.StreamListenerMixin):
-    
+
     def stream_new(self, stream):
-        print "new stream:",stream.id,stream.target_host
-    
+        print "new stream:", stream.id, stream.target_host
+
     def stream_succeeded(self, stream):
-        print "successful stream:",stream.id,stream.target_host
-    
+        print "successful stream:", stream.id, stream.target_host
+
     def stream_attach(self, stream, circuit):
-        print "stream",stream.id,"attached to circuit",circuit.id, \
-              "with path:",'->'.join(map(lambda x: x.location.countrycode, circuit.path))
+        print "stream", stream.id, " attached to circuit", circuit.id, \
+              "with path:", '->'.join(map(lambda x: x.location.countrycode,
+                                          circuit.path))
+
 
 class MyAttacher(txtorcon.CircuitListenerMixin):
     implements(txtorcon.IStreamAttacher)
@@ -74,17 +72,21 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
             return
         # only output for circuits we're waiting on
         if self.waiting_on(circuit):
-            print "  circuit %d (%s). Path now %s" % (circuit.id, router.id_hex, '->'.join(map(lambda x: x.location.countrycode,circuit.path)))
+            print "  circuit %d (%s). Path now %s" % (circuit.id, router.id_hex,
+                                                      '->'.join(map(lambda x: x.location.countrycode,
+                                                                    circuit.path)))
 
     def circuit_built(self, circuit):
         "ICircuitListener"
         if circuit.purpose != 'GENERAL':
             return
-        
-        print "circuit built",circuit.id,'->'.join(map(lambda r: r.location.countrycode, circuit.path))
+
+        print "circuit built", circuit.id, '->'.join(map(lambda r:
+                                                         r.location.countrycode,
+                                                         circuit.path))
         for (circid, d, stream_cc) in self.waiting_circuits:
             if circid == circuit.id:
-                self.waiting_circuits.remove((circid,d,stream_cc))
+                self.waiting_circuits.remove((circid, d, stream_cc))
                 d.callback(circuit)
 
     def circuit_failed(self, circuit, kw):
@@ -99,37 +101,38 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
                 raise Exception("Expected to find circuit.")
 
             self.waiting_circuits.remove((circid, d, stream_cc))
-            print "Trying a new circuit build for",circid
+            print "Trying a new circuit build for", circid
             self.request_circuit_build(stream_cc, d)
-    
+
     def attach_stream(self, stream, circuits):
         """
         IStreamAttacher API
         """
-        if not self.state.addrmap.addr.has_key(stream.target_host):
-            print "No AddrMap entry for",stream.target_host,"so I don't know where it exits; get Tor to attach stream."
+        if not stream.target_host in self.state.addrmap.addr:
+            print "No AddrMap entry for", stream.target_host, \
+                  "so I don't know where it exits; get Tor to attach stream."
             return None
-        
+
         ip = str(self.state.addrmap.addr[stream.target_host].ip)
         stream_cc = txtorcon.util.NetLocation(ip).countrycode
-        print "Stream to",ip,"exiting in",stream_cc
+        print "Stream to", ip, "exiting in", stream_cc
 
         if stream_cc is None:
             ## returning None tells TorState to ask Tor to select a
             ## circuit instead
             print "   unknown country, Tor will assign stream"
             return None
-        
+
         for circ in circuits.values():
             if circ.state != 'BUILT' or circ.purpose != 'GENERAL':
                 continue
-            
+
             circuit_cc = circ.path[-1].location.countrycode
             if circuit_cc is None:
-                print "warning: don't know where circuit",circuit.id,"exits"
-                
+                print "warning: don't know where circuit", circ.id, "exits"
+
             if circuit_cc == stream_cc:
-                print "  found suitable circuit:",circ
+                print "  found suitable circuit:", circ
                 return circ
 
         ## if we get here, we haven't found a circuit that exits in
@@ -160,13 +163,16 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
                 random.choice(self.state.routers.values()),
                 random.choice(last)]
 
-        print "  requesting a circuit:",'->'.join(map(lambda r: r.location.countrycode, path))
-        
+        print "  requesting a circuit:", '->'.join(map(lambda r:
+                                                       r.location.countrycode,
+                                                       path))
+
         class AppendWaiting:
             def __init__(self, attacher, d, stream_cc):
                 self.attacher = attacher
                 self.d = d
                 self.stream_cc = stream_cc
+
             def __call__(self, circ):
                 """
                 return from build_circuit is a Circuit. However, we
@@ -174,41 +180,38 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
                 attach on it and callback to the Deferred we issue
                 here.
                 """
-                print "  my circuit is in progress",circ.id
-                self.attacher.waiting_circuits.append((circ.id, self.d, self.stream_cc))
-                
+                print "  my circuit is in progress", circ.id
+                self.attacher.waiting_circuits.append((circ.id, self.d,
+                                                       self.stream_cc))
+
         return self.state.build_circuit(path).addCallback(AppendWaiting(self, deferred_to_callback, stream_cc)).addErrback(log.err)
 
+
 def do_setup(state):
-    print "Connected to a Tor version",state.protocol.version
+    print "Connected to a Tor version", state.protocol.version
 
     attacher = MyAttacher(state)
     state.set_attacher(attacher, reactor)
     state.add_circuit_listener(attacher)
-    
+
     state.add_stream_listener(MyStreamListener())
 
     print "Existing state when we connected:"
     print "Streams:"
     for s in state.streams.values():
-        print ' ',s
+        print ' ', s
 
     print
     print "General-purpose circuits:"
     for c in filter(lambda x: x.purpose == 'GENERAL', state.circuits.values()):
-        print ' ',c.id,'->'.join(map(lambda x: x.location.countrycode, c.path))
+        print ' ', c.id, '->'.join(map(lambda x: x.location.countrycode,
+                                       c.path))
+
 
 def setup_failed(arg):
-    print "SETUP FAILED",arg
+    print "SETUP FAILED", arg
     reactor.stop()
 
-if os.stat('/var/run/tor/control').st_mode & (stat.S_IRGRP | stat.S_IRUSR | stat.S_IROTH):
-    print "using control socket"
-    point = UNIXClientEndpoint(reactor, "/var/run/tor/control")
-
-else:
-    point = TCP4ClientEndpoint(reactor, "localhost", 9051)
-    
-d = txtorcon.build_tor_connection(point)
+d = txtorcon.build_local_tor_connection(reactor)
 d.addCallback(do_setup).addErrback(setup_failed)
 reactor.run()
