@@ -18,9 +18,8 @@ from twisted.internet.interfaces import IStreamServerEndpoint, IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from zope.interface import implements
 
-from txtorcon import find_tor_binary, check_tor_binary
 from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory
-from txtorcon.util import delete_file_or_tree, find_keywords
+from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
 from txtorcon.log import txtorlog
 from txtorcon.interface import ITorControlProtocol
 
@@ -466,7 +465,7 @@ def launch_tor(config, reactor,
 
     if tor_binary is None:
         tor_binary = find_tor_binary()
-    if not check_tor_binary(tor_binary):
+    if tor_binary is None:
         # We fail right here instead of waiting for the reactor to start
         raise TorNotFound('Tor binary could not be found')
 
