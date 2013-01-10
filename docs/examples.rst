@@ -80,6 +80,21 @@ see what's going on.
 
 .. _attach_streams_by_country.py:
 
+:file:`circuit_for_next_stream.py`
+------------------------------------
+
+:download:`Download the example
+<../examples/circuit_for_next_stream.py>`.  This creates a custom
+stream specified via router names on the command-line and then
+attaches the next new stream the controller sees to this circuit and
+exits. A decent custom-circuit example, and a little simpler than the
+following example (attach_streams_by_country).
+
+.. literalinclude:: ../examples/circuit_for_next_stream.py
+
+
+.. _attach_streams_by_country.py:
+
 :file:`attach_streams_by_country.py`
 ------------------------------------
 
