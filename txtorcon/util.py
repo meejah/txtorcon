@@ -3,6 +3,7 @@
 ## wrapper for GeoIP since the API for city vs. country is different.
 ##
 
+import glob
 import os
 import hmac
 import hashlib
@@ -53,6 +54,35 @@ try:
     import ipaddr
 except ImportError:
     ipaddr = None
+
+
+def is_executable(path):
+    """Checks if the given path points to an existing, executable file"""
+    return os.path.isfile(path) and os.access(path, os.X_OK)
+
+
+def find_tor_binary(globs=('/usr/sbin/', '/usr/bin/',
+                           '/Applications/TorBrowser_*.app/Contents/MacOS/')):
+    """Tries to find the tor executable using the shell first or in in the paths
+       whose glob-patterns is in the given 'globs'-tuple.
+    """
+    # Try to find the tor executable using the shell
+    try:
+        proc = subprocess.Popen(('type -p tor', ), stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, shell=True)
+    except OSError:
+        pass
+    else:
+        stdout, _ = proc.communicate()
+        if proc.poll() == 0 and stdout != '':
+            return stdout.strip()
+    # the shell may not provide type and tor is usually not on PATH when using
+    # the browser-bundle. Look in specific places
+    for pattern in globs:
+        for path in glob.glob(pattern):
+            torbin = os.path.join(path, 'tor')
+            if is_executable(torbin):
+                return torbin
 
 
 def maybe_ip_addr(addr):
