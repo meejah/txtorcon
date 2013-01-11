@@ -11,27 +11,37 @@ import functools
 
 from twisted.internet import reactor
 from twisted.internet.endpoints import TCP4ServerEndpoint
-from zope.interface import implements
+from twisted.web import server, resource
 
 import txtorcon
 
-    
-    
-def setup_complete(proto):
+
+class Simple(resource.Resource):
+    isLeaf = True
+
+    def render_GET(self, request):
+        return "<html>Hello, world! I'm a hidden service!</html>"
+
+
+def updates(prog, tag, summary):
+    print "%d%%: %s" % (prog, summary)
+
+
+def setup_complete(config, proto):
     print "Protocol completed"
-    
-    global config
+
     onion_address = config.HiddenServices[0].hostname
-    
+
     print "I have a hidden (web) service running at:"
     print "http://%s (port %d)" % (onion_address, hs_public_port)
-    print "The temporary directory for it is at:",config.HiddenServices[0].dir
+    print "The temporary directory for it is at:", config.HiddenServices[0].dir
     print
     print "For example, you should be able to visit it via:"
     print "  torsocks lynx http://%s" % onion_address
 
+
 def setup_failed(arg):
-    print "SETUP FAILED",arg
+    print "SETUP FAILED", arg
     reactor.stop()
 
 hs_port = 9876
@@ -40,31 +50,24 @@ hs_temp = tempfile.mkdtemp(prefix='torhiddenservice')
 
 ## register something to clean up our tempdir
 reactor.addSystemEventTrigger('before', 'shutdown',
-                              functools.partial(txtorcon.util.delete_file_or_tree, hs_temp))
+                              functools.partial(txtorcon.util.delete_file_or_tree,
+                                                hs_temp))
 
-## configure the hidden service we want. 
+## configure the hidden service we want.
 ## obviously, we'd want a more-persistent place to keep the hidden
 ## service directory for a "real" setup. If the directory is empty at
 ## startup as here, Tor creates new keys etcetera (which IS the .onion
 ## address). That is, every time you run this script you get a new
 ## hidden service URI, which is probably not what you want.
-
-config = txtorcon.TorConfig()
-config.HiddenServices = [txtorcon.HiddenService(config, hs_temp, [str(hs_public_port) + " 127.0.0.1:"+str(hs_port)])]
-config.save()
-
-## the launch_tor method adds other needed config directives to give
+## The launch_tor method adds other needed config directives to give
 ## us a minimal config.
+config = txtorcon.TorConfig()
+config.HiddenServices = [txtorcon.HiddenService(config, hs_temp, [str(hs_public_port) + " 127.0.0.1:" + str(hs_port)])]
+config.save()
 
 ## next we set up our service to listen on hs_port which is forwarded
 ## (via the HiddenService options) from the hidden service address on
 ## port hs_public_port
-
-from twisted.web import server, resource
-class Simple(resource.Resource):
-    isLeaf = True
-    def render_GET(self, request):
-        return "<html>Hello, world! I'm a hidden service!</html>"
 site = server.Site(Simple())
 hs_endpoint = TCP4ServerEndpoint(reactor, hs_port)
 hs_endpoint.listen(site)
@@ -76,10 +79,7 @@ hs_endpoint.listen(site)
 ## up the slave Tor process, when we close the connection to it tor
 ## will exit.
 
-def updates(prog, tag, summary):
-    print "%d%%: %s" % (prog, summary)
-
 d = txtorcon.launch_tor(config, reactor, progress_updates=updates)
-d.addCallback(setup_complete)
+d.addCallback(functools.partial(setup_complete, config))
 d.addErrback(setup_failed)
 reactor.run()

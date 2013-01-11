@@ -1,9 +1,16 @@
+import datetime
+import os
+import stat
+import types
+import warnings
+
 from twisted.python import log
 from twisted.internet import defer
-from twisted.internet.interfaces import IReactorCore
+from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
+from twisted.internet.interfaces import IReactorCore, IStreamClientEndpoint
 from zope.interface import implements
 
-## outside this module, you can do "from txtorcon import Stream" etc.
+from txtorcon import TorProtocolFactory
 from txtorcon.stream import Stream
 from txtorcon.circuit import Circuit
 from txtorcon.router import Router, hashFromHexId
@@ -16,10 +23,6 @@ from txtorcon.interface import ITorControlProtocol, IRouterContainer, ICircuitLi
 from txtorcon.interface import ICircuitContainer, IStreamListener, IStreamAttacher
 from spaghetti import FSM, State, Transition
 
-import datetime
-import warnings
-import types
-
 
 def _build_state(proto):
     state = TorState(proto)
@@ -30,7 +33,8 @@ def _wait_for_proto(proto):
     return proto.post_bootstrap
 
 
-def build_tor_connection(endpoint, build_state=True, password=None):
+def build_tor_connection(connection, build_state=True, wait_for_proto=True,
+                         password=None):
     """
     This is used to build a valid TorState (which has .protocol for
     the TorControlProtocol). For example::
@@ -60,14 +64,44 @@ def build_tor_connection(endpoint, build_state=True, password=None):
         (i.e. TorControlProtocol.post_bootstrap or
         TorState.post_bootstap has fired, as needed)
     """
+    if IStreamClientEndpoint.providedBy(connection):
+        endpoint = connection
+    elif isinstance(connection, tuple):
+        if len(connection) == 2:
+            reactor, socket = connection
+            if (os.path.exists(socket) and
+                os.stat(socket).st_mode & (stat.S_IRGP | stat.S_IRUSR |
+                                           stat.S_IROTH)):
+                endpoint = UNIXClientEndpoint(reactor, socket)
+            else:
+                raise ValueError('Can\'t use "%s" as a socket' % (socket, ))
+        elif len(connection) == 3:
+            endpoint = TCP4ClientEndpoint(*connection)
+        else:
+            raise TypeError('Expected either a (reactor, socket)- or a '
+                            '(reactor, host, port)-tuple for argument '
+                            '"connection", got %s' % (connection, ))
+    else:
+        raise TypeError('Expected a (reactor, socket)- or a (reactor, host, '
+                        'port)-tuple or an object implementing IStreamClient'
+                        'Endpoint for argument "connection", got %s' %
+                        (connection, ))
 
-    from txtorcon import TorProtocolFactory
     d = endpoint.connect(TorProtocolFactory(password=password))
     if build_state:
-        d.addCallback(_build_state)
-    else:
-        d.addCallback(_wait_for_proto)
+        d.addCallback(build_state if callable(build_state) else _build_state)
+    elif wait_for_proto:
+        d.addCallback(wait_for_proto if callable(wait_for_proto) else
+                      _wait_for_proto)
     return d
+
+
+def build_local_tor_connection(reactor, host='127.0.0.1', port=9051,
+                               socket='/var/run/tor/control', *args, **kwargs):
+    try:
+        return build_tor_connection((reactor, socket), *args, **kwargs)
+    except:
+        return build_tor_connection((reactor, host, port), *args, **kwargs)
 
 
 class TorState(object):
