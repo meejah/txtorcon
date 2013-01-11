@@ -1,4 +1,3 @@
-
 ## for now, this needs to be changed in setup.py also until I find a
 ## better solution
 __version__ = '0.7'
@@ -7,6 +6,7 @@ __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/txtorcon'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2012'
+
 
 from txtorcon.router import Router
 from txtorcon.circuit import Circuit
