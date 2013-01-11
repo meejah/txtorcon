@@ -23,15 +23,6 @@ pep8:
 	find txtorcon/*.py txtorcon/test/*.py examples/*.py | xargs pep8 --ignore=E501
 
 pep8count:
-<<<<<<< HEAD
-	find txtorcon/*.py txtorcon/test/*.py examples/* | xargs pep8 --ignore=E501 | wc -l
-
-pyflakes:
-	pyflakes txtorcon examples
-
-pyflakescount:
-	pyflakes txtorcon examples | wc -l
-=======
 	find txtorcon/*.py txtorcon/test/*.py examples/*.py | xargs pep8 --ignore=E501 | wc -l
 
 pyflakes:
@@ -39,7 +30,6 @@ pyflakes:
 
 pyflakescount:
 	pyflakes txtorcon/ examples/ | wc -l
->>>>>>> 4ce1f77154085e83979d055b5a58f4fe64cc603a
 
 clean:
 	-rm -rf _trial_temp
