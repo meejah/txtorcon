@@ -182,9 +182,9 @@ or::
     git clone git://github.com/meejah/txtorcon.git
 
 You may contact me via ``meejah at meejah dot ca`` with GPG key
-[128069A7]\ http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7
+`128069A7 <http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>`_
 or see ``meejah.asc``. It is often possible to contact me as ``meejah``
-in #tor-dev on [OFTC]\ http://www.oftc.net/oftc/ but be patient for
+in #tor-dev on `OFTC <http://www.oftc.net/oftc/>`_ but be patient for
 replies (I do look at scrollback, so mention my nick).
 
 More conventionally, you may get the code at GitHub and documentation
@@ -193,7 +193,7 @@ via ReadTheDocs:
 -  https://github.com/meejah/txtorcon
 -  https://txtorcon.readthedocs.org
 
-Please do use the GitHub issue-tracker to report bugs. Patches,
-pull-requests, comments and criticisms are all welcomed and appreciated.
-See TODO for notes on deficiencies, planned features, lunatic raving,
-etc.
+Please do **use the GitHub issue-tracker** to report bugs. Patches,
+pull-requests, comments and criticisms are all welcomed and
+appreciated.  See TODO for notes on deficiencies, planned features,
+lunatic raving, etc.
