@@ -54,7 +54,7 @@ txtorcon runs all tests cleanly on:
 -  Reports from other OSes appreciated.
 
 If instead you want a synchronous Python controller library, check out
-Stem at https://stem.readthedocs.org/en/latest/
+Stem at https://stem.torproject.org/
 
 quick implementation overview
 -----------------------------
