@@ -48,7 +48,9 @@ txtorcon runs all tests cleanly on:
 
 -  Debian stable (squeeze)
 -  Debian testing (wheezy)
--  naif reports OS X 10.4 works
+-  OS X 10.4 (naif)
+-  OS X 10.8 (lukas lueg)
+-  Fedora 18 (lukas lueg)
 -  Reports from other OSes appreciated.
 
 If instead you want a synchronous Python controller library, check out
