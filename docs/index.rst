@@ -51,64 +51,13 @@ Known Users:
  - `APAF <https://github.com/globaleaks/APAF>`_ anonymous Python application framework
  - `OONI <https://ooni.torproject.org/>`_ the Open Observatory of Network Interference
 
-Releases:
----------
-- **unreleased**: git master will become v0.8; *This release adds*:
-   slight **API change** ICircuitListener.circuit_failed now includes any keywords in the failed event, instead of parsing just the "reason" keyword;
-   launch_tor() can take a timeout (starting with a patch from hellais);
-   cleanup from aagbsn;
-   more test coverage;
-   run tests cleanly without graphviz (from lukaslueg);
-   issue #26 fix from lukaslueg;
-   pep8 and whitespace targets plus massive cleanup (now pep8 clean, from lukaslueg);
-   issue #30 fix reported by webmesiter making ipaddr actually-optional;
-   example using synchronous web server (built-in SimpleHTTPServer) with txtorcon (from lukaslueg);
+Get the Code:
+-------------
 
-- *November 21, 2012*: `txtorcon-0.7.tar.gz <https://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz>`_ (`txtorcon-0.7.tar.gz.sig <https://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz.sig>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.7>`_)
-  *This release adds*:
-  `issue #20 <https://github.com/meejah/txtorcon/issues/20>`_ config object now hooked up correctly after launch_tor();
-  `patch <https://github.com/meejah/txtorcon/pull/22>`_ from hellais for properly handling data_dir given to TCPHiddenServiceEndpoint;
-  `.tac example <https://github.com/meejah/txtorcon/pull/19>`_ from mmaker;
-  allow TorConfig().hiddenservices.append(hs) to work properly with no attached protocol
+.. toctree::
+   :maxdepth: 2
 
-- *October 10, 2012*: `txtorcon-0.6.tar.gz <https://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz>`_ (`txtorcon-0.6.tar.gz.sig <https://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz.sig>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.6>`_)
-  *This release adds*:
-  debian packaging (mmaker);
-  psutil fully gone;
-  *changed API* for launch_tor() to use TorConfig instead of args;
-  TorConfig.save() works properly with no connected Tor;
-  fix incorrect handling of 650 immediately after connect;
-  `pep8 compliance <http://www.python.org/dev/peps/pep-0008/>`_;
-  use assertEqual in tests;
-  messages with embdedded keywords work properly;
-  fix bug with setup.py + pip;
-  `issue #15 <https://github.com/meejah/txtorcon/issues/15>`_ reported along with patch by `Isis Lovecruft <https://github.com/isislovecruft>`_;
-  consolidate requirements (from `aagbsn <https://github.com/aagbsn>`_);
-  increased test coverage and various minor fixes;
-  https URIs for ReadTheDocs;
-
-- June 20, 2012: `txtorcon-0.5.tar.gz <txtorcon-0.5.tar.gz>`_ (`txtorcon-0.5.tar.gz.sig <txtorcon-0.5.tar.gz.sig>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.5>`_)
-  *This release adds*: remove psutil as a dependency, including from `util.process_from_address`
-
-- June 6, 2012: `txtorcon-0.4.tar.gz <txtorcon-0.4.tar.gz>`_ (`txtorcon-0.4.tar.gz.sig <txtorcon-0.4.tar.gz.sig>`_)
-  *This release adds*: remove built documentation from distribution; fix PyPI problems ("pip install txtorcon" now works)
-
-- 0.3 was broken when released (docs couldn't build).
-
-- June 1, 2012: `txtorcon-0.2.tar.gz <txtorcon-0.2.tar.gz>`_ (`txtorcon-0.2.tar.gz.sig <txtorcon-0.2.tar.gz.sig>`_)
-  *This release adds*:
-  incremental parsing;
-  faster TorState startup;
-  SAFECOOKIE support;
-  several bug fixes;
-  options to :ref:`circuit_failure_rates.py` example to make it actually-useful;
-  include built documentation + sources in tarball;
-  include tests in tarball;
-  improved logging;
-  patches from `mmaker <https://github.com/mmaker>`_ and `kneufeld <https://github.com/kneufeld>`_;
-  ...
-
-- march, 2012: `txtorcon-0.1.tar.gz <txtorcon-0.1.tar.gz>`_ (`txtorcon-0.1.tar.gz.sig <txtorcon-0.1.tar.gz.sig>`_)
+   releases
 
 Documentation
 -------------
