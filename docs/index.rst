@@ -45,6 +45,12 @@ Code available at https://github.com/meejah/txtorcon
 
 This documentation was generated |today|.
 
+Known Users:
+------------
+
+ - `APAF <https://github.com/globaleaks/APAF>`_ anonymous Python application framework
+ - `OONI <https://ooni.torproject.org/>`_ the Open Observatory of Network Interference
+
 Releases:
 ---------
 - **unreleased**: git master will become v0.8; *This release adds*:
