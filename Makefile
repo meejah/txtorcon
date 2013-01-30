@@ -52,5 +52,12 @@ dist/txtorcon-0.7.tar.gz.sig: dist/txtorcon-0.7.tar.gz
 release: dist/txtorcon-0.7.tar.gz.sig setup.py
 	python setup.py sdist upload
 
+virtualenv:
+	mkdir -p tmp
+	cd tmp
+	virtualenv --never-download --extra-search-dir=/usr/lib/python2.7/dist-packages/ txtorcon_env
+	@echo "created tmp/txtorcon_env"
+	@echo "see INSTALL for more information"
+
 html: docs/README.rst
 	cd docs && make html

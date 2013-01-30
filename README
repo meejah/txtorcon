@@ -119,6 +119,10 @@ Ubuntu system, this should work::
     apt-get install python-setuptools python-twisted python-ipaddr python-geoip graphviz
     apt-get install python-sphinx python-repoze.sphinx.autointerface # for documentation
 
+Using pip this would be:
+
+   pip install Twisted ipaddr pygeoip
+
 documentation
 -------------
 
