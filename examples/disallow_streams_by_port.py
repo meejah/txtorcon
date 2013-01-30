@@ -35,19 +35,18 @@ class PortFilterAttacher:
         IStreamAttacher API
         """
         if stream.target_port in self.disallow_ports:
-            print "Disallowing", stream
+            print "Disallowing", stream, "to port", stream.target_port
             self.state.close_stream(stream).addCallback(stream_closed).addErrback(log.err)
-            return self.state.DO_NOT_ATTACH
-        else:
-            # Ask Tor to assign stream to a circuit by itself
-            return None
+            return txtorcon.TorState.DO_NOT_ATTACH
+
+        # Ask Tor to assign stream to a circuit by itself
+        return None
 
 
 def do_setup(state):
     print "Connected to a Tor version", state.protocol.version
 
-    attacher = PortFilterAttacher(state)
-    state.set_attacher(attacher, reactor)
+    state.set_attacher(PortFilterAttacher(), reactor)
 
     print "Existing streams:"
     for s in state.streams.values():
