@@ -967,6 +967,10 @@ s Fast Guard Running Stable Valid
         ## guard
         self.assertEqual(len(self.flushWarnings()), 1)
 
+    def test_build_circuit_no_routers(self):
+        self.state.build_circuit()
+        self.assertEqual(self.transport.value(), 'EXTENDCIRCUIT 0\r\n')
+
     def circuit_callback(self, circ):
         self.assertTrue(isinstance(circ, Circuit))
         self.assertEqual(circ.id, 1234)

@@ -437,7 +437,7 @@ class TorState(object):
         circ.update([str(circ_id), 'EXTENDED'])
         return circ
 
-    def build_circuit(self, routers):
+    def build_circuit(self, routers=None):
         """
         Builds a circuit consisting of exactly the routers specified,
         in order.  This issues an EXTENDCIRCUIT call to Tor with all
@@ -445,7 +445,8 @@ class TorState(object):
 
         :param routers: a list of Router instances which is the path
             desired. A warming is issued if the first one isn't in
-            self.entry_guards
+            self.entry_guards To allow Tor to choose the routers
+            itself, pass None (the default) for routers.
 
         :return:
             A Deferred that will callback with a Circuit instance
@@ -453,9 +454,15 @@ class TorState(object):
             else).
         """
 
-        if routers[0] not in self.entry_guards.values():
-            warnings.warn("Building a circuit not starting with a guard: %s" % (str(routers),), RuntimeWarning)
-        d = self.protocol.queue_command("EXTENDCIRCUIT 0 " + ','.join(map(lambda x: x.id_hex[1:], routers)))
+        if routers is None or routers == []:
+            cmd = "EXTENDCIRCUIT 0"
+
+        else:
+            if routers[0] not in self.entry_guards.values():
+                warnings.warn("Building a circuit not starting with a guard: %s" % (str(routers),), RuntimeWarning)
+            cmd = "EXTENDCIRCUIT 0 " + ','.join(map(lambda x: x.id_hex[1:], routers))
+
+        d = self.protocol.queue_command(cmd)
         d.addCallback(self._find_circuit_after_extend)
         return d
 
