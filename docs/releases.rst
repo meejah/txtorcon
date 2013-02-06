@@ -20,6 +20,7 @@ unreleased
  * pep8 and whitespace targets plus massive cleanup (now pep8 clean, from lukaslueg);
  * issue #30 fix reported by webmesiter making ipaddr actually-optional;
  * example using synchronous web server (built-in SimpleHTTPServer) with txtorcon (from lukaslueg);
+ * TorState can now create circuits without an explicit path
 
 v0.7
 ----
