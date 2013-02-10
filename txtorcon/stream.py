@@ -178,10 +178,6 @@ class Stream(object):
             pass  # print 'SENTCONNECT',self,args
 
         elif self.state == 'DETACHED':
-            reason = ''
-            if len(args) >= 4 and args[4][:7] == 'REASON=':
-                reason = args[4][7:]
-
             if self.circuit:
                 self.circuit.streams.remove(self)
                 self.circuit = None
