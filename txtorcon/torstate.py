@@ -707,13 +707,13 @@ class TorState(object):
         txtorlog.msg("stream_attach", stream.id,
                      stream.target_host, " -> ", circuit)
 
-    def stream_detach(self, stream, circuit):
+    def stream_detach(self, stream, **kw):
         """
         IStreamListener
         """
         txtorlog.msg("stream_detach", stream.id)
 
-    def stream_closed(self, stream):
+    def stream_closed(self, stream, **kw):
         """
         IStreamListener: stream has been closed (won't be in
         controller's list anymore)
@@ -722,7 +722,7 @@ class TorState(object):
         txtorlog.msg("stream_closed", stream.id)
         del self.streams[stream.id]
 
-    def stream_failed(self, stream, reason, remote_reason):
+    def stream_failed(self, stream, **kw):
         """
         IStreamListener: stream failed for some reason (won't be in
         controller's list anymore)
@@ -758,12 +758,12 @@ class TorState(object):
         txtorlog.msg("circuit_destroy:", circuit.id)
         del self.circuits[circuit.id]
 
-    def circuit_closed(self, circuit):
+    def circuit_closed(self, circuit, **kw):
         "ICircuitListener API"
         txtorlog.msg("circuit_closed", circuit)
         self.circuit_destroy(circuit)
 
-    def circuit_failed(self, circuit, kw):
+    def circuit_failed(self, circuit, **kw):
         "ICircuitListener API"
         txtorlog.msg("circuit_failed", circuit, str(kw))
         self.circuit_destroy(circuit)

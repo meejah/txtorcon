@@ -114,8 +114,17 @@ class Stream(object):
     def unlisten(self, listener):
         self.listeners.remove(listener)
 
+    def _create_flags(self, kw):
+        "this clones the kw dict, adding a lower-case version of every key (duplicated in circuit.py; consider putting in util?)"
+
+        flags = {}
+        for k in kw.keys():
+            flags[k] = kw[k]
+            flags[k.lower()] = flags[k]
+        return flags
+
     def update(self, args):
-        ##print "update",self.id,args
+        ## print "update",self.id,args
 
         if self.id is None:
             self.id = int(args[0])
@@ -154,34 +163,27 @@ class Stream(object):
             if self.circuit:
                 self.circuit.streams.remove(self)
             self.circuit = None
-            [x.stream_closed(self) for x in self.listeners]
+            flags = self._create_flags(kw)
+            [x.stream_closed(self, **flags) for x in self.listeners]
 
         elif self.state == 'FAILED':
-            reason = ''
-            remote_reason = ''
-            if 'REMOTE_REASON' in kw:
-                remote_reason = kw['REMOTE_REASON']
-            if 'REASON' in kw:
-                reason = kw['REASON']
-
             if self.circuit:
                 self.circuit.streams.remove(self)
             self.circuit = None
-            [x.stream_failed(self, reason, remote_reason) for x in self.listeners]
+            # build lower-case version of all flags
+            flags = self._create_flags(kw)
+            [x.stream_failed(self, **flags) for x in self.listeners]
 
         elif self.state == 'SENTCONNECT':
             pass  # print 'SENTCONNECT',self,args
 
         elif self.state == 'DETACHED':
-            reason = ''
-            if len(args) >= 4 and args[4][:7] == 'REASON=':
-                reason = args[4][7:]
-
             if self.circuit:
                 self.circuit.streams.remove(self)
                 self.circuit = None
 
-            [x.stream_detach(self, reason) for x in self.listeners]
+            flags = self._create_flags(kw)
+            [x.stream_detach(self, **flags) for x in self.listeners]
 
         elif self.state == 'NEWRESOLVE':
             pass  # print 'NEWRESOLVE',self,args

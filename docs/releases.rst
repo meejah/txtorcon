@@ -11,7 +11,7 @@ unreleased
 `git master <https://github.com/meejah/txtorcon>`_ *will become v0.8.0*
 
  * (`source tgz <https://github.com/meejah/txtorcon/tarball/master>`_)
- * slight **API change** ICircuitListener.circuit_failed now includes any keywords in the failed event, instead of parsing just the "reason" keyword;
+ * slight **API change** ICircuitListener.circuit_failed, circuit_closed and IStreamListener.stream_failed, stream_closed and stream_detach all now include any keywords in the notification method (some of these lacked flags, or only included some);
  * launch_tor() can take a timeout (starting with a patch from hellais);
  * cleanup from aagbsn;
  * more test coverage;
