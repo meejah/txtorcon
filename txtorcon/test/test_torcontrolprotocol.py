@@ -3,6 +3,7 @@ from __future__ import with_statement
 from twisted.python import log
 from twisted.trial import unittest
 from twisted.test import proto_helpers
+from twisted.internet import defer
 from txtorcon import TorControlProtocol, TorProtocolFactory, TorState
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.util import hmac_sha256
@@ -75,7 +76,7 @@ class AuthenticationTests(unittest.TestCase):
         self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % cookie_data.encode("hex"))
 
     def test_authenticate_password(self):
-        self.protocol.password = 'foo'
+        self.protocol.password_function = lambda: 'foo'
         self.protocol.makeConnection(self.transport)
         self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
         self.transport.clear()
@@ -84,6 +85,25 @@ class AuthenticationTests(unittest.TestCase):
         self.send('250-VERSION Tor="0.2.2.34"')
         self.send('250 OK')
 
+        self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
+
+    def test_authenticate_password_deferred(self):
+        d = defer.Deferred()
+        self.protocol.password_function = lambda: d
+        self.protocol.makeConnection(self.transport)
+        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
+        self.transport.clear()
+        self.send('250-PROTOCOLINFO 1')
+        self.send('250-AUTH METHODS=HASHEDPASSWORD')
+        self.send('250-VERSION Tor="0.2.2.34"')
+        self.send('250 OK')
+
+        ## make sure we haven't tried to authenticate before getting
+        ## the password callback
+        self.assertEqual(self.transport.value(), '')
+        d.callback('foo')
+
+        ## now make sure we DID try to authenticate
         self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
 
     def confirmAuthFailed(self, *args):
@@ -166,7 +186,7 @@ class ProtocolTests(unittest.TestCase):
         self.got_auth_failed = False
         self.protocol._auth_failed = self.auth_failed
 
-        self.protocol.password = 'foo'
+        self.protocol.password_function = lambda: 'foo'
         self.protocol._do_authenticate('''PROTOCOLINFO 1
 AUTH METHODS=HASHEDPASSWORD
 VERSION Tor="0.2.2.35"

@@ -45,13 +45,12 @@ class TorProtocolFactory(object):
     Twisted interaction.
 
     If your running Tor doesn't support COOKIE authentication, then
-    you should supply a password. FIXME: should supply a
-    password-getting method, instead.
+    you should supply a password callback.
     """
 
     implements(IProtocolFactory)
 
-    def __init__(self, password=None):
+    def __init__(self, password_function = lambda: None):
         """
         Builds protocols to talk to a Tor client on the specified
         address. For example::
@@ -60,11 +59,15 @@ class TorProtocolFactory(object):
         reactor.run()
 
         By default, COOKIE authentication is used if
-        available. Otherwise, a password should be supplied. FIXME:
-        user should supply a password getter, not a password (e.g. if
-        they want to prompt)
+        available.
+
+        :param password_function:
+           If supplied, this is a zero-argument method that returns a
+           password (or a Deferred). By default, it returns None. This
+           is only queried if the Tor we connect to doesn't support
+           (or hasn't enabled) COOKIE authentication.
         """
-        self.password = password
+        self.password_function = password_function
 
     def doStart(self):
         ":api:`twisted.internet.interfaces.IProtocolFactory` API"
@@ -74,7 +77,7 @@ class TorProtocolFactory(object):
 
     def buildProtocol(self, addr):
         ":api:`twisted.internet.interfaces.IProtocolFactory` API"
-        proto = TorControlProtocol(self.password)
+        proto = TorControlProtocol(self.password_function)
         proto.factory = self
         return proto
 
@@ -191,15 +194,18 @@ class TorControlProtocol(LineOnlyReceiver):
 
     implements(ITorControlProtocol)
 
-    def __init__(self, password=None):
+    def __init__(self, password_function=None):
         """
-        password is only used if the Tor doesn't have COOKIE
-        authentication turned on. Tor's default is COOKIE.
+        :param password_function:
+            A zero-argument callable which returns a password (or
+            Deferred). It is only called if the Tor doesn't have
+            COOKIE authentication turned on. Tor's default is COOKIE.
         """
 
-        self.password = password
-        """If set, a password to use for authentication to Tor
-        (default is to use COOKIE, however)."""
+        self.password_function = password_function
+        """If set, a callable to query for a password to use for
+        authentication to Tor (default is to use COOKIE, however). May
+        return Deferred."""
 
         self.version = None
         """Version of Tor we've connected to."""
@@ -593,11 +599,15 @@ class TorControlProtocol(LineOnlyReceiver):
             self.authenticate(data).addCallback(self._bootstrap).addErrback(self._auth_failed)
             return
 
-        if self.password:
-            self.authenticate(self.password).addCallback(self._bootstrap).addErrback(self._auth_failed)
+        if self.password_function:
+            passwd = defer.maybeDeferred(self.password_function)
+            passwd.addCallback(self._do_password_authentication).addErrback(self._auth_failed)
             return
 
-        raise RuntimeError("The Tor I connected to doesn't support SAFECOOKIE nor COOKIE authentication and I have no password.")
+        raise RuntimeError("The Tor I connected to doesn't support SAFECOOKIE nor COOKIE authentication and I have no password_function specified.")
+
+    def _do_password_authentication(self, passwd):
+        self.authenticate(passwd).addCallback(self._bootstrap).addErrback(self._auth_failed)
 
     def _set_valid_events(self, events):
         "used as a callback; see _bootstrap"
