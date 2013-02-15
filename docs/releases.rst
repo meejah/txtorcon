@@ -21,6 +21,7 @@ unreleased
  * issue #30 fix reported by webmesiter making ipaddr actually-optional;
  * example using synchronous web server (built-in SimpleHTTPServer) with txtorcon (from lukaslueg);
  * TorState can now create circuits without an explicit path
+ * passwords for non-cookie authenticated sessions use a password callback (that may return a Deferred) instead of a string
 
 v0.7
 ----
