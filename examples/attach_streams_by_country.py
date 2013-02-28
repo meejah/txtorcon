@@ -45,9 +45,8 @@ class MyStreamListener(txtorcon.StreamListenerMixin):
         print "successful stream:", stream.id, stream.target_host
 
     def stream_attach(self, stream, circuit):
-        print "stream", stream.id, " attached to circuit", circuit.id, \
-              "with path:", '->'.join(map(lambda x: x.location.countrycode,
-                                          circuit.path))
+        print "stream", stream.id, " attached to circuit", circuit.id,
+        print "with path:", '->'.join(map(lambda x: x.location.countrycode, circuit.path))
 
 
 class MyAttacher(txtorcon.CircuitListenerMixin):
@@ -109,8 +108,8 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
         IStreamAttacher API
         """
         if not stream.target_host in self.state.addrmap.addr:
-            print "No AddrMap entry for", stream.target_host, \
-                  "so I don't know where it exits; get Tor to attach stream."
+            print "No AddrMap entry for", stream.target_host,
+            print "so I don't know where it exits; get Tor to attach stream."
             return None
 
         ip = str(self.state.addrmap.addr[stream.target_host].ip)

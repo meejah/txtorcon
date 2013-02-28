@@ -50,7 +50,7 @@ class TorProtocolFactory(object):
 
     implements(IProtocolFactory)
 
-    def __init__(self, password_function = lambda: None):
+    def __init__(self, password_function=lambda: None):
         """
         Builds protocols to talk to a Tor client on the specified
         address. For example::

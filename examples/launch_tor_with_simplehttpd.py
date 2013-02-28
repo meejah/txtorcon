@@ -93,7 +93,7 @@ def main():
     serve_directory = os.path.abspath(serve_directory)
     if not os.path.exists(serve_directory):
         print 'Path "%s" does not exists, can\'t serve from there...' % \
-              (serve_directory, )
+            (serve_directory, )
         return 1
     os.chdir(serve_directory)
 

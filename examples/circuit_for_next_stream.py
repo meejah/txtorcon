@@ -63,8 +63,8 @@ class MyAttacher(txtorcon.CircuitListenerMixin, txtorcon.StreamListenerMixin):
         return None
 
     def stream_attach(self, stream, circuit):
-        print "stream", stream.id, "attached to circuit", circuit.id, \
-              "with path:", '->'.join(map(lambda x: x.location.countrycode, circuit.path))
+        print "stream", stream.id, "attached to circuit", circuit.id,
+        print "with path:", '->'.join(map(lambda x: x.location.countrycode, circuit.path))
         if self.circuit is circuit:
             print "...so we're done."
             reactor.stop()
