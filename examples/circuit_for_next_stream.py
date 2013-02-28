@@ -10,6 +10,7 @@
 
 import sys
 import functools
+import random
 
 from twisted.python import log
 from twisted.internet import reactor
@@ -88,13 +89,26 @@ def do_setup(path, state):
         print ' ', c.id, '->'.join(map(lambda x: x.location.countrycode, c.path))
 
     print "Building our Circuit:", path
+    real_path = []
     try:
-        path = map(lambda x: state.routers[x], path)
+        for name in path:
+            print name
+            if name == 'X':
+                if len(real_path) == 0:
+                    real_path.append(random.choice(state.entry_guards.values()))
+
+                else:
+                    real_path.append(random.choice(state.routers.values()))
+
+            else:
+                real_path.append(state.routers[name])
+
     except KeyError, e:
         print "Couldn't find router:", e
         sys.exit(1)
-    print "...using routers:", path
-    return state.build_circuit(path).addCallback(attacher.set_circuit).addErrback(log.err)
+
+    print "...using routers:", real_path
+    return state.build_circuit(real_path).addCallback(attacher.set_circuit).addErrback(log.err)
 
 
 def setup_failed(arg):
@@ -103,6 +117,10 @@ def setup_failed(arg):
 
 if len(sys.argv) == 1:
     print "usage: %s router [router] [router] ..." % sys.argv[0]
+    print
+    print "       You may use X for a router name, in which case a random one will"
+    print "       be selected (a random one of your entry guards if its in the first"
+    print "       position)."
     sys.exit(1)
 
 path = sys.argv[1:]
