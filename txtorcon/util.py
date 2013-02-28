@@ -51,7 +51,8 @@ except IOError:
     country = None
 
 try:
-    import ipaddr
+    import ipaddr as _ipaddr
+    ipaddr = _ipaddr
 except ImportError:
     ipaddr = None
 
