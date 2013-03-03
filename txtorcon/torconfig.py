@@ -161,8 +161,8 @@ class TCPHiddenServiceEndpoint(object):
         :api:`twisted.internet.interfaces.IPort` instance that also
         has at least `onion_uri` and `onion_private_key` members set
         (both strings). Really this is just what
-        :api:`twisted.internet.endpoint.TCP4ServerEndpoint
-        <TCP4ServerEndpoint>` returned, with a few members set. At
+        :api:`twisted.internet.endpoints.TCP4ServerEndpoint
+        <TCP4ServerEndpoint>`.listen() returned, with a few members set. At
         this point, Tor will have fully started up and successfully
         accepted the hidden service's config.
         """
@@ -203,7 +203,7 @@ class TCPHiddenServiceEndpoint(object):
     def _create_listener(self, proto):
         """
         Creates the local TCP4ServerEndpoint instance, returning a
-        Deferred delivering an IPort instance that also has
+        Deferred delivering an :api:`twisted.internet.interfaces.IPort` instance that also has
         :meth:`TCP4HiddenServiceEndpoint._add_attributes` called
         against it (adds `onion_uri` and `onion_private_key` members).
         """
