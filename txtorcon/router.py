@@ -63,6 +63,7 @@ class Router(object):
         self.id_hex = None
         self.location = NetLocation('0.0.0.0')
         self.from_consensus = False
+        self.ip_v6 = []                 # most routers have no IPv6 addresses
 
     unique_name = property(lambda x: x.name_is_unique and x.name or x.id_hex)
     "has the hex id if this router's name is not unique, or its name otherwise"

@@ -210,8 +210,9 @@ class TorState(object):
         waiting_r.add_transition(Transition(waiting_r, lambda x: x[:2] != 'r ', die('Expected "r " while parsing routers not "%s"')))
 
         waiting_s.add_transition(Transition(waiting_w, lambda x: x[:2] == 's ', self._router_flags))
+        waiting_s.add_transition(Transition(waiting_s, lambda x: x[:2] == 'a ', self._router_address))
         waiting_s.add_transition(Transition(waiting_r, ignorable_line, nothing))
-        waiting_s.add_transition(Transition(waiting_r, lambda x: x[:2] != 's ', die('Expected "s " while parsing routers not "%s"')))
+        waiting_s.add_transition(Transition(waiting_r, lambda x: x[:2] != 's ' and x[:2] != 'a ', die('Expected "s " while parsing routers not "%s"')))
         waiting_s.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
 
         waiting_w.add_transition(Transition(waiting_p, lambda x: x[:2] == 'w ', self._router_bandwidth))
@@ -275,6 +276,10 @@ class TorState(object):
             self.guards[self._router.id_hex] = self._router
         if 'authority' in self._router.flags:
             self.authorities[self._router.name] = self._router
+
+    def _router_address(self, data):
+        """only for IPv6 addresses"""
+        self._router.ip_v6.append(data.split()[1].strip())
 
     def _router_bandwidth(self, data):
         args = data.split()

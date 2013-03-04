@@ -653,6 +653,16 @@ p reject 1-65535""")
         self.assertTrue(not router.accepts_port(991))
         self.assertTrue(not router.accepts_port(988))
 
+    def test_router_with_ipv6_address(self):
+        self.state._update_network_status("""ns/all=
+r PPrivCom012 2CGDscCeHXeV/y1xFrq1EGqj5g4 QX7NVLwx7pwCuk6s8sxB4rdaCKI 2011-12-20 08:34:19 84.19.178.6 9001 0
+a [2001:0:0:0::0]:4321
+s Fast Guard Running Stable Named Valid
+w Bandwidth=51500
+p reject 1-65535""")
+        self.assertEqual(len(self.state.routers_by_name['PPrivCom012'][0].ip_v6), 1)
+        self.assertEqual(self.state.routers_by_name['PPrivCom012'][0].ip_v6[0], '[2001:0:0:0::0]:4321')
+
     def test_invalid_routers(self):
         try:
             self.state._update_network_status('''ns/all=
