@@ -32,7 +32,6 @@ class Addr(object):
         deals with an update from Tor; see parsing logic in torcontroller
         """
 
-
         gmtexpires = None
         (name, ip, expires) = args[:3]
 
