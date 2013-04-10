@@ -20,8 +20,9 @@ unreleased
  * pep8 and whitespace targets plus massive cleanup (now pep8 clean, from lukaslueg);
  * `issue #30 <https://github.com/meejah/txtorcon/issues/30>`_ fix reported by webmesiter making ipaddr actually-optional;
  * example using synchronous web server (built-in SimpleHTTPServer) with txtorcon (from lukaslueg);
- * TorState can now create circuits without an explicit path
- * passwords for non-cookie authenticated sessions use a password callback (that may return a Deferred) instead of a string (`issue #44 <https://github.com/meejah/txtorcon/issues/44>`_)
+ * TorState can now create circuits without an explicit path;
+ * passwords for non-cookie authenticated sessions use a password callback (that may return a Deferred) instead of a string (`issue #44 <https://github.com/meejah/txtorcon/issues/44>`_);
+ * fixes for AddrMap in case `#8596 <https://trac.torproject.org/projects/tor/ticket/8596>`_ is implemented;
 
 v0.7
 ----

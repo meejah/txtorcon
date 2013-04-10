@@ -6,12 +6,12 @@ from setuptools import setup, find_packages
 
 ## can't just naively import these from txtorcon, as that will only
 ## work if you already installed the dependencies
-__version__ = '0.7'
+__version__ = '0.8.0'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/txtorcon'
 __license__ = 'MIT'
-__copyright__ = 'Copyright 2012'
+__copyright__ = 'Copyright 2012, 2013'
 
 def pip_to_requirements(s):
     """
