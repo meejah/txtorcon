@@ -128,6 +128,39 @@ class AddrMapTests(unittest.TestCase):
         clock.advance(10)
         self.assertTrue('www.example.com' not in am.addr)
 
+    def test_8596_cached_1(self):
+        clock = task.Clock()
+        am = AddrMap()
+        am.scheduler = IReactorTime(clock)
+
+        line = 'example.com 192.0.2.1 NEVER CACHED="YES"'
+        am.update(line)
+
+        self.assertTrue('example.com' in am.addr)
+        self.assertEqual(len(clock.getDelayedCalls()), 0)
+
+    def test_8596_cached_2(self):
+        clock = task.Clock()
+        am = AddrMap()
+        am.scheduler = IReactorTime(clock)
+
+        line = 'example.com 192.0.43.10 "2013-04-03 22:29:11" EXPIRES="2013-04-03 20:29:11" CACHED="NO"'
+        am.update(line)
+
+        self.assertTrue('example.com' in am.addr)
+        self.assertEqual(len(clock.getDelayedCalls()), 1)
+
+    def test_8596_cached_3(self):
+        clock = task.Clock()
+        am = AddrMap()
+        am.scheduler = IReactorTime(clock)
+
+        line = 'example.invalid <error> "2013-04-03 08:28:52" error=yes EXPIRES="2013-04-03 06:28:52" CACHE="NO"'
+        am.update(line)
+
+        self.assertTrue('example.invalid' not in am.addr)
+        self.assertEqual(len(clock.getDelayedCalls()), 0)
+
     def addrmap_expired(self, name):
         self.expires.append(name)
 

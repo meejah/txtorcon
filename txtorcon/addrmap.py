@@ -32,12 +32,30 @@ class Addr(object):
         deals with an update from Tor; see parsing logic in torcontroller
         """
 
-        if len(args) == 3:
-            (name, ip, gmtexpires) = args
-        else:
-            (name, ip, _, gmtexpires) = args[:4]
+
+        gmtexpires = None
+        (name, ip, expires) = args[:3]
+
+        for arg in args:
+            if arg.lower().startswith('expires='):
+                gmtexpires = arg[8:]
+
+        if gmtexpires is None:
+            if len(args) == 3:
+                gmtexpires = expires
+            elif len(args) > 3:
+                if args[2] == 'NEVER':
+                    gmtexpires = args[2]
+                else:
+                    gmtexpires = args[3]
+
         self.name = name                # "www.example.com"
         self.ip = maybe_ip_addr(ip)     # IPV4Address instance, or string
+
+        if self.ip == '<error>':
+            self._expire()
+            return
+
         fmt = "%Y-%m-%d %H:%M:%S"
 
         ## if we already have expiry times, etc then we want to
