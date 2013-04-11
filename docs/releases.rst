@@ -27,7 +27,7 @@ v0.8.0
  * run tests cleanly without graphviz (from lukaslueg);
  * `issue #26 <https://github.com/meejah/txtorcon/issues/26>`_ fix from lukaslueg;
  * pep8 and whitespace targets plus massive cleanup (now pep8 clean, from lukaslueg);
- * `issue #30 <https://github.com/meejah/txtorcon/issues/30>`_ fix reported by webmesiter making ipaddr actually-optional;
+ * `issue #30 <https://github.com/meejah/txtorcon/issues/30>`_ fix reported by webmeister making ipaddr actually-optional;
  * example using synchronous web server (built-in SimpleHTTPServer) with txtorcon (from lukaslueg);
  * TorState can now create circuits without an explicit path;
  * passwords for non-cookie authenticated sessions use a password callback (that may return a Deferred) instead of a string (`issue #44 <https://github.com/meejah/txtorcon/issues/44>`_);
