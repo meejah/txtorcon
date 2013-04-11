@@ -175,7 +175,7 @@ CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
 
 def compare_via_hash(x, y):
     """
-    Taken from rrandom's tor-utils git repository, to compare two
+    Taken from rransom's tor-utils git repository, to compare two
     hashes in something resembling constant time (or at least, not
     leaking timing info?)
     """
