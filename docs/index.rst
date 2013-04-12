@@ -35,13 +35,12 @@ including tests. Some features and motivating examples:
  - `txtorcon.TCPHiddenServiceEndpoint` to simplify hidden service listening into Twisteds endpoint paradigm.
     - see :ref:`launch_tor_endpoint.py`
 
-The canonical URI is https://timaq4ygg2iegci7.onion
+The canonical URI is http://timaq4ygg2iegci7.onion
 Code available at https://github.com/meejah/txtorcon
 
 - meejah@meejah.ca (public key: `meejah.asc <meejah.asc>`_)
-- ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
-- **``pip install txtorcon``**
 - ``git clone git://github.com/meejah/txtorcon.git``
+- **``pip install txtorcon``**
 
 This documentation was generated |today|.
 
