@@ -18,7 +18,7 @@ v0.8.0
 
 *April 11, 2013*
 
- * `txtorcon-0.8.0.tar.gz <https://timaq4ygg2iegci7.onion/txtorcon-0.8.0.tar.gz>`_ (`txtorcon-0.8.0.tar.gz.sig <https://timaq4ygg2iegci7.onion/txtorcon-0.8.0.tar.gz.sig>`_ or `txtorcon-0.8.0.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.0.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.8.0>`_)
+ * `txtorcon-0.8.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.0.tar.gz>`_ (`txtorcon-0.8.0.tar.gz.sig <http://timaq4ygg2iegci7.onion/txtorcon-0.8.0.tar.gz.sig>`_ or `txtorcon-0.8.0.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.0.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.8.0>`_)
  * following `semantic versioning <http://semver.org/>`_;
  * slight **API change** :meth:`.ICircuitListener.circuit_failed`, :meth:`~.ICircuitListener.circuit_closed` and :meth:`.IStreamListener.stream_failed`, :meth:`~.IStreamListener.stream_closed` and :meth:`~.IStreamListener.stream_detach` all now include any keywords in the notification method (some of these lacked flags, or only included some) (`issue #18 <https://github.com/meejah/txtorcon/issues/18>`_);
  * launch_tor() can take a timeout (starting with a patch from hellais);
@@ -38,7 +38,7 @@ v0.7
 
 *November 21, 2012*
 
- * `txtorcon-0.7.tar.gz <https://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz>`_ (`txtorcon-0.7.tar.gz.sig <https://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz.sig>`_ or `txtorcon-0.7.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.7.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.7>`_)
+ * `txtorcon-0.7.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz>`_ (`txtorcon-0.7.tar.gz.sig <http://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz.sig>`_ or `txtorcon-0.7.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.7.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.7>`_)
  * `issue #20 <https://github.com/meejah/txtorcon/issues/20>`_ config object now hooked up correctly after launch_tor();
  * `patch <https://github.com/meejah/txtorcon/pull/22>`_ from hellais for properly handling data_dir given to TCPHiddenServiceEndpoint;
  * `.tac example <https://github.com/meejah/txtorcon/pull/19>`_ from mmaker;
@@ -49,7 +49,7 @@ v0.6
 
 *October 10, 2012*
 
- * `txtorcon-0.6.tar.gz <https://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz>`_ (`txtorcon-0.6.tar.gz.sig <https://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz.sig>`_ or `txtorcon-0.6.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.6.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.6>`_)
+ * `txtorcon-0.6.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz>`_ (`txtorcon-0.6.tar.gz.sig <http://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz.sig>`_ or `txtorcon-0.6.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.6.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.6>`_)
  * debian packaging (mmaker);
  * psutil fully gone;
  * *changed API* for launch_tor() to use TorConfig instead of args;
