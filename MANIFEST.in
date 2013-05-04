@@ -7,7 +7,6 @@ include scripts/*.py
 include docs/Makefile
 include docs/apilinks_sphinxext.py
 include docs/conf.py
-include docs/avatar.png
 include docs/*.rst
 include docs/_static/*
 include examples/*
