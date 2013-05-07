@@ -693,7 +693,7 @@ class TorState(object):
             is_named = False
             if len(routerid) > 41:
                 nick = routerid[42:]
-                is_named = routerid[41] is '='
+                is_named = routerid[41] == '='
             router.update(nick, hashFromHexId(idhash), '0' * 27, 'unknown',
                           'unknown', '0', '0')
             router.name_is_unique = is_named

@@ -519,8 +519,10 @@ OK''')
         d = tempfile.mkdtemp()
 
         try:
-            open(os.path.join(d, 'hostname'), 'w').write('public')
-            open(os.path.join(d, 'private_key'), 'w').write('private')
+            with open(os.path.join(d, 'hostname'), 'w') as f:
+                f.write('public')
+            with open(os.path.join(d, 'private_key'), 'w') as f:
+                f.write('private')
 
             conf = TorConfig(self.protocol)
             hs = HiddenService(conf, d, [])
