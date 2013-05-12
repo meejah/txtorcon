@@ -9,12 +9,13 @@ versioning <http://semver.org/>`_.
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will become v0.9.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.0*
 
- * ...
+ * Proper file-flushing in tests and PyPy fixes from Lukas Lueg
+ * docs build issue from isis
 
 v0.8.0
-----------
+------
 
 *April 11, 2013*
 
