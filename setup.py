@@ -1,3 +1,7 @@
+try:
+    import pypissh
+except:
+    print "WARNING: not using PyPi over SSH!"
 import sys
 import os
 import shutil
