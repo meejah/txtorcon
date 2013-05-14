@@ -9,7 +9,7 @@ install:
 
 doc: docs/*.rst
 	cd docs && make html
-	cp dist/txtorcon-0.8.0.tar.gz docs/_build/html
+	cp dist/txtorcon-0.8.1.tar.gz docs/_build/html
 	cp dist/txtorcon-0.7.tar.gz docs/_build/html
 	cp dist/txtorcon-0.6.tar.gz.sig docs/_build/html
 
@@ -41,16 +41,16 @@ clean:
 counts:
 	ohcount -s txtorcon/*.py
 
-dist: dist/txtorcon-0.8.0.tar.gz.sig
+dist: dist/txtorcon-0.8.1.tar.gz.sig
 
 sdist: setup.py 
 	python setup.py sdist
 
-dist/txtorcon-0.8.0.tar.gz: sdist
-dist/txtorcon-0.8.0.tar.gz.sig: dist/txtorcon-0.8.0.tar.gz
-	gpg --verify dist/txtorcon-0.8.0.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.8.0.tar.gz
+dist/txtorcon-0.8.1.tar.gz: sdist
+dist/txtorcon-0.8.1.tar.gz.sig: dist/txtorcon-0.8.1.tar.gz
+	gpg --verify dist/txtorcon-0.8.1.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.8.1.tar.gz
 
-release: dist/txtorcon-0.8.0.tar.gz.sig setup.py
+release: dist/txtorcon-0.8.1.tar.gz.sig setup.py
 	python setup.py sdist upload --sign --identity=meejah@meejah.ca
 
 virtualenv:

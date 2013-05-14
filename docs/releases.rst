@@ -11,13 +11,21 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.0*
 
+v0.8.1
+------
+
+*May 13, 2013*
+
+ * `txtorcon-0.8.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.1.tar.gz>`_ (`txtorcon-0.8.1.tar.gz.sig <http://timaq4ygg2iegci7.onion/txtorcon-0.8.1.tar.gz.sig>`_ or `txtorcon-0.8.1.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.1.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.1.tar.gz>`_)
+ * fixed improper import in setup.py preventing 0.8.0 from installing
+ * signatures with proper subkey this time
  * Proper file-flushing in tests and PyPy fixes from Lukas Lueg
  * docs build issue from isis
 
 v0.8.0
 ------
 
-*April 11, 2013*
+*April 11, 2013* (actually uploaded May 11)
 
  * `txtorcon-0.8.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.0.tar.gz>`_ (`txtorcon-0.8.0.tar.gz.sig <http://timaq4ygg2iegci7.onion/txtorcon-0.8.0.tar.gz.sig>`_ or `txtorcon-0.8.0.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.0.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.0.tar.gz>`_)
  * following `semantic versioning <http://semver.org/>`_;

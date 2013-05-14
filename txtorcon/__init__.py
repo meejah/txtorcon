@@ -1,6 +1,6 @@
 ## for now, this needs to be changed in setup.py also until I find a
 ## better solution
-__version__ = '0.8.0'
+__version__ = '0.8.1'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/txtorcon'
