@@ -2,6 +2,7 @@ include Makefile
 include README
 include INSTALL
 include TODO
+include LICENSE
 include meejah.asc
 include scripts/*.py
 include docs/Makefile
