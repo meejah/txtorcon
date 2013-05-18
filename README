@@ -4,6 +4,8 @@ txtorcon README
 Full, built **documentation at ReadTheDocs
 https://txtorcon.readthedocs.org**
 
+.. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
+
 quick start
 -----------
 
