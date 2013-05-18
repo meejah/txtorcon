@@ -12,7 +12,7 @@ from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactor
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
 
-from txtorcon.util import delete_file_or_tree
+from txtorcon.util import delete_file_or_tree, find_tor_binary
 
 
 class FakeControlProtocol:
@@ -987,6 +987,21 @@ class LaunchTorTests(unittest.TestCase):
         proto = TorProcessProtocol(None)
         proto.status_client("NOTICE CONSENSUS_ARRIVED")
 
+## for Travis-CI integration (at least) we disable all the tests that
+## need to find a Tor binary in the path if it's not there...
+torbinary = find_tor_binary()
+if torbinary is None:
+    ## FIXME I might be skipping too many here...and, it just needs to
+    ## find *something*, I think, so we might be able to simply
+    ## monkye-patch find_tor_binary() instead...
+    LaunchTorTests.test_basic_launch.im_func.skip = "no Tor binary; skipping"
+    LaunchTorTests.test_launch_tor_fails.im_func.skip = "no Tor binary; skipping"
+    LaunchTorTests.test_launch_with_timeout.im_func.skip = "no Tor binary; skipping"
+    LaunchTorTests.test_tor_produces_stderr_output.im_func.skip = "no Tor binary; skipping"
+    LaunchTorTests.test_tor_connection_fails.im_func.skip = "no Tor binary; skipping"
+    LaunchTorTests.test_tor_connection_user_data_dir.im_func.skip = "no Tor binary; skipping"
+    LaunchTorTests.test_tor_connection_user_control_port.im_func.skip = "no Tor binary; skipping"
+    LaunchTorTests.test_tor_connection_default_control_port.im_func.skip = "no Tor binary; skipping"
 
 class FakeProtocolFactory:
     implements(IProtocolFactory)
