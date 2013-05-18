@@ -9,5 +9,7 @@ include docs/apilinks_sphinxext.py
 include docs/conf.py
 include docs/*.rst
 include docs/_static/*
+exclude docs/_static/*~
 include examples/*
+exclude examples/*~
 include requirements.txt

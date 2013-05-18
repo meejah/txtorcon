@@ -6,7 +6,7 @@ import sys
 import os
 import shutil
 import re
-from setuptools import setup, find_packages
+from distutils.core import setup
 
 ## can't just naively import these from txtorcon, as that will only
 ## work if you already installed the dependencies
