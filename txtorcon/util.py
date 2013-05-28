@@ -64,13 +64,14 @@ def is_executable(path):
 
 def find_tor_binary(globs=('/usr/sbin/', '/usr/bin/',
                            '/Applications/TorBrowser_*.app/Contents/MacOS/')):
-    """Tries to find the tor executable using the shell first or in in the paths
-       whose glob-patterns is in the given 'globs'-tuple.
+    """Tries to find the tor executable using the shell first or in in the
+       paths whose glob-patterns is in the given 'globs'-tuple.
     """
     # Try to find the tor executable using the shell
     try:
-        proc = subprocess.Popen(('type -p tor', ), stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(('type -p tor', ), executable='/bin/bash',
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                shell=True)
     except OSError:
         pass
     else:
@@ -105,7 +106,10 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
     This splits up strings like name=value, foo=bar into a dict. Does NOT deal
     with quotes in value (e.g. key="value with space" will not work
 
-    By default, note that it takes OUT any key which starts with $ (i.e. a single dollar sign) since for many use-cases the way Tor encodes nodes with "$hash=name" looks like a keyword argument (but it isn't). If you don't want this, override the "key_filter" argument to this method.
+    By default, note that it takes OUT any key which starts with $ (i.e. a
+    single dollar sign) since for many use-cases the way Tor encodes nodes
+    with "$hash=name" looks like a keyword argument (but it isn't). If you
+    don't want this, override the "key_filter" argument to this method.
 
     :return:
         a dict of key->value (both strings) of all name=value type
