@@ -988,6 +988,7 @@ class LaunchTorTests(unittest.TestCase):
         proto.status_client("NOTICE CONSENSUS_ARRIVED")
 
 
+
 class FakeProtocolFactory:
     implements(IProtocolFactory)
 
