@@ -66,15 +66,15 @@ Stem at https://stem.torproject.org/
 quick implementation overview
 -----------------------------
 
-txtorcon also provides a class to track Tor's current state -- such as
-details about routers, circuits and streams -- called txtorcon.TorState
-and an abstraction to the configuration values via txtorcon.TorConfig
-which provides attribute-style accessors to Tor's state (including
-making changes). txtorcon.TorState provides txtorcon.Router,
-txtorcon.Circuit and txtorcon.Stream objects which implement a listener
-interface so client code may receive updates.
+txtorcon provides a class to track Tor's current state -- such as
+details about routers, circuits and streams -- called
+txtorcon.TorState and an abstraction to the configuration values via
+txtorcon.TorConfig which provides attribute-style accessors to Tor's
+state (including making changes). txtorcon.TorState provides
+txtorcon.Router, txtorcon.Circuit and txtorcon.Stream objects which
+implement a listener interface so client code may receive updates.
 
-txtorcon uses **trial for unit-tests** and has 97% test-coverage --
+txtorcon uses **trial for unit-tests** and has 96% test-coverage --
 which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
 
@@ -84,10 +84,7 @@ code is at least exercised somehow by the unit tests.
     **Ran 227 tests in 1.394s**
 
     $ make coverage
-    ## ...deleted lots of output...
-    covered: 1922
-    uncovered: 69
-    **97.81% test coverage**
+    TOTAL ... 96%
 
 Tor itself is not required to be running for any of the tests. There are
 no integration tests. ohcount claims around 2000 lines of code for the
