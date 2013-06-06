@@ -44,6 +44,13 @@ Code available at https://github.com/meejah/txtorcon
 
 This documentation was generated |today|.
 
+.. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
+    :target: https://www.travis-ci.org/meejah/txtorcon
+
+.. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
+    :target: https://coveralls.io/r/meejah/txtorcon
+
+
 Known Users:
 ------------
 
