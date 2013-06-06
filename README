@@ -89,8 +89,8 @@ no integration tests. ohcount claims around 2000 lines of code for the
 core bit; around 4000 including tests. About 37% comments in the
 not-test code.
 
-dependencies
-------------
+dependencies / requirements
+---------------------------
 
 -  `twisted <http://twistedmatrix.com>`_: I am working against Twisted
    11.1.0 on Debian with Python 2.7.2. Twisted 12 works fine as well.
@@ -106,12 +106,15 @@ dependencies
 -  `python-ipaddr <http://code.google.com/p/ipaddr-py/>`_: **optional**.
    Google's IP address manipulation code.
 
--  `Sphinx <http://sphinx.pocoo.org/>`_: Only if you want to build the
+-  development: `Sphinx <http://sphinx.pocoo.org/>`_ if you want to build the
    documentation. In that case you'll also need something called
    ``python-repoze.sphinx.autointerface`` (at least in Debian) to build
    the Interface-derived docs properly.
 
--  GraphViz is used in the tests (and to generate state-machine
+-  development: `coverage <http://nedbatchelder.com/code/coverage/>`_ to
+   run the code-coverage metrics
+
+-  optional: GraphViz is used in the tests (and to generate state-machine
    diagrams, if you like) but those tests are skipped if "dot" isn't
    in your path
 
@@ -119,11 +122,14 @@ In any case, on a `Debian <http://www.debian.org/>`_ wheezy, squeeze or
 Ubuntu system, this should work::
 
     apt-get install python-setuptools python-twisted python-ipaddr python-geoip graphviz
-    apt-get install python-sphinx python-repoze.sphinx.autointerface # for documentation
+    apt-get install python-sphinx python-repoze.sphinx.autointerface python-coverage # for develoment
 
 Using pip this would be:
 
    pip install Twisted ipaddr pygeoip
+   pip install Sphinx repoze.sphinx.autointerface coverage  # for development
+
+or: pip install -r requirements.txt
 
 documentation
 -------------

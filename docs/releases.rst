@@ -11,6 +11,11 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.0*
 
+ * put test/ directory at the top level
+ * using "`coverage <http://nedbatchelder.com/code/coverage/>`_" tool instead of custom script
+ * using `coveralls.io <http://coveralls.io>`_ and `travis-ci <http://travis-ci.org>`_ for test coverage and continuous integration
+
+
 v0.8.1
 ------
 
