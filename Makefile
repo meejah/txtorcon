@@ -2,7 +2,7 @@
 .DEFAULT: test
 
 test:
-	trial --reporter=text txtorcon.test
+	trial --reporter=text test
 
 install:
 	python setup.py install
@@ -14,8 +14,8 @@ doc: docs/*.rst
 	cp dist/txtorcon-0.6.tar.gz.sig docs/_build/html
 
 coverage:
-	trial --reporter=bwverbose --coverage txtorcon
-	python scripts/coverage.py
+	coverage run --source=txtorcon --omit txtorcon/test_* `which trial` test
+	coverage report
 
 pep8:
 	find txtorcon/*.py txtorcon/test/*.py examples/*.py | xargs pep8 --ignore=E501
