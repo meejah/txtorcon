@@ -14,17 +14,17 @@ doc: docs/*.rst
 	cp dist/txtorcon-0.6.tar.gz.sig docs/_build/html
 
 coverage:
-	coverage run --source=txtorcon --omit txtorcon/test_* `which trial` test
+	coverage run --source=txtorcon `which trial` test
 	coverage report
 
 pep8:
-	find txtorcon/*.py txtorcon/test/*.py examples/*.py | xargs pep8 --ignore=E501
+	find txtorcon/*.py test/*.py examples/*.py | xargs pep8 --ignore=E501
 
 pep8count:
-	find txtorcon/*.py txtorcon/test/*.py examples/*.py | xargs pep8 --ignore=E501 | wc -l
+	find txtorcon/*.py test/*.py examples/*.py | xargs pep8 --ignore=E501 | wc -l
 
 pyflakes:
-	pyflakes txtorcon/ examples/
+	pyflakes txtorcon/ examples/ test/
 
 pyflakescount:
 	pyflakes txtorcon/ examples/ | wc -l
