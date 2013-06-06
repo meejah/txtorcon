@@ -57,7 +57,7 @@ virtualenv:
 	mkdir -p tmp
 	cd tmp
 	virtualenv --never-download --extra-search-dir=/usr/lib/python2.7/dist-packages/ txtorcon_env
-	@echo "created tmp/txtorcon_env"
+	@echo "created txtorcon_env"
 	@echo "see INSTALL for more information"
 
 html: docs/README.rst
