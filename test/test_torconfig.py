@@ -12,7 +12,7 @@ from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactor
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
 
-from txtorcon.util import delete_file_or_tree, find_tor_binary
+from txtorcon.util import delete_file_or_tree
 
 
 class FakeControlProtocol:
@@ -732,7 +732,7 @@ class LaunchTorTests(unittest.TestCase):
         trans.protocol = self.protocol
         self.othertrans = trans
         creator = functools.partial(connector, self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
         d.addCallback(self.setup_complete_no_errors, config)
         return d
 
@@ -759,7 +759,7 @@ class LaunchTorTests(unittest.TestCase):
         trans.protocol = self.protocol
         self.othertrans = trans
         creator = functools.partial(connector, self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
         d.addCallback(self.setup_complete_fails)
         return self.assertFailure(d, Exception)
 
@@ -795,7 +795,7 @@ class LaunchTorTests(unittest.TestCase):
         creator = functools.partial(connector, self.protocol, self.transport)
         react = FakeReactor(self, trans, on_protocol)
         d = launch_tor(config, react, connection_creator=creator,
-                       timeout=timeout)
+                       timeout=timeout, tor_binary='/bin/echo')
         rtn = self.assertFailure(d, RuntimeError, "Timed out waiting for Tor to launch.")
         # FakeReactor is a task.Clock subclass and +1 just to be sure
         react.advance(timeout + 1)
@@ -824,7 +824,7 @@ class LaunchTorTests(unittest.TestCase):
         trans.protocol = self.protocol
         self.othertrans = trans
         creator = functools.partial(connector, self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
         d.addCallback(self.fail)        # should't get callback
         d.addErrback(self.setup_fails_stderr)
         return d
@@ -861,7 +861,7 @@ class LaunchTorTests(unittest.TestCase):
         trans.protocol = self.protocol
         self.othertrans = trans
         creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
         d.addCallback(self.setup_complete_fails)
         return self.assertFailure(d, Exception)
 
@@ -890,7 +890,7 @@ class LaunchTorTests(unittest.TestCase):
         trans.protocol = self.protocol
         self.othertrans = trans
         creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
 
         def still_have_data_dir(proto, tester):
             proto.cleanup()  # FIXME? not really unit-testy as this is sort of internal function
@@ -925,7 +925,7 @@ class LaunchTorTests(unittest.TestCase):
         trans.protocol = self.protocol
         self.othertrans = trans
         creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
 
         def check_control_port(proto, tester):
             ## we just want to ensure launch_tor() didn't mess with
@@ -958,7 +958,7 @@ class LaunchTorTests(unittest.TestCase):
         trans.protocol = self.protocol
         self.othertrans = trans
         creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
 
         def check_control_port(proto, tester):
             ## ensure ControlPort was set to a default value
@@ -987,21 +987,6 @@ class LaunchTorTests(unittest.TestCase):
         proto = TorProcessProtocol(None)
         proto.status_client("NOTICE CONSENSUS_ARRIVED")
 
-## for Travis-CI integration (at least) we disable all the tests that
-## need to find a Tor binary in the path if it's not there...
-torbinary = find_tor_binary()
-if torbinary is None:
-    ## FIXME I might be skipping too many here...and, it just needs to
-    ## find *something*, I think, so we might be able to simply
-    ## monkye-patch find_tor_binary() instead...
-    LaunchTorTests.test_basic_launch.im_func.skip = "no Tor binary; skipping"
-    LaunchTorTests.test_launch_tor_fails.im_func.skip = "no Tor binary; skipping"
-    LaunchTorTests.test_launch_with_timeout.im_func.skip = "no Tor binary; skipping"
-    LaunchTorTests.test_tor_produces_stderr_output.im_func.skip = "no Tor binary; skipping"
-    LaunchTorTests.test_tor_connection_fails.im_func.skip = "no Tor binary; skipping"
-    LaunchTorTests.test_tor_connection_user_data_dir.im_func.skip = "no Tor binary; skipping"
-    LaunchTorTests.test_tor_connection_user_control_port.im_func.skip = "no Tor binary; skipping"
-    LaunchTorTests.test_tor_connection_default_control_port.im_func.skip = "no Tor binary; skipping"
 
 class FakeProtocolFactory:
     implements(IProtocolFactory)
