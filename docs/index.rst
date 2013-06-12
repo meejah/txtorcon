@@ -42,6 +42,16 @@ Code available at https://github.com/meejah/txtorcon
 - ``git clone git://github.com/meejah/txtorcon.git``
 - **``pip install txtorcon``**
 
+If you're using Debian, txtorcon is now in testing (jessie) and
+`wheezy-backports <http://packages.debian.org/source/wheezy-backports/txtorcon>`_ thanks
+to Lunar.
+
+::
+
+    echo "deb http://ftp.ca.debian.org/debian/ wheezy-backports main" >> /etc/apt/sources.list
+    apt-get update
+    apt-get install python-txtorcon 
+
 This documentation was generated |today|.
 
 .. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
