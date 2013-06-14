@@ -30,6 +30,12 @@ PYTHONPATH::
 Then, you will want to explore the examples. Try "python
 examples/stream\_circuit\_logger.py" for instance.
 
+On Debian testing (jessie), or with wheezy-backports you can install
+version 0.8.1::
+
+    $ apt-get install python-txtorcon
+
+
 overview
 --------
 
@@ -53,8 +59,7 @@ fairly regularly push code to both.
 
 txtorcon runs all tests cleanly on:
 
--  Debian stable (squeeze)
--  Debian testing (wheezy)
+-  Debian "squeeze", "wheezy" and "jessie"
 -  OS X 10.4 (naif)
 -  OS X 10.8 (lukas lueg)
 -  Fedora 18 (lukas lueg)
