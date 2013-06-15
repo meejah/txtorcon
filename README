@@ -52,11 +52,6 @@ about Tor's state (txtorcon.TorState) and current configuration
 with helpers to asynchronously launch slave instances of Tor including
 Twisted endpoint support.
 
-NOTE: that this is currently a moving target still; if you're going to
-depend on txtorcon as a controller library, it Very Highly Recommended
-that you follow the source at github (or via the hidden service). I
-fairly regularly push code to both.
-
 txtorcon runs all tests cleanly on:
 
 -  Debian "squeeze", "wheezy" and "jessie"
@@ -65,8 +60,8 @@ txtorcon runs all tests cleanly on:
 -  Fedora 18 (lukas lueg)
 -  Reports from other OSes appreciated.
 
-If instead you want a synchronous Python controller library, check out
-Stem at https://stem.torproject.org/
+If instead you want a synchronous (threaded) Python controller
+library, check out Stem at https://stem.torproject.org/
 
 quick implementation overview
 -----------------------------
@@ -77,19 +72,12 @@ txtorcon.TorState and an abstraction to the configuration values via
 txtorcon.TorConfig which provides attribute-style accessors to Tor's
 state (including making changes). txtorcon.TorState provides
 txtorcon.Router, txtorcon.Circuit and txtorcon.Stream objects which
-implement a listener interface so client code may receive updates.
+implement a listener interface so client code may receive updates (in
+real time) including Tor events.
 
 txtorcon uses **trial for unit-tests** and has 96% test-coverage --
 which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
-
-::
-
-    $ make test
-    **Ran 227 tests in 1.394s**
-
-    $ make coverage
-    TOTAL ... 96%
 
 Tor itself is not required to be running for any of the tests. There are
 no integration tests. ohcount claims around 2000 lines of code for the
@@ -100,7 +88,8 @@ dependencies / requirements
 ---------------------------
 
 -  `twisted <http://twistedmatrix.com>`_: I am working against Twisted
-   11.1.0 on Debian with Python 2.7.2. Twisted 12 works fine as well.
+   11.1.0 on Debian with Python 2.7.2. Twisted 12 works fine as
+   well. Twisted does not yet support Python 3.
 
 -  `GeoIP <https://www.maxmind.com/app/python>`_: provides location
    information for ip addresses; you will want to download GeoLite City
@@ -108,7 +97,7 @@ dependencies / requirements
    for more accuracy. Or use tor-geoip, which makes this sort-of
    optional, in that we'll query Tor for the if the GeoIP database
    doesn't have an answer but I haven't bothered removing the dependency
-   yet..It also does ASN lookups if you installed that MaxMind database.
+   yet. It also does ASN lookups if you installed that MaxMind database.
 
 -  `python-ipaddr <http://code.google.com/p/ipaddr-py/>`_: **optional**.
    Google's IP address manipulation code.
@@ -131,12 +120,15 @@ Ubuntu system, this should work::
     apt-get install python-setuptools python-twisted python-ipaddr python-geoip graphviz
     apt-get install python-sphinx python-repoze.sphinx.autointerface python-coverage # for develoment
 
-Using pip this would be:
+Using pip this would be::
 
-   pip install Twisted ipaddr pygeoip
-   pip install Sphinx repoze.sphinx.autointerface coverage  # for development
+    pip install Twisted ipaddr pygeoip
+    pip install Sphinx repoze.sphinx.autointerface coverage  # for development
 
-or: pip install -r requirements.txt
+or::
+
+    pip install -r requirements.txt
+
 
 documentation
 -------------
@@ -148,7 +140,7 @@ this library.
 
 Run "make doc" to build the Sphinx documentation locally, or rely on
 ReadTheDocs https://txtorcon.readthedocs.org which builds each tagged
-release.
+release and the latest master.
 
 There is also a directory of examples/ scripts, which have inline
 documentation explaining their use. You may also use pydoc::
@@ -184,8 +176,8 @@ For launching Tor and Twisted integration, you will want to look at::
 
 IStreamAttacher affects Tor's behaviour, allowing one to customize how
 circuits for particular streams are selected. You can build your own
-circuits via ITorControlProtocol.build\_circuit(). There is an example
-of this called custom\_stream\_attacher.py which builds (or uses)
+circuits via ITorControlProtocol.build\_circuit(). There is an exampleo
+f this called custom\_stream\_attacher.py which builds (or uses)
 circuits exiting in the same country as the address to which the
 stream is connecting.
 
@@ -204,7 +196,7 @@ or::
 
 You may contact me via ``meejah at meejah dot ca`` with GPG key
 `128069A7 <http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>`_
-or see ``meejah.asc``. It is often possible to contact me as ``meejah``
+or see ``meejah.asc`` in the repository. It is often possible to contact me as ``meejah``
 in #tor-dev on `OFTC <http://www.oftc.net/oftc/>`_ but be patient for
 replies (I do look at scrollback, so mention my nick).
 
@@ -216,5 +208,4 @@ via ReadTheDocs:
 
 Please do **use the GitHub issue-tracker** to report bugs. Patches,
 pull-requests, comments and criticisms are all welcomed and
-appreciated.  See TODO for notes on deficiencies, planned features,
-lunatic raving, etc.
+appreciated.
