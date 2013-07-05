@@ -10,7 +10,7 @@ from twisted.internet import defer, error, task
 from twisted.python.failure import Failure
 from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP
 
-from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint
+from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint, TorNotFound
 
 from txtorcon.util import delete_file_or_tree
 
@@ -1107,4 +1107,39 @@ OK''')
         self.protocol.answers.append('HiddenServiceOptions')
         self.config.bootstrap()
         d.addErrback(self.check_error)
+        return d
+
+class ErrorTests(unittest.TestCase):
+
+    def test_no_tor_binary(self):
+        """FIXME: do I really need all this crap in here?"""
+        from txtorcon import torconfig
+        oldone = torconfig.find_tor_binary
+        self.transport = proto_helpers.StringTransport()
+        config = TorConfig()
+        d = None
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        try:
+            self.protocol = FakeControlProtocol([])
+            torconfig.find_tor_binary = lambda: None
+            trans = FakeProcessTransport()
+            trans.protocol = self.protocol
+            self.othertrans = trans
+            creator = functools.partial(Connector(), self.protocol, self.transport)
+            try:
+                d = launch_tor(config, FakeReactor(self, trans, lambda x: None), connection_creator=creator)
+                self.fail()
+
+            except TorNotFound:
+                pass # success!
+        finally:
+            torconfig.find_tor_binary = oldone
+
         return d

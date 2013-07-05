@@ -13,7 +13,7 @@ from txtorcon.circuit import Circuit
 from txtorcon.stream import Stream
 from txtorcon.torcontrolprotocol import TorControlProtocol, TorProtocolError, TorProtocolFactory, DEFAULT_VALUE
 from txtorcon.torstate import TorState, build_tor_connection, build_local_tor_connection
-from txtorcon.torconfig import TorConfig, HiddenService, TorProcessProtocol, TCPHiddenServiceEndpoint, launch_tor
+from txtorcon.torconfig import TorConfig, HiddenService, TorProcessProtocol, TCPHiddenServiceEndpoint, launch_tor, TorNotFound
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 import util
@@ -26,7 +26,7 @@ __all__ = ["Router",
            "TorControlProtocol", "TorProtocolError", "TorProtocolFactory",
            "TorState", "DEFAULT_VALUE",
            "TorInfo",
-           "build_tor_connection", "build_local_tor_connection", "launch_tor",
+           "build_tor_connection", "build_local_tor_connection", "launch_tor", "TorNotFound",
            "TorConfig", "HiddenService", "TorProcessProtocol",
            "TorInfo",
            "TCPHiddenServiceEndpoint",
