@@ -988,7 +988,6 @@ class LaunchTorTests(unittest.TestCase):
         proto.status_client("NOTICE CONSENSUS_ARRIVED")
 
 
-
 class FakeProtocolFactory:
     implements(IProtocolFactory)
 
@@ -1109,6 +1108,7 @@ OK''')
         d.addErrback(self.check_error)
         return d
 
+
 class ErrorTests(unittest.TestCase):
 
     def test_no_tor_binary(self):
@@ -1138,7 +1138,7 @@ class ErrorTests(unittest.TestCase):
                 self.fail()
 
             except TorNotFound:
-                pass # success!
+                pass  # success!
         finally:
             torconfig.find_tor_binary = oldone
 

@@ -4,7 +4,7 @@ from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.internet.interfaces import IProtocolFactory
 from zope.interface import implements
 
-from txtorcon.util import process_from_address, delete_file_or_tree, find_keywords, ip_from_int
+from txtorcon.util import process_from_address, delete_file_or_tree, find_keywords, ip_from_int, find_tor_binary
 
 import os
 import tempfile
@@ -97,3 +97,10 @@ class TestDelete(unittest.TestCase):
 
         self.assertTrue(not os.path.exists(d))
         self.assertTrue(not os.path.exists(os.path.join(d, 'foo')))
+
+
+class TestFindTor(unittest.TestCase):
+
+    def test_simple_find_tor(self):
+        ## just test that this doesn't raise an exception
+        find_tor_binary()
