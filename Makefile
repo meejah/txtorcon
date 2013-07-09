@@ -17,6 +17,12 @@ coverage:
 	coverage run --source=txtorcon `which trial` test
 	coverage report
 
+# dang, this is a little annoying. maybe add a shell-script which
+# looks for "coverage" or "python-coverage"??
+coverage-debian:
+	python-coverage run --source=txtorcon `which trial` test
+	python-coverage report
+
 pep8:
 	find txtorcon/*.py test/*.py examples/*.py | xargs pep8 --ignore=E501
 
