@@ -6,6 +6,7 @@ from twisted.internet import task, defer
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 
 import os
+import tempfile
 
 from txtorcon import TorControlProtocol, TorProtocolError, TorState, Stream, Circuit, build_tor_connection
 from txtorcon.interface import ITorControlProtocol, IStreamAttacher, ICircuitListener, IStreamListener, StreamListenerMixin, CircuitListenerMixin
@@ -98,7 +99,12 @@ class FakeReactor:
         self.test.assertEqual(id, 1)
 
     def connectTCP(self, *args, **kw):
+        """for testing build_tor_connection"""
         raise RuntimeError('connectTCP: ' + str(args))
+
+    def connectUNIX(self, *args, **kw):
+        """for testing build_tor_connection"""
+        raise RuntimeError('connectUNIX: ' + str(args))
 
 class FakeCircuit:
 
@@ -191,8 +197,15 @@ class BootstrapTests(unittest.TestCase):
         p.proto.post_bootstrap.callback(p.proto)
         return d
 
-    def test_build_tuple(self):
+    def test_build_tcp(self):
         d = build_tor_connection((FakeReactor(self), '127.0.0.1', 1234))
+        d.addCallback(self.fail)
+        d.addErrback(lambda x: None)
+        return d
+
+    def test_build_unix(self):
+        tf = tempfile.NamedTemporaryFile()
+        d = build_tor_connection((FakeReactor(self), tf.name))
         d.addCallback(self.fail)
         d.addErrback(lambda x: None)
         return d
