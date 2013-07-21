@@ -106,6 +106,7 @@ class FakeReactor:
         """for testing build_tor_connection"""
         raise RuntimeError('connectUNIX: ' + str(args))
 
+
 class FakeCircuit:
 
     def __init__(self, id=-999):
