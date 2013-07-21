@@ -97,6 +97,8 @@ class FakeReactor:
     def removeSystemEventTrigger(self, id):
         self.test.assertEqual(id, 1)
 
+    def connectTCP(self, *args, **kw):
+        raise RuntimeError('connectTCP: ' + str(args))
 
 class FakeCircuit:
 
@@ -187,6 +189,12 @@ class BootstrapTests(unittest.TestCase):
         d = build_tor_connection(p, build_state=False)
         d.addCallback(self.confirm_proto)
         p.proto.post_bootstrap.callback(p.proto)
+        return d
+
+    def test_build_tuple(self):
+        d = build_tor_connection((FakeReactor(self), '127.0.0.1', 1234))
+        d.addCallback(self.fail)
+        d.addErrback(lambda x: None)
         return d
 
     def confirm_pid(self, state):
