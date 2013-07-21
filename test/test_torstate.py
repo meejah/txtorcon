@@ -211,6 +211,15 @@ class BootstrapTests(unittest.TestCase):
         d.addErrback(lambda x: None)
         return d
 
+    def test_build_unix_wrong_permissions(self):
+        self.assertRaises(ValueError, build_tor_connection, (FakeReactor(self), 'a non-existant filename'))
+
+    def test_build_wrong_size_tuple(self):
+        self.assertRaises(TypeError, build_tor_connection, (1, 2, 3, 4))
+
+    def test_build_wrong_args_entirely(self):
+        self.assertRaises(TypeError, build_tor_connection, 'incorrect argument')
+
     def confirm_pid(self, state):
         self.assertEqual(state.tor_pid, 1234)
 
