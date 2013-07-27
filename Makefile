@@ -15,7 +15,7 @@ doc: docs/*.rst
 
 coverage:
 	coverage run --source=txtorcon `which trial` test
-	python-coverage -a -d annotated_coverage
+	coverage -a -d annotated_coverage
 	coverage report
 
 # dang, this is a little annoying. maybe add a shell-script which
