@@ -595,7 +595,7 @@ class TorState(object):
 
     def _maybe_create_circuit(self, circ_id):
         if circ_id not in self.circuits:
-            c = self.circuit_factory(self)
+            c = self.circuit_factory(self, self.protocol)
             c.listen(self)
             [c.listen(x) for x in self.circuit_listeners]
 
@@ -765,7 +765,7 @@ class TorState(object):
         self.circuits[circuit.id] = circuit
 
     def circuit_destroy(self, circuit):
-        "For circuit_closed and circuit_failed"
+        "Used by circuit_closed and circuit_failed (below)"
         txtorlog.msg("circuit_destroy:", circuit.id)
         del self.circuits[circuit.id]
 

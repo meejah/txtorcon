@@ -261,6 +261,18 @@ class ITorControlProtocol(Interface):
         example.
         """
 
+    def close_circuit(circuit):
+        """
+        Asks Tor to close the circuit. Note that the Circuit instance
+        is only removed as a result of the next CIRC CLOSED event. The
+        Deferred returned from this method callbacks when the
+        CLOSECIRCUIT command has successfully executed, not when the
+        circuit is actually gone.
+
+        If you wish to know when this circuit is actually gone, add an
+        ICircuitListener and wait for circuit_closed()
+        """
+
     def add_circuit_listener(icircuitlistener):
         """
         Add an implementor of :class:`txtorcon.interface.ICircuitListener`

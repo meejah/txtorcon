@@ -1,5 +1,6 @@
 from twisted.python import log
-from interface import IRouterContainer
+from twisted.internet import defer
+from interface import IRouterContainer, ITorControlProtocol
 
 from txtorcon.util import find_keywords
 
@@ -55,13 +56,17 @@ class Circuit(object):
         The ID of this circuit, a number (or None if unset).
     """
 
-    def __init__(self, routercontainer):
+    def __init__(self, routercontainer, protocol):
         """
         :param routercontainer: should implement
-        :class:`txtorcon.interface.IRouterContainer`
+        :class:`txtorcon.interface.IRouterContainer`.
+
+        :param protocol: should implement
+        :class:`txtorcon.interface.ITorControlProtocol`
         """
         self.listeners = []
         self.router_container = IRouterContainer(routercontainer)
+        self.protocol = ITorControlProtocol(protocol)
         self.path = []
         self.streams = []
         self.purpose = None
@@ -69,12 +74,35 @@ class Circuit(object):
         self.state = 'UNKNOWN'
         self.build_flags = []
 
+        ## this is used to hold a Deferred that will callback() when
+        ## this circuit is being CLOSED or FAILED.
+        self._closing_deferred = None
+
     def listen(self, listener):
         if listener not in self.listeners:
             self.listeners.append(listener)
 
     def unlisten(self, listener):
         self.listeners.remove(listener)
+
+    def close(self):
+        """
+        This asks Tor to close the underlying circuit object. See
+        :method:`txtorcon.interface.ITorControlProtocol.close_circuit`
+        for details.
+
+        NOTE that the callback delivered from this method only
+        callbacks after the underlying circuit is really destroyed
+        (not just when the CLOSECIRCUIT command has successfully
+        completed).
+        """
+
+        self._closing_deferred = defer.Deferred()
+        def close_command_is_queued(*args):
+            return self._closing_deferred
+        d = self.protocol.close_circuit(self)
+        d.addCallback(close_command_is_queued)
+        return self._closing_deferred
 
     def _create_flags(self, kw):
         "this clones the kw dict, adding a lower-case version of every key (duplicated in stream.py; put in util?)"
@@ -117,6 +145,7 @@ class Circuit(object):
                 log.err(RuntimeError("Circuit is %s but still has %d streams" %
                                      (self.state, len(self.streams))))
             flags = self._create_flags(kw)
+            self.maybe_call_closing_deferred()
             [x.circuit_closed(self, **flags) for x in self.listeners]
 
         elif self.state == 'FAILED':
@@ -124,7 +153,18 @@ class Circuit(object):
                 log.err(RuntimeError("Circuit is %s but still has %d streams" %
                                      (self.state, len(self.streams))))
             flags = self._create_flags(kw)
+            self.maybe_call_closing_deferred()
             [x.circuit_failed(self, **flags) for x in self.listeners]
+
+    def maybe_call_closing_deferred(self):
+        """
+        Used internally to callback on the _closing_deferred if it
+        exists.
+        """
+
+        if self._closing_deferred:
+            self._closing_deferred.callback(self)
+            self._closing_deferred = None
 
     def update_path(self, path):
         """
