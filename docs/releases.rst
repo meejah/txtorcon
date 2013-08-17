@@ -14,6 +14,7 @@ unreleased
  * put test/ directory at the top level
  * using "`coverage <http://nedbatchelder.com/code/coverage/>`_" tool instead of custom script
  * using `coveralls.io <http://coveralls.io>`_ and `travis-ci <http://travis-ci.org>`_ for test coverage and continuous integration
+ * issue #56: added Circuit.close()
 
 
 v0.8.1
