@@ -44,9 +44,7 @@ Code available at https://github.com/meejah/txtorcon
 
 If you're using Debian, txtorcon is now in testing (jessie) and
 `wheezy-backports <http://packages.debian.org/source/wheezy-backports/txtorcon>`_ thanks
-to Lunar.
-
-::
+to Lunar::
 
     echo "deb http://ftp.ca.debian.org/debian/ wheezy-backports main" >> /etc/apt/sources.list
     apt-get update
@@ -64,8 +62,10 @@ This documentation was generated |today|.
 Known Users:
 ------------
 
+ - txtorcon received a brief mention `at 29C3 <http://media.ccc.de/browse/congress/2012/29c3-5306-en-the_tor_software_ecosystem_h264.html>`_ starting at 12:20 (or via `youtube <http://youtu.be/yG2-ci95h78?t=12m27s>`_).
  - `APAF <https://github.com/globaleaks/APAF>`_ anonymous Python application framework
  - `OONI <https://ooni.torproject.org/>`_ the Open Observatory of Network Interference
+
 
 Get the Code:
 -------------
