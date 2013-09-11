@@ -17,6 +17,7 @@ def setup(proto):
     print "Connected to a Tor version", proto.version
     for event in ['INFO', 'NOTICE', 'WARN', 'ERR']:
         proto.add_event_listener(event, log)
+    proto.get_info('status/version/current', 'version').addCallback(log)
 
 
 def setup_failed(arg):
