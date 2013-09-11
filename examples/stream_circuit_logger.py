@@ -12,7 +12,7 @@ import txtorcon
 
 
 def logCircuit(circuit):
-    path = '->'.join(map(lambda x: x.location.countrycode, circuit.path))
+    path = '->'.join(map(lambda x: str(x.location.countrycode), circuit.path))
     log.msg('Circuit %d (%s) is %s for purpose "%s"' % (circuit.id, path, circuit.state, circuit.purpose))
 
 
@@ -40,13 +40,13 @@ class StreamCircuitLogger(txtorcon.StreamListenerMixin, txtorcon.CircuitListener
     def stream_attach(self, stream, circuit):
         logStream(stream, self.state)
 
-    def stream_failed(self, stream, reason, remote_reason, **kw):
+    def stream_failed(self, stream, reason='', remote_reason='', **kw):
         print 'Stream %d failed because "%s"' % (stream.id, remote_reason)
 
     def circuit_built(self, circuit):
         logCircuit(circuit)
 
-    def circuit_failed(self, circuit, kw):
+    def circuit_failed(self, circuit, **kw):
         log.msg('Circuit %d failed "%s"' % (circuit.id, kw['REASON']))
 
 
