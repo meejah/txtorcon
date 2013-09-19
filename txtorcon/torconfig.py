@@ -342,7 +342,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
         self.cleanup()
 
-        if isinstance(status.value, error.ProcessDone):
+        if isinstance(status.value, error.ProcessDone) or status.value.exitCode is None:
             return
 
         raise RuntimeError('\n'.join(self.stdout) + "\n\nTor exited with error-code %d" % status.value.exitCode)
