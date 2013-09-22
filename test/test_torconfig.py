@@ -647,6 +647,9 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
 
     pid = -1
 
+    def signalProcess(self, command):
+        pass
+
     def closeStdin(self):
         self.protocol.dataReceived('250 OK\r\n')
         self.protocol.dataReceived('250 OK\r\n')
@@ -655,7 +658,7 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
         self.protocol.dataReceived('650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=100 TAG=done SUMMARY="Done"\r\n')
 
 
-class FakeProcessTransportNeverBootstraps(proto_helpers.StringTransportWithDisconnection):
+class FakeProcessTransportNeverBootstraps(FakeProcessTransport):
 
     pid = -1
 
