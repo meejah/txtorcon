@@ -35,12 +35,26 @@ including tests. Some features and motivating examples:
  - `txtorcon.TCPHiddenServiceEndpoint` to simplify hidden service listening into Twisteds endpoint paradigm.
     - see :ref:`launch_tor_endpoint.py`
 
+This documentation was generated |today|.
+
+.. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
+    :target: https://www.travis-ci.org/meejah/txtorcon
+
+.. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
+    :target: https://coveralls.io/r/meejah/txtorcon
+
+
+Getting txtorcon:
+-----------------
+
 The canonical URI is http://timaq4ygg2iegci7.onion
 Code available at https://github.com/meejah/txtorcon
 
 - meejah@meejah.ca (public key: `meejah.asc <meejah.asc>`_)
 - ``git clone git://github.com/meejah/txtorcon.git``
 - **``pip install txtorcon``**
+- Watch an `asciinema demo <http://asciinema.org/a/5654>`_ for an overview.
+
 
 If you're using Debian, txtorcon is now in testing (jessie) and
 `wheezy-backports <http://packages.debian.org/source/wheezy-backports/txtorcon>`_ thanks
@@ -49,14 +63,6 @@ to Lunar::
     echo "deb http://ftp.ca.debian.org/debian/ wheezy-backports main" >> /etc/apt/sources.list
     apt-get update
     apt-get install python-txtorcon 
-
-This documentation was generated |today|.
-
-.. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
-    :target: https://www.travis-ci.org/meejah/txtorcon
-
-.. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
-    :target: https://coveralls.io/r/meejah/txtorcon
 
 
 Known Users:
@@ -67,8 +73,8 @@ Known Users:
  - `OONI <https://ooni.torproject.org/>`_ the Open Observatory of Network Interference
 
 
-Get the Code:
--------------
+Official Releases:
+------------------
 
 .. toctree::
    :maxdepth: 2

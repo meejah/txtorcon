@@ -35,6 +35,8 @@ version 0.8.1::
 
     $ apt-get install python-txtorcon
 
+You may also like `this asciinema demo <http://asciinema.org/a/5654>`_
+for an overview.
 
 overview
 --------
