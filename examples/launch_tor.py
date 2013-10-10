@@ -28,7 +28,8 @@ def state_complete(config, state):
     for c in state.circuits.values():
         print c
 
-    config.ORPort = 9090
+    config.SOCKSPort = 0
+    config.ORPort = 9089
     # "save" may be poorly-named API; it serializes the options to the
     # running Tor (via SETCONF calls)
     config.save().addCallback(query_changed_config, state)

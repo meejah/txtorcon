@@ -62,6 +62,8 @@ reactor.addSystemEventTrigger('before', 'shutdown',
 ## The launch_tor method adds other needed config directives to give
 ## us a minimal config.
 config = txtorcon.TorConfig()
+config.SOCKSPort = 0
+config.ORPort = 9089
 config.HiddenServices = [txtorcon.HiddenService(config, hs_temp, [str(hs_public_port) + " 127.0.0.1:" + str(hs_port)])]
 config.save()
 
