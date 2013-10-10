@@ -463,6 +463,14 @@ class TorControlProtocol(LineOnlyReceiver):
         return self.queue_command('AUTHENTICATE ' + passphrase.encode("hex"))
 
     def quit(self):
+        """
+        Sends the QUIT command, which asks Tor to hang up on this
+        controller connection.
+
+        If you've taken ownership of the Tor to which you're
+        connected, this should also cause it to exit. Otherwise, it
+        won't.
+        """
         return self.queue_command('QUIT')
 
     def queue_command(self, cmd, arg=None):

@@ -49,7 +49,13 @@ def setup_hidden_service(tor_process_protocol):
 def updates(prog, tag, summary):
     print "%d%%: %s" % (prog, summary)
 
-d = txtorcon.launch_tor(txtorcon.TorConfig(), reactor, progress_updates=updates)
+# set a couple options to avoid conflict with the defaults if a Tor is
+# already running
+config = txtorcon.TorConfig()
+config.SOCKSPort = 0
+config.ControlPort = 9089
+
+d = txtorcon.launch_tor(config, reactor, progress_updates=updates, timeout=60)
 d.addCallback(setup_hidden_service)
 d.addErrback(setup_failed)
 reactor.run()
