@@ -15,6 +15,7 @@ unreleased
  * using "`coverage <http://nedbatchelder.com/code/coverage/>`_" tool instead of custom script
  * using `coveralls.io <https://coveralls.io/r/meejah/txtorcon>`_ and `travis-ci <https://travis-ci.org/meejah/txtorcon>`_ for test coverage and continuous integration
  * issue #56: added Circuit.close()
+ * make hidden service server-side endpoints listen only on 127.0.0.1
 
 
 v0.8.1

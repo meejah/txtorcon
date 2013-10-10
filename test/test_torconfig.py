@@ -1043,6 +1043,7 @@ class EndpointTests(unittest.TestCase):
         self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual\nOK')
         self.protocol.answers.append('HiddenServiceOptions')
         self.config.bootstrap()
+        self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
         return d
 
     def test_already_bootstrapped(self):
