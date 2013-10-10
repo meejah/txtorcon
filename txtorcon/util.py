@@ -15,6 +15,7 @@ import struct
 try:
     import GeoIP
 
+    REGION_KEY = 'region'
     def create_geoip(fname):
         try:
             ## It's more "pythonic" to just wait for the exception,
@@ -30,6 +31,7 @@ try:
 except ImportError:
     import pygeoip
     create_geoip = pygeoip.GeoIP
+    REGION_KEY = 'region_name'
 
 city = None
 country = None
@@ -203,11 +205,14 @@ class NetLocation:
         self.asn = None
 
         if city:
-            r = city.record_by_addr(self.ip)
+            try:
+                r = city.record_by_addr(self.ip)
+            except:
+                r = None
             if r is not None:
                 self.countrycode = r['country_code']
                 self.latlng = (r['latitude'], r['longitude'])
-                self.city = (r['city'], r['region'])
+                self.city = (r['city'], r[REGION_KEY])
 
         elif country:
             self.countrycode = country.country_code_by_addr(ipaddr)
