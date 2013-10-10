@@ -1,5 +1,4 @@
-pygeoip
-GeoIP
+geoip2
 Sphinx
 repoze.sphinx.autointerface>=0.4
 coveralls
