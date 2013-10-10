@@ -125,11 +125,12 @@ Ubuntu system, this should work::
 Using pip this would be::
 
     pip install Twisted ipaddr pygeoip
-    pip install Sphinx repoze.sphinx.autointerface coverage  # for development
+    pip install GeoIP Sphinx repoze.sphinx.autointerface coverage  # for development
 
 or::
 
     pip install -r requirements.txt
+    pip install -r dev-requirements.txt
 
 
 documentation

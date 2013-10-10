@@ -14,3 +14,4 @@ exclude docs/_static/*~
 include examples/*
 exclude examples/*~
 include requirements.txt
+include dev-requirements.txt

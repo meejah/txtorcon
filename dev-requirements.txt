@@ -1,0 +1,5 @@
+pygeoip
+GeoIP
+Sphinx
+repoze.sphinx.autointerface>=0.4
+coveralls
