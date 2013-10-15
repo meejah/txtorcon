@@ -6,10 +6,10 @@ import sys
 import os
 import shutil
 import re
-from distutils.core import setup
+from setuptools import setup
 
 ## can't just naively import these from txtorcon, as that will only
-## work if you already installed the dependencies
+## work if you already installed the dependencies :(
 __version__ = '0.9.0'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
@@ -22,6 +22,8 @@ def pip_to_requirements(s):
     Change a PIP-style requirements.txt string into one suitable for setup.py
     """
 
+    if s.startswith('#'):
+        return ''
     m = re.match('(.*)([>=]=[.0-9]*).*', s)
     if m:
         return '%s (%s)' % (m.group(1), m.group(2))
@@ -34,7 +36,7 @@ setup(name = 'txtorcon',
       long_description = open('README','r').read(),
       keywords = ['python', 'twisted', 'tor', 'tor controller'],
       ## way to have "development requirements"?
-      requires = map(pip_to_requirements, open('requirements.txt').readlines()),
+      requires = filter(len, map(pip_to_requirements, open('requirements.txt').readlines())),
       classifiers = ['Framework :: Twisted',
                      'Development Status :: 4 - Beta',
                      'Intended Audience :: Developers',
