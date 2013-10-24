@@ -455,6 +455,12 @@ class TorState(object):
         flags = flags_from_dict(kwargs)
         return self.queue_command('CLOSECIRCUIT %s %s' % (circ.id, flags))
 
+    def close_circuit(self, circ):
+        if circ.id not in self.circuits:
+            raise KeyError("No such circuit: %d" % circ.id)
+
+        return self.protocol.queue_command("CLOSECIRCUIT %d" % circ.id)
+
     def add_circuit_listener(self, icircuitlistener):
         listen = ICircuitListener(icircuitlistener)
         for circ in self.circuits.values():
@@ -623,7 +629,7 @@ class TorState(object):
 
     def _maybe_create_circuit(self, circ_id):
         if circ_id not in self.circuits:
-            c = self.circuit_factory(self, self.protocol)
+            c = self.circuit_factory(self)
             c.listen(self)
             [c.listen(x) for x in self.circuit_listeners]
 
