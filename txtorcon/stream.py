@@ -97,6 +97,10 @@ class Stream(object):
         """If available, the port from which this Stream
         originated. See get_process() also."""
 
+        self._closing_deferred = None
+        """Internal. Holds Deferred that will callback when this
+        stream is CLOSED, FAILED (or DETACHED??)"""
+
     def listen(self, listen):
         """
         Attach an :class:`txtorcon.interface.IStreamListener` to this stream.
@@ -186,6 +190,7 @@ class Stream(object):
             if self.circuit:
                 self.circuit.streams.remove(self)
             self.circuit = None
+            self.maybe_call_closing_deferred()
             flags = self._create_flags(kw)
             [x.stream_closed(self, **flags) for x in self.listeners]
 
@@ -193,6 +198,7 @@ class Stream(object):
             if self.circuit:
                 self.circuit.streams.remove(self)
             self.circuit = None
+            self.maybe_call_closing_deferred()
             # build lower-case version of all flags
             flags = self._create_flags(kw)
             [x.stream_failed(self, **flags) for x in self.listeners]
@@ -205,6 +211,8 @@ class Stream(object):
                 self.circuit.streams.remove(self)
                 self.circuit = None
 
+            ## FIXME does this count as closed?
+            ##self.maybe_call_closing_deferred()
             flags = self._create_flags(kw)
             [x.stream_detach(self, **flags) for x in self.listeners]
 
@@ -238,6 +246,16 @@ class Stream(object):
                 else:
                     if self.circuit.id != cid:
                         log.err(RuntimeError('Circuit ID changed from %d to %d.' % (self.circuit.id, cid)))
+
+    def maybe_call_closing_deferred(self):
+        """
+        Used internally to callback on the _closing_deferred if it
+        exists.
+        """
+
+        if self._closing_deferred:
+            self._closing_deferred.callback(self)
+            self._closing_deferred = None
 
     def __str__(self):
         c = ''
