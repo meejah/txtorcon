@@ -602,6 +602,12 @@ class StateTests(unittest.TestCase):
         self.state.close_stream(stream)
         self.assertEqual(self.transport.value(), 'CLOSESTREAM 1 1\r\n')
 
+    def test_close_stream_invalid_reason(self):
+        stream = Stream(self.state)
+        stream.id = 1
+        self.state.streams[1] = stream
+        self.assertRaises(ValueError, self.state.close_stream, stream, 'FOO_INVALID_REASON')
+
     def test_close_circuit(self):
         circuit = Circuit(self.state)
         circuit.id = 1

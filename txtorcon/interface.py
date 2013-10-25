@@ -138,6 +138,15 @@ class ICircuitContainer(Interface):
         is started (not necessarily finished inside Tor).
         """
 
+    ## FIXME do we need an IStreamContainer that Stream instances get?
+    ## (Currently, they get an ICircuitContainer...)
+    def close_stream(stream, **kwargs):
+        """
+        Close a stream.
+        :return: a Deferred which callbacks when the closing process
+        is started (not necessarily finished inside Tor).
+        """
+
 class ICircuitListener(Interface):
     """
     An interface to listen for updates to Circuits.
