@@ -114,6 +114,25 @@ class Stream(object):
     def unlisten(self, listener):
         self.listeners.remove(listener)
 
+    def close(self):
+        """
+        This asks Tor to close the underlying stream object. See
+        :method:`txtorcon.interface.ITorControlProtocol.close_stream`
+        for details.
+
+        NOTE that the callback delivered from this method only
+        callbacks after the underlying stream is really destroyed
+        (*not* just when the CLOSESTREAM command has successfully
+        completed).
+        """
+
+        self._closing_deferred = defer.Deferred()
+        def close_command_is_queued(*args):
+            return self._closing_deferred
+        d = self.protocol.close_circuit(self)
+        d.addCallback(close_command_is_queued)
+        return self._closing_deferred
+
     def _create_flags(self, kw):
         "this clones the kw dict, adding a lower-case version of every key (duplicated in circuit.py; consider putting in util?)"
 

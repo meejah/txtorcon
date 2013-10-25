@@ -421,11 +421,39 @@ class TorState(object):
         'REASON_TORPROTOCOL': 13,       # (Sent when closing connection because of Tor protocol violations.)
         'REASON_NOTDIRECTORY': 14}      # (Client sent RELAY_BEGIN_DIR to a non-directory relay.)
 
-    def close_stream(self, stream, reason='REASON_MISC'):
+    def close_stream(self, stream, reason='REASON_MISC', **kwargs):
+        """
+        This sends a STREAMCLOSE command, using the specified reason
+        (either an int or one of the 14 strings in section 6.3 of
+        tor-spec.txt if the argument is a string). Any kwards are
+        passed through as flags if they evaluated to true
+        (e.g. "SomeFlag=True"). Currently there are none that Tor accepts.
+        """
+
         if stream.id not in self.streams:
             raise KeyError("No such stream: %d" % stream.id)
+        try:
+            reason = int(reason)
+            reason = stream_close_reasons[reason]
+        except (ValueError, KeyError):
+            raise ValueError('Unknown stream close reason "%s"' % str(reason))
 
-        return self.protocol.queue_command("CLOSESTREAM %d %d" % (stream.id, self.stream_close_reasons[reason]))
+        flags = flags_from_dict(kwargs)
+
+        return self.queue_command('CLOSESTREAM %s %d %s' % (str(stream_id), reason, flags))
+
+    def close_circuit(self, circ, **kwargs):
+        """
+        This sends a CLOSECIRCUIT command, using any keyword arguments
+        passed as the Flags (currently, that is just 'IfUnused' which
+        means to only close the circuit when it is no longer used by
+        any streams).
+        """
+
+        if circ.id not in self.circuits:
+            raise KeyError("No such circuit: %d" % circ.id)
+        flags = flags_from_dict(kwargs)
+        return self.queue_command('CLOSECIRCUIT %s %s' % (circ.id, flags))
 
     def add_circuit_listener(self, icircuitlistener):
         listen = ICircuitListener(icircuitlistener)

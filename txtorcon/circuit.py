@@ -85,22 +85,26 @@ class Circuit(object):
     def unlisten(self, listener):
         self.listeners.remove(listener)
 
-    def close(self):
+    def close(self, **kw):
         """
         This asks Tor to close the underlying circuit object. See
         :method:`txtorcon.interface.ITorControlProtocol.close_circuit`
         for details.
 
+        You may pass keyword arguments to take care of any Flags Tor
+        accepts for the CLOSECIRCUIT command. Currently, this is only
+        "IfUnused". So for example: circ.close(IfUnused=True)
+
         NOTE that the callback delivered from this method only
         callbacks after the underlying circuit is really destroyed
-        (not just when the CLOSECIRCUIT command has successfully
+        (*not* just when the CLOSECIRCUIT command has successfully
         completed).
         """
 
         self._closing_deferred = defer.Deferred()
         def close_command_is_queued(*args):
             return self._closing_deferred
-        d = self.protocol.close_circuit(self)
+        d = self.protocol.close_circuit(self, **kw)
         d.addCallback(close_command_is_queued)
         return self._closing_deferred
 

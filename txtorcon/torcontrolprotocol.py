@@ -4,7 +4,7 @@ from twisted.python import log
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.protocols.basic import LineOnlyReceiver
-from zope.interface import implements
+from zope.interface import implements, implementedBy
 
 from txtorcon.util import hmac_sha256, compare_via_hash
 from txtorcon.log import txtorlog
@@ -172,6 +172,19 @@ def parse_keywords(lines, multiline_values=True):
             rtn[key] = unquote(value)
     return rtn
 
+
+def flags_from_dict(kw):
+    """
+    This turns a dict with keys that are flags (e.g. for CLOSECIRCUIT,
+    CLOSESTREAM) only if the values are true.
+    """
+
+    flags = ' '
+    for (k, v) in kw.iteritems:
+        if v:
+            flags += ' ' + str(k)
+    # strip leading space
+    return flags[1:]
 
 class TorControlProtocol(LineOnlyReceiver):
     """
