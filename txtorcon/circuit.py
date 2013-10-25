@@ -92,10 +92,10 @@ class Circuit(object):
         accepts for the CLOSECIRCUIT command. Currently, this is only
         "IfUnused". So for example: circ.close(IfUnused=True)
 
-        NOTE that the callback delivered from this method only
-        callbacks after the underlying circuit is really destroyed
-        (*not* just when the CLOSECIRCUIT command has successfully
-        completed).
+        :return: Deferred which callbacks with this Circuit instance
+        ONLY after Tor has confirmed it is gone (not simply that the
+        CLOSECIRCUIT command has been queued). This could be a while
+        if you included IfUnused.
         """
 
         self._closing_deferred = defer.Deferred()

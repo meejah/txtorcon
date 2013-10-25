@@ -131,6 +131,12 @@ class ICircuitContainer(Interface):
     def find_circuit(id):
         ":return: a circuit for the id, or exception."
 
+    def close_circuit(circuit, **kwargs):
+        """
+        Close a circuit.
+        :return: a Deferred which callbacks when the closing process
+        is started (not necessarily finished inside Tor).
+        """
 
 class ICircuitListener(Interface):
     """

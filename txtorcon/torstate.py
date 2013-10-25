@@ -127,6 +127,24 @@ def build_local_tor_connection(reactor, host='127.0.0.1', port=9051,
         return build_tor_connection((reactor, host, port), *args, **kwargs)
 
 
+def flags_from_dict(kw):
+    """
+    This turns a dict with keys that are flags (e.g. for CLOSECIRCUIT,
+    CLOSESTREAM) only if the values are true.
+    """
+
+    if len(kw) == 0:
+        return ''
+
+    flags = ''
+    for (k, v) in kw.iteritems():
+        if v:
+            flags += ' ' + str(k)
+    # note that we want the leading space if there's at least one
+    # flag.
+    return flags
+
+
 class TorState(object):
     """
     This tracks the current state of Tor using a TorControlProtocol.
@@ -434,13 +452,16 @@ class TorState(object):
             raise KeyError("No such stream: %d" % stream.id)
         try:
             reason = int(reason)
-            reason = stream_close_reasons[reason]
-        except (ValueError, KeyError):
-            raise ValueError('Unknown stream close reason "%s"' % str(reason))
+        except ValueError:
+            try:
+                reason = TorState.stream_close_reasons[reason]
+            except KeyError:
+                raise ValueError('Unknown stream close reason "%s"' % str(reason))
 
         flags = flags_from_dict(kwargs)
 
-        return self.queue_command('CLOSESTREAM %s %d %s' % (str(stream_id), reason, flags))
+        cmd = 'CLOSESTREAM %s %d%s' % (str(stream.id), reason, flags)
+        return self.protocol.queue_command(cmd)
 
     def close_circuit(self, circ, **kwargs):
         """
@@ -448,20 +469,17 @@ class TorState(object):
         passed as the Flags (currently, that is just 'IfUnused' which
         means to only close the circuit when it is no longer used by
         any streams).
+
+        :return: a Deferred which callbacks with the result of queuing
+        the command to Tor (usually "OK"). If you want to instead know
+        when the circuit is actually-gone, see :meth:`Circuit.close
+        <txtorcon.circuit.Circuit.close>`
         """
 
         if circ.id not in self.circuits:
             raise KeyError("No such circuit: %d" % circ.id)
         flags = flags_from_dict(kwargs)
-        return self.queue_command('CLOSECIRCUIT %s %s' % (circ.id, flags))
-
-    def close_circuit(self, circ, ifUnused=False):
-        if circ.id not in self.circuits:
-            raise KeyError("No such circuit: %d" % circ.id)
-        command = "CLOSECIRCUIT %d" % circ.id
-        if ifUnused:
-            command += " IfUnused"
-        return self.protocol.queue_command(command)
+        return self.protocol.queue_command('CLOSECIRCUIT %s%s' % (circ.id, flags))
 
     def add_circuit_listener(self, icircuitlistener):
         listen = ICircuitListener(icircuitlistener)

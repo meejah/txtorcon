@@ -114,11 +114,14 @@ class Stream(object):
     def unlisten(self, listener):
         self.listeners.remove(listener)
 
-    def close(self):
+    def close(self, **kw):
         """
         This asks Tor to close the underlying stream object. See
         :method:`txtorcon.interface.ITorControlProtocol.close_stream`
         for details.
+
+        Although Tor currently takes no flags, it allows you to; any
+        keyword arguments are passed through as flags.
 
         NOTE that the callback delivered from this method only
         callbacks after the underlying stream is really destroyed
@@ -129,7 +132,7 @@ class Stream(object):
         self._closing_deferred = defer.Deferred()
         def close_command_is_queued(*args):
             return self._closing_deferred
-        d = self.protocol.close_circuit(self)
+        d = self.protocol.close_stream(self, **kw)
         d.addCallback(close_command_is_queued)
         return self._closing_deferred
 

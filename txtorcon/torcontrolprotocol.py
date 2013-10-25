@@ -173,19 +173,6 @@ def parse_keywords(lines, multiline_values=True):
     return rtn
 
 
-def flags_from_dict(kw):
-    """
-    This turns a dict with keys that are flags (e.g. for CLOSECIRCUIT,
-    CLOSESTREAM) only if the values are true.
-    """
-
-    flags = ' '
-    for (k, v) in kw.iteritems:
-        if v:
-            flags += ' ' + str(k)
-    # strip leading space
-    return flags[1:]
-
 class TorControlProtocol(LineOnlyReceiver):
     """
     This is the main class that talks to a Tor and implements the "raw"

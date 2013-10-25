@@ -602,6 +602,32 @@ class StateTests(unittest.TestCase):
         self.state.close_stream(stream)
         self.assertEqual(self.transport.value(), 'CLOSESTREAM 1 1\r\n')
 
+    def test_close_circuit(self):
+        circuit = Circuit(self.state)
+        circuit.id = 1
+        try:
+            self.state.close_circuit(circuit)
+            self.assertTrue(False)
+        except KeyError:
+            pass
+
+        self.state.circuits[1] = circuit
+        self.state.close_circuit(circuit)
+        self.assertEqual(self.transport.value(), 'CLOSECIRCUIT 1\r\n')
+
+    def test_close_circuit_with_flags(self):
+        circuit = Circuit(self.state)
+        circuit.id = 1
+        try:
+            self.state.close_circuit(circuit, IfUnused=True)
+            self.assertTrue(False)
+        except KeyError:
+            pass
+
+        self.state.circuits[1] = circuit
+        self.state.close_circuit(circuit, IfUnused=True)
+        self.assertEqual(self.transport.value(), 'CLOSECIRCUIT 1 IfUnused\r\n')
+
     def test_circuit_destroy(self):
         self.state._circuit_update('365 LAUNCHED PURPOSE=GENERAL')
         self.assertTrue(365 in self.state.circuits)
