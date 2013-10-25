@@ -1,6 +1,6 @@
 from twisted.python import log
 from twisted.internet import defer
-from interface import IRouterContainer, ITorControlProtocol
+from interface import IRouterContainer
 
 from txtorcon.util import find_keywords
 
@@ -56,17 +56,14 @@ class Circuit(object):
         The ID of this circuit, a number (or None if unset).
     """
 
-    def __init__(self, routercontainer, protocol):
+    def __init__(self, routercontainer):
         """
         :param routercontainer: should implement
         :class:`txtorcon.interface.IRouterContainer`.
-
-        :param protocol: should implement
-        :class:`txtorcon.interface.ITorControlProtocol`
         """
         self.listeners = []
         self.router_container = IRouterContainer(routercontainer)
-        self.protocol = ITorControlProtocol(protocol)
+        self.torstate = routercontainer
         self.path = []
         self.streams = []
         self.purpose = None
@@ -85,22 +82,26 @@ class Circuit(object):
     def unlisten(self, listener):
         self.listeners.remove(listener)
 
-    def close(self):
+    def close(self, **kw):
         """
         This asks Tor to close the underlying circuit object. See
-        :method:`txtorcon.interface.ITorControlProtocol.close_circuit`
+        :method:`txtorcon.torstate.TorState.close_circuit`
         for details.
 
-        NOTE that the callback delivered from this method only
-        callbacks after the underlying circuit is really destroyed
-        (not just when the CLOSECIRCUIT command has successfully
-        completed).
+        You may pass keyword arguments to take care of any Flags Tor
+        accepts for the CLOSECIRCUIT command. Currently, this is only
+        "IfUnused". So for example: circ.close(IfUnused=True)
+
+        :return: Deferred which callbacks with this Circuit instance
+        ONLY after Tor has confirmed it is gone (not simply that the
+        CLOSECIRCUIT command has been queued). This could be a while
+        if you included IfUnused.
         """
 
         self._closing_deferred = defer.Deferred()
         def close_command_is_queued(*args):
             return self._closing_deferred
-        d = self.protocol.close_circuit(self)
+        d = self.torstate.close_circuit(self, **kw)
         d.addCallback(close_command_is_queued)
         return self._closing_deferred
 

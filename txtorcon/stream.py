@@ -10,6 +10,7 @@ to attach streams to circuits "by hand"
 """
 
 from twisted.python import log
+from twisted.internet import defer
 from txtorcon.interface import ICircuitContainer, IStreamListener
 from txtorcon.util import find_keywords, maybe_ip_addr
 
@@ -96,6 +97,10 @@ class Stream(object):
         """If available, the port from which this Stream
         originated. See get_process() also."""
 
+        self._closing_deferred = None
+        """Internal. Holds Deferred that will callback when this
+        stream is CLOSED, FAILED (or DETACHED??)"""
+
     def listen(self, listen):
         """
         Attach an :class:`txtorcon.interface.IStreamListener` to this stream.
@@ -113,6 +118,28 @@ class Stream(object):
 
     def unlisten(self, listener):
         self.listeners.remove(listener)
+
+    def close(self, **kw):
+        """
+        This asks Tor to close the underlying stream object. See
+        :method:`txtorcon.interface.ITorControlProtocol.close_stream`
+        for details.
+
+        Although Tor currently takes no flags, it allows you to; any
+        keyword arguments are passed through as flags.
+
+        NOTE that the callback delivered from this method only
+        callbacks after the underlying stream is really destroyed
+        (*not* just when the CLOSESTREAM command has successfully
+        completed).
+        """
+
+        self._closing_deferred = defer.Deferred()
+        def close_command_is_queued(*args):
+            return self._closing_deferred
+        d = self.circuit_container.close_stream(self, **kw)
+        d.addCallback(close_command_is_queued)
+        return self._closing_deferred
 
     def _create_flags(self, kw):
         "this clones the kw dict, adding a lower-case version of every key (duplicated in circuit.py; consider putting in util?)"
@@ -163,6 +190,7 @@ class Stream(object):
             if self.circuit:
                 self.circuit.streams.remove(self)
             self.circuit = None
+            self.maybe_call_closing_deferred()
             flags = self._create_flags(kw)
             [x.stream_closed(self, **flags) for x in self.listeners]
 
@@ -170,6 +198,7 @@ class Stream(object):
             if self.circuit:
                 self.circuit.streams.remove(self)
             self.circuit = None
+            self.maybe_call_closing_deferred()
             # build lower-case version of all flags
             flags = self._create_flags(kw)
             [x.stream_failed(self, **flags) for x in self.listeners]
@@ -182,6 +211,8 @@ class Stream(object):
                 self.circuit.streams.remove(self)
                 self.circuit = None
 
+            ## FIXME does this count as closed?
+            ##self.maybe_call_closing_deferred()
             flags = self._create_flags(kw)
             [x.stream_detach(self, **flags) for x in self.listeners]
 
@@ -215,6 +246,16 @@ class Stream(object):
                 else:
                     if self.circuit.id != cid:
                         log.err(RuntimeError('Circuit ID changed from %d to %d.' % (self.circuit.id, cid)))
+
+    def maybe_call_closing_deferred(self):
+        """
+        Used internally to callback on the _closing_deferred if it
+        exists.
+        """
+
+        if self._closing_deferred:
+            self._closing_deferred.callback(self)
+            self._closing_deferred = None
 
     def __str__(self):
         c = ''

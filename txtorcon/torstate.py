@@ -127,6 +127,24 @@ def build_local_tor_connection(reactor, host='127.0.0.1', port=9051,
         return build_tor_connection((reactor, host, port), *args, **kwargs)
 
 
+def flags_from_dict(kw):
+    """
+    This turns a dict with keys that are flags (e.g. for CLOSECIRCUIT,
+    CLOSESTREAM) only if the values are true.
+    """
+
+    if len(kw) == 0:
+        return ''
+
+    flags = ''
+    for (k, v) in kw.iteritems():
+        if v:
+            flags += ' ' + str(k)
+    # note that we want the leading space if there's at least one
+    # flag.
+    return flags
+
+
 class TorState(object):
     """
     This tracks the current state of Tor using a TorControlProtocol.
@@ -421,11 +439,47 @@ class TorState(object):
         'REASON_TORPROTOCOL': 13,       # (Sent when closing connection because of Tor protocol violations.)
         'REASON_NOTDIRECTORY': 14}      # (Client sent RELAY_BEGIN_DIR to a non-directory relay.)
 
-    def close_stream(self, stream, reason='REASON_MISC'):
+    def close_stream(self, stream, reason='REASON_MISC', **kwargs):
+        """
+        This sends a STREAMCLOSE command, using the specified reason
+        (either an int or one of the 14 strings in section 6.3 of
+        tor-spec.txt if the argument is a string). Any kwards are
+        passed through as flags if they evaluated to true
+        (e.g. "SomeFlag=True"). Currently there are none that Tor accepts.
+        """
+
         if stream.id not in self.streams:
             raise KeyError("No such stream: %d" % stream.id)
+        try:
+            reason = int(reason)
+        except ValueError:
+            try:
+                reason = TorState.stream_close_reasons[reason]
+            except KeyError:
+                raise ValueError('Unknown stream close reason "%s"' % str(reason))
 
-        return self.protocol.queue_command("CLOSESTREAM %d %d" % (stream.id, self.stream_close_reasons[reason]))
+        flags = flags_from_dict(kwargs)
+
+        cmd = 'CLOSESTREAM %s %d%s' % (str(stream.id), reason, flags)
+        return self.protocol.queue_command(cmd)
+
+    def close_circuit(self, circ, **kwargs):
+        """
+        This sends a CLOSECIRCUIT command, using any keyword arguments
+        passed as the Flags (currently, that is just 'IfUnused' which
+        means to only close the circuit when it is no longer used by
+        any streams).
+
+        :return: a Deferred which callbacks with the result of queuing
+        the command to Tor (usually "OK"). If you want to instead know
+        when the circuit is actually-gone, see :meth:`Circuit.close
+        <txtorcon.circuit.Circuit.close>`
+        """
+
+        if circ.id not in self.circuits:
+            raise KeyError("No such circuit: %d" % circ.id)
+        flags = flags_from_dict(kwargs)
+        return self.protocol.queue_command('CLOSECIRCUIT %s%s' % (circ.id, flags))
 
     def add_circuit_listener(self, icircuitlistener):
         listen = ICircuitListener(icircuitlistener)
@@ -595,7 +649,7 @@ class TorState(object):
 
     def _maybe_create_circuit(self, circ_id):
         if circ_id not in self.circuits:
-            c = self.circuit_factory(self, self.protocol)
+            c = self.circuit_factory(self)
             c.listen(self)
             [c.listen(x) for x in self.circuit_listeners]
 

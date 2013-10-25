@@ -4,7 +4,9 @@ from twisted.python import log
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer
+
 from txtorcon import TorControlProtocol, TorProtocolFactory, TorState
+from txtorcon import ITorControlProtocol
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.util import hmac_sha256
 
@@ -28,6 +30,13 @@ class CallbackChecker:
         self.called_back = True
         return v
 
+class InterfaceTests(unittest.TestCase):
+    def test_implements(self):
+        from zope.interface import implements, implementedBy
+        self.assertTrue(ITorControlProtocol.implementedBy(TorControlProtocol))
+
+    def test_object_implements(self):
+        self.assertTrue(ITorControlProtocol.providedBy(TorControlProtocol()))
 
 class LogicTests(unittest.TestCase):
 
