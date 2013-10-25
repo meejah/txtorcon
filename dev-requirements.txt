@@ -1,3 +1,6 @@
+setuptools>=0.8.0
 Sphinx
 repoze.sphinx.autointerface>=0.4
 coveralls
+wheel
+twine

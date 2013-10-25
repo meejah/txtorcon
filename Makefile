@@ -9,6 +9,7 @@ install:
 
 doc: docs/*.rst
 	cd docs && make html
+	cp dist/txtorcon-0.9.0.tar.gz docs/_build/html
 	cp dist/txtorcon-0.8.1.tar.gz docs/_build/html
 	cp dist/txtorcon-0.7.tar.gz docs/_build/html
 	cp dist/txtorcon-0.6.tar.gz.sig docs/_build/html
@@ -49,24 +50,34 @@ clean:
 counts:
 	ohcount -s txtorcon/*.py
 
-dist: dist/txtorcon-0.8.1.tar.gz.sig
+dist: dist/txtorcon-0.9.0.tar.gz.asc
 
 sdist: setup.py 
 	python setup.py sdist
 
-dist/txtorcon-0.8.1.tar.gz: sdist
-dist/txtorcon-0.8.1.tar.gz.sig: dist/txtorcon-0.8.1.tar.gz
-	gpg --verify dist/txtorcon-0.8.1.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.8.1.tar.gz
+dist/txtorcon-0.9.0-py27-none-any.whl:
+	python setup.py bdist_wheel
+dist/txtorcon-0.9.0-py27-none-any.whl.asc: dist/txtorcon-0.9.0-py27-none-any.whl
+	gpg --verify dist/txtorcon-0.9.0-py27-none-any.whl.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-0.9.0-py27-none-any.whl
 
-release: dist/txtorcon-0.8.1.tar.gz.sig setup.py
-	python setup.py sdist upload --sign --identity=meejah@meejah.ca
+dist/txtorcon-0.9.0.tar.gz: sdist
+dist/txtorcon-0.9.0.tar.gz.asc: dist/txtorcon-0.9.0.tar.gz
+	gpg --verify dist/txtorcon-0.9.0.tar.gz.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-0.9.0.tar.gz
 
-virtualenv:
+release: dist/txtorcon-0.9.0.tar.gz dist/txtorcon-0.9.0-py27-none-any.whl setup.py
+	twine
+##	python setup.py sdist upload --sign --identity=meejah@meejah.ca
+
+venv:
 	mkdir -p tmp
 	cd tmp
-	virtualenv --never-download --extra-search-dir=/usr/lib/python2.7/dist-packages/ txtorcon_env
-	@echo "created txtorcon_env"
-	@echo "see INSTALL for more information"
+	virtualenv --never-download --extra-search-dir=/usr/lib/python2.7/dist-packages/ venv
+	@echo "created venv"
+	@echo "see INSTALL for more information; to use:"
+	@echo "source ./venv/bin/activate"
+	@echo "pip install -r requirements.txt"
+	@echo "pip install -r dev-requirements.txt"
+	@echo "python examples/monitor.py"
 
 html: docs/README.rst
 	cd docs && make html
