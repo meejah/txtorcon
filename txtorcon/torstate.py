@@ -3,6 +3,7 @@ import os
 import stat
 import types
 import warnings
+import time
 
 from twisted.python import log
 from twisted.internet import defer
@@ -207,6 +208,7 @@ class TorState(object):
 
     def __init__(self, protocol, bootstrap=True, write_state_diagram=False,
                  load_routers=True):
+        self._start_init = time.time()  # XXX debugging
         self.protocol = ITorControlProtocol(protocol)
         # fixme could use protocol.on_disconnect to re-connect; see issue #3
 
@@ -424,6 +426,9 @@ class TorState(object):
         if not self.tor_pid and self.protocol.is_owned:
             self.tor_pid = self.protocol.is_owned
 
+        elapsed = time.time() - self._start_init  # XXX debugging
+        del self._start_init
+        print "Startup took %.2fs" % elapsed
         self.post_bootstrap.callback(self)
         self.post_boostrap = None
 
