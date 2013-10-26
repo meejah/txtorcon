@@ -30,8 +30,8 @@ from txtorcon.interface import IStreamAttacher
 from spaghetti import FSM, State, Transition
 
 
-def _build_state(proto):
-    state = TorState(proto)
+def _build_state(load_routers, proto):
+    state = TorState(proto, load_routers=load_routers)
     return state.post_bootstrap
 
 
@@ -40,7 +40,7 @@ def _wait_for_proto(proto):
 
 
 def build_tor_connection(connection, build_state=True, wait_for_proto=True,
-                         password_function=lambda: None):
+                         password_function=lambda: None, load_routers=True):
     """
     This is used to build a valid TorState (which has .protocol for
     the TorControlProtocol). For example::
@@ -63,9 +63,16 @@ def build_tor_connection(connection, build_state=True, wait_for_proto=True,
         See :class:`txtorcon.TorControlProtocol`
 
     :param build_state:
-        If True (the default) a TorState object will be
-        built as well. If False, just a TorControlProtocol will be
-        returned via the Deferred.
+        If True (the default) a TorState object will be built as
+        well. If False, just a TorControlProtocol will be returned via
+        the Deferred. This can also be a callable which takes a single
+        argument (the TorControlProtocol) and should return a Deferred
+        that callbacks with the TorState object
+
+    :param load_routers:
+        See TorState. If False, doesn't load "ns/all" Router
+        state. Then, all Routers will only have valid IDs (and
+        typically nothing else).
 
     :return:
         a Deferred that fires with a TorControlProtocol or, if you
@@ -105,7 +112,9 @@ def build_tor_connection(connection, build_state=True, wait_for_proto=True,
         )
     )
     if build_state:
-        d.addCallback(build_state if callable(build_state) else _build_state)
+        ## FIXME add load_routers (other kwargs?)
+        import functools
+        d.addCallback(build_state if callable(build_state) else functools.partial(_build_state, load_routers))
     elif wait_for_proto:
         d.addCallback(wait_for_proto if callable(wait_for_proto) else
                       _wait_for_proto)
@@ -133,6 +142,7 @@ def build_local_tor_connection(reactor, host='127.0.0.1', port=9051,
 
     try:
         return build_tor_connection((reactor, socket), *args, **kwargs)
+    ## fixme, more-exact exception list?
     except:
         return build_tor_connection((reactor, host, port), *args, **kwargs)
 
@@ -195,7 +205,8 @@ class TorState(object):
         state = TorState(protocol, bootstrap=True)
         return state.post_bootstrap
 
-    def __init__(self, protocol, bootstrap=True):
+    def __init__(self, protocol, bootstrap=True, write_state_diagram=False,
+                 load_routers=True):
         self.protocol = ITorControlProtocol(protocol)
         # fixme could use protocol.on_disconnect to re-connect; see issue #3
 
@@ -203,6 +214,10 @@ class TorState(object):
         # to track these things
         self.circuit_factory = Circuit
         self.stream_factory = Stream
+
+        self.load_routers = load_routers
+        """if False, we don't load the ns/all router-list at all, in
+        which case the only thing that's valid on Routers is the ID"""
 
         self.attacher = None
         """If set, provides
@@ -343,11 +358,12 @@ class TorState(object):
         # be the empty string, but we call _update_network_status for
         # the de-duplication of named routers
 
-        ns = yield self.protocol.get_info_incremental(
-            'ns/all',
-            self._network_status_parser.process
-        )
-        self._update_network_status(ns)
+        if self.load_routers:
+            ns = yield self.protocol.get_info_incremental(
+                'ns/all',
+                self._network_status_parser.process
+            )
+            self._update_network_status(ns)
 
         # update list of existing circuits
         cs = yield self.protocol.get_info_raw('circuit-status')
