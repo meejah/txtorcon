@@ -139,7 +139,7 @@ def parse_keywords(lines, multiline_values=True):
         if line.strip() == 'OK':
             continue
 
-        if '=' in line:
+        if '=' in line and ' ' not in line.split('=', 1)[0]:
             if key:
                 if key in rtn:
                     if isinstance(rtn[key], types.ListType):

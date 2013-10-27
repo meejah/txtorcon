@@ -672,6 +672,22 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(x['foo'][2], 'zarimba')
         self.assertEqual(x['foo'][3], 'foo')
 
+    def test_multiline_keywords_with_spaces(self):
+        x = parse_keywords('''ns/name/foo=
+r foo aaaam7E7h1vY5Prk8v9/nSRCydY BBBBOfum4CtAYuOgf/D33Qq5+rk 2013-10-27 06:22:18 1.2.3.4 9001 9030
+s Fast Guard HSDir Running Stable V2Dir Valid
+w Bandwidth=1234
+ns/name/bar=
+r bar aaaaHgNYtTVPw5hHTO28J4je5i8 BBBBBUaJaBFSU/HDrTxnSh+D3+fY 2013-10-27 07:48:56 1.2.4.5 9001 9030
+s Exit Fast Guard HSDir Named Running Stable V2Dir Valid
+w Bandwidth=1234
+OK
+''')
+        self.assertEqual(2, len(x))
+        keys = x.keys()
+        keys.sort()
+        self.assertEqual(keys, ['ns/name/bar', 'ns/name/foo'])
+
     def test_multiline_keywords(self):
         x = parse_keywords('''Foo=bar\nBar''')
         self.assertEqual(x, {'Foo': 'bar\nBar'})
