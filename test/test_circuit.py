@@ -2,7 +2,7 @@ from twisted.trial import unittest
 from twisted.internet import defer
 from zope.interface import implements
 
-from txtorcon import Circuit, Stream
+from txtorcon import Circuit, Stream, TorControlProtocol, TorState
 from txtorcon.interface import IRouterContainer, ICircuitListener, ICircuitContainer, CircuitListenerMixin, ITorControlProtocol
 
 class FakeTorControlProtocol(object):
@@ -22,7 +22,7 @@ class FakeTorController(object):
         self.failed = []
 
     def router_from_id(self, i):
-        return self.routers[i]
+        return self.routers[i[:41]]
 
     def circuit_new(self, circuit):
         self.circuits[circuit.id] = circuit
@@ -101,6 +101,16 @@ class CircuitTests(unittest.TestCase):
         self.assertEqual(len(tor.circuits), 1)
         self.assertTrue(1 in tor.circuits)
         self.assertEqual(len(tor.extend), 0)
+        self.assertEqual(1, len(circuit.path))
+
+    def test_path_update(self):
+        cp = TorControlProtocol()
+        state = TorState(cp, False)
+        circuit = Circuit(state, cp)
+        circuit.update('1 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL'.split())
+        self.assertEqual(1, len(circuit.path))
+        self.assertEqual('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', circuit.path[0].id_hex)
+        self.assertEqual('eris', circuit.path[0].name)
 
     def test_wrong_update(self):
         tor = FakeTorController()

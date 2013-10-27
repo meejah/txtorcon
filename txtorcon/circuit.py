@@ -183,8 +183,7 @@ class Circuit(object):
 
         oldpath = self.path
         self.path = []
-        for router in path:
-            p = router[:41]
+        for p in path:
             if p[0] != '$':
                 break
 

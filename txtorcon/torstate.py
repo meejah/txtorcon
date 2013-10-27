@@ -681,13 +681,13 @@ class TorState(object):
         """IRouterContainer API"""
 
         try:
-            return self.routers[routerid]
+            return self.routers[routerid[:41]]
 
         except KeyError:
-            router = Router(self.protocol)
             if routerid[0] != '$':
                 raise                   # just re-raise the KeyError
 
+            router = Router(self.protocol)
             idhash = routerid[1:41]
             nick = ''
             is_named = False
@@ -697,6 +697,7 @@ class TorState(object):
             router.update(nick, hashFromHexId(idhash), '0' * 27, 'unknown',
                           'unknown', '0', '0')
             router.name_is_unique = is_named
+            self.routers[router.id_hex] = router
             return router
 
     ## implement IStreamListener
