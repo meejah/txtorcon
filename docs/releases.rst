@@ -16,6 +16,8 @@ unreleased
  * using `coveralls.io <https://coveralls.io/r/meejah/txtorcon>`_ and `travis-ci <https://travis-ci.org/meejah/txtorcon>`_ for test coverage and continuous integration
  * issue #56: added Circuit.close()
  * make hidden service server-side endpoints listen only on 127.0.0.1
+ * couple parsing issues discovered with multi-line keyword
+ * preserve router nicks from long-names if consensus lacks and entry
 
 
 v0.8.1
