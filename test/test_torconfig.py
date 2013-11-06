@@ -514,6 +514,13 @@ OK''')
         conf.HiddenServices = [HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
         conf.save()
 
+    def test_two_hidden_services_before_save(self):
+        conf = TorConfig()
+        conf.HiddenServices = [HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
+        conf.HiddenServices.append(HiddenService(conf, '/fake/path/two', ['1234 127.0.0.1:1234']))
+        conf.save()
+        self.assertEqual(2, len(conf.HiddenServices))
+
     def test_onion_keys(self):
         self.protocol.answers.append('HiddenServiceDir=/fake/path\n')
         d = tempfile.mkdtemp()
