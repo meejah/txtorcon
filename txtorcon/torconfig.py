@@ -779,7 +779,7 @@ class HiddenService(object):
 
     def config_attributes(self):
         """
-        Helper method used by y TorConfig when generating a torrc file.
+        Helper method used by TorConfig when generating a torrc file.
         """
 
         rtn = [('HiddenServiceDir', self.dir)]
@@ -800,22 +800,27 @@ class TorConfig(object):
     call.
 
     Also, it gives easy access to all the configuration options
-    present. This is done with lazy caching: the first time you access
-    a value, it asks the underlying Tor (via TorControlProtocol) and
-    thereafter caches the value; if you change it, a SETCONF is
-    issued.
+    present. This is loaded at "bootstrap" time (when all values are
+    loaded) providing attribute-based access thereafter. If you set an
+    item AND we're bootstrapped to a Tor, THEN that valud is NOT
+    reflected in Tor until you do save() -- and neither is it
+    reflected in the TorConfig instance until that time. So, you might
+    get slightly confusing behavior like: ``config.SOCKSPort=1234;
+    print config.SOCKSPort`` which will still print 9050 or whatever
+    the original value is. (TODO is this really a good idea?
+    Especially since we "need" the other behavior for "build config
+    from scratch" use-case)
 
-    When setting configuration values, they are cached locally and DO
-    NOT AFFECT the running Tor until you call save(). When getting
-    config items they will reflect the current state of Tor
-    (i.e. *not* what's been set since the last save())
+    You may also use this class to construct a configuration from
+    scratch (e.g. to give to :func:`txtorcon.launch_tor`). In this
+    case, values are reflected right away. (If we're not bootstrapped
+    to a Tor, this is the mode).
 
     Note that you do not need to call save() if you're just using
     TorConfig to create a .torrc file or for input to launch_tor().
 
-    FIXME: It also listens on the CONF_CHANGED event to update the
-    cached data in the event other controllers (etc) changed it. (Only
-    exists in Git versions?)
+    This listens for CONF_CHANGED events to update the cached data in
+    the event other controllers (etc) changed it.
 
     FIXME: when is CONF_CHANGED introduced in Tor? Can we do anything
     like it for prior versions?
@@ -907,7 +912,10 @@ class TorConfig(object):
             except KeyError, e:
                 raise AttributeError(str(e))
         else:
-            return self.config[self._find_real_name(name)]
+            rn = self._find_real_name(name)
+            if '_slutty_' in self.__dict__ and rn in self.unsaved:
+                return self.unsaved[rn]
+            return self.config[rn]
 
     def get_type(self, name):
         """
