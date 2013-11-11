@@ -554,6 +554,17 @@ OK''')
         self.assertEqual(h, conf.hiddenservices[0])
         self.assertTrue(conf.needs_save())
 
+    def test_multiple_append(self):
+        conf = TorConfig()
+        h0 = HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)
+        h1 = HiddenService(conf, '/fake/path', ['90 127.0.0.1:4321'], '', 3)
+        conf.hiddenservices.append(h0)
+        conf.hiddenservices.append(h1)
+        self.assertEqual(len(conf.hiddenservices), 2)
+        self.assertEqual(h0, conf.hiddenservices[0])
+        self.assertEqual(h1, conf.hiddenservices[1])
+        self.assertTrue(conf.needs_save())
+
     def test_multiple_startup_services(self):
         conf = TorConfig(FakeControlProtocol(['config/names=']))
         conf._setup_hidden_services('''HiddenServiceDir=/fake/path
