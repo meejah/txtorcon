@@ -375,6 +375,11 @@ OK''' % cookietmp.name)
         self.send("250 OK")
         return d
 
+    def test_getinfo_one_line(self):
+        d = self.protocol.get_info("foo", functools.partial(self.incremental_check, "bar"))
+        self.send('250 foo=bar')
+        return d
+
     def test_getconf(self):
         d = self.protocol.get_conf("SOCKSPORT ORPORT")
         d.addCallback(CallbackChecker({'SocksPort': '9050', 'ORPort': '0'}))

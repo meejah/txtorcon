@@ -61,8 +61,9 @@ class Router(object):
         self.accepted_ports = None
         self.rejected_ports = None
         self.id_hex = None
-        self.location = NetLocation('0.0.0.0')
+        self._location = None #NetLocation('0.0.0.0')
         self.from_consensus = False
+        self.ip = 'unknown'
         self.ip_v6 = []                 # most routers have no IPv6 addresses
 
     unique_name = property(lambda x: x.name_is_unique and x.name or x.id_hex)
@@ -76,12 +77,27 @@ class Router(object):
         self.ip = ip
         self.or_port = orport
         self.dir_port = dirport
-        self.location = NetLocation(self.ip)
-        if self.location.countrycode is None and self.ip != 'unknown':
-            ## see if Tor is magic and knows more...
-            self.controller.get_info_raw('ip-to-country/' + self.ip).addCallback(self._set_country)
+        self._location = None
 
         self.id_hex = hexIdFromHash(self.id_hash)
+
+    @property
+    def location(self):
+        """
+        A NetLocation instance with some GeoIP or pygeoip information
+        about location, asn, city (if available).
+        """
+        if self._location:
+            return self._location
+
+        if self.ip != 'unknown':
+            self._location = NetLocation(self.ip)
+        else:
+            self._location = NetLocation(None)
+        if self._location.countrycode is None and self.ip != 'unknown':
+            ## see if Tor is magic and knows more...
+            self.controller.get_info_raw('ip-to-country/' + self.ip).addCallback(self._set_country)
+        return self._location
 
     @property
     def flags(self):
