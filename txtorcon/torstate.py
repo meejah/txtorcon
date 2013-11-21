@@ -525,8 +525,17 @@ class TorState(object):
         else:
             if routers[0] not in self.entry_guards.values():
                 warnings.warn("Building a circuit not starting with a guard: %s" % (str(routers),), RuntimeWarning)
-            cmd = "EXTENDCIRCUIT 0 " + ','.join(map(lambda x: x.id_hex[1:], routers))
-
+            cmd = "EXTENDCIRCUIT 0 "
+            first = True
+            for router in routers:
+                if first:
+                    first = False
+                else:
+                    cmd += ','
+                if type(router) is type('') and len(router) == 40 and hashFromHexId(router):
+                    cmd += router
+                else:
+                    cmd += router.id_hex[1:]
         d = self.protocol.queue_command(cmd)
         d.addCallback(self._find_circuit_after_extend)
         return d
