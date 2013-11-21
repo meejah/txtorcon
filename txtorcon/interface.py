@@ -92,11 +92,14 @@ class IStreamAttacher(Interface):
 
     def attach_stream(stream, circuits):
         """
-        :param stream: The stream to attach, which will be in NEW state.
+        :param stream:
+            The stream to attach, which will be in NEW or NEWRESOLVE
+            state.
 
-        :param circuits: all currently available :class:`txtorcon.Circuit`
-            objects in the :class:`txtorcon.TorState` in a dict indexed by id.
-            Note they are not limited to BUILT circuits.
+        :param circuits:
+            all currently available :class:`txtorcon.Circuit` objects
+            in the :class:`txtorcon.TorState` in a dict indexed by id.
+            Note they are *not* limited to BUILT circuits.
 
         You should return a :class:`txtorcon.Circuit` instance which
         should be at state BUILT in the currently running Tor. You may
@@ -116,9 +119,9 @@ class IStreamAttacher(Interface):
         Note that Tor will refuse to attach to any circuit not in
         BUILT state; see ATTACHSTREAM in control-spec.txt
 
-        Note also that you will not get a request to attach a stream
-        that ends in .exit or .onion -- Tor won't let you specify how
-        to attach .onion addresses anyway.
+        Note also that although you get a request to attach a stream
+        that ends in .onion Tor doesn't currently let you specify how
+        to attach .onion addresses and will always give a 551 error.
         """
 
 
