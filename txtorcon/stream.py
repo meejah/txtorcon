@@ -161,6 +161,7 @@ class Stream(object):
                 raise RuntimeError("Update for wrong stream.")
 
         kw = find_keywords(args)
+        self.flags = kw
 
         if 'SOURCE_ADDR' in kw:
             last_colon = kw['SOURCE_ADDR'].rfind(':')
@@ -170,7 +171,7 @@ class Stream(object):
             self.source_port = int(kw['SOURCE_ADDR'][last_colon + 1:])
 
         self.state = args[1]
-        if self.state in ['NEW', 'SUCCEEDED']:
+        if self.state in ['NEW', 'NEWRESOLVE', 'SUCCEEDED']:
             if self.target_host is None:
                 last_colon = args[3].rfind(':')
                 self.target_host = args[3][:last_colon]
