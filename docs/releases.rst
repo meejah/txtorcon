@@ -22,6 +22,14 @@ unreleased
  * `Wheel <http://wheel.readthedocs.org/en/latest/>`_ release now also available
 
 
+v0.8.2
+------
+
+*November 22, 2013*
+
+ * ensure hidden service server-side endpoints listen only on 127.0.0.1
+
+
 v0.8.1
 ------
 
