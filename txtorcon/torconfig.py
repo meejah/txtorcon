@@ -31,6 +31,17 @@ class TorNotFound(RuntimeError):
     """
 
 
+def DefaultTCP4EndpointGenerator(*args, **kw):
+    """
+    Default generator used to create server-side TCP4ServerEndpoint
+    instances. Sets interface='127.0.0.1' instead of the default ('',
+    which means all).
+    """
+
+    kw['interface'] = '127.0.0.1'
+    return TCP4ServerEndpoint(*args, **kw)
+
+
 class TCPHiddenServiceEndpoint(object):
     """
     This represents something listening on an arbitrary local port
@@ -54,7 +65,7 @@ class TCPHiddenServiceEndpoint(object):
 
     def __init__(self, reactor, config, public_port, data_dir=None,
                  port_generator=functools.partial(random.randrange, 1024, 65534),
-                 endpoint_generator=TCP4ServerEndpoint):
+                 endpoint_generator=DefaultTCP4EndpointGenerator):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
@@ -210,7 +221,7 @@ class TCPHiddenServiceEndpoint(object):
 
         self._update_onion(self.hiddenservice.dir)
 
-        self.tcp_endpoint = TCP4ServerEndpoint(self.reactor, self.listen_port)
+        self.tcp_endpoint = self.endpoint_generator(self.reactor, self.listen_port)
         d = self.tcp_endpoint.listen(self.protocolfactory)
         d.addCallback(self._add_attributes).addErrback(self._retry_local_port)
         return d
