@@ -9,9 +9,8 @@ install:
 
 doc: docs/*.rst
 	cd docs && make html
-	cp dist/txtorcon-0.8.1.tar.gz docs/_build/html
-	cp dist/txtorcon-0.7.tar.gz docs/_build/html
-	cp dist/txtorcon-0.6.tar.gz.sig docs/_build/html
+	cp dist/txtorcon-0.8.2.tar.gz docs/_build/html
+	cp dist/txtorcon-0.8.2.tar.gz.asc docs/_build/html
 
 coverage:
 	trial --reporter=bwverbose --coverage txtorcon
@@ -41,16 +40,16 @@ clean:
 counts:
 	ohcount -s txtorcon/*.py
 
-dist: dist/txtorcon-0.8.1.tar.gz.sig
+dist: dist/txtorcon-0.8.2.tar.gz.asc
 
 sdist: setup.py 
 	python setup.py sdist
 
-dist/txtorcon-0.8.1.tar.gz: sdist
-dist/txtorcon-0.8.1.tar.gz.sig: dist/txtorcon-0.8.1.tar.gz
-	gpg --verify dist/txtorcon-0.8.1.tar.gz.sig || gpg --no-version --detach-sig -u meejah@meejah.ca dist/txtorcon-0.8.1.tar.gz
+dist/txtorcon-0.8.2.tar.gz: sdist
+dist/txtorcon-0.8.2.tar.gz.asc: dist/txtorcon-0.8.2.tar.gz
+	gpg --verify dist/txtorcon-0.8.2.tar.gz.asc || gpg --no-version --detach-sig -a -u meejah@meejah.ca dist/txtorcon-0.8.2.tar.gz
 
-release: dist/txtorcon-0.8.1.tar.gz.sig setup.py
+release: dist/txtorcon-0.8.2.tar.gz.asc setup.py
 	python setup.py sdist upload --sign --identity=meejah@meejah.ca
 
 virtualenv:
