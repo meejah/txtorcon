@@ -10,9 +10,6 @@ install:
 doc: docs/*.rst
 	cd docs && make html
 	cp dist/txtorcon-0.9.0.tar.gz docs/_build/html
-	cp dist/txtorcon-0.8.1.tar.gz docs/_build/html
-	cp dist/txtorcon-0.7.tar.gz docs/_build/html
-	cp dist/txtorcon-0.6.tar.gz.sig docs/_build/html
 
 coverage:
 	coverage run --source=txtorcon `which trial` test
