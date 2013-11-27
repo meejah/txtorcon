@@ -196,7 +196,10 @@ class NetLocation:
             if r is not None:
                 self.countrycode = r['country_code']
                 self.latlng = (r['latitude'], r['longitude'])
-                self.city = (r['city'], r['region_code'])
+                try:
+                    self.city = (r['city'], r['region_code'])
+                except KeyError:
+                    self.city = (r['city'], r['region_name'])
 
         elif country:
             self.countrycode = country.country_code_by_addr(ipaddr)
