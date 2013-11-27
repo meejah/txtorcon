@@ -35,7 +35,6 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
-	-rm README.rst #generated from ../README 
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
