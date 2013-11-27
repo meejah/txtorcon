@@ -12,24 +12,44 @@ import socket
 import subprocess
 import struct
 
-import pygeoip
+try:
+    import GeoIP as _GeoIP
+    GeoIP = _GeoIP
+except ImportError:
+    GeoIP = None
 
 city = None
 country = None
 asn = None
 
+def create_geoip(fname):
+    if GeoIP is None:
+        return None
+
+    try:
+        ## It's more "pythonic" to just wait for the exception,
+        ## but GeoIP prints out "Can't open..." messages for you,
+        ## which isn't desired here
+        if not os.path.isfile(fname):
+            raise IOError("Can't find %s" % fname)
+        return GeoIP.open(fname, GeoIP.GEOIP_STANDARD)
+
+    except GeoIP.error:
+        raise IOError("Can't load %s" % fname)
+
+
 try:
-    city = pygeoip.GeoIP("/usr/share/GeoIP/GeoLiteCity.dat")
+    city = create_geoip("/usr/share/GeoIP/GeoLiteCity.dat")
 except IOError:
     city = None
 
 try:
-    asn = pygeoip.GeoIP("/usr/share/GeoIP/GeoIPASNum.dat")
+    asn = create_geoip("/usr/share/GeoIP/GeoIPASNum.dat")
 except IOError:
     asn = None
 
 try:
-    country = pygeoip.GeoIP("/usr/share/GeoIP/IP.dat")
+    country = create_geoip("/usr/share/GeoIP/IP.dat")
 except IOError:
     country = None
 
