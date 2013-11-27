@@ -6,7 +6,6 @@ python:
 install: "pip install -r requirements.txt && pip install -r dev-requirements.txt"
 # command to run tests
 script:
-    make test
-##    make coverage
+    make coverage
 after_success:
     coveralls
