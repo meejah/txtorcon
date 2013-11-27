@@ -1,5 +1,5 @@
 ## see also dev-requirements.txt to build
 pygeoip==0.3.0
-Twisted==13.0.0
+Twisted>=11.1.0
 ipaddr>=2.1.10
 zope.interface>=3.6.1

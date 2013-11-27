@@ -2,7 +2,7 @@
 .DEFAULT: test
 
 test:
-	trial --reporter=text test
+	trial --reporter=text --spew test
 
 install:
 	python setup.py install
