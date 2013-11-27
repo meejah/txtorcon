@@ -12,43 +12,24 @@ import socket
 import subprocess
 import struct
 
-try:
-    import GeoIP
-
-    REGION_KEY = 'region'
-    def create_geoip(fname):
-        try:
-            ## It's more "pythonic" to just wait for the exception,
-            ## but GeoIP prints out "Can't open..." messages for you,
-            ## which isn't desired here
-            if not os.path.isfile(fname):
-                raise IOError("Can't find %s" % fname)
-            return GeoIP.open(fname, GeoIP.GEOIP_STANDARD)
-
-        except GeoIP.error:
-            raise IOError("Can't load %s" % fname)
-
-except ImportError:
-    import pygeoip
-    create_geoip = pygeoip.GeoIP
-    REGION_KEY = 'region_code'
+import pygeoip
 
 city = None
 country = None
 asn = None
 
 try:
-    city = create_geoip("/usr/share/GeoIP/GeoLiteCity.dat")
+    city = pygeoip.GeoIP("/usr/share/GeoIP/GeoLiteCity.dat")
 except IOError:
     city = None
 
 try:
-    asn = create_geoip("/usr/share/GeoIP/GeoIPASNum.dat")
+    asn = pygeoip.GeoIP("/usr/share/GeoIP/GeoIPASNum.dat")
 except IOError:
     asn = None
 
 try:
-    country = create_geoip("/usr/share/GeoIP/IP.dat")
+    country = pygeoip.GeoIP("/usr/share/GeoIP/IP.dat")
 except IOError:
     country = None
 
@@ -215,7 +196,7 @@ class NetLocation:
             if r is not None:
                 self.countrycode = r['country_code']
                 self.latlng = (r['latitude'], r['longitude'])
-                self.city = (r['city'], r[REGION_KEY])
+                self.city = (r['city'], r['region_code'])
 
         elif country:
             self.countrycode = country.country_code_by_addr(ipaddr)
@@ -224,4 +205,7 @@ class NetLocation:
             self.countrycode = ''
 
         if asn:
-            self.asn = asn.org_by_addr(self.ip)
+            try:
+                self.asn = asn.org_by_addr(self.ip)
+            except:
+                self.asn = None
