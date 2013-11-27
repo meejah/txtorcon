@@ -31,7 +31,7 @@ try:
 except ImportError:
     import pygeoip
     create_geoip = pygeoip.GeoIP
-    REGION_KEY = 'region_name'
+    REGION_KEY = 'region_code'
 
 city = None
 country = None
@@ -203,6 +203,9 @@ class NetLocation:
         self.countrycode = None
         self.city = None
         self.asn = None
+
+        if self.ip is None or self.ip == 'unknown':
+            return
 
         if city:
             try:
