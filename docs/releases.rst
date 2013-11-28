@@ -27,7 +27,7 @@ v0.8.2
 
 *November 22, 2013*
 
- * `txtorcon-0.8.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.2.tar.gz>`_ (`txtorcon-0.8.2.tar.gz.sig <http://timaq4ygg2iegci7.onion/txtorcon-0.8.2.tar.gz.sig>`_ or `txtorcon-0.8.2.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.2.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.2.tar.gz>`_)
+ * `txtorcon-0.8.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.2.tar.gz>`_ (`txtorcon-0.8.2.tar.gz.asc <http://timaq4ygg2iegci7.onion/txtorcon-0.8.2.tar.gz.asc>`_ or `txtorcon-0.8.2.tar.gz.asc <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.2.tar.gz>`_)
  * ensure hidden service server-side endpoints listen only on 127.0.0.1
 
 
