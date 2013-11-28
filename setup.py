@@ -33,7 +33,7 @@ def pip_to_requirements(s):
 setup(name = 'txtorcon',
       version = __version__,
       description = 'Twisted-based Tor controller client, with state-tracking and configuration abstractions.',
-      long_description = open('README','r').read(),
+      long_description = open('README.rst', 'r').read(),
       keywords = ['python', 'twisted', 'tor', 'tor controller'],
       ## way to have "development requirements"?
       requires = filter(len, map(pip_to_requirements, open('requirements.txt').readlines())),
