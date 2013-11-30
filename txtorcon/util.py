@@ -37,21 +37,16 @@ def create_geoip(fname):
     except GeoIP.error:
         raise IOError("Can't load %s" % fname)
 
+def maybe_create_db(path):
+    try:
+        return create_geoip(path)
+    except IOError:
+        return None
 
-try:
-    city = create_geoip("/usr/share/GeoIP/GeoLiteCity.dat")
-except IOError:
-    city = None
-
-try:
-    asn = create_geoip("/usr/share/GeoIP/GeoIPASNum.dat")
-except IOError:
-    asn = None
-
-try:
-    country = create_geoip("/usr/share/GeoIP/IP.dat")
-except IOError:
-    country = None
+city, asn, country = map(maybe_create_db,
+                         ("/usr/share/GeoIP/GeoLiteCity.dat",
+                          "/usr/share/GeoIP/GeoIPASNum.dat",
+                          "/usr/share/GeoIP/IP.dat"))
 
 try:
     import ipaddr as _ipaddr
@@ -66,21 +61,35 @@ def is_executable(path):
 
 
 def find_tor_binary(globs=('/usr/sbin/', '/usr/bin/',
-                           '/Applications/TorBrowser_*.app/Contents/MacOS/')):
-    """Tries to find the tor executable using the shell first or in in the
-       paths whose glob-patterns is in the given 'globs'-tuple.
+                           '/Applications/TorBrowser_*.app/Contents/MacOS/'),
+                    system_tor=True):
     """
+    Tries to find the tor executable using the shell first or in in the
+    paths whose glob-patterns is in the given 'globs'-tuple.
+
+    :param globs:
+        A tuple of shell-style globs of directories to use to find tor
+        (TODO consider making that globs to actual tor binary?)
+
+    :param system_tor:
+        This controls whether bash is used to seach for 'tor' or
+        not. If False, we skip that check and use only the 'globs'
+        tuple.
+    """
+
     # Try to find the tor executable using the shell
-    try:
-        proc = subprocess.Popen(('type -p tor', ), executable='/bin/bash',
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                shell=True)
-    except OSError:
-        pass
-    else:
-        stdout, _ = proc.communicate()
-        if proc.poll() == 0 and stdout != '':
-            return stdout.strip()
+    if system_tor:
+        try:
+            proc = subprocess.Popen(('type -p tor', ), executable='/bin/bash',
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    shell=True)
+        except OSError:
+            pass
+        else:
+            stdout, _ = proc.communicate()
+            if proc.poll() == 0 and stdout != '':
+                return stdout.strip()
+
     # the shell may not provide type and tor is usually not on PATH when using
     # the browser-bundle. Look in specific places
     for pattern in globs:
@@ -88,12 +97,13 @@ def find_tor_binary(globs=('/usr/sbin/', '/usr/bin/',
             torbin = os.path.join(path, 'tor')
             if is_executable(torbin):
                 return torbin
-
+    return None
 
 def maybe_ip_addr(addr):
     """
-    Tries to return an IPAddress, otherwise returns a string. I could
-    explicitly check for .exit or .onion at the end instead.
+    Tries to return an IPAddress, otherwise returns a string.
+
+    TODO consider explicitly checking for .exit or .onion at the end?
     """
 
     if ipaddr is not None:

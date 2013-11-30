@@ -12,9 +12,12 @@ def fake_import(orig, name, *args, **kw):
 
 class TestImports(unittest.TestCase):
 
-    def _test_no_GeoIP(self):
-        ## make sure the code we run if there's no GeoIP installed
-        ## doesn't do anything horrific
+    def test_no_GeoIP(self):
+        """
+        make sure the code we run if there's no GeoIP installed
+        doesn't do anything horrific
+        """
+
         global __import__
         orig = __import__
         try:
@@ -27,12 +30,14 @@ class TestImports(unittest.TestCase):
             # throw on GeoIP import no matter what
             global __builtins__
             __builtins__['__import__'] = functools.partial(fake_import, orig)
-            import txtorcon.util
 
-            # now ensure that we did the right thing when the GeoIP
-            # import failed, which means we should have used pygeoip.GeoIP
-            import pygeoip
-            self.assertEqual(txtorcon.util.create_geoip, pygeoip.GeoIP)
+
+            # now ensure we set up all the databases as "None" when we
+            # import w/o the GeoIP thing available.
+            import txtorcon.util
+            self.assertEqual(None, txtorcon.util.city)
+            self.assertEqual(None, txtorcon.util.asn)
+            self.assertEqual(None, txtorcon.util.country)
 
         finally:
             __import__ = orig
