@@ -71,7 +71,7 @@ config.save()
 ## (via the HiddenService options) from the hidden service address on
 ## port hs_public_port
 site = server.Site(Simple())
-hs_endpoint = TCP4ServerEndpoint(reactor, hs_port)
+hs_endpoint = TCP4ServerEndpoint(reactor, hs_port, interface='127.0.0.1')
 hs_endpoint.listen(site)
 
 ## we've got our Twisted service listening locally and our options

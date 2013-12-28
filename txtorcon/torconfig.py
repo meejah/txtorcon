@@ -211,6 +211,21 @@ class TCPHiddenServiceEndpoint(object):
         d.addCallback(self._create_listener).addErrback(self._retry_local_port)
         return d
 
+    def check_local_endpoint(self, ep):
+        """
+        This tries to sanity-check ep to see if it's a local address
+        or not and returns True or False.
+
+        Currently, 'local' means either it starts with '127.' or is
+        '::1'
+        """
+
+        if hasattr(ep, '_interface'):
+            is_local = ep._interface.startswith('127.') or ep._interface == '::1'
+            if not is_local:
+                return False
+        return True
+
     def _create_listener(self, proto):
         """
         Creates the local TCP4ServerEndpoint instance, returning a
@@ -222,6 +237,8 @@ class TCPHiddenServiceEndpoint(object):
         self._update_onion(self.hiddenservice.dir)
 
         self.tcp_endpoint = self.endpoint_generator(self.reactor, self.listen_port)
+        if not self.check_local_endpoint(self.tcp_endpoint):
+            raise RuntimeError("Endpoint doesn't appear to be a local interface.")
         d = self.tcp_endpoint.listen(self.protocolfactory)
         d.addCallback(self._add_attributes).addErrback(self._retry_local_port)
         return d

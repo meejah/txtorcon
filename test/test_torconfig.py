@@ -7,6 +7,7 @@ from zope.interface import implements
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error, task
+from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.python.failure import Failure
 from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP
 
@@ -1061,6 +1062,37 @@ class EndpointTests(unittest.TestCase):
         self.protocol.answers.append('HiddenServiceOptions')
         self.config.bootstrap()
         self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
+        return d
+
+    def test_bad_listener(self):
+        def test_gen(*args, **kw):
+            kw['interface'] = '0.0.0.0'
+            return TCP4ServerEndpoint(*args, **kw)
+
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123,
+                                      endpoint_generator=test_gen)
+        d = ep.listen(FakeProtocolFactory())
+        class ErrorCallback(object):
+            got_error = None
+            def __call__(self, err, *args, **kw):
+                self.got_error = err.value
+        error_cb = ErrorCallback()
+        d.addErrback(error_cb)
+
+        ## enough answers so the config bootstraps properly
+        self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual\nOK')
+        self.protocol.answers.append('HiddenServiceOptions')
+        self.config.bootstrap()
+
+        ## now we should have attempted to listen on the endpoint our
+        ## test_gen() is generating - which should be the "wrong"
+        ## answer of anything (0.0.0.0)
+        self.assertEqual('0.0.0.0', ep.tcp_endpoint._interface)
+
+        ## ...and the point of this test; ensure we got an error
+        ## trying to listen on not-127.*
+        self.assertTrue(error_cb.got_error is not None)
+        self.assertTrue(isinstance(error_cb.got_error, RuntimeError))
         return d
 
     def test_already_bootstrapped(self):
