@@ -61,7 +61,7 @@ setup(name = 'txtorcon',
       ## the first member of the tuple? Why does it seem I need to
       ## duplicate this in MANIFEST.in?
 
-      data_files = [('share/txtorcon', ['INSTALL', 'README', 'TODO', 'meejah.asc']),
+      data_files = [('share/txtorcon', ['INSTALL', 'README.rst', 'TODO', 'meejah.asc']),
 
                     ## this includes the Sphinx source for the
                     ## docs. The "map+filter" construct grabs all .rst
