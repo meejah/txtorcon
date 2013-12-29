@@ -1,5 +1,5 @@
 ## see also dev-requirements.txt to build
-geoip2>=0.4.1
+GeoIP>=1.2.9
 Twisted>=11.1.0
 ipaddr>=2.1.10
 zope.interface>=3.6.1

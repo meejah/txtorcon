@@ -43,6 +43,9 @@ This documentation was generated |today|.
 .. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
     :target: https://coveralls.io/r/meejah/txtorcon
 
+.. image:: https://pypip.in/d/txtorcon/badge.png
+    :target: https://crate.io/packages/txtorcon
+
 
 Getting txtorcon:
 -----------------

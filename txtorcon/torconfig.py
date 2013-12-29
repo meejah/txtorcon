@@ -230,7 +230,7 @@ class TCPHiddenServiceEndpoint(object):
         """
         Creates the local TCP4ServerEndpoint instance, returning a
         Deferred delivering an :api:`twisted.internet.interfaces.IPort` instance that also has
-        :meth:`TCP4HiddenServiceEndpoint._add_attributes` called
+        :meth:`TCPHiddenServiceEndpoint._add_attributes` called
         against it (adds `onion_uri` and `onion_private_key` members).
         """
 
