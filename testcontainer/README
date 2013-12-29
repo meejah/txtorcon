@@ -1,0 +1,54 @@
+Integration Testing Container
+=============================
+
+Here we build a test container, which uses LXC under the
+hood. https://docker.io for more information.
+
+We use this container to run integration tests. These could do
+"whatever", and then analyze the container afterwords. In this case, I
+am just trying to ensure that txtorcon listens only on appropriate
+interfaces.
+
+Tests:
+
+    test_listener_interfaces.py
+	this confirms that a TCP4HiddenServiceEndpoint listens only on
+	the loopback interface. See the script for details. Basically
+	it uses launch_tor() and TCPHiddenServiceEndpoint to create a
+	working hidden service and then (from outside the container)
+	uses nmap to confirm nothing is listening on the public
+	interface.
+
+Our test-container is built from scratch with debootstrap using Debian
+wheezy (see the top-level Makefile if you want a different
+distribution, basically any Debian or Ubuntu). That is, we're not
+downloading ("pulling") a base image from docker.io
+
+These tests are desiged to be run on a host that supports very-new
+docker.io, which is by all accounts "a new Ubuntu". meejah currently
+runs these in an Ubuntu KVM/QEMU virtual machine.
+
+As root, on your Ubuntu machine, run these tests by doing:
+
+   # make integration
+
+...at the top level of a txtorcon checkout. NOTE that of course this
+will involve network activity as an entire Debian wheezy is
+downloaded. As well, we run some apt-get commands when building the
+container (installing the pre-requisites for txtorcon).
+
+Adding A New Test
+-----------------
+
+This is all basically pretty experimental and hacky at the
+moment. "run-integration.py" at the top-level runs our one test.
+
+TODO
+----
+
+* move all (one of) the tests to integration/ or something
+* replace run-integration with something that runs all the things in integration/
+* is there somethinng that does this for us already?
+   * e.g. could we abuse unittest.TestCase + trial to do the tests like that?
+* ???
+* profit!

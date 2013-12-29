@@ -4,6 +4,23 @@
 test:
 	trial --reporter=text test
 
+# see also http://docs.docker.io/en/latest/use/baseimages/
+dockerbase-wheezy:
+	@echo 'Building a minimal "wheezy" system.'
+	@echo "This may take a while...and will consume about 240MB when done."
+	debootstrap wheezy dockerbase-wheezy
+	tar -C dockerbase-wheezy -c . | docker import - dockerbase-wheezy
+	docker run dockerbase-wheezy cat /etc/issue
+
+txtorcon-tester: testcontainer/Dockerfile dockerbase-wheezy
+	rm -rf /tmp/txtorcon
+	rsync --delete -axE --exclude-from=testcontainer/exclusions . /tmp/txtorcon
+	@echo "Creating a Docker.io container"
+	docker build -rm -q -t txtorcon-tester testcontainer/
+
+integration: txtorcon-tester
+	python run-integration.py
+
 install:
 	python setup.py install
 
@@ -43,6 +60,9 @@ clean:
 	-rm MANIFEST
 	-rm `find . -name \*.py[co]`
 	-cd docs && make clean
+	-rm -rf dockerbase-wheezy
+	-docker rmi txtorcon-tester
+	-docker rmi dockerbase-wheezy
 
 counts:
 	ohcount -s txtorcon/*.py

@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+import tempfile
+import functools
+
+from twisted.internet import reactor, defer
+from twisted.internet.endpoints import TCP4ServerEndpoint
+from twisted.web import server, resource
+from twisted.python import log
+
+log.startLogging(sys.stdout)
+
+print sys.argv[0]
+
+sys.path.insert(0, '/txtorcon')
+import txtorcon
+
+class Simple(resource.Resource):
+    isLeaf = True
+    def render_GET(self, request):
+        return "<html>Hello, world! I'm a hidden service!</html>"
+
+config = txtorcon.TorConfig()
+config.SOCKSPort = 0
+config.ORPort = 0
+hs_public_port = 80
+#config.DataDirectory = 'tmp_datadir'
+## note that TCPHiddenServiceEndpoint adds the config to above...
+hs_endpoint = txtorcon.TCPHiddenServiceEndpoint(reactor, config, hs_public_port)	
+
+## register something to clean up our tempdir
+reactor.addSystemEventTrigger('before', 'shutdown',
+                              functools.partial(txtorcon.util.delete_file_or_tree,
+                                                hs_endpoint.data_dir))
+
+def updates(prog, tag, summary):
+    p = ('#' * int(10*(prog/100.0))) + ('.'*(10 - int(10*(prog/100.0))))
+    print "%s %s" % (p, summary)
+
+def failed(f):
+    print "FAIL", f
+    reactor.stop()
+
+@defer.inlineCallbacks
+def main():
+    print "Launching Tor"
+    proto = yield txtorcon.launch_tor(config, reactor, progress_updates=updates)
+    
+    print "Starting site"
+    site = server.Site(Simple())
+    port = yield hs_endpoint.listen(site)
+    
+    print port.onion_uri, port.onion_port, port.port
+    print "liftoff"
+    os.system("netstat -pltn")
+
+## launch a new Tor and wait for the setup to happen
+d = main()
+d.addErrback(failed)
+reactor.run()
