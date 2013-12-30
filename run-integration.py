@@ -21,11 +21,13 @@ data = json.loads(data)[0]
 ip = data['NetworkSettings']['IPAddress']
 print "ip address", ip
 
-print "awaiting launch",
+logs_printed = 0
 while True:
-    sys.stdout.write('.')
-    sys.stdout.flush()
     logs = subprocess.check_output(['docker', 'logs', container])
+    to_print = logs[logs_printed:]
+    logs_printed = len(logs)
+    sys.stdout.write(to_print)
+    sys.stdout.flush()
     if 'liftoff' in logs:
         break
     time.sleep(1)
