@@ -19,7 +19,7 @@ txtorcon-tester: testcontainer/Dockerfile dockerbase-wheezy
 	docker build -rm -q -t txtorcon-tester testcontainer/
 
 integration: txtorcon-tester
-	python run-integration.py
+	python integration/run.py
 
 install:
 	python setup.py install

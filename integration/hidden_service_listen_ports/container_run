@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+## see README
+## this runs in the container, and sets up the testcase
+
 import os
 import sys
 

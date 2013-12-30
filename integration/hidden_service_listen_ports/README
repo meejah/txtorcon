@@ -1,0 +1,9 @@
+This test uses the standard txtorcon test container.
+
+This test confirms that a TCP4HiddenServiceEndpoint listens only on
+the loopback interface. Basically "container_run" uses launch_tor()
+and TCPHiddenServiceEndpoint to create a working hidden service. For
+bonus points, it runs "netstat -pltn" after the service is set up.
+
+"host_run" (from outside the container) uses nmap to confirm nothing
+is listening on the public interface.
