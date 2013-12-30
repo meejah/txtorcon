@@ -1,5 +1,6 @@
-.PHONY: test html counts coverage sdist clean install doc
-.DEFAULT: test
+.PHONY: test html counts coverage sdist clean install doc dockerbase-wheezy
+default: test
+
 
 test:
 	trial --reporter=text test
@@ -9,10 +10,13 @@ dockerbase-wheezy:
 	@echo 'Building a minimal "wheezy" system.'
 	@echo "This may take a while...and will consume about 240MB when done."
 	debootstrap wheezy dockerbase-wheezy
+
+dockerbase-wheezy-image: dockerbase-wheezy
+	@echo 'Importing dockerbase-wheezy into docker'
 	tar -C dockerbase-wheezy -c . | docker import - dockerbase-wheezy
 	docker run dockerbase-wheezy cat /etc/issue
 
-txtorcon-tester: testcontainer/Dockerfile dockerbase-wheezy
+txtorcon-tester: testcontainer/Dockerfile dockerbase-wheezy-image
 	rm -rf /tmp/txtorcon
 	rsync --delete -axE --exclude-from=testcontainer/exclusions . /tmp/txtorcon
 	@echo "Creating a Docker.io container"
