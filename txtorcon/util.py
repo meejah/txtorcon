@@ -23,15 +23,16 @@ country = None
 asn = None
 
 def create_geoip(fname):
+    ## It's more "pythonic" to just wait for the exception,
+    ## but GeoIP prints out "Can't open..." messages for you,
+    ## which isn't desired here
+    if not os.path.isfile(fname):
+        raise IOError("Can't find %s" % fname)
+
     if GeoIP is None:
         return None
 
     try:
-        ## It's more "pythonic" to just wait for the exception,
-        ## but GeoIP prints out "Can't open..." messages for you,
-        ## which isn't desired here
-        if not os.path.isfile(fname):
-            raise IOError("Can't find %s" % fname)
         return GeoIP.open(fname, GeoIP.GEOIP_STANDARD)
 
     except GeoIP.error:
