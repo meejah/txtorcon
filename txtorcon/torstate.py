@@ -427,6 +427,14 @@ class TorState(object):
 
         return self.protocol.queue_command("CLOSESTREAM %d %d" % (stream.id, self.stream_close_reasons[reason]))
 
+    def close_circuit(self, circ, ifUnused=False):
+        if circ.id not in self.circuits:
+            raise KeyError("No such circuit: %d" % circ.id)
+        command = "CLOSECIRCUIT %d" % circ.id
+        if ifUnused:
+            command += " IfUnused"
+        return self.protocol.queue_command(command)
+
     def add_circuit_listener(self, icircuitlistener):
         listen = ICircuitListener(icircuitlistener)
         for circ in self.circuits.values():
@@ -595,7 +603,7 @@ class TorState(object):
 
     def _maybe_create_circuit(self, circ_id):
         if circ_id not in self.circuits:
-            c = self.circuit_factory(self, self.protocol)
+            c = self.circuit_factory(self)
             c.listen(self)
             [c.listen(x) for x in self.circuit_listeners]
 
