@@ -27,7 +27,7 @@ v0.8.2
 
 *November 22, 2013*
 
- * `txtorcon-0.8.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.2.tar.gz>`_ (`txtorcon-0.8.2.tar.gz.asc <http://timaq4ygg2iegci7.onion/txtorcon-0.8.2.tar.gz.asc>`_ or `txtorcon-0.8.2.tar.gz.asc <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.2.tar.gz>`_)
+ * `txtorcon-0.8.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.2.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.8.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.2.tar.gz>`_)
  * ensure hidden service server-side endpoints listen only on 127.0.0.1
 
 
@@ -36,7 +36,7 @@ v0.8.1
 
 *May 13, 2013*
 
- * `txtorcon-0.8.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.1.tar.gz>`_ (`txtorcon-0.8.1.tar.gz.sig <http://timaq4ygg2iegci7.onion/txtorcon-0.8.1.tar.gz.sig>`_ or `txtorcon-0.8.1.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.1.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.1.tar.gz>`_)
+ * `txtorcon-0.8.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.1.tar.gz>`_ (:download:`local-sign </../signatues/txtorcon-0.8.1.tar.gz.sig>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.8.1.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.1.tar.gz>`_)
  * fixed improper import in setup.py preventing 0.8.0 from installing
  * signatures with proper subkey this time
  * Proper file-flushing in tests and PyPy fixes from Lukas Lueg
@@ -67,7 +67,7 @@ v0.7
 
 *November 21, 2012*
 
- * `txtorcon-0.7.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz>`_ (`txtorcon-0.7.tar.gz.sig <http://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz.sig>`_ or `txtorcon-0.7.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.7.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.7>`_)
+ * `txtorcon-0.7.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz>`_ (:download:`local-sig <../signatues/txtorcon-0.7.tar.gz.sig>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.7.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.7>`_)
  * `issue #20 <https://github.com/meejah/txtorcon/issues/20>`_ config object now hooked up correctly after launch_tor();
  * `patch <https://github.com/meejah/txtorcon/pull/22>`_ from hellais for properly handling data_dir given to TCPHiddenServiceEndpoint;
  * `.tac example <https://github.com/meejah/txtorcon/pull/19>`_ from mmaker;
@@ -78,7 +78,7 @@ v0.6
 
 *October 10, 2012*
 
- * `txtorcon-0.6.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz>`_ (`txtorcon-0.6.tar.gz.sig <http://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz.sig>`_ or `txtorcon-0.6.tar.gz.sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.6.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.6>`_)
+ * `txtorcon-0.6.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz>`_ (:download:`local-sig <../signatues/txtorcon-0.6.tar.gz.sig>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.6.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.6>`_)
  * debian packaging (mmaker);
  * psutil fully gone;
  * *changed API* for launch_tor() to use TorConfig instead of args;

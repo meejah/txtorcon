@@ -53,7 +53,7 @@ Getting txtorcon:
 The canonical URI is http://timaq4ygg2iegci7.onion
 Code available at https://github.com/meejah/txtorcon
 
-- meejah@meejah.ca (public key: `meejah.asc <meejah.asc>`_)
+- meejah@meejah.ca (public key: :download:`meejah.asc <../meejah.asc>`)
 - ``git clone git://github.com/meejah/txtorcon.git``
 - **``pip install txtorcon``**
 - Watch an `asciinema demo <http://asciinema.org/a/5654>`_ for an overview.
