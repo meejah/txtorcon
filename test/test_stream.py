@@ -1,5 +1,6 @@
 from txtorcon.util import maybe_ip_addr
 from twisted.trial import unittest
+from twisted.internet import defer
 from zope.interface import implements
 
 from txtorcon import Stream, IStreamListener, ICircuitContainer, StreamListenerMixin
@@ -67,6 +68,12 @@ class StreamTests(unittest.TestCase):
 
     def find_circuit(self, id):
         return self.circuits[id]
+
+    def close_circuit(self, circuit, **kw):
+        raise NotImplementedError()
+
+    def close_stream(self, stream, **kw):
+        return defer.succeed('OK')
 
     def setUp(self):
         self.circuits = {}
@@ -298,3 +305,19 @@ class StreamTests(unittest.TestCase):
                           'FAILED', 'CLOSED']:
                 stream.update((line % (state, address)).split(' '))
                 self.assertEqual(stream.state, state)
+
+    def test_close_stream(self):
+        self.circuits[186] = FakeCircuit(186)
+        stream = Stream(self)
+        stream.update("316 NEW 0 www.yahoo.com:80 SOURCE_ADDR=127.0.0.1:55877 PURPOSE=USER".split())
+        stream.update("316 REMAP 186 1.2.3.4:80 SOURCE=EXIT".split())
+
+        self.assertEqual(len(self.circuits[186].streams), 1)
+
+        d = stream.close()
+        self.assertTrue(not d.called)
+        self.assertEqual(len(self.circuits[186].streams), 1)
+
+        stream.update("316 CLOSED 186 1.2.3.4:80 REASON=END REMOTE_REASON=DONE".split())
+        self.assertTrue(d.called)
+        self.assertEqual(len(self.circuits[186].streams), 0)
