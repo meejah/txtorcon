@@ -31,7 +31,7 @@ Then, you will want to explore the examples. Try "python
 examples/stream\_circuit\_logger.py" for instance.
 
 On Debian testing (jessie), or with wheezy-backports you can install
-version 0.8.1::
+version 0.8.2::
 
     $ apt-get install python-txtorcon
 
@@ -179,10 +179,11 @@ For launching Tor and Twisted integration, you will want to look at::
 
 IStreamAttacher affects Tor's behaviour, allowing one to customize how
 circuits for particular streams are selected. You can build your own
-circuits via ITorControlProtocol.build\_circuit(). There is an exampleo
-f this called custom\_stream\_attacher.py which builds (or uses)
+circuits via ITorControlProtocol.build\_circuit(). There is an example
+of this called custom\_stream\_attacher.py which builds (or uses)
 circuits exiting in the same country as the address to which the
 stream is connecting.
+
 
 contact information
 -------------------
@@ -198,10 +199,14 @@ or::
     git clone git://github.com/meejah/txtorcon.git
 
 You may contact me via ``meejah at meejah dot ca`` with GPG key
-`128069A7 <http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>`_
-or see ``meejah.asc`` in the repository. It is often possible to contact me as ``meejah``
-in #tor-dev on `OFTC <http://www.oftc.net/oftc/>`_ but be patient for
-replies (I do look at scrollback, so mention my nick).
+`0xC2602803128069A7
+<http://pgp.mit.edu:11371/pks/lookup?op=get&search=0xC2602803128069A7>`_
+or see ``meejah.asc`` in the repository. The fingerprint is ``9D5A
+2BD5 688E CB88 9DEB CD3F C260 2803 1280 69A7``.
+
+It is often possible to contact me as ``meejah`` in #tor-dev on `OFTC
+<http://www.oftc.net/oftc/>`_ but be patient for replies (I do look at
+scrollback, so putting "meejah: " in front will alert my client).
 
 More conventionally, you may get the code at GitHub and documentation
 via ReadTheDocs:
