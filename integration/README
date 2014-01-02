@@ -1,0 +1,16 @@
+Integration Tests
+=================
+
+See also testcontainer/README
+In this directory are integration tests; each sub-directory under here
+specifies one.
+
+They should have a README describing the test.
+
+The should have an executable called "host_run" that runs the test.
+This should:
+  * start the "txtorcon-tester" container with an appropriate script,
+    probably /txtorcon/integration/<test_name>/container_run
+  * do whatever it takes to pass or fail the test
+  * exit 0 if the test was successful, 1 if it failed.
+

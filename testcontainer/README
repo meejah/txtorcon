@@ -1,0 +1,51 @@
+Integration Testing Container
+=============================
+
+This defines the standard txtorcon integration testing "container"
+(http://docker.io terminology). Under the hood, this is an LXC (linux
+containers) container.
+
+We use this container to run integration tests. 
+
+See integration/README for more information on the tests.
+
+Contents of the Container
+-------------------------
+
+The container has:
+
+* current txtorcon source code (minus things in "exclusions") in /txtorcon
+  * (note this was rsync'd to /tmp/txtorcon when you run "make txtorcon-tester")
+  * ...and that's why there's a 'txtorcon' symlink to /tmp/txtorcon
+  * (the idea here is for container-side scripts: "sys.insert(0, '/txtorcon')"
+* base Debian "wheezy" system (unless you changed Makefile) built via debootstrap
+* The Debian packages of pre-requisites (see README.rst at top-level)
+* No running services (not even Tor).
+
+Not that because our test-container is built from scratch with debootstrap using Debian
+wheezy (see the top-level Makefile if you want a different
+distribution, basically any Debian or Ubuntu). That is, we're not
+downloading ("pulling") a base image from docker.io
+
+These tests are desiged to be run on a host that supports very-new
+docker.io, which is by all accounts "a new Ubuntu". meejah currently
+runs these in an Ubuntu KVM/QEMU virtual machine.
+
+As root, on your Ubuntu machine, run these tests by doing:
+
+   # make integration
+
+...at the top level of a txtorcon checkout. NOTE that of course this
+will involve network activity as an entire Debian wheezy is
+downloaded. As well, we run some apt-get commands (inside the container) 
+when building the container (installing the pre-requisites for txtorcon).
+
+TODO
+----
+
+* (done) move all (one of) the tests to integration/ or something
+* replace run-integration with something that runs all the things in integration/
+* is there somethinng that does this for us already?
+   * e.g. could we abuse unittest.TestCase + trial to do the tests like that?
+* ???
+* profit!
