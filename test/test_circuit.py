@@ -99,7 +99,7 @@ class CircuitTests(unittest.TestCase):
     def test_path_update(self):
         cp = TorControlProtocol()
         state = TorState(cp, False)
-        circuit = Circuit(state, cp)
+        circuit = Circuit(state)
         circuit.update('1 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL'.split())
         self.assertEqual(1, len(circuit.path))
         self.assertEqual('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', circuit.path[0].id_hex)
