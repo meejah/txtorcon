@@ -14,12 +14,13 @@ unreleased
  * put test/ directory at the top level
  * using "`coverage <http://nedbatchelder.com/code/coverage/>`_" tool instead of custom script
  * using `coveralls.io <https://coveralls.io/r/meejah/txtorcon>`_ and `travis-ci <https://travis-ci.org/meejah/txtorcon>`_ for test coverage and continuous integration
- * issue #56: added Circuit.close()
+ * `issue #56 <https://github.com/meejah/txtorcon/issues/56>`_: added Circuit.close() and Stream.close() starting from aagbsn's patch
  * make hidden service server-side endpoints listen only on 127.0.0.1
- * couple parsing issues discovered with multi-line keyword
- * preserve router nicks from long-names if consensus lacks and entry
+ * parsing issues with multi-line keyword discovered and resolved
+ * preserve router nicks from long-names if consensus lacks an entry
  * using `Twine <https://github.com/dstufft/twine>`_ for releases
  * `Wheel <http://wheel.readthedocs.org/en/latest/>`_ release now also available
+ * "python setup.py develop" now supported (`issue #57 <https://github.com/meejah/txtorcon/issues/57>`_)
 
 
 v0.8.2
