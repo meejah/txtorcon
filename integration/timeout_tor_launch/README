@@ -1,0 +1,17 @@
+Tor Timeout Test
+================
+
+In issue #59 it is reported that killing a Tor process launched with
+launch_tor() can become wedged if we disconnect due to a timeout. 
+
+That is, if you provide a timeout to launch_tor() and tor hasn't
+launched by the time that timeout fires then the underlying Tor isn't
+killed properly.
+
+This integration test confirms this:
+
+1. the container_run script calls launch_tor() with a 1 second
+   timeout, and then does nothing
+
+2. the host_run script waits an additional 5 seconds and then
+   confirms that there is no Tor process running.

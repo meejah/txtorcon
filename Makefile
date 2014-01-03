@@ -1,4 +1,4 @@
-.PHONY: test html counts coverage sdist clean install doc dockerbase-wheezy
+.PHONY: test html counts coverage sdist clean install doc integration
 default: test
 
 
@@ -22,7 +22,7 @@ txtorcon-tester: testcontainer/Dockerfile dockerbase-wheezy-image
 	@echo "Creating a Docker.io container"
 	docker build -rm -q -t txtorcon-tester testcontainer/
 
-integration: txtorcon-tester
+integration: ## txtorcon-tester
 	python integration/run.py
 
 install:
