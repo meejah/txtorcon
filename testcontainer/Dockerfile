@@ -2,7 +2,9 @@ FROM dockerbase-wheezy
 
 ## FIXME would be Really Nice Indeed to grok this install list from
 ## ONE place. e.g. grep it out of README?
-RUN apt-get install -y python-setuptools python-twisted python-ipaddr python-geoip graphviz tor
+RUN apt-get update
+RUN apt-get install -y python-setuptools python-twisted python-ipaddr python-geoip graphviz
+RUN apt-get install -y tor
 
 # upload our test code (actually, all our code)
 # 'txtorcon' is a symbolic link since the dir for ADD has to be in the

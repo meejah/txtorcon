@@ -310,6 +310,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.stdout = []
 
         self._setup_complete = False
+        self._did_timeout = False
         self._timeout_delayed_call = None
         if timeout:
             if not ireactortime:
@@ -343,15 +344,11 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         A timeout was supplied during setup, and the time has run out.
         """
 
-        if self.connected_cb.called:
-            return
-
         try:
             self.transport.signalProcess('KILL')
         except error.ProcessExitedAlready:
             self.transport.loseConnection()
-
-        self.connected_cb.errback(RuntimeError("Timed out waiting for Tor to launch."))
+        self._did_timeout = True
 
     def errReceived(self, data):
         """
@@ -380,7 +377,14 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         if isinstance(status.value, error.ProcessDone):
             return
 
-        self.connected_cb.errback(RuntimeError('\n'.join(self.stdout) + "\n\nTor exited with error-code %d" % status.value.exitCode))
+        if status.value.exitCode is None:
+            if self._did_timeout:
+                err = RuntimeError('\n'.join(self.stdout) + "\n\nTimeout waiting for Tor launch..")
+            else:
+                err = RuntimeError('\n'.join(self.stdout) + "\n\nTor was killed (%s)." % status.value.signal)
+        else:
+            err = RuntimeError('\n'.join(self.stdout) + "\n\nTor exited with error-code %d" % status.value.exitCode)
+        self.connected_cb.errback(err)
 
     def progress(self, percent, tag, summary):
         """

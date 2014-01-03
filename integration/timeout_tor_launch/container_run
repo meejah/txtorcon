@@ -25,8 +25,9 @@ def updates(prog, tag, summary):
     p = ('#' * int(10*(prog/100.0))) + ('.'*(10 - int(10*(prog/100.0))))
     print "%s %s" % (p, summary)
 
-def run_ps_exit(*args):
-    print "Running ps:"
+def run_ps_exit(arg):
+    print "run_ps_exit called with:", arg
+    print 'Running "ps afxu":'
     os.system("ps afxu")
     reactor.stop()
 
@@ -42,5 +43,5 @@ def main():
 
 d = main()
 d.addBoth(run_ps_exit)
-reactor.callLater(10, run_ps_exit)
+reactor.callLater(5, run_ps_exit)
 reactor.run()
