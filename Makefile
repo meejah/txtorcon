@@ -16,11 +16,9 @@ dockerbase-wheezy-image: dockerbase-wheezy
 	tar -C dockerbase-wheezy -c . | docker import - dockerbase-wheezy
 	docker run dockerbase-wheezy cat /etc/issue
 
-txtorcon-tester: testcontainer/Dockerfile dockerbase-wheezy-image
-	rm -rf /tmp/txtorcon
-	rsync --delete -axE --exclude-from=testcontainer/exclusions . /tmp/txtorcon
+txtorcon-tester: Dockerfile dockerbase-wheezy-image
 	@echo "Creating a Docker.io container"
-	docker build -rm -q -t txtorcon-tester testcontainer/
+	docker build -rm -q -t txtorcon-tester ./
 
 integration: ## txtorcon-tester
 	python integration/run.py

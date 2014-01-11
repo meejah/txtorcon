@@ -14,3 +14,45 @@ This should:
   * do whatever it takes to pass or fail the test
   * exit 0 if the test was successful, 1 if it failed.
 
+
+Integration Testing Container
+=============================
+
+There is a Dockerfile at the top leve which defines the standard
+txtorcon integration testing "container" (http://docker.io
+terminology). Under the hood, this is an LXC (linux containers)
+container.
+
+We use this container to run integration tests.
+
+Contents of the Container
+-------------------------
+
+The container has:
+
+* current txtorcon source code (minus things in "exclusions") in /txtorcon
+  * this is mounted by the "volume" (-v) option in docker
+  * (the idea here is for container-side scripts: "sys.insert(0, '/txtorcon')"
+* base Debian "wheezy" system (unless you changed Makefile) built via debootstrap
+* The Debian packages of pre-requisites (see README.rst at top-level)
+* No running services (not even Tor).
+
+Note that because our test-container is built from scratch with
+debootstrap using Debian wheezy (see the top-level Makefile if you
+want a different distribution, basically any Debian or Ubuntu). That
+is, we're not downloading ("pulling") a base image from docker.io
+
+As root, on your docker.io host machine, run these tests by doing:
+
+   # make integration
+
+...at the top level of a txtorcon checkout. NOTE that of course this
+will involve network activity as an entire Debian wheezy is
+downloaded. As well, we run some apt-get commands (inside the container)
+when building the container (installing the pre-requisites for txtorcon).
+
+TODO
+----
+
+* is there somethinng that does this for us already?
+   * e.g. could we abuse unittest.TestCase + trial to do the tests like that?
