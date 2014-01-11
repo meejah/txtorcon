@@ -1,0 +1,6 @@
+#!/bin/bash
+
+## this is the default script to run from the container; run.py and
+## the host_run commands run each test in the usual case
+
+echo "Please see integration/README in the txtorcon repo"

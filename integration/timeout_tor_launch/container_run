@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+# -*- mode: python -*-
+
+## see README
+## this runs in the container, and sets up the testcase
+
+import os
+import sys
+
+import tempfile
+import functools
+
+from twisted.internet import reactor, defer
+from twisted.internet.endpoints import TCP4ServerEndpoint
+from twisted.web import server, resource
+from twisted.python import log
+
+sys.path.insert(0, '/txtorcon')
+import txtorcon
+
+
+log.startLogging(sys.stdout)
+
+def updates(prog, tag, summary):
+    p = ('#' * int(10*(prog/100.0))) + ('.'*(10 - int(10*(prog/100.0))))
+    print "%s %s" % (p, summary)
+
+def run_ps_exit(arg):
+    print "run_ps_exit called with:", arg
+    print 'Running "ps afxu":'
+    os.system("ps afxu")
+    reactor.stop()
+
+@defer.inlineCallbacks
+def main():
+    print "Launching Tor"
+    config = txtorcon.TorConfig()
+    config.SOCKSPort = 0
+    config.ORPort = 0
+    proto = yield txtorcon.launch_tor(config, reactor,
+                                      timeout=1, progress_updates=updates)
+    print "launch over:", proto
+
+d = main()
+d.addBoth(run_ps_exit)
+reactor.callLater(5, run_ps_exit)
+reactor.run()

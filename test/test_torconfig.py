@@ -646,6 +646,7 @@ class FakeReactor(task.Clock):
     def spawnProcess(self, processprotocol, bin, args, env, path, uid=None, gid=None, usePTY=None, childFDs=None):
         self.protocol = processprotocol
         self.protocol.makeConnection(self.transport)
+        self.transport.process_protocol = processprotocol
         self.on_protocol(self.protocol)
         return self.transport
 
@@ -665,6 +666,9 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
 
     pid = -1
 
+    def signalProcess(self, signame):
+        self.process_protocol.processEnded(Failure(error.ProcessTerminated(signal=signame)))
+
     def closeStdin(self):
         self.protocol.dataReceived('250 OK\r\n')
         self.protocol.dataReceived('250 OK\r\n')
@@ -673,7 +677,7 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
         self.protocol.dataReceived('650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=100 TAG=done SUMMARY="Done"\r\n')
 
 
-class FakeProcessTransportNeverBootstraps(proto_helpers.StringTransportWithDisconnection):
+class FakeProcessTransportNeverBootstraps(FakeProcessTransport):
 
     pid = -1
 
@@ -814,10 +818,13 @@ class LaunchTorTests(unittest.TestCase):
         react = FakeReactor(self, trans, on_protocol)
         d = launch_tor(config, react, connection_creator=creator,
                        timeout=timeout, tor_binary='/bin/echo')
-        rtn = self.assertFailure(d, RuntimeError, "Timed out waiting for Tor to launch.")
         # FakeReactor is a task.Clock subclass and +1 just to be sure
         react.advance(timeout + 1)
-        return rtn
+
+        self.assertTrue(d.called)
+        self.assertTrue(d.result.getErrorMessage().strip().endswith('Tor was killed (KILL).'))
+        return self.assertFailure(d, RuntimeError)
+
 
     def setup_fails_stderr(self, fail):
         self.assertTrue('Something went horribly wrong!' in fail.getErrorMessage())
