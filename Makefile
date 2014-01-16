@@ -88,8 +88,6 @@ release: dist/txtorcon-0.9.0.tar.gz dist/txtorcon-0.9.0-py27-none-any.whl setup.
 ##	python setup.py sdist upload --sign --identity=meejah@meejah.ca
 
 venv:
-	mkdir -p tmp
-	cd tmp
 	virtualenv --never-download --extra-search-dir=/usr/lib/python2.7/dist-packages/ venv
 	@echo "created venv"
 	@echo "see INSTALL for more information; to use:"
