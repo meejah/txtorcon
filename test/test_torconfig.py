@@ -826,6 +826,46 @@ class LaunchTorTests(unittest.TestCase):
         return self.assertFailure(d, RuntimeError)
 
 
+    def test_launch_with_timeout_that_doesnt_expire(self):
+        config = TorConfig()
+        config.OrPort = 1234
+        config.SocksPort = 9999
+        timeout = 5
+
+        def connector(proto, trans):
+            proto._set_valid_events('STATUS_CLIENT')
+            proto.makeConnection(trans)
+            proto.post_bootstrap.callback(proto)
+            return proto.post_bootstrap
+
+        class OnProgress:
+            def __init__(self, test, expected):
+                self.test = test
+                self.expected = expected
+
+            def __call__(self, percent, tag, summary):
+                self.test.assertEqual(self.expected[0], (percent, tag, summary))
+                self.expected = self.expected[1:]
+                self.test.assertTrue('"' not in summary)
+                self.test.assertTrue(percent >= 0 and percent <= 100)
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        self.othertrans = trans
+        creator = functools.partial(connector, self.protocol, self.transport)
+        react = FakeReactor(self, trans, on_protocol)
+        d = launch_tor(config, react, connection_creator=creator,
+                       timeout=timeout, tor_binary='/bin/echo')
+        # FakeReactor is a task.Clock subclass and +1 just to be sure
+        react.advance(timeout + 1)
+
+        self.assertTrue(d.called)
+        self.assertTrue(d.result.tor_protocol == self.protocol)
+
+
     def setup_fails_stderr(self, fail):
         self.assertTrue('Something went horribly wrong!' in fail.getErrorMessage())
         ## cancel the errback chain, we wanted this
