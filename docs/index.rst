@@ -11,6 +11,8 @@ txtorcon is a `Twisted <https://twistedmatrix.com/>`_-based `Python
 This would be of interest to anyone wishing to write event-based
 software in Python that talks to a Tor program.
 
+**Cut to the chase** by perusing the `Walkthrough <walkthrough.html>`_.
+
 The main code is under 2000 lines according to ohcount, or 4500 lines
 including tests. Some features and motivating examples:
 
@@ -91,6 +93,7 @@ Documentation
    :maxdepth: 2
 
    introduction
+   walkthrough
    README
    examples
 
