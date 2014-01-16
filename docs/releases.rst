@@ -15,12 +15,18 @@ unreleased
  * using "`coverage <http://nedbatchelder.com/code/coverage/>`_" tool instead of custom script
  * using `coveralls.io <https://coveralls.io/r/meejah/txtorcon>`_ and `travis-ci <https://travis-ci.org/meejah/txtorcon>`_ for test coverage and continuous integration
  * `issue #56 <https://github.com/meejah/txtorcon/issues/56>`_: added Circuit.close() and Stream.close() starting from aagbsn's patch
- * make hidden service server-side endpoints listen only on 127.0.0.1
+ * ensure HS server-side endpoints listen only on 127.0.0.1
  * parsing issues with multi-line keyword discovered and resolved
- * preserve router nicks from long-names if consensus lacks an entry
+ * preserve router nicks from long-names if consensus lacks an entry (e.g. bridges)
  * using `Twine <https://github.com/dstufft/twine>`_ for releases
  * `Wheel <http://wheel.readthedocs.org/en/latest/>`_ release now also available
- * "python setup.py develop" now supported (`issue #57 <https://github.com/meejah/txtorcon/issues/57>`_)
+ * `issue #57 <https://github.com/meejah/txtorcon/issues/57>`_: "python setup.py develop" now supported
+ * `issue #59 <https://github.com/meejah/txtorcon/pull/59>`_: if tor_launch() times out, Tor is properly killed (starting with pull-request from Ryman)
+ * experimental docker.io-based tests (for HS listening, and tor_launch() timeouts)
+ * `issue #55 <https://github.com/meejah/txtorcon/issues/55>`_: pubkey link on readthedocs
+ * `issue #63 <https://github.com/meejah/txtorcon/issues/55>`_
+ * clean up GeoIP handling, and support pygeoip both pre and post 0.3
+ * slightly improve unit-test coverage (now at 97%, 61 lines of 2031 missing)
 
 
 v0.8.2
