@@ -27,6 +27,7 @@ unreleased
  * `issue #63 <https://github.com/meejah/txtorcon/issues/55>`_
  * clean up GeoIP handling, and support pygeoip both pre and post 0.3
  * slightly improve unit-test coverage (now at 97%, 61 lines of 2031 missing)
+ * added a `Walkthrough <walkthrough.html>`_ to the documentation
 
 
 v0.8.2

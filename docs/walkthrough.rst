@@ -68,13 +68,15 @@ defaults to a port of 9151 and doesn't turn on cookie
 authentication. Change the options to turn on cookie authentication
 and change "9051" to "9151" in the following examples.
 
-We will use the ``txtorcon.build_tor_connection`` API call, which
-returns a Deferred that callbacks with a ``TorControlProtocol`` or
-``TorState`` instance (depending on whether the ``build_state`` kwarg was
-True -- the default -- or False).
+
+We will use the :meth:`txtorcon.build_tor_connection` API call, which
+returns a Deferred that callbacks with a :class:`TorControlProtocol
+<txtorcon.TorControlProtocol>` or :class:`TorState
+<txtorcon.TorState>` instance (depending on whether the
+``build_state`` kwarg was True -- the default -- or False).
 
 The TorState instance takes a second or two to get built as it queries
-Tor for all the current relays and creates a ``Router`` instance of
+Tor for all the current relays and creates a :class:`Router <txtorcon.Router>` instance of
 which there are currently about 5000. TorControlProtocol alone is much
 faster (dozens of milliseconds).
 
@@ -113,7 +115,7 @@ Launch Our Own Tor
 ------------------
 
 For some use-cases you will want to launch a private Tor
-instance. txtorcon provides ``launch_tor`` to do just that. This also
+instance. txtorcon provides :meth:`txtorcon.launch_tor` to do just that. This also
 uses some Tor commands to link the controller to the Tor instance, so
 that if the connection is lost Tor will shut itself down.
 
@@ -138,7 +140,7 @@ keys ``launch_tor`` adds are:
  * ``CookieAuthentication`` is set to 1
  * ``__OwningControllerProcess`` is set to our PID
 
-Check out the ``txtorcon.launch_tor`` documentation. You'll likely want
+Check out the :meth:`txtorcon.launch_tor` documentation. You'll likely want
 to provide a ``progress_updates`` listener to provide interesting
 information to your user. Here's a full example::
 
@@ -206,7 +208,7 @@ and then continuously monitor two events: circuit events via
 ``TorState`` interfaces and ``INFO`` messages via a raw
 ``add_event_listener``.
 
-First, we add a simple implementation of ``txtorcon.ICircuitListener``::
+First, we add a simple implementation of :class:`txtorcon.ICircuitListener`::
 
    class MyCircuitListener(object):
        implements(txtorcon.ICircuitListener)

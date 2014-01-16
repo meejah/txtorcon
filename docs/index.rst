@@ -34,7 +34,7 @@ including tests. Some features and motivating examples:
     - see :ref:`launch_tor.py`
     - see :ref:`launch_tor_with_hiddenservice.py`
 
- - `txtorcon.TCPHiddenServiceEndpoint` to simplify hidden service listening into Twisteds endpoint paradigm.
+ - :class:`txtorcon.TCPHiddenServiceEndpoint` to simplify hidden service listening into Twisteds endpoint paradigm.
     - see :ref:`launch_tor_endpoint.py`
 
 This documentation was generated |today|.
