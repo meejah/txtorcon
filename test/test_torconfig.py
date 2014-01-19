@@ -825,7 +825,6 @@ class LaunchTorTests(unittest.TestCase):
         self.assertTrue(d.result.getErrorMessage().strip().endswith('Tor was killed (KILL).'))
         return self.assertFailure(d, RuntimeError)
 
-
     def test_launch_with_timeout_that_doesnt_expire(self):
         config = TorConfig()
         config.OrPort = 1234
@@ -864,7 +863,6 @@ class LaunchTorTests(unittest.TestCase):
 
         self.assertTrue(d.called)
         self.assertTrue(d.result.tor_protocol == self.protocol)
-
 
     def setup_fails_stderr(self, fail):
         self.assertTrue('Something went horribly wrong!' in fail.getErrorMessage())
@@ -1119,8 +1117,10 @@ class EndpointTests(unittest.TestCase):
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123,
                                       endpoint_generator=test_gen)
         d = ep.listen(FakeProtocolFactory())
+
         class ErrorCallback(object):
             got_error = None
+
             def __call__(self, err, *args, **kw):
                 self.got_error = err.value
         error_cb = ErrorCallback()

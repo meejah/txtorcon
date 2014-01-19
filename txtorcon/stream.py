@@ -135,6 +135,7 @@ class Stream(object):
         """
 
         self._closing_deferred = defer.Deferred()
+
         def close_command_is_queued(*args):
             return self._closing_deferred
         d = self.circuit_container.close_stream(self, **kw)

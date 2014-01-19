@@ -99,6 +99,7 @@ class Circuit(object):
         """
 
         self._closing_deferred = defer.Deferred()
+
         def close_command_is_queued(*args):
             return self._closing_deferred
         d = self.torstate.close_circuit(self, **kw)

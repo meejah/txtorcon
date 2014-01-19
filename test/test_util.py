@@ -33,6 +33,7 @@ class TestIPFromInt(unittest.TestCase):
     def test_cast(self):
         self.assertEqual(ip_from_int(0x7f000001), '127.0.0.1')
 
+
 class TestGeoIpDatabaseLoading(unittest.TestCase):
 
     def test_bad_geoip_path(self):
@@ -40,12 +41,14 @@ class TestGeoIpDatabaseLoading(unittest.TestCase):
         from txtorcon import util
         self.assertRaises(IOError, util.create_geoip, '_missing_path_')
 
+
 class TestFindKeywords(unittest.TestCase):
 
     def test_filter(self):
         "make sure we filter out keys that look like router IDs"
         self.assertEqual(find_keywords("foo=bar $1234567890=routername baz=quux".split()),
                          {'foo': 'bar', 'baz': 'quux'})
+
 
 class TestNetLocation(unittest.TestCase):
 
@@ -72,6 +75,7 @@ class TestNetLocation(unittest.TestCase):
         try:
             util.city = None
             obj = object()
+
             class CountryCoder(object):
                 def country_code_by_addr(self, ipaddr):
                     return obj
@@ -92,6 +96,7 @@ class TestNetLocation(unittest.TestCase):
         try:
             util.city = None
             util.country = None
+
             class Thrower:
                 def org_by_addr(*args, **kw):
                     raise RuntimeError("testing failure")

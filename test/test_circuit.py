@@ -5,6 +5,7 @@ from zope.interface import implements
 from txtorcon import Circuit, Stream, TorControlProtocol, TorState
 from txtorcon.interface import IRouterContainer, ICircuitListener, ICircuitContainer, CircuitListenerMixin, ITorControlProtocol
 
+
 class FakeTorController(object):
     implements(IRouterContainer, ICircuitListener, ICircuitContainer)
 
@@ -44,6 +45,7 @@ class FakeTorController(object):
     def close_circuit(self, circ):
         del self.circuits[circ.id]
         return defer.succeed('OK')
+
 
 class FakeLocation:
 
@@ -238,5 +240,3 @@ class CircuitTests(unittest.TestCase):
         # confirm that our circuit callback has been triggered already
         self.assertRaises(defer.AlreadyCalledError, d.callback, "should have been called already")
         return d
-        
-        

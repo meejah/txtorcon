@@ -36,6 +36,11 @@ def DefaultTCP4EndpointGenerator(*args, **kw):
     Default generator used to create server-side TCP4ServerEndpoint
     instances. Sets interface='127.0.0.1' instead of the default ('',
     which means all).
+
+    (We use a generator so we can try random ports in case something
+    is listening on one; perhaps it would be more straightfoward to
+    simply allow an endpoint to be passed to TCPHiddenServiceEndpoint
+    instead and fail right away in case something is listening?)
     """
 
     kw['interface'] = '127.0.0.1'

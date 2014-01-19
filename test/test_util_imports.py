@@ -10,6 +10,7 @@ def fake_import(orig, name, *args, **kw):
         raise ImportError('testing!')
     return orig(*((name,) + args), **kw)
 
+
 class TestImports(unittest.TestCase):
 
     def test_no_GeoIP(self):
@@ -30,7 +31,6 @@ class TestImports(unittest.TestCase):
             # throw on GeoIP import no matter what
             global __builtins__
             __builtins__['__import__'] = functools.partial(fake_import, orig)
-
 
             # now ensure we set up all the databases as "None" when we
             # import w/o the GeoIP thing available.

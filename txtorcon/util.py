@@ -22,6 +22,7 @@ city = None
 country = None
 asn = None
 
+
 def create_geoip(fname):
     ## It's more "pythonic" to just wait for the exception,
     ## but GeoIP prints out "Can't open..." messages for you,
@@ -37,6 +38,7 @@ def create_geoip(fname):
 
     except GeoIP.error:
         raise IOError("Can't load %s" % fname)
+
 
 def maybe_create_db(path):
     try:
@@ -99,6 +101,7 @@ def find_tor_binary(globs=('/usr/sbin/', '/usr/bin/',
             if is_executable(torbin):
                 return torbin
     return None
+
 
 def maybe_ip_addr(addr):
     """
