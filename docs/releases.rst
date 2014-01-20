@@ -9,13 +9,18 @@ versioning <http://semver.org/>`_.
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.x*
 
+v0.9.0
+------
+
+*January 20, 2014*
+
+ * `txtorcon-0.9.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.9.0.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.9.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.9.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.9.0.tar.gz>`_)
  * put test/ directory at the top level
  * using "`coverage <http://nedbatchelder.com/code/coverage/>`_" tool instead of custom script
  * using `coveralls.io <https://coveralls.io/r/meejah/txtorcon>`_ and `travis-ci <https://travis-ci.org/meejah/txtorcon>`_ for test coverage and continuous integration
  * `issue #56 <https://github.com/meejah/txtorcon/issues/56>`_: added Circuit.close() and Stream.close() starting from aagbsn's patch
- * ensure HS server-side endpoints listen only on 127.0.0.1
  * parsing issues with multi-line keyword discovered and resolved
  * preserve router nicks from long-names if consensus lacks an entry (e.g. bridges)
  * using `Twine <https://github.com/dstufft/twine>`_ for releases
