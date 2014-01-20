@@ -25,6 +25,13 @@ container.
 
 We use this container to run integration tests.
 
+**Note**: if you're having problems with docker containers apparently
+lacking network connectivity, do this::
+
+   echo 1 > /proc/sys/net/ipv4/ip_forward
+   service docker restart
+
+
 Contents of the Container
 -------------------------
 
