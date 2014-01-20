@@ -93,7 +93,7 @@ dependencies / requirements
    11.1.0 on Debian with Python 2.7.2. Twisted 12 works fine as
    well. Twisted does not yet support Python 3.
 
--  `GeoIP <https://www.maxmind.com/app/python>`_: provides location
+-  `GeoIP <https://www.maxmind.com/app/python>`_: **optional** provides location
    information for ip addresses; you will want to download GeoLite City
    from `MaxMind <https://www.maxmind.com/app/geolitecity>`_ or pay them
    for more accuracy. Or use tor-geoip, which makes this sort-of
@@ -132,6 +132,9 @@ or::
     pip install -r requirements.txt
     pip install -r dev-requirements.txt
 
+or for the bare minimum::
+
+    pip install Twisted  # will install zope.interface too
 
 documentation
 -------------
