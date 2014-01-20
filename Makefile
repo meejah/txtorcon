@@ -69,7 +69,7 @@ clean:
 counts:
 	ohcount -s txtorcon/*.py
 
-dist: dist/txtorcon-0.9.0.tar.gz.asc
+dist: dist/txtorcon-0.9.0-py27-none-any.whl.asc dist/txtorcon-0.9.0.tar.gz.asc
 
 sdist: setup.py 
 	python setup.py sdist
