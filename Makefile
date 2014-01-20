@@ -83,9 +83,10 @@ dist/txtorcon-0.9.0.tar.gz: sdist
 dist/txtorcon-0.9.0.tar.gz.asc: dist/txtorcon-0.9.0.tar.gz
 	gpg --verify dist/txtorcon-0.9.0.tar.gz.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-0.9.0.tar.gz
 
-release: dist/txtorcon-0.9.0.tar.gz dist/txtorcon-0.9.0-py27-none-any.whl setup.py
-	twine
-##	python setup.py sdist upload --sign --identity=meejah@meejah.ca
+release: dist/txtorcon-0.9.0.tar.gz.asc dist/txtorcon-0.9.0-py27-none-any.whl.asc setup.py
+	twine upload -r pypi -c "txtorcon v0.9.0 tarball" dist/txtorcon-0.9.0.tar.gz dist/txtorcon-0.9.0.tar.gz.asc
+	twine upload -r pypi -c "txtorcon v0.9.0 wheel" dist/txtorcon-0.9.0-py27-none-any.whl dist/txtorcon-0.9.0-py27-none-any.whl.asc
+
 
 venv:
 	virtualenv --never-download --extra-search-dir=/usr/lib/python2.7/dist-packages/ venv
