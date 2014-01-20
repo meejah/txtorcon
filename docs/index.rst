@@ -69,6 +69,16 @@ to Lunar::
     apt-get update
     apt-get install python-txtorcon 
 
+**Installing the wheel files** requires a recent pip and
+setuptools. At least on Debian, it is important to upgrade setuptools
+*before* pip. This procedure appears to work fine::
+
+   virtualenv foo
+   . foo/bin/activate
+   pip install --upgrade setuptools
+   pip install --upgrade pip
+   pip install path/to/txtorcon-0.9.0-py27-none-any.whl
+
 
 Known Users:
 ------------
