@@ -164,6 +164,9 @@ class Circuit(object):
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:
+                ## FIXME it seems this can/does happen if a remote
+                ## router crashes or otherwise shuts down a circuit
+                ## with streams on it still
                 log.err(RuntimeError("Circuit is %s but still has %d streams" %
                                      (self.state, len(self.streams))))
             flags = self._create_flags(kw)

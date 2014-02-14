@@ -643,21 +643,6 @@ class TorState(object):
 
         txtorlog.msg(len(self.guards), "GUARDs")
 
-    def _newdesc_update(self, args):
-        """
-        Callback used internall for ORCONN and NEWDESC events to
-        update Router information.
-
-        FIXME: need to look at state for NEWDESC; if it's CLOSED we
-        probably want to remove it from dicts...
-        """
-
-        hsh = args[:41]
-        if hsh not in self.routers:
-            txtorlog.msg("haven't seen", hsh, "yet!")
-        self.protocol.get_info_raw('ns/id/%s' % hsh[1:]).addCallback(self._update_network_status).addErrback(log.err)
-        txtorlog.msg("NEWDESC", args)
-
     def _maybe_create_circuit(self, circ_id):
         if circ_id not in self.circuits:
             c = self.circuit_factory(self)
@@ -720,7 +705,6 @@ class TorState(object):
                  'CIRC': _circuit_update,
                  'NS': _update_network_status,
                  'NEWCONSENSUS': _update_network_status,
-                 'NEWDESC': _newdesc_update,
                  'ADDRMAP': _addr_map}
     """event_map used by add_events to map event_name -> unbound method"""
     @defer.inlineCallbacks
