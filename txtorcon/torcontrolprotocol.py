@@ -1,7 +1,7 @@
 from __future__ import with_statement
 
 from twisted.python import log
-from twisted.internet import defer
+from twisted.internet import defer, protocol
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.protocols.basic import LineOnlyReceiver
 from zope.interface import implements, implementedBy
@@ -222,6 +222,12 @@ class TorControlProtocol(LineOnlyReceiver):
 
         self.valid_signals = []
         """A list of all valid signals we accept from Tor"""
+
+        self.on_disconnect = defer.Deferred()
+        """
+        This Deferred is triggered when the connection is closed. If
+        there was an error, the errback is called instead.
+        """
 
         self.post_bootstrap = defer.Deferred()
         """
@@ -506,9 +512,18 @@ class TorControlProtocol(LineOnlyReceiver):
         self.fsm.process(line)
 
     def connectionMade(self):
-        "LineOnlyReceiver API (or parent?)"
+        "Protocol API"
         txtorlog.msg('got connection, authenticating')
         self.protocolinfo().addCallback(self._do_authenticate).addErrback(self._auth_failed)
+
+    def connectionLost(self, reason):
+        "Protocol API"
+        print "DINGDINGDING", reason
+        txtorlog.msg('connection terminated: ' + str(reason))
+        if reason == protocol.connectionDone:
+            self.on_disconnect.callback(self)
+            return
+        self.on_disconnect.errback(reason)
 
     def _handle_notify(self, code, rest):
         """
