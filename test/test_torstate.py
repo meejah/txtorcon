@@ -611,27 +611,27 @@ class StateTests(unittest.TestCase):
     def test_close_circuit(self):
         circuit = Circuit(self.state)
         circuit.id = 1
-        try:
-            self.state.close_circuit(circuit)
-            self.assertTrue(False)
-        except KeyError:
-            pass
+        # try:
+        #     self.state.close_circuit(circuit)
+        #     self.assertTrue(False)
+        # except KeyError:
+        #     pass
 
         self.state.circuits[1] = circuit
-        self.state.close_circuit(circuit)
+        self.state.close_circuit(circuit.id)
         self.assertEqual(self.transport.value(), 'CLOSECIRCUIT 1\r\n')
 
     def test_close_circuit_with_flags(self):
         circuit = Circuit(self.state)
         circuit.id = 1
-        try:
-            self.state.close_circuit(circuit, IfUnused=True)
-            self.assertTrue(False)
-        except KeyError:
-            pass
+        # try:
+        #     self.state.close_circuit(circuit.id, IfUnused=True)
+        #     self.assertTrue(False)
+        # except KeyError:
+        #     pass
 
         self.state.circuits[1] = circuit
-        self.state.close_circuit(circuit, IfUnused=True)
+        self.state.close_circuit(circuit.id, IfUnused=True)
         self.assertEqual(self.transport.value(), 'CLOSECIRCUIT 1 IfUnused\r\n')
 
     def test_circuit_destroy(self):

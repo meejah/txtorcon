@@ -344,7 +344,7 @@ class TorControlProtocol(LineOnlyReceiver):
             in the callback chain; if you want to avoid the parsing
             into a dict, you can use get_info_raw instead.
         """
-        return self.get_info_raw(*args).addCallback(parse_keywords).addErrback(log.err)
+        return self.get_info_raw(*args).addCallback(parse_keywords)
 
     def get_conf(self, *args):
         """
@@ -433,7 +433,9 @@ class TorControlProtocol(LineOnlyReceiver):
 
         :Return: ``None``
 
-        .. todo:: need an interface for the callback
+        .. todo::
+            need an interface for the callback
+            show how to tie in Stem parsing if you want
         """
 
         if not evt in self.valid_events.values():

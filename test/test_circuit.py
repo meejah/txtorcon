@@ -42,8 +42,8 @@ class FakeTorController(object):
     def find_circuit(self, circid):
         return self.circuits[circid]
 
-    def close_circuit(self, circ):
-        del self.circuits[circ.id]
+    def close_circuit(self, circid):
+        del self.circuits[circid]
         return defer.succeed('OK')
 
 

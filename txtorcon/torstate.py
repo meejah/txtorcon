@@ -463,7 +463,7 @@ class TorState(object):
         cmd = 'CLOSESTREAM %s %d%s' % (str(stream.id), reason, flags)
         return self.protocol.queue_command(cmd)
 
-    def close_circuit(self, circ, **kwargs):
+    def close_circuit(self, circid, **kwargs):
         """
         This sends a CLOSECIRCUIT command, using any keyword arguments
         passed as the Flags (currently, that is just 'IfUnused' which
@@ -476,10 +476,12 @@ class TorState(object):
         <txtorcon.circuit.Circuit.close>`
         """
 
-        if circ.id not in self.circuits:
-            raise KeyError("No such circuit: %d" % circ.id)
+#        if circ.id not in self.circuits:
+#            raise KeyError("No such circuit: %d" % circ.id)
+        if type(circid) != int:
+            raise ValueError("Expected a circuit ID")
         flags = flags_from_dict(kwargs)
-        return self.protocol.queue_command('CLOSECIRCUIT %s%s' % (circ.id, flags))
+        return self.protocol.queue_command('CLOSECIRCUIT %s%s' % (circid, flags))
 
     def add_circuit_listener(self, icircuitlistener):
         listen = ICircuitListener(icircuitlistener)
