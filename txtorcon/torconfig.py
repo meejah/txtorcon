@@ -161,14 +161,6 @@ class TCPHiddenServiceEndpoint(object):
         self.config.HiddenServices.append(self.hiddenservice)
         return arg
 
-    def _do_error(self, f):
-        """
-        handle errors. FIXME
-        """
-
-        print "ERROR", f
-        return f
-
     def listen(self, protocolfactory):
         """
         Implement :api:`twisted.internet.interfaces.IStreamServerEndpoint <IStreamServerEndpoint>`.
@@ -184,15 +176,16 @@ class TCPHiddenServiceEndpoint(object):
         """
 
         self.protocolfactory = protocolfactory
-        if self.config.post_bootstrap:
-            d = self.config.post_bootstrap.addCallback(self._create_hiddenservice).addErrback(self._do_error)
+        if self.hiddenservice is None:
 
-        elif self.hiddenservice is None:
-            self._create_hiddenservice(None)
-            d = self.config.save()
+            if self.config.post_bootstrap:
+                d = self.config.post_bootstrap.addCallback(self._create_hiddenservice)
+            else:
+                self._create_hiddenservice(None)
+                d = self.config.save()
 
         else:
-            raise RuntimeError("FIXME")
+            d = defer.succeed(self)
 
         d.addCallback(self._create_listener).addErrback(self._retry_local_port)
         return d

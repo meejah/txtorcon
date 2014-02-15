@@ -12,6 +12,7 @@ from twisted.python.failure import Failure
 from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint, TorNotFound
+from txtorcon import torconfig
 
 from txtorcon.util import delete_file_or_tree
 
@@ -98,7 +99,8 @@ class ConfigTests(unittest.TestCase):
     def test_boolean_parse_error(self):
         self.protocol.answers.append('config/names=\nfoo Boolean\nOK')
         self.protocol.answers.append({'foo': 'bar'})
-        TorConfig(self.protocol)
+        cfg = TorConfig(self.protocol)
+        self.assertEqual(cfg.get_type('foo'), torconfig.Boolean)
         errs = self.flushLoggedErrors(ValueError)
         self.assertEqual(len(errs), 1)
         ## dunno if asserting strings in messages is a good idea...
@@ -499,6 +501,7 @@ OK''')
         conf.hiddenservices[0].ports.append('443 127.0.0.1:443')
         self.assertTrue(conf.needs_save())
         conf.save()
+        self.assertEqual(conf.get_type('HiddenServices'), HiddenService)
 
         self.assertEqual(len(self.protocol.sets), 7)
         self.assertEqual(self.protocol.sets[0], ('HiddenServiceDir', '/fake/path'))
@@ -1206,7 +1209,6 @@ OK''')
         self.config.bootstrap()
         d.addErrback(self.check_error)
         return d
-
 
 class ErrorTests(unittest.TestCase):
 
