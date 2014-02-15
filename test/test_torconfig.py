@@ -1112,6 +1112,8 @@ class EndpointTests(unittest.TestCase):
         self.protocol.answers.append('HiddenServiceOptions')
         self.config.bootstrap()
         self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
+        ## make sure _ListWrapper's __repr__ doesn't explode
+        repr(self.config.HiddenServices)
         return d
 
     def test_bad_listener(self):
