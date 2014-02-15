@@ -177,14 +177,19 @@ class TCPHiddenServiceEndpoint(object):
 
         self.protocolfactory = protocolfactory
         if self.hiddenservice is None:
-
+            ## we don't have a hidden service yet, but if the config
+            ## isn't bootstrapped, we need to wait for it first
             if self.config.post_bootstrap:
                 d = self.config.post_bootstrap.addCallback(self._create_hiddenservice)
+
             else:
                 self._create_hiddenservice(None)
                 d = self.config.save()
 
         else:
+            ## we already have a hidden service created, but still
+            ## want a Deferred so the _create_listener flow is the
+            ## same
             d = defer.succeed(self)
 
         d.addCallback(self._create_listener).addErrback(self._retry_local_port)

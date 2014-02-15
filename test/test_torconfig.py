@@ -1116,6 +1116,28 @@ class EndpointTests(unittest.TestCase):
         repr(self.config.HiddenServices)
         return d
 
+    def test_multiple_listen(self):
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
+        d0 = ep.listen(FakeProtocolFactory())
+        @defer.inlineCallbacks
+        def more_listen(arg):
+            yield arg.stopListening()
+            d1 = ep.listen(FakeProtocolFactory())
+            def foo(arg):
+                return arg
+            d1.addBoth(foo)
+            defer.returnValue(arg)
+            return
+        d0.addBoth(more_listen)
+        self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual\nOK')
+        self.protocol.answers.append('HiddenServiceOptions')
+        self.config.bootstrap()
+
+        def check(arg):
+            self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
+        d0.addCallback(check).addErrback(self.fail)
+        return d0
+
     def test_bad_listener(self):
         def test_gen(*args, **kw):
             kw['interface'] = '0.0.0.0'
