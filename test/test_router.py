@@ -104,14 +104,19 @@ class RouterTests(unittest.TestCase):
         self.assertEqual(router.policy, 'reject 500-600,655,7766')
 
     def test_countrycode(self):
-        controller = FakeController()
+        class CountryCodeController(object):
+            def get_info_raw(self, i):
+                return defer.succeed('250-ip-to-country/127.1.2.3=ZZ\r\n250 OK')
+        controller = CountryCodeController()
         router = Router(controller)
         router.update("foo",
                       "AHhuQ8zFQJdT8l42Axxc6m6kNwI",
                       "MAANkj30tnFvmoh7FsjVFr+cmcs",
                       "2011-12-16 15:11:34",
-                      "127.0.0.1",
+                      "127.1.2.3",
                       "24051", "24052")
+
+        self.assertEqual(router.location.countrycode, 'ZZ')
 
     def test_policy_error(self):
         router = Router(object())

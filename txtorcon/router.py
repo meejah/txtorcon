@@ -100,7 +100,7 @@ class Router(object):
             self._location = NetLocation(self.ip)
         else:
             self._location = NetLocation(None)
-        if self._location.countrycode is None and self.ip != 'unknown':
+        if not self._location.countrycode and self.ip != 'unknown':
             ## see if Tor is magic and knows more...
             self.controller.get_info_raw('ip-to-country/' + self.ip).addCallback(self._set_country)
         return self._location
@@ -201,7 +201,7 @@ class Router(object):
         callback if we used Tor's GETINFO ip-to-country
         """
 
-        self.location.countrycode = c[:-3].split('=')[1].strip().upper()
+        self.location.countrycode = c.split()[0].split('=')[1].strip().upper()
 
     def __repr__(self):
         n = self.id_hex
