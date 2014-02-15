@@ -955,29 +955,6 @@ s Fast Guard Running Stable Valid
         self.assertTrue('Unnamed' in self.state.routers)
         self.assertTrue('$00126582E505CF596F412D23ABC9E14DD4625C49' in self.state.routers)
 
-    def test_newdesc_parse(self):
-        """
-        should this mostly go in test_router instead? all we need to
-        confirm about the TorState class is that it sends the right
-        GETINFO. Well, we're also testing the args get split up
-        properly and so forth.
-        """
-        self.state._newdesc_update("$624926802351575FF7E4E3D60EFA3BFB56E67E8A=fake CLOSED REASON=IOERROR")
-
-        # TorState should issue "GETINFO ns/id/624926802351575FF7E4E3D60EFA3BFB56E67E8A"
-        # because it hasn't seen this yet, and we'll answer to see if it updates properly
-        d = self.protocol.defer
-        d.addCallback(self.confirm_router_state)
-        self.send("250+ns/id/624926802351575FF7E4E3D60EFA3BFB56E67E8A=")
-        self.send("r fake YkkmgCNRV1/35OPWDvo7+1bmfoo tanLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 12.45.56.78 443 80")
-        self.send("s Exit Fast Guard HSDir Named Running Stable V2Dir Valid FutureProof")
-        self.send("w Bandwidth=518000")
-        self.send("p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863,2082-2083,2086-2087,2095-2096,3128,4321,5050,5190,5222-5223,6679,6697,7771,8000,8008,8080-8081,8090,8118,8123,8181,8300,8443,8888")
-        self.send(".")
-        self.send("250 OK")
-
-        return d
-
     def test_stream_create(self):
         self.state._stream_update('1610 NEW 0 1.2.3.4:56')
         self.assertTrue(1610 in self.state.streams)
