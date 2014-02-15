@@ -7,6 +7,8 @@ from interface import IRouterContainer
 
 from txtorcon.util import find_keywords
 
+#look like "2014-01-25T02:12:14.593772"
+TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 class Circuit(object):
     """
@@ -79,6 +81,20 @@ class Circuit(object):
         ## this circuit is being CLOSED or FAILED.
         self._closing_deferred = None
 
+        ## caches parsed value for time_created()
+        self._time_created = None
+
+    @property
+    def time_created(self):
+        if self._time_created != None:
+            return self._time_created
+        if 'TIME_CREATED' in self.flags:
+            ## strip off milliseconds
+            t = self.flags['TIME_CREATED'].split('.')[0]
+            tstruct = time.strptime(t, TIME_FORMAT)
+            self._time_created = datetime.datetime(*tstruct[:7])
+        return self._time_created
+
     def listen(self, listener):
         if listener not in self.listeners:
             self.listeners.append(listener)
@@ -113,13 +129,13 @@ class Circuit(object):
     def age(self, now=datetime.datetime.now()):
         """
         Returns an integer which is the difference in seconds from
-        'now' to when this circuit was created. Returns None if there
-        is no created-time.
+        'now' to when this circuit was created.
+
+        Returns None if there is no created-time.
         """
-        if not 'TIME_CREATED' in self.flags:
+        if not self.time_created:
             return None
-        created = datetime.datetime(*(self.flags['TIME_CREATED'][:7]))
-        return (now - created).seconds
+        return (now - self.time_created).seconds
 
     def _create_flags(self, kw):
         "this clones the kw dict, adding a lower-case version of every key (duplicated in stream.py; put in util?)"
@@ -147,10 +163,6 @@ class Circuit(object):
             self.purpose = kw['PURPOSE']
         if 'BUILD_FLAGS' in kw:
             self.build_flags = kw['BUILD_FLAGS'].split(',')
-        if 'TIME_CREATED' in self.flags:
-#2014-01-25T02:12:14.593772
-            t = time.strptime(self.flags['TIME_CREATED'].split('.')[0], '%Y-%m-%dT%H:%M:%S')
-            self.flags['TIME_CREATED'] = t
 
         if self.state == 'LAUNCHED':
             self.path = []
