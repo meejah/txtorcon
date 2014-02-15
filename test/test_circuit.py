@@ -78,7 +78,6 @@ class CircuitTests(unittest.TestCase):
         make sure age does something sensible at least once.
         """
         tor = FakeTorController()
-        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
 
         circuit = Circuit(tor)
         now = datetime.datetime.now()
@@ -86,6 +85,20 @@ class CircuitTests(unittest.TestCase):
         circuit.update(update.split())
         diff = circuit.age(now=now)
         self.assertEquals(diff, 0)
+        self.assertTrue(circuit.time_created is not None)
+
+    def test_no_age_yet(self):
+        """
+        make sure age doesn't explode if there's no TIME_CREATED flag.
+        """
+        tor = FakeTorController()
+
+        circuit = Circuit(tor)
+        now = datetime.datetime.now()
+        circuit.update('1 LAUNCHED PURPOSE=GENERAL'.split())
+        self.assertTrue(circuit.time_created is None)
+        diff = circuit.age(now=now)
+        self.assertEquals(diff, None)
 
     def test_listener_mixin(self):
         listener = CircuitListenerMixin()
