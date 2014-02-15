@@ -62,10 +62,7 @@ class Addr(object):
 
         oldexpires = self.expires
 
-        key = 'EXPIRES='
-        if gmtexpires.find(key) == 0:
-            gmtexpires = gmtexpires[len(key):]
-        if gmtexpires == 'NEVER':
+        if gmtexpires.upper() == 'NEVER':
             ## FIXME can I just select a date 100 years in the future instead?
             self.expires = None
         else:

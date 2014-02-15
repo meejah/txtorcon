@@ -32,6 +32,10 @@ class AddrMapTests(unittest.TestCase):
         ## is we've rounded to seconds...
         self.assertEqual(addr.expires.ctime(), nowutc.ctime())
 
+        line = 'www.example.com 72.30.2.43 "%s" "%s"' % (now.strftime(self.fmt), nowutc.strftime(self.fmt))
+        am.update(line)
+        self.assertEqual(addr.expires.ctime(), nowutc.ctime())
+
         ## this will have resulted in an expiry call, which we need to
         ## cancel to keep the reactor clean. for consistency, we use
         ## the IReactorTime interface from AddrMap
