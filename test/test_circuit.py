@@ -1,3 +1,5 @@
+import datetime
+import time
 from twisted.trial import unittest
 from twisted.internet import defer
 from zope.interface import implements
@@ -70,6 +72,20 @@ examples = ['CIRC 365 LAUNCHED PURPOSE=GENERAL',
 
 
 class CircuitTests(unittest.TestCase):
+
+    def test_age(self):
+        """
+        make sure age does something sensible at least once.
+        """
+        tor = FakeTorController()
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+
+        circuit = Circuit(tor)
+        now = datetime.datetime.now()
+        update = '1 LAUNCHED PURPOSE=GENERAL TIME_CREATED=%s' % time.strftime('%Y-%m-%dT%H:%M:%S')
+        circuit.update(update.split())
+        diff = circuit.age(now=now)
+        self.assertEquals(diff, 0)
 
     def test_listener_mixin(self):
         listener = CircuitListenerMixin()
