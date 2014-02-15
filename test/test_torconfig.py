@@ -887,9 +887,11 @@ class LaunchTorTests(unittest.TestCase):
         trans.protocol = self.protocol
         self.othertrans = trans
         creator = functools.partial(connector, self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol),
+                       connection_creator=creator, tor_binary='/bin/echo')
         d.addCallback(self.fail)        # should't get callback
         d.addErrback(self.setup_fails_stderr)
+        self.assertFalse(self.protocol.on_disconnect)
         return d
 
     def test_tor_connection_fails(self):

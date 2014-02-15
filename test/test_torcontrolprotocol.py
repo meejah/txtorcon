@@ -1,9 +1,9 @@
 from __future__ import with_statement
 
-from twisted.python import log
+from twisted.python import log, failure
 from twisted.trial import unittest
 from twisted.test import proto_helpers
-from twisted.internet import defer
+from twisted.internet import defer, error
 
 from txtorcon import TorControlProtocol, TorProtocolFactory, TorState
 from txtorcon import ITorControlProtocol
@@ -134,6 +134,47 @@ class AuthenticationTests(unittest.TestCase):
         self.send('250 OK')
 
         self.assertTrue(self.auth_failed)
+
+class DisconnectionTests(unittest.TestCase):
+
+    def setUp(self):
+        self.protocol = TorControlProtocol()
+        self.protocol.connectionMade = lambda: None
+        self.transport = proto_helpers.StringTransportWithDisconnection()
+        self.protocol.makeConnection(self.transport)
+        ## why doesn't makeConnection do this?
+        self.transport.protocol = self.protocol
+
+    def tearDown(self):
+        self.protocol = None
+
+    def test_disconnect_callback(self):
+        """
+        see that we get our callback on_disconnect if the transport
+        goes away
+        """
+        def it_was_called(*args):
+            it_was_called.yes = True
+            return None
+        it_was_called.yes = False
+        self.protocol.on_disconnect.addCallback(it_was_called).addErrback(it_was_called)
+        f = failure.Failure(error.ConnectionDone("It's all over"))
+        self.protocol.connectionLost(f)
+        self.assertTrue(it_was_called.yes)
+
+    def test_disconnect_errback(self):
+        """
+        see that we get our callback on_disconnect if the transport
+        goes away
+        """
+        def it_was_called(*args):
+            it_was_called.yes = True
+            return None
+        it_was_called.yes = False
+        self.protocol.on_disconnect.addCallback(it_was_called).addErrback(it_was_called)
+        f = failure.Failure(RuntimeError("The thing didn't do the stuff."))
+        self.protocol.connectionLost(f)
+        self.assertTrue(it_was_called.yes)
 
 
 class ProtocolTests(unittest.TestCase):
@@ -307,8 +348,10 @@ OK''' % cookietmp.name)
         return d
 
     def test_async(self):
-        ## test the example from control-spec.txt to see that we
-        ## handle interleaved async notifications properly.
+        """
+        test the example from control-spec.txt to see that we
+        handle interleaved async notifications properly.
+        """
         self.protocol._set_valid_events('CIRC')
         self.protocol.add_event_listener('CIRC', lambda _: None)
         self.send("250 OK")

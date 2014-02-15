@@ -3,6 +3,7 @@ from __future__ import with_statement
 from twisted.python import log
 from twisted.internet import defer, protocol
 from twisted.internet.interfaces import IProtocolFactory
+from twisted.internet.error import ConnectionDone
 from twisted.protocols.basic import LineOnlyReceiver
 from zope.interface import implements, implementedBy
 
@@ -520,12 +521,14 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def connectionLost(self, reason):
         "Protocol API"
-        print "DINGDINGDING", reason
         txtorlog.msg('connection terminated: ' + str(reason))
-        if reason == protocol.connectionDone:
-            self.on_disconnect.callback(self)
-            return
-        self.on_disconnect.errback(reason)
+        if self.on_disconnect.callbacks:
+            if reason.check(ConnectionDone):
+                self.on_disconnect.callback(self)
+            else:
+                self.on_disconnect.errback(reason)
+        self.on_disconnect = None
+        return None
 
     def _handle_notify(self, code, rest):
         """
