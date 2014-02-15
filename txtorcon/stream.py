@@ -218,11 +218,8 @@ class Stream(object):
             flags = self._create_flags(kw)
             [x.stream_detach(self, **flags) for x in self.listeners]
 
-        elif self.state == 'NEWRESOLVE':
-            pass  # print 'NEWRESOLVE',self,args
-
-        elif self.state == 'SENTRESOLVE':
-            pass  # print 'SENTRESOLVE',self,args
+        elif self.state in ['NEWRESOLVE', 'SENTRESOLVE']:
+            pass  # print self.state, self, args
 
         else:
             raise RuntimeError("Unknown state: %s" % self.state)
