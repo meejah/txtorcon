@@ -936,19 +936,11 @@ class TorConfig(object):
         ``things which might get into the running Tor if save() were
         to be called''
         """
-        if name.startswith('__') and name.endswith('__'):
-            # Special case __foobar__ attributes to go for the real dict
-            # instead of self.config and raise AttributeError instead
-            # of KeyError
-            try:
-                return self.__dict__[name]
-            except KeyError, e:
-                raise AttributeError(str(e))
-        else:
-            rn = self._find_real_name(name)
-            if '_slutty_' in self.__dict__ and rn in self.unsaved:
-                return self.unsaved[rn]
-            return self.config[rn]
+
+        rn = self._find_real_name(name)
+        if '_slutty_' in self.__dict__ and rn in self.unsaved:
+            return self.unsaved[rn]
+        return self.config[rn]
 
     def get_type(self, name):
         """
