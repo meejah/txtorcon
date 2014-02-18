@@ -10,6 +10,7 @@ from txtorcon.util import find_keywords
 #look like "2014-01-25T02:12:14.593772"
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
+
 class Circuit(object):
     """
     Used by :class:`txtorcon.TorState` to represent one of Tor's circuits.
@@ -86,7 +87,7 @@ class Circuit(object):
 
     @property
     def time_created(self):
-        if self._time_created != None:
+        if self._time_created is not None:
             return self._time_created
         if 'TIME_CREATED' in self.flags:
             ## strip off milliseconds

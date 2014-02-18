@@ -534,7 +534,7 @@ class TorState(object):
                     first = False
                 else:
                     cmd += ','
-                if type(router) is type('') and len(router) == 40 and hashFromHexId(router):
+                if isinstance(router, types.StringType) and len(router) == 40 and hashFromHexId(router):
                     cmd += router
                 else:
                     cmd += router.id_hex[1:]

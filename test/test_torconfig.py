@@ -1073,11 +1073,10 @@ class FakeListeningPort(object):
     implements(IListeningPort)
 
     def startListening(self):
-        #print "startListening"
         self.factory.doStart()
 
     def stopListening(self):
-        pass  #print "stopListening"
+        self.factory.doStop()
 
     def getHost(self):
         return "host"
@@ -1120,10 +1119,12 @@ class EndpointTests(unittest.TestCase):
     def test_multiple_listen(self):
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d0 = ep.listen(FakeProtocolFactory())
+
         @defer.inlineCallbacks
         def more_listen(arg):
             yield arg.stopListening()
             d1 = ep.listen(FakeProtocolFactory())
+
             def foo(arg):
                 return arg
             d1.addBoth(foo)
@@ -1235,8 +1236,8 @@ OK''')
         d.addErrback(self.check_error)
         return d
 
-class ErrorTests(unittest.TestCase):
 
+class ErrorTests(unittest.TestCase):
     def test_no_tor_binary(self):
         """FIXME: do I really need all this crap in here?"""
         from txtorcon import torconfig

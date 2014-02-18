@@ -135,8 +135,8 @@ class AuthenticationTests(unittest.TestCase):
 
         self.assertTrue(self.auth_failed)
 
-class DisconnectionTests(unittest.TestCase):
 
+class DisconnectionTests(unittest.TestCase):
     def setUp(self):
         self.protocol = TorControlProtocol()
         self.protocol.connectionMade = lambda: None

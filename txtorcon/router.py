@@ -61,7 +61,7 @@ class Router(object):
         self.accepted_ports = None
         self.rejected_ports = None
         self.id_hex = None
-        self._location = None #NetLocation('0.0.0.0')
+        self._location = None
         self.from_consensus = False
         self.ip = 'unknown'
         self.ip_v6 = []                 # most routers have no IPv6 addresses
