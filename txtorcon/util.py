@@ -33,11 +33,8 @@ def create_geoip(fname):
     if GeoIP is None:
         return None
 
-    try:
-        return GeoIP.open(fname, GeoIP.GEOIP_STANDARD)
-
-    except GeoIP.error:
-        raise IOError("Can't load %s" % fname)
+    ## just letting any errors make it out
+    return GeoIP.open(fname, GeoIP.GEOIP_STANDARD)
 
 
 def maybe_create_db(path):
@@ -178,8 +175,6 @@ def process_from_address(addr, port, torstate=None):
     lines = stdout.split('\n')
     if len(lines) > 1:
         return int(lines[1].split()[1])
-
-    return None
 
 
 def hmac_sha256(key, msg):

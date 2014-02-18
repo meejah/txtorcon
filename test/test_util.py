@@ -37,7 +37,7 @@ class TestIPFromInt(unittest.TestCase):
 class TestGeoIpDatabaseLoading(unittest.TestCase):
 
     def test_bad_geoip_path(self):
-        "fail gracefull if a db is missing"
+        "fail gracefully if a db is missing"
         from txtorcon import util
         self.assertRaises(IOError, util.create_geoip, '_missing_path_')
 
@@ -165,6 +165,13 @@ class TestProcessFromUtil(unittest.TestCase):
         # depends on whether you have psutil installed or not, and on
         # whether your system always has a PID 0 process...
         self.assertEqual(pfa, self.fakestate.tor_pid)
+
+    def test_internal_no_state(self):
+        "look up the (Tor_internal) PID"
+        pfa = process_from_address('(Tor_internal)', 80)
+        # depends on whether you have psutil installed or not, and on
+        # whether your system always has a PID 0 process...
+        self.assertEqual(pfa, None)
 
     @defer.inlineCallbacks
     def test_real_addr(self):
