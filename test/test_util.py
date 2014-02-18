@@ -50,7 +50,47 @@ class TestFindKeywords(unittest.TestCase):
                          {'foo': 'bar', 'baz': 'quux'})
 
 
+class FakeGeoIP(object):
+    def __init__(self, version=2):
+        self.version = version
+
+    def record_by_addr(self, ip):
+        r = dict(country_code='XX',
+                 latitude=50.0,
+                 longitude=0.0,
+                 city='City')
+        if self.version == 2:
+            r['region_code'] = 'Region'
+        else:
+            r['region_name'] = 'Region'
+        return r
+
+
 class TestNetLocation(unittest.TestCase):
+
+    def test_valid_lookup_v2(self):
+        from txtorcon import util
+        orig = util.city
+        try:
+            util.city = FakeGeoIP(version=2)
+            nl = util.NetLocation('127.0.0.1')
+            self.assertTrue(nl.city)
+            self.assertEquals(nl.city[0], 'City')
+            self.assertEquals(nl.city[1], 'Region')
+        finally:
+            util.ity = orig
+
+    def test_valid_lookup_v3(self):
+        from txtorcon import util
+        orig = util.city
+        try:
+            util.city = FakeGeoIP(version=3)
+            nl = util.NetLocation('127.0.0.1')
+            self.assertTrue(nl.city)
+            self.assertEquals(nl.city[0], 'City')
+            self.assertEquals(nl.city[1], 'Region')
+        finally:
+            util.ity = orig
 
     def test_city_fails(self):
         "make sure we don't fail if the city lookup excepts"
