@@ -1,11 +1,11 @@
 from __future__ import with_statement
 
 from twisted.python import log
-from twisted.internet import defer, protocol
+from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.error import ConnectionDone
 from twisted.protocols.basic import LineOnlyReceiver
-from zope.interface import implements, implementedBy
+from zope.interface import implements
 
 from txtorcon.util import hmac_sha256, compare_via_hash
 from txtorcon.log import txtorlog

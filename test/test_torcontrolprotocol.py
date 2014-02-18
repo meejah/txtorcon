@@ -33,7 +33,6 @@ class CallbackChecker:
 
 class InterfaceTests(unittest.TestCase):
     def test_implements(self):
-        from zope.interface import implements, implementedBy
         self.assertTrue(ITorControlProtocol.implementedBy(TorControlProtocol))
 
     def test_object_implements(self):

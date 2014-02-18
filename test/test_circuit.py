@@ -5,7 +5,7 @@ from twisted.internet import defer
 from zope.interface import implements
 
 from txtorcon import Circuit, Stream, TorControlProtocol, TorState
-from txtorcon.interface import IRouterContainer, ICircuitListener, ICircuitContainer, CircuitListenerMixin, ITorControlProtocol
+from txtorcon.interface import IRouterContainer, ICircuitListener, ICircuitContainer, CircuitListenerMixin
 
 
 class FakeTorController(object):
