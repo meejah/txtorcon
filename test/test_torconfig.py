@@ -9,7 +9,7 @@ from twisted.test import proto_helpers
 from twisted.internet import defer, error, task
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.python.failure import Failure
-from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP
+from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP, IListeningPort
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint, TorNotFound
 from txtorcon import torconfig
@@ -1070,9 +1070,11 @@ class FakeProtocolFactory:
 
 
 class FakeListeningPort(object):
+    implements(IListeningPort)
 
     def startListening(self):
         print "startListening"
+        self.factory.doStart()
 
     def stopListening(self):
         print "stopListening"
@@ -1091,11 +1093,10 @@ class FakeReactorTcp(object):
             self.failures -= 1
             raise error.CannotListenError(None, None, None)
 
-        return FakeListeningPort()
-
-    def connectTCP(self, host, port, factory, **kwargs):
-        print "listenTCP", port, factory, kwargs
-        return FakeListeningPort()
+        p = FakeListeningPort()
+        p.factory = factory
+        p.startListening()
+        return p
 
 
 class EndpointTests(unittest.TestCase):
