@@ -1073,11 +1073,11 @@ class FakeListeningPort(object):
     implements(IListeningPort)
 
     def startListening(self):
-        print "startListening"
+        #print "startListening"
         self.factory.doStart()
 
     def stopListening(self):
-        print "stopListening"
+        pass  #print "stopListening"
 
     def getHost(self):
         return "host"
