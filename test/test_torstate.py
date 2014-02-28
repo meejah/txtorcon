@@ -171,6 +171,7 @@ class FakeControlProtocol:
     def __init__(self):
         self.is_owned = None
         self.post_bootstrap = defer.succeed(self)
+        self.on_disconnect = defer.Deferred()
 
 
 class InternalMethodsTests(unittest.TestCase):

@@ -172,7 +172,7 @@ class TorState(object):
 
     def __init__(self, protocol, bootstrap=True, write_state_diagram=False):
         self.protocol = ITorControlProtocol(protocol)
-        self.protocol.connectionLost = self.connection_lost
+        ## fixme could use protocol.on_disconnect to re-connect; see issue #3
 
         ## could override these to get your own Circuit/Stream subclasses
         ## to track these things
@@ -307,9 +307,6 @@ class TorState(object):
         args = data.split()
         self._router.policy = args[1:]
         self._router = None
-
-    def connection_lost(self, *args):
-        pass
 
     @defer.inlineCallbacks
     def _bootstrap(self, arg=None):
