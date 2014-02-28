@@ -469,14 +469,16 @@ class CreateTorrcTests(unittest.TestCase):
         config.Log = ['80 127.0.0.1:80', '90 127.0.0.1:90']
         config.save()
         torrc = config.create_torrc()
-        self.assertEqual(torrc, '''HiddenServiceDir /some/dir
+        lines = torrc.split('\n')
+        lines.sort()
+        torrc = '\n'.join(lines).strip()
+        self.assertEqual(torrc, '''HiddenServiceAuthorizeClient auth
+HiddenServiceDir /some/dir
 HiddenServicePort 80 127.0.0.1:1234
 HiddenServiceVersion 2
-HiddenServiceAuthorizeClient auth
 Log 80 127.0.0.1:80
 Log 90 127.0.0.1:90
-SocksPort 1234
-''')
+SocksPort 1234''')
 
 
 class HiddenServiceTests(unittest.TestCase):
