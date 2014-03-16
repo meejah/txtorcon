@@ -82,12 +82,6 @@ class Router(object):
         self.id_hex = hexIdFromHash(self.id_hash)
 
     @property
-    def unique_name(self):
-        if self.name_is_unique:
-            return self.name
-        return self.id_hex
-
-    @property
     def location(self):
         """
         A NetLocation instance with some GeoIP or pygeoip information
