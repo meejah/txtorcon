@@ -9,7 +9,16 @@ versioning <http://semver.org/>`_.
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.x*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.2*
+
+ * add ``on_disconnect`` callback for TorControlProtocol
+ * add ``age()`` method to Circuit
+ * don't incorrectly listen for NEWDESC events in TorState
+ * add ``.flags`` dict to track flags in Circuit, Stream
+ * ``build_circuit()`` can no take hex IDs (as well as Router instances)
+ * add ``unique_name`` property to Router (returns the hex id, unless Named then return name)
+ * add ``location`` property to Router
+
 
 v0.9.1
 ------

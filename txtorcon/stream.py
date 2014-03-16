@@ -97,6 +97,9 @@ class Stream(object):
         """If available, the port from which this Stream
         originated. See get_process() also."""
 
+        self.flags = {}
+        """All flags from last update to this Stream. str->str"""
+
         self._closing_deferred = None
         """Internal. Holds Deferred that will callback when this
         stream is CLOSED, FAILED (or DETACHED??)"""
