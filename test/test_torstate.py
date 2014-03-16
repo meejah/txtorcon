@@ -609,17 +609,20 @@ class StateTests(unittest.TestCase):
         self.state.streams[1] = stream
         self.assertRaises(ValueError, self.state.close_stream, stream, 'FOO_INVALID_REASON')
 
-    def test_close_circuit(self):
+    def test_close_circuit_with_id(self):
         circuit = Circuit(self.state)
         circuit.id = 1
-        # try:
-        #     self.state.close_circuit(circuit)
-        #     self.assertTrue(False)
-        # except KeyError:
-        #     pass
 
         self.state.circuits[1] = circuit
         self.state.close_circuit(circuit.id)
+        self.assertEqual(self.transport.value(), 'CLOSECIRCUIT 1\r\n')
+
+    def test_close_circuit_with_circuit(self):
+        circuit = Circuit(self.state)
+        circuit.id = 1
+
+        self.state.circuits[1] = circuit
+        self.state.close_circuit(circuit)
         self.assertEqual(self.transport.value(), 'CLOSECIRCUIT 1\r\n')
 
     def test_close_circuit_with_flags(self):

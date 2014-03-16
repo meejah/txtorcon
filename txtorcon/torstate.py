@@ -443,6 +443,10 @@ class TorState(object):
         tor-spec.txt if the argument is a string). Any kwards are
         passed through as flags if they evaluated to true
         (e.g. "SomeFlag=True"). Currently there are none that Tor accepts.
+
+        FIXME to be consistent with close_circuit(), this should
+        accept either a Stream or a stream-id, and NOT check
+        self.streams first
         """
 
         if stream.id not in self.streams:
@@ -473,10 +477,9 @@ class TorState(object):
         <txtorcon.circuit.Circuit.close>`
         """
 
-#        if circ.id not in self.circuits:
-#            raise KeyError("No such circuit: %d" % circ.id)
         if type(circid) != int:
-            raise ValueError("Expected a circuit ID")
+            ## assume it's a Circuit instance
+            circid = circid.id
         flags = flags_from_dict(kwargs)
         return self.protocol.queue_command('CLOSECIRCUIT %s%s' % (circid, flags))
 

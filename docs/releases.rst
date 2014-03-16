@@ -18,6 +18,7 @@ unreleased
  * ``build_circuit()`` can no take hex IDs (as well as Router instances)
  * add ``unique_name`` property to Router (returns the hex id, unless Named then return name)
  * add ``location`` property to Router
+ * ``TorState.close_circuit`` now takes either a Circuit ID or Circuit instance
 
 
 v0.9.1
