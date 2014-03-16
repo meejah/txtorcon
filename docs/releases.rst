@@ -11,8 +11,9 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.2*
 
- * add ``on_disconnect`` callback for TorControlProtocol
+ * add ``on_disconnect`` callback for TorControlProtocol (no more monkey-patching Protocol API)
  * add ``age()`` method to Circuit
+ * add ``time_created`` property to Circuit
  * don't incorrectly listen for NEWDESC events in TorState
  * add ``.flags`` dict to track flags in Circuit, Stream
  * ``build_circuit()`` can no take hex IDs (as well as Router instances)
@@ -20,6 +21,8 @@ unreleased
  * add ``location`` property to Router
  * ``TorState.close_circuit`` now takes either a Circuit ID or Circuit instance
  * ``TorState.close_stream`` now takes either a Stream ID or Stream instance
+ * support both GeoIP API versions
+ * more test-coverage
 
 
 v0.9.1
