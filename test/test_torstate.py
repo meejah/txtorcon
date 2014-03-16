@@ -590,17 +590,20 @@ class StateTests(unittest.TestCase):
         print self.transport.value()
         self.assertEqual(self.transport.value(), '')
 
-    def test_close_stream(self):
+    def test_close_stream_with_id(self):
         stream = Stream(self.state)
         stream.id = 1
-        try:
-            self.state.close_stream(stream)
-            self.assertTrue(False)
-        except KeyError:
-            pass
 
         self.state.streams[1] = stream
         self.state.close_stream(stream)
+        self.assertEqual(self.transport.value(), 'CLOSESTREAM 1 1\r\n')
+
+    def test_close_stream_with_stream(self):
+        stream = Stream(self.state)
+        stream.id = 1
+
+        self.state.streams[1] = stream
+        self.state.close_stream(stream.id)
         self.assertEqual(self.transport.value(), 'CLOSESTREAM 1 1\r\n')
 
     def test_close_stream_invalid_reason(self):

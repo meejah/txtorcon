@@ -19,6 +19,7 @@ unreleased
  * add ``unique_name`` property to Router (returns the hex id, unless Named then return name)
  * add ``location`` property to Router
  * ``TorState.close_circuit`` now takes either a Circuit ID or Circuit instance
+ * ``TorState.close_stream`` now takes either a Stream ID or Stream instance
 
 
 v0.9.1
