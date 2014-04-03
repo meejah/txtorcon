@@ -80,7 +80,7 @@ def find_tor_binary(globs=('/usr/sbin/', '/usr/bin/',
     # Try to find the tor executable using the shell
     if system_tor:
         try:
-            proc = subprocess.Popen(('type -p tor', ), executable='/bin/bash',
+            proc = subprocess.Popen(('which tor'),
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     shell=True)
         except OSError:
