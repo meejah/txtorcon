@@ -23,6 +23,7 @@ unreleased
  * ``TorState.close_stream`` now takes either a Stream ID or Stream instance
  * support both GeoIP API versions
  * more test-coverage
+ * small patch from enriquefynn improving ``tor`` binary locating
 
 
 v0.9.1
