@@ -25,6 +25,7 @@ unreleased
  * more test-coverage
  * small patch from `enriquefynn <https://github.com/enriquefynn>`_ improving ``tor`` binary locating
  * strip OK lines in TorControlProtocol (see `issue #8 <https://github.com/meejah/txtorcon/issues/8>`_)
+ * add ``api_version`` kwarg to TorControlProtocol
 
 
 v0.9.1
