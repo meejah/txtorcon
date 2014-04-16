@@ -16,14 +16,15 @@ unreleased
  * add ``time_created`` property to Circuit
  * don't incorrectly listen for NEWDESC events in TorState
  * add ``.flags`` dict to track flags in Circuit, Stream
- * ``build_circuit()`` can no take hex IDs (as well as Router instances)
- * add ``unique_name`` property to Router (returns the hex id, unless Named then return name)
+ * ``build_circuit()`` can now take hex IDs (as well as Router instances)
+ * add ``unique_name`` property to Router (returns the hex id, unless ``Named`` then return name)
  * add ``location`` property to Router
  * ``TorState.close_circuit`` now takes either a Circuit ID or Circuit instance
  * ``TorState.close_stream`` now takes either a Stream ID or Stream instance
  * support both GeoIP API versions
  * more test-coverage
- * small patch from enriquefynn improving ``tor`` binary locating
+ * small patch from `enriquefynn <https://github.com/enriquefynn>`_ improving ``tor`` binary locating
+ * strip OK lines in TorControlProtocol (see `issue #8 <https://github.com/meejah/txtorcon/issues/8>`_)
 
 
 v0.9.1
