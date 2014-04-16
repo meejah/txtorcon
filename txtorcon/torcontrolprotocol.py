@@ -322,7 +322,10 @@ class TorControlProtocol(LineOnlyReceiver):
         See :meth:`getinfo <txtorcon.TorControlProtocol.get_info>`
         """
 
-        return self.queue_command('GETINFO %s' % key, line_cb)
+        def strip_ok_and_call(line):
+            if line.strip() != 'OK':
+                line_cb(line)
+        return self.queue_command('GETINFO %s' % key, strip_ok_and_call)
 
     ## The following methods are the main TorController API and
     ## probably the most interesting for users.
@@ -781,6 +784,8 @@ class TorControlProtocol(LineOnlyReceiver):
         if self.code >= 200 and self.code < 300:
             if self.defer is None:
                 raise RuntimeError("Got a response, but didn't issue a command.")
+            if resp.endswith('\nOK'):
+                resp = resp[:-3]
             self.defer.callback(resp)
         elif self.code >= 500 and self.code < 600:
             err = TorProtocolError(self.code, resp)

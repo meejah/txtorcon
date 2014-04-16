@@ -336,11 +336,10 @@ class TorState(object):
         am = yield self.protocol.get_info_raw(key)
         ## strip addressmappsings/all= and OK\n from raw data
         am = am[len(key) + 1:]
-        if am.strip() != 'OK':
-            for line in am.split('\n')[:-1]:
-                if len(line.strip()) == 0:
-                    continue            # FIXME
-                self.addrmap.update(line)
+        for line in am.split('\n'):
+            if len(line.strip()) == 0:
+                continue            # FIXME
+            self.addrmap.update(line)
 
         self._add_events()
 
@@ -596,7 +595,7 @@ class TorState(object):
     def _circuit_status(self, data):
         """Used internally as a callback for updating Circuit information"""
 
-        data = data[len('circuit-status='):].split('\n')[:-1]
+        data = data[len('circuit-status='):].split('\n')
         ## sometimes there's a newline after circuit-status= and
         ## sometimes not, so we get rid of it
         if len(data) and len(data[0].strip()) == 0:
@@ -613,7 +612,7 @@ class TorState(object):
         # single-stream case which has "stream-status=123 blahblah"
         # (i.e. the key + value on one line)
 
-        lines = data.split('\n')[:-1]
+        lines = data.split('\n')
         if len(lines) == 1:
             d = lines[0][len('stream-status='):]
             # if there are actually 0 streams, then there's nothing

@@ -86,11 +86,9 @@ class ConfigMethod(object):
             req = self.info_key
 
         def stripper(key, arg):
-            ## TorControlProtocl strips everything except the trailing
-            ## OK, which is a FIXME/TODO item
-            ## strip "keyname=" and the trailing newline + OK
+            ## strip "keyname="
             ## sometimes keyname= is followed by a newline, so the final .strip()
-            return arg.strip()[len(key) + 1:-3].strip()
+            return arg.strip()[len(key) + 1:].strip()
 
         return self.proto.get_info_raw(req).addCallback(functools.partial(stripper, req))
 
@@ -202,7 +200,7 @@ class TorInfo(object):
         # list of ~2500 OR id's; could it be that LineReceiver can't handle it?
         added_magic = []
         for line in data.split('\n'):
-            if line == "info/names=" or line == "OK" or line.strip() == '':
+            if line == "info/names=" or line.strip() == '':
                 continue
 
             #print "LINE:",line

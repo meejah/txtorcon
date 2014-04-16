@@ -73,7 +73,7 @@ class StreamTests(unittest.TestCase):
         raise NotImplementedError()
 
     def close_stream(self, stream, **kw):
-        return defer.succeed('OK')
+        return defer.succeed('')
 
     def setUp(self):
         self.circuits = {}

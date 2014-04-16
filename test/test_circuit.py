@@ -46,7 +46,7 @@ class FakeTorController(object):
 
     def close_circuit(self, circid):
         del self.circuits[circid]
-        return defer.succeed('OK')
+        return defer.succeed('')
 
 
 class FakeLocation:
