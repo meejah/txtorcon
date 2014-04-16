@@ -60,6 +60,7 @@ txtorcon runs all tests cleanly on:
 -  OS X 10.4 (naif)
 -  OS X 10.8 (lukas lueg)
 -  Fedora 18 (lukas lueg)
+-  FreeBSD 10 (enrique fynn) (**needed to install "lsof"**)
 -  Reports from other OSes appreciated.
 
 If instead you want a synchronous (threaded) Python controller
