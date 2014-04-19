@@ -59,6 +59,7 @@ txtorcon runs all tests cleanly on:
 -  Debian "squeeze", "wheezy" and "jessie"
 -  OS X 10.4 (naif)
 -  OS X 10.8 (lukas lueg)
+-  OS X 10.9 (kurt neufeld)
 -  Fedora 18 (lukas lueg)
 -  FreeBSD 10 (enrique fynn) (**needed to install "lsof"**)
 -  RHEL6
