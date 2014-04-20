@@ -826,7 +826,7 @@ class LaunchTorTests(unittest.TestCase):
         react.advance(timeout + 1)
 
         self.assertTrue(d.called)
-        self.assertTrue(d.result.getErrorMessage().strip().endswith('Tor was killed (KILL).'))
+        self.assertTrue(d.result.getErrorMessage().strip().endswith('Tor was killed (TERM).'))
         return self.assertFailure(d, RuntimeError)
 
     def test_launch_with_timeout_that_doesnt_expire(self):
