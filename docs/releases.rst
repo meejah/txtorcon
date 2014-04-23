@@ -32,7 +32,6 @@ v0.9.2
  * more test-coverage
  * small patch from `enriquefynn <https://github.com/enriquefynn>`_ improving ``tor`` binary locating
  * strip OK lines in TorControlProtocol (see `issue #8 <https://github.com/meejah/txtorcon/issues/8>`_)
- * add ``api_version`` kwarg to TorControlProtocol
  * use TERM not KILL when Tor launch times out (see `issue #68 <https://github.com/meejah/txtorcon/pull/68>`_) from ``hellais``
 
 

@@ -195,21 +195,12 @@ class TorControlProtocol(LineOnlyReceiver):
 
     implements(ITorControlProtocol)
 
-    def __init__(self, password_function=None, api_version=1):
+    def __init__(self, password_function=None):
         """
         :param password_function:
             A zero-argument callable which returns a password (or
             Deferred). It is only called if the Tor doesn't have
             COOKIE authentication turned on. Tor's default is COOKIE.
-
-        :param api_version:
-            Specifies which version of the API you wish to use. This
-            is to ease transitions to new API arguments or meanings in
-            the future -- current users can safely set this to its
-            current default value (1) to be sure their usage of
-            public-facing methods in this object won't change.
-            Introduced in 0.9.2. The following API versions are known:
-                * ``api_version=1``: 0.9.2 and later; the current API version.
         """
 
         self.password_function = password_function
@@ -232,10 +223,6 @@ class TorControlProtocol(LineOnlyReceiver):
 
         self.valid_signals = []
         """A list of all valid signals we accept from Tor"""
-
-        if api_version == 0:
-            api_version = 1
-        self.api_version = api_version
 
         self.on_disconnect = defer.Deferred()
         """
