@@ -9,8 +9,15 @@ versioning <http://semver.org/>`_.
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.2*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.3*
 
+
+v0.9.2
+------
+
+*April 23, 2014*
+
+ * `txtorcon-0.9.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.9.2.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.9.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.9.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.9.2.tar.gz>`_)
  * add ``on_disconnect`` callback for TorControlProtocol (no more monkey-patching Protocol API)
  * add ``age()`` method to Circuit
  * add ``time_created`` property to Circuit
