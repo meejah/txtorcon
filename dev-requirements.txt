@@ -4,3 +4,5 @@ repoze.sphinx.autointerface>=0.4
 coveralls
 wheel
 twine
+pyflakes
+pep8
