@@ -42,11 +42,11 @@ coverage-debian:
 	python-coverage -a -d annotated_coverage
 	python-coverage report
 
-pep8:
-	find txtorcon/*.py test/*.py examples/*.py | xargs pep8 --ignore=E501
+pep8: txtorcon/*.py test/*.py examples/*.py
+	pep8 --ignore=E501,E265 $^
 
 pep8count:
-	find txtorcon/*.py test/*.py examples/*.py | xargs pep8 --ignore=E501 | wc -l
+	pep8 --ignore=E501,E265 $^ | wc -l
 
 pyflakes:
 	pyflakes txtorcon/ examples/ test/
