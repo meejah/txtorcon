@@ -1,0 +1,14 @@
+## see also dev-requirements.txt to build
+## hmm, travis-ci doesn't like this since we need a GeoIP-dev package
+##GeoIP>=1.2.9
+Twisted>=11.1.0
+ipaddr>=2.1.10
+zope.interface>=3.6.1
+setuptools>=0.8.0
+Sphinx
+repoze.sphinx.autointerface>=0.4
+coveralls
+wheel
+twine
+pyflakes
+pep8
