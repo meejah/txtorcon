@@ -69,15 +69,15 @@ clean:
 counts:
 	ohcount -s txtorcon/*.py
 
-dist: dist/txtorcon-0.9.2-py27-none-any.whl.asc dist/txtorcon-0.9.2.tar.gz.asc
+dist: dist/txtorcon-0.9.2-py2-none-any.whl.asc dist/txtorcon-0.9.2.tar.gz.asc
 
 sdist: setup.py 
 	python setup.py sdist
 
-dist/txtorcon-0.9.2-py27-none-any.whl:
+dist/txtorcon-0.9.2-py2-none-any.whl:
 	python setup.py bdist_wheel
-dist/txtorcon-0.9.2-py27-none-any.whl.asc: dist/txtorcon-0.9.2-py27-none-any.whl
-	gpg --verify dist/txtorcon-0.9.2-py27-none-any.whl.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-0.9.2-py27-none-any.whl
+dist/txtorcon-0.9.2-py2-none-any.whl.asc: dist/txtorcon-0.9.2-py2-none-any.whl
+	gpg --verify dist/txtorcon-0.9.2-py2-none-any.whl.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-0.9.2-py2-none-any.whl
 
 dist/txtorcon-0.9.2.tar.gz: sdist
 dist/txtorcon-0.9.2.tar.gz.asc: dist/txtorcon-0.9.2.tar.gz
@@ -85,7 +85,7 @@ dist/txtorcon-0.9.2.tar.gz.asc: dist/txtorcon-0.9.2.tar.gz
 
 release:
 	twine upload -r pypi -c "txtorcon v0.9.2 tarball" dist/txtorcon-0.9.2.tar.gz dist/txtorcon-0.9.2.tar.gz.asc
-	twine upload -r pypi -c "txtorcon v0.9.2 wheel" dist/txtorcon-0.9.2-py27-none-any.whl dist/txtorcon-0.9.2-py27-none-any.whl.asc
+	twine upload -r pypi -c "txtorcon v0.9.2 wheel" dist/txtorcon-0.9.2-py2-none-any.whl dist/txtorcon-0.9.2-py2-none-any.whl.asc
 
 
 venv:
