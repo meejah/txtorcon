@@ -9,7 +9,7 @@ from twisted.test import proto_helpers
 from twisted.internet import defer, error, task
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.python.failure import Failure
-from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP, IListeningPort
+from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP, IListeningPort, IAddress
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint, TorNotFound
 from txtorcon import torconfig
@@ -1069,6 +1069,22 @@ class FakeProtocolFactory:
     def doStop(self):
         return None
 
+class FakeAddress(object):
+    implements(IAddress)
+
+    compareAttributes = ('type', 'host', 'port')
+    type = 'fakeTCP'
+
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+
+    def __repr__(self):
+        return '%s(%r, %d)' % (
+            self.__class__.__name__, self.host, self.port)
+
+    def __hash__(self):
+        return hash((self.type, self.host, self.port))
 
 class FakeListeningPort(object):
     implements(IListeningPort)
@@ -1080,7 +1096,7 @@ class FakeListeningPort(object):
         self.factory.doStop()
 
     def getHost(self):
-        return "host"
+        return FakeAddress('host', 1234)
 
 
 class FakeReactorTcp(object):
@@ -1115,6 +1131,12 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
         ## make sure _ListWrapper's __repr__ doesn't explode
         repr(self.config.HiddenServices)
+
+        def check_onion(listeningPort):
+            self.assertIsInstance(listeningPort, torconfig.TorOnionListeningPort)
+            return listeningPort
+
+        d.addCallback(check_onion).addErrback(self.fail)
         return d
 
     def test_multiple_listen(self):
@@ -1140,39 +1162,6 @@ class EndpointTests(unittest.TestCase):
             self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
         d0.addCallback(check).addErrback(self.fail)
         return d0
-
-    def test_bad_listener(self):
-        def test_gen(*args, **kw):
-            kw['interface'] = '0.0.0.0'
-            return TCP4ServerEndpoint(*args, **kw)
-
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123,
-                                      endpoint_generator=test_gen)
-        d = ep.listen(FakeProtocolFactory())
-
-        class ErrorCallback(object):
-            got_error = None
-
-            def __call__(self, err, *args, **kw):
-                self.got_error = err.value
-        error_cb = ErrorCallback()
-        d.addErrback(error_cb)
-
-        ## enough answers so the config bootstraps properly
-        self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual')
-        self.protocol.answers.append('HiddenServiceOptions')
-        self.config.bootstrap()
-
-        ## now we should have attempted to listen on the endpoint our
-        ## test_gen() is generating - which should be the "wrong"
-        ## answer of anything (0.0.0.0)
-        self.assertEqual('0.0.0.0', ep.tcp_endpoint._interface)
-
-        ## ...and the point of this test; ensure we got an error
-        ## trying to listen on not-127.*
-        self.assertTrue(error_cb.got_error is not None)
-        self.assertTrue(isinstance(error_cb.got_error, RuntimeError))
-        return d
 
     def test_already_bootstrapped(self):
         self.protocol.answers.append('''config/names=
@@ -1212,21 +1201,7 @@ HiddenServiceOptions Virtual''')
             shutil.rmtree(datadir, ignore_errors=True)
 
     def test_failure(self):
-        self.reactor.failures = 2
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
-        d = ep.listen(FakeProtocolFactory())
-
-        self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual')
-        self.protocol.answers.append('HiddenServiceOptions')
-        self.config.bootstrap()
-        return d
-
-    def check_error(self, failure):
-        self.assertEqual(failure.type, error.CannotListenError)
-        return None
-
-    def test_too_many_failures(self):
-        self.reactor.failures = 12
+        self.reactor.failures = 1
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d = ep.listen(FakeProtocolFactory())
 
@@ -1235,6 +1210,10 @@ HiddenServiceOptions Virtual''')
         self.config.bootstrap()
         d.addErrback(self.check_error)
         return d
+
+    def check_error(self, failure):
+        self.assertEqual(failure.type, error.CannotListenError)
+        return None
 
 
 class ErrorTests(unittest.TestCase):

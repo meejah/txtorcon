@@ -59,7 +59,7 @@ setup(name = 'txtorcon',
       author_email = __contact__,
       url = __url__,
       license = __license__,
-      packages  = ["txtorcon"],
+      packages  = ["txtorcon", "twisted.plugins"],
 #      scripts = ['examples/attach_streams_by_country.py'],
 
       ## I'm a little unclear if I'm doing this "properly", especially
