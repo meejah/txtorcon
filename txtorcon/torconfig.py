@@ -17,6 +17,11 @@ from twisted.internet import defer, error, protocol
 from twisted.internet.interfaces import IStreamServerEndpoint, IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from zope.interface import implements
+from zope.interface import implementer
+from twisted.plugin import IPlugin
+from twisted.internet.interfaces import IStreamServerEndpointStringParser
+from twisted.internet.endpoints import serverFromString
+from twisted.python.usage import UsageError
 
 from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory
 from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
@@ -47,6 +52,38 @@ def DefaultTCP4EndpointGenerator(*args, **kw):
     return TCP4ServerEndpoint(*args, **kw)
 
 
+@implementer(IStreamServerEndpointStringParser, IPlugin)
+class TCPHiddenServiceEndpointParser(object):
+    prefix = "onion"
+
+    def _parseServer(self, reactor, publicPort=None, localPort=None, controlPort=None, socksPort=None, hiddenServiceDir=None):
+
+        if publicPort is not None:
+            publicPort = int(publicPort)
+
+        if localPort is not None:
+            localPort = int(localPort)
+
+        if controlPort is not None:
+            controlPort = int(controlPort)
+        else:
+            controlPort = 9089
+
+        if socksPort is not None:
+            socksPort = int(socksPort)
+        else:
+            socksPort = 0
+
+        config             = TorConfig()
+        config.SOCKSPort   = socksPort
+        config.ControlPort = controlPort
+
+        return TCPHiddenServiceEndpoint(reactor, config, publicPort=publicPort, localPort=localPort, hiddenServiceDir=hiddenServiceDir)
+
+    def parseStreamServer(self, reactor, *args, **kwargs):
+        return self._parseServer(reactor, *args, **kwargs)
+
+
 class TCPHiddenServiceEndpoint(object):
     """
     This represents something listening on an arbitrary local port
@@ -59,15 +96,10 @@ class TCPHiddenServiceEndpoint(object):
         which came from the data_dir's `hostname` file
 
     :ivar onion_private_key: the contents of `data_dir/private_key`
-
-    :ivar data_dir: the data directory, either passed in or created
-        with `tempfile.mkstemp`
-
-    :ivar public_port: the port we are advertising
     """
 
     implements(IStreamServerEndpoint)
-    def __init__(self, reactor, publicPort=None, localPort=None, controlPort=None, socksPort=None, hiddenServiceDir=None):
+    def __init__(self, reactor, config, publicPort=None, localPort=None, hiddenServiceDir=None):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
@@ -79,62 +111,52 @@ class TCPHiddenServiceEndpoint(object):
             TorControlProtocol instance instead, and create my own
             TorConfig?
 
-        :param public_port:
+        :param publicPort:
             The port number we will advertise in the hidden serivces
             directory.
 
-        :param data_dir:
+        :param localPort:
+            The port number we will perform our local tcp listen on and
+            receive incoming connections from the tor process.
+
+        :param hiddenServiceDir:
             The hidden-service data directory; if None, one will be
             created in /tmp. This contains the public + private keys
             for the onion uri. If you didn't specify a directory, it's
             up to you to save the public/private keys later if you
             want to re-launch the same hidden service at a different
             time.
-
-        :param port_generator:
-            A callable that generates a new random port to try
-            listening on. Defaults to `random.randrange(1024, 65535)`
-
-        :param endpoint_generator:
-            A callable that generates a new instance of something that
-            implements IServerEndpoint (by default TCP4ServerEndpoint)
         """
 
+        if publicPort is None:
+            raise UsageError("publicPort must be specified") 
 
-        assert publicPort is not None
-        assert reactor is not None
+        self.reactor           = reactor
+        self.config            = config
+        self.publicPort        = publicPort
 
-        self.reactor            = reactor
-        self.publicPort         = int(publicPort)
-        self.endpoint_generator = DefaultTCP4EndpointGenerator
-        self.port_generator     = functools.partial(random.randrange, 1024, 65534)
+        # A callable that generates a new random port to try
+        # listening on. Defaults to `random.randrange(1024, 65535)`
+        self.port_generator    = functools.partial(random.randrange, 1024, 65534)
 
         if localPort is None:
             self.localPort = self.port_generator()
-        else:
-            self.localPort = int(localPort)
 
-        if controlPort is not None:
-            self.controlPort = int(controlPort)
-        else:
-            self.controlPort = 9089
-
-        if socksPort is not None:
-            self.socksPort = int(socksPort)
-        else:
-            self.socksPort = 0
-
+        self.hiddenServiceDir  = hiddenServiceDir
         self.onion_uri         = None
         self.onion_private_key = None
-        self.hiddenServiceDir  = hiddenServiceDir
 
-        if hiddenServiceDir is not None:
-            self._update_onion(self.hiddenServiceDir)
-        else:
+        if hiddenServiceDir is None:
             self.hiddenServiceDir = tempfile.mkdtemp(prefix='tortmp')
+        else:
+            self._update_onion(self.hiddenServiceDir)
 
-        self.hiddenservice = None
-        self.retries = 0
+        # A callable that generates a new instance of something
+        # that implements IServerEndpoint (by default TCP4ServerEndpoint)
+        self.endpoint_generator = DefaultTCP4EndpointGenerator
+
+        self.hiddenservice      = None
+        self.retries            = 0
 
     def _update_onion(self, thedir):
         """
@@ -200,11 +222,7 @@ class TCPHiddenServiceEndpoint(object):
         self.protocolfactory  = protocolfactory
 
         if self.hiddenservice is None:
-            config             = TorConfig()
-            config.SOCKSPort   = self.socksPort
-            config.ControlPort = self.controlPort
-
-            d = launch_tor(config, self.reactor, progress_updates=None, timeout=60)
+            d = launch_tor(self.config, self.reactor, progress_updates=None, timeout=60)
             #d = launch_tor(config, self.reactor, progress_updates=self.updates, timeout=60)
             d.addCallback(self._post_tor_launch_config)
         else:
