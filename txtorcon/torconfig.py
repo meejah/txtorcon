@@ -135,14 +135,16 @@ class TCPHiddenServiceEndpoint(object):
         try:
             with open(hn, 'r') as hnfile:
                 self.onion_uri = hnfile.read().strip()
-        except IOError:
+        except IOError as e:
             self.onion_uri = None
+            txtorlog.msg(RuntimeError("Can't read hostname from \"%s\": %s" % (hn, str(e))))
 
         try:
             with open(pk, 'r') as pkfile:
                 self.onion_private_key = pkfile.read().strip()
-        except IOError:
+        except IOError as e:
             self.onion_private_key = None
+            txtorlog.msg(RuntimeError("Can't read private key from \"%s\": %s" % (pk, str(e))))
 
     def _create_hiddenservice(self, arg):
         """
