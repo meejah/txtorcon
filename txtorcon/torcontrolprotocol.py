@@ -448,6 +448,11 @@ class TorControlProtocol(LineOnlyReceiver):
         argument, that is the text collected for the event from the
         tor control protocol.
 
+        .. note::
+            this is a low-level interface; if you want to follow
+            circuit or stream creation etc. see TorState and methods
+            like add_circuit_listener
+
         :Return: ``None``
 
         .. todo::

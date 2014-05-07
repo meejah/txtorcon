@@ -8,6 +8,10 @@ build_tor_connection
 --------------------
 .. autofunction:: txtorcon.build_tor_connection
 
+build_local_tor_connection
+--------------------
+.. autofunction:: txtorcon.build_local_tor_connection
+
 TorState
 --------
 .. autoclass:: txtorcon.TorState

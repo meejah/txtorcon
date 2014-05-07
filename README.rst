@@ -38,6 +38,23 @@ version 0.8.2::
 You may also like `this asciinema demo <http://asciinema.org/a/5654>`_
 for an overview.
 
+Tor configuration
+-----------------
+
+You'll want to have the following options on in your ``torrc``::
+
+   CookieAuthentication 1
+   CookieAuthFileGroupReadable 1
+
+If you want to use unix sockets to speak to tor::
+
+   ControlSocketsGroupWritable 1
+   ControlSocket /var/run/tor/control
+
+The defaults used by :meth:`txtorcon.build_local_tor_connection` will
+find a Tor on ``9051`` or ``/var/run/tor/control``
+
+
 overview
 --------
 
