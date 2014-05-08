@@ -96,6 +96,10 @@ class TCPHiddenServiceEndpoint(object):
         which came from the data_dir's `hostname` file
 
     :ivar onion_private_key: the contents of `data_dir/private_key`
+
+
+    :ivar hiddenServiceDir: the data directory, either passed in or created
+        with `tempfile.mkstemp`
     """
 
     implements(IStreamServerEndpoint)
@@ -115,10 +119,6 @@ class TCPHiddenServiceEndpoint(object):
             The port number we will advertise in the hidden serivces
             directory.
 
-        :param localPort:
-            The port number we will perform our local tcp listen on and
-            receive incoming connections from the tor process.
-
         :param hiddenServiceDir:
             The hidden-service data directory; if None, one will be
             created in /tmp. This contains the public + private keys
@@ -126,34 +126,39 @@ class TCPHiddenServiceEndpoint(object):
             up to you to save the public/private keys later if you
             want to re-launch the same hidden service at a different
             time.
+
+        :param localPort:
+            The port number we will perform our local tcp listen on and
+            receive incoming connections from the tor process.
+
+        :param endpoint_generator:
+            A callable that generates a new instance of something that
+            implements IServerEndpoint (by default TCP4ServerEndpoint)
         """
 
-        self.reactor           = reactor
-        self.config            = config
-        self.publicPort        = publicPort
+        self.reactor            = reactor
+        self.config             = config
+        self.publicPort         = publicPort
 
         # A callable that generates a new random port to try
         # listening on. Defaults to `random.randrange(1024, 65535)`
-        self.port_generator    = functools.partial(random.randrange, 1024, 65534)
+        self.port_generator     = functools.partial(random.randrange, 1024, 65534)
 
         if localPort is None:
             self.localPort = self.port_generator()
 
-        self.hiddenServiceDir  = hiddenServiceDir
-        self.onion_uri         = None
-        self.onion_private_key = None
+        self.endpoint_generator = endpoint_generator
+        self.hiddenServiceDir   = hiddenServiceDir
+        self.onion_uri          = None
+        self.onion_private_key  = None
+        self.hiddenservice      = None
+        self.retries            = 0
 
         if hiddenServiceDir is None:
             self.hiddenServiceDir = tempfile.mkdtemp(prefix='tortmp')
         else:
             self._update_onion(self.hiddenServiceDir)
 
-        # A callable that generates a new instance of something
-        # that implements IServerEndpoint (by default TCP4ServerEndpoint)
-        self.endpoint_generator = endpoint_generator
-
-        self.hiddenservice      = None
-        self.retries            = 0
 
     def _update_onion(self, thedir):
         """
@@ -193,6 +198,10 @@ class TCPHiddenServiceEndpoint(object):
         return d
 
     def _post_tor_launch_config(self, tor_process_protocol):
+        """
+        Internal callback to configure a tor instance after the 
+        deferred returned from launch_tor has fired.
+        """
         self.config      = TorConfig(tor_process_protocol.tor_protocol)
 
         if self.config.post_bootstrap:
@@ -237,9 +246,6 @@ class TCPHiddenServiceEndpoint(object):
 
         d.addCallback(self._create_listener).addErrback(self._retry_local_port)
         return d
-
-    def updates(self, prog, tag, summary):
-        print "%d%%: %s" % (prog, summary)
 
     def _retry_local_port(self, failure):
         """
