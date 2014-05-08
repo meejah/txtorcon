@@ -78,7 +78,7 @@ class TCPHiddenServiceEndpointParser(object):
         config.SOCKSPort   = socksPort
         config.ControlPort = controlPort
 
-        return TCPHiddenServiceEndpoint(reactor, config, publicPort=publicPort, localPort=localPort, hiddenServiceDir=hiddenServiceDir)
+        return TCPHiddenServiceEndpoint(reactor, config, publicPort, hiddenServiceDir=hiddenServiceDir, localPort=localPort)
 
     def parseStreamServer(self, reactor, *args, **kwargs):
         return self._parseServer(reactor, *args, **kwargs)
@@ -99,7 +99,7 @@ class TCPHiddenServiceEndpoint(object):
     """
 
     implements(IStreamServerEndpoint)
-    def __init__(self, reactor, config, publicPort=None, localPort=None, hiddenServiceDir=None):
+    def __init__(self, reactor, config, publicPort, hiddenServiceDir=None, localPort=None, endpoint_generator=DefaultTCP4EndpointGenerator):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
@@ -128,9 +128,6 @@ class TCPHiddenServiceEndpoint(object):
             time.
         """
 
-        if publicPort is None:
-            raise UsageError("publicPort must be specified") 
-
         self.reactor           = reactor
         self.config            = config
         self.publicPort        = publicPort
@@ -153,7 +150,7 @@ class TCPHiddenServiceEndpoint(object):
 
         # A callable that generates a new instance of something
         # that implements IServerEndpoint (by default TCP4ServerEndpoint)
-        self.endpoint_generator = DefaultTCP4EndpointGenerator
+        self.endpoint_generator = endpoint_generator
 
         self.hiddenservice      = None
         self.retries            = 0
@@ -222,9 +219,16 @@ class TCPHiddenServiceEndpoint(object):
         self.protocolfactory  = protocolfactory
 
         if self.hiddenservice is None:
-            d = launch_tor(self.config, self.reactor, progress_updates=None, timeout=60)
-            #d = launch_tor(config, self.reactor, progress_updates=self.updates, timeout=60)
-            d.addCallback(self._post_tor_launch_config)
+            if self.config.post_bootstrap:
+                ## wait for tor bootstrap to finish before configuring
+                d = self.config.post_bootstrap.addCallback(self._create_hiddenservice)
+            elif self.config.protocol is None:
+                ## launch tor proc if not already launched before configuring
+                d = launch_tor(self.config, self.reactor, progress_updates=None, timeout=60)
+                d.addCallback(self._post_tor_launch_config)
+            else:
+                ## we are bootstrapped already, now we can configure tor
+                d = self._create_hiddenservice(None)
         else:
             ## we already have a hidden service created, but still
             ## want a Deferred so the _create_listener flow is the
