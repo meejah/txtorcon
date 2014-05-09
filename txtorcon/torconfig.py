@@ -136,7 +136,7 @@ class TCPHiddenServiceEndpointParser(object):
         config.SOCKSPort = socksPort
         config.ControlPort = controlPort
 
-        return TCPHiddenServiceEndpoint(reactor, config, publicPort, hiddenServiceDir=hiddenServiceDir, localPort=localPort)
+        return TCPHiddenServiceEndpoint(reactor, config, publicPort, hidden_service_dir=hiddenServiceDir, local_port=localPort)
 
     def parseStreamServer(self, reactor, *args, **kwargs):
         return self._parseServer(reactor, *args, **kwargs)
@@ -162,7 +162,7 @@ class TCPHiddenServiceEndpoint(object):
 
     implements(IStreamServerEndpoint)
 
-    def __init__(self, reactor, config, publicPort, hiddenServiceDir=None, localPort=None, endpoint_generator=DefaultTCP4EndpointGenerator):
+    def __init__(self, reactor, config, public_port, hidden_service_dir=None, local_port=None, endpoint_generator=DefaultTCP4EndpointGenerator):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
@@ -174,11 +174,11 @@ class TCPHiddenServiceEndpoint(object):
             TorControlProtocol instance instead, and create my own
             TorConfig?
 
-        :param publicPort:
+        :param public_port:
             The port number we will advertise in the hidden serivces
             directory.
 
-        :param hiddenServiceDir:
+        :param hidden_service_dir:
             The hidden-service data directory; if None, one will be
             created in /tmp. This contains the public + private keys
             for the onion uri. If you didn't specify a directory, it's
@@ -186,7 +186,7 @@ class TCPHiddenServiceEndpoint(object):
             want to re-launch the same hidden service at a different
             time.
 
-        :param localPort:
+        :param local_port:
             The port number we will perform our local tcp listen on and
             receive incoming connections from the tor process.
 
@@ -197,26 +197,26 @@ class TCPHiddenServiceEndpoint(object):
 
         self.reactor = reactor
         self.config = config
-        self.publicPort = publicPort
+        self.public_port = public_port
 
         # A callable that generates a new random port to try
         # listening on. Defaults to `random.randrange(1024, 65535)`
         self.port_generator = functools.partial(random.randrange, 1024, 65534)
 
-        if localPort is None:
-            self.localPort = self.port_generator()
+        if local_port is None:
+            self.local_port = self.port_generator()
 
         self.endpoint_generator = endpoint_generator
-        self.hiddenServiceDir = hiddenServiceDir
+        self.hidden_service_dir = hidden_service_dir
         self.onion_uri = None
         self.onion_private_key = None
         self.hiddenservice = None
         self.retries = 0
 
-        if hiddenServiceDir is None:
-            self.hiddenServiceDir = tempfile.mkdtemp(prefix='tortmp')
+        if hidden_service_dir is None:
+            self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
         else:
-            self._update_onion(self.hiddenServiceDir)
+            self._update_onion(self.hidden_service_dir)
 
     def _update_onion(self, thedir):
         """
@@ -245,10 +245,10 @@ class TCPHiddenServiceEndpoint(object):
         ## FIXME this should be anything that doesn't currently have a
         ## listener, and we should check that....or keep trying random
         ## ports if the "real" listen fails?
-        self.localPort = self.port_generator()
-        self.hiddenservice = HiddenService(self.config, self.hiddenServiceDir,
-                                           ['%d 127.0.0.1:%d' % (self.publicPort,
-                                                                 self.localPort)])
+        self.local_port = self.port_generator()
+        self.hiddenservice = HiddenService(self.config, self.hidden_service_dir,
+                                           ['%d 127.0.0.1:%d' % (self.public_port,
+                                                                 self.local_port)])
 
         self.config.HiddenServices.append(self.hiddenservice)
         d = self.config.save()
@@ -313,10 +313,10 @@ class TCPHiddenServiceEndpoint(object):
         self.retries += 1
         if self.retries > 10:
             return failure
-        self.localPort = self.port_generator()
+        self.local_port = self.port_generator()
         ## we do want to overwrite the whole list, not append
-        self.hiddenservice.ports = ['%d 127.0.0.1:%d' % (self.publicPort,
-                                                         self.localPort)]
+        self.hiddenservice.ports = ['%d 127.0.0.1:%d' % (self.public_port,
+                                                         self.local_port)]
         d = self.config.save()
         d.addCallback(self._create_listener).addErrback(self._retry_local_port)
         return d
@@ -345,7 +345,7 @@ class TCPHiddenServiceEndpoint(object):
         """
 
         self._update_onion(self.hiddenservice.dir)
-        self.tcp_endpoint = self.endpoint_generator(self.reactor, self.localPort)
+        self.tcp_endpoint = self.endpoint_generator(self.reactor, self.local_port)
         if not self.check_local_endpoint(self.tcp_endpoint):
             raise RuntimeError("Endpoint doesn't appear to be a local interface.")
         d = self.tcp_endpoint.listen(self.protocolfactory)
@@ -358,7 +358,7 @@ class TCPHiddenServiceEndpoint(object):
         and returns a TorOnionListeningPort
         """
 
-        return TorOnionListeningPort(listeningPort, self.onion_uri, self.publicPort)
+        return TorOnionListeningPort(listeningPort, self.onion_uri, self.public_port)
 
 
 class TorProcessProtocol(protocol.ProcessProtocol):
