@@ -24,13 +24,16 @@ class Simple(resource.Resource):
 
 site = server.Site(Simple())
 
+
 def setup_failed(arg):
     print "SETUP FAILED", arg
+
 
 def setup_complete(port):
     print "I have set up a hidden service, advertised at: %s" % (port,)
     print "http://%s:%d" % (port.onion_uri, port.onion_port)
     print "locally listening on", port.getHost()
+
 
 def progress(percent, tag, message):
     bar = int(percent / 10)
