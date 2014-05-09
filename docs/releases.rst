@@ -11,6 +11,10 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.3*
 
+ * In collaboration with `David Stainton <https://github.com/david415>`_ after a pull-request, we
+   have endpoint parser plugins for Twisted! This means code like
+   ``serverFromString("onion:80").listen(...)`` is enough to start a
+   service. See the **4-line example** :ref:`hello-darkweb.py`
 
 v0.9.2
 ------

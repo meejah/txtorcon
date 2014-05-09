@@ -6,12 +6,12 @@ import functools
 from zope.interface import implements
 from twisted.trial import unittest
 from twisted.test import proto_helpers
-from twisted.internet import defer, error, task
-from twisted.internet.endpoints import TCP4ServerEndpoint
+from twisted.internet import defer, error, task, tcp
+from twisted.internet.endpoints import TCP4ServerEndpoint, serverFromString
 from twisted.python.failure import Failure
-from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IReactorTCP, IListeningPort, IAddress
+from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IProtocol, IReactorTCP, IListeningPort, IAddress
 
-from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint, TorNotFound
+from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint, TorNotFound, TCPHiddenServiceEndpointParser, IProgressProvider
 from txtorcon import torconfig
 
 from txtorcon.util import delete_file_or_tree
@@ -38,6 +38,7 @@ class FakeControlProtocol:
         self.answers = answers
         self.pending = []
         self.post_bootstrap = defer.succeed(self)
+        self.on_disconnect = defer.Deferred()
         self.sets = []
         self.events = {}
 
@@ -105,6 +106,11 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(len(errs), 1)
         ## dunno if asserting strings in messages is a good idea...
         self.assertTrue('invalid literal' in errs[0].getErrorMessage())
+
+    def test_contains(self):
+        cfg = TorConfig()
+        cfg.ControlPort = 4455
+        self.assertTrue('ControlPort' in cfg)
 
     def test_boolean_parser(self):
         self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
@@ -729,8 +735,8 @@ class LaunchTorTests(unittest.TestCase):
 
     def test_basic_launch(self):
         config = TorConfig()
-        config.OrPort = 1234
-        config.SocksPort = 9999
+        config.ORPort = 1234
+        config.SOCKSPort = 9999
 
         def connector(proto, trans):
             proto._set_valid_events('STATUS_CLIENT')
@@ -1055,165 +1061,6 @@ class LaunchTorTests(unittest.TestCase):
 
         proto = TorProcessProtocol(None)
         proto.status_client("NOTICE CONSENSUS_ARRIVED")
-
-
-class FakeProtocolFactory:
-    implements(IProtocolFactory)
-
-    def buildProtocol(self, addr):
-        return None
-
-    def doStart(self):
-        return None
-
-    def doStop(self):
-        return None
-
-class FakeAddress(object):
-    implements(IAddress)
-
-    compareAttributes = ('type', 'host', 'port')
-    type = 'fakeTCP'
-
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-
-    def __repr__(self):
-        return '%s(%r, %d)' % (
-            self.__class__.__name__, self.host, self.port)
-
-    def __hash__(self):
-        return hash((self.type, self.host, self.port))
-
-class FakeListeningPort(object):
-    implements(IListeningPort)
-
-    def startListening(self):
-        self.factory.doStart()
-
-    def stopListening(self):
-        self.factory.doStop()
-
-    def getHost(self):
-        return FakeAddress('host', 1234)
-
-
-class FakeReactorTcp(object):
-    implements(IReactorTCP)
-
-    failures = 0
-
-    def listenTCP(self, port, factory, **kwargs):
-        if self.failures > 0:
-            self.failures -= 1
-            raise error.CannotListenError(None, None, None)
-
-        p = FakeListeningPort()
-        p.factory = factory
-        p.startListening()
-        return p
-
-
-class EndpointTests(unittest.TestCase):
-
-    def setUp(self):
-        self.reactor = FakeReactorTcp()
-        self.protocol = FakeControlProtocol([])
-        self.config = TorConfig(self.protocol)
-
-    def test_basic(self):
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
-        d = ep.listen(FakeProtocolFactory())
-        self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual')
-        self.protocol.answers.append('HiddenServiceOptions')
-        self.config.bootstrap()
-        self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
-        ## make sure _ListWrapper's __repr__ doesn't explode
-        repr(self.config.HiddenServices)
-
-        def check_onion(listeningPort):
-            self.assertIsInstance(listeningPort, torconfig.TorOnionListeningPort)
-            return listeningPort
-
-        d.addCallback(check_onion).addErrback(self.fail)
-        return d
-
-    def test_multiple_listen(self):
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
-        d0 = ep.listen(FakeProtocolFactory())
-
-        @defer.inlineCallbacks
-        def more_listen(arg):
-            yield arg.stopListening()
-            d1 = ep.listen(FakeProtocolFactory())
-
-            def foo(arg):
-                return arg
-            d1.addBoth(foo)
-            defer.returnValue(arg)
-            return
-        d0.addBoth(more_listen)
-        self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual')
-        self.protocol.answers.append('HiddenServiceOptions')
-        self.config.bootstrap()
-
-        def check(arg):
-            self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
-        d0.addCallback(check).addErrback(self.fail)
-        return d0
-
-    def test_already_bootstrapped(self):
-        self.protocol.answers.append('''config/names=
-HiddenServiceOptions Virtual''')
-        self.protocol.answers.append('HiddenServiceOptions')
-
-        self.config.bootstrap()
-
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
-        d = ep.listen(FakeProtocolFactory())
-        return d
-
-    def test_explicit_data_dir(self):
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, '/mumble/mumble')
-        d = ep.listen(FakeProtocolFactory())
-
-        self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual')
-        self.protocol.answers.append('HiddenServiceOptions')
-
-        self.config.bootstrap()
-
-        return d
-
-    def test_explicit_data_dir_valid_hostname(self):
-        datadir = tempfile.mkdtemp()
-        with open(os.path.join(datadir, 'hostname'), 'w') as f:
-            f.write('timaq4ygg2iegci7.onion')
-        with open(os.path.join(datadir, 'private_key'), 'w') as f:
-            f.write('foo\nbar')
-
-        try:
-            ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, datadir)
-            self.assertEqual(ep.onion_uri, 'timaq4ygg2iegci7.onion')
-            self.assertEqual(ep.onion_private_key, 'foo\nbar')
-
-        finally:
-            shutil.rmtree(datadir, ignore_errors=True)
-
-    def test_failure(self):
-        self.reactor.failures = 1
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
-        d = ep.listen(FakeProtocolFactory())
-
-        self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual')
-        self.protocol.answers.append('HiddenServiceOptions')
-        self.config.bootstrap()
-        d.addErrback(self.check_error)
-        return d
-
-    def check_error(self, failure):
-        self.assertEqual(failure.type, error.CannotListenError)
-        return None
 
 
 class ErrorTests(unittest.TestCase):

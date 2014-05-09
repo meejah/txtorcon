@@ -1,4 +1,2 @@
-
-from txtorcon.torconfig import TCPHiddenServiceEndpointParser
-
-tcpHiddenServiceEndpointParser = TCPHiddenServiceEndpointParser()
+import txtorcon
+tcpHiddenServiceEndpointParser = txtorcon.TCPHiddenServiceEndpointParser()

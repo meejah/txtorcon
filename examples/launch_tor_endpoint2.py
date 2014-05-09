@@ -30,8 +30,8 @@ def setup_failed(arg):
 
 
 def setup_complete(port):
-    print "Received an IListeningPort %s" % (port,)
-    print "..whose `getHost` gives us a %s" % port.getHost()
+    print "Hidden serivce:", port.getHost()
+    print "    locally at:", txtorcon.IHiddenService(port).local_address.getHost()
 
 def progress(percent, tag, message):
     bar = int(percent / 10)
@@ -40,10 +40,13 @@ def progress(percent, tag, message):
 hs_endpoint1 = serverFromString(reactor, "onion:80")
 hs_endpoint2 = serverFromString(reactor, "onion:80")
 
+txtorcon.IProgressProvider(hs_endpoint1).add_progress_listener(progress)
+txtorcon.IProgressProvider(hs_endpoint2).add_progress_listener(progress)
+
 d1 = hs_endpoint1.listen(site)
 d2 = hs_endpoint2.listen(site)
 
-d1.addCallbacks(setup_complete, setup_failed)
-d2.addCallbacks(setup_complete, setup_failed)
+d1.addCallback(setup_complete).addErrback(setup_failed)
+d2.addCallback(setup_complete).addErrback(setup_failed)
 
 reactor.run()
