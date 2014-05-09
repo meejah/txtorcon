@@ -112,10 +112,28 @@ def DefaultTCP4EndpointGenerator(*args, **kw):
 
 @implementer(IStreamServerEndpointStringParser, IPlugin)
 class TCPHiddenServiceEndpointParser(object):
+    """
+    This provides a twisted IPlugin and
+    IStreamServerEndpointsStringParser so you can call
+    :api:`twisted.internet.endpoints.serverFromString
+    <serverFromString>` with a string argument like:
+
+    onion:80:localPort=9876:controlPort=9052:hiddenServiceDir=/dev/shm/foo
+
+    ...or simply:
+
+    onion:80
+
+    socksPort, localPort and controlPort are optional, and if not specified are
+    given random defaults between 1024 and 65536. If hiddenServiceDir
+    is not specified, one is created with tempfile.mkstemp(). The
+    IStreamServerEndpoint will be an instance of
+    :class:`txtorcon.TCPHiddenServiceEndpoint`
+    """
     prefix = "onion"
 
-    def _parseServer(self, reactor, public_port, localPort=None, controlPort=None, socksPort=None, hiddenServiceDir=None):
-
+    def _parseServer(self, reactor, public_port, localPort=None,
+                     controlPort=None, socksPort=None, hiddenServiceDir=None):
         if localPort is not None:
             localPort = int(localPort)
 
@@ -133,7 +151,7 @@ class TCPHiddenServiceEndpointParser(object):
         config = TorConfig()
         # BUG: choose an available socksport
         # unless the user specifies one (set to 0 to disable)
-        config.SOCKSPort = 0
+        config.SOCKSPort = socksPort
         config.ControlPort = controlPort
 
         return TCPHiddenServiceEndpoint(reactor, config, int(public_port), hidden_service_dir=hiddenServiceDir, local_port=localPort)
