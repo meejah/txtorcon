@@ -18,6 +18,10 @@ from twisted.internet.interfaces import IStreamServerEndpoint, IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from zope.interface import implements
 from zope.interface import implementer
+from twisted.internet.tcp import Port
+from twisted.internet.interfaces import IListeningPort
+from twisted.internet.interfaces import IAddress
+from twisted.python.util import FancyEqMixin
 from twisted.plugin import IPlugin
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.endpoints import serverFromString
@@ -34,6 +38,53 @@ class TorNotFound(RuntimeError):
     Raised by launch_tor() in case the tor binary was unspecified and could
     not be found by consulting the shell.
     """
+
+class TorOnionNonexistantException(RuntimeError):
+    """
+    Raised by TCPHiddenServiceEndpoint in case tor doesn't create our
+    hidden service `hostname` file.
+    """
+
+@implementer(IAddress)
+class TorOnionAddress(FancyEqMixin, object):
+    """
+    An L{_TorOnionAddress} represents the address of a Tor hidden service.
+
+    @ivar type: A string describing the type of transport, 'onion'.
+
+    @ivar host: A string containing the Tor Hidden Service onion address.
+    @type host: C{str}
+
+    @ivar port: An integer representing the port number.
+    @type port: C{int}
+    """
+    compareAttributes = ('type', 'host', 'port')
+    type = 'onion'
+
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+
+    def __repr__(self):
+        return '%s(%r, %d)' % (
+            self.__class__.__name__, self.host, self.port)
+
+    def __hash__(self):
+        return hash((self.type, self.host, self.port))
+
+
+class TorOnionListeningPort(Port):
+    implements(IListeningPort)
+
+    _type = 'onion'
+    _addressType = TorOnionAddress
+
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+
+    def getHost(self):
+        return self._addressType('onion', host, port)
 
 
 def DefaultTCP4EndpointGenerator(*args, **kw):
@@ -165,7 +216,6 @@ class TCPHiddenServiceEndpoint(object):
         Used internally to update the `onion_uri` and
         `onion_private_key` members.
         """
-
         hn = os.path.join(thedir, 'hostname')
         pk = os.path.join(thedir, 'private_key')
         try:
@@ -173,11 +223,13 @@ class TCPHiddenServiceEndpoint(object):
                 self.onion_uri = hnfile.read().strip()
         except IOError:
             self.onion_uri = None
+            raise TorOnionNonexistantException(hn)
         try:
             with open(pk, 'r') as pkfile:
                 self.onion_private_key = pkfile.read().strip()
         except IOError:
             self.onion_private_key = None
+            raise TorOnionNonexistantException(pk)
 
     def _create_hiddenservice(self, arg):
         """
@@ -228,13 +280,14 @@ class TCPHiddenServiceEndpoint(object):
         self.protocolfactory = protocolfactory
 
         if self.hiddenservice is None:
-            if self.config.post_bootstrap:
-                ## wait for tor bootstrap to finish before configuring
-                d = self.config.post_bootstrap.addCallback(self._create_hiddenservice)
-            elif self.config.protocol is None:
+
+            if self.config.protocol is None:
                 ## launch tor proc if not already launched before configuring
                 d = launch_tor(self.config, self.reactor, progress_updates=None, timeout=60)
                 d.addCallback(self._post_tor_launch_config)
+            elif self.config.post_bootstrap:
+                ## wait for tor bootstrap to finish before configuring
+                d = self.config.post_bootstrap.addCallback(self._create_hiddenservice)
             else:
                 ## we are bootstrapped already, now we can configure tor
                 d = self._create_hiddenservice(None)
@@ -294,14 +347,12 @@ class TCPHiddenServiceEndpoint(object):
         if not self.check_local_endpoint(self.tcp_endpoint):
             raise RuntimeError("Endpoint doesn't appear to be a local interface.")
         d = self.tcp_endpoint.listen(self.protocolfactory)
-        d.addCallback(self._add_attributes).addErrback(self._retry_local_port)
+
+        d.addCallbacks(self._create_onion_address, self._retry_local_port)
         return d
 
-    def _add_attributes(self, port):
-        port.onion_uri = self.onion_uri
-        port.onion_port = self.publicPort
-        return port
-
+    def _create_onion_address(self, listeningPort):
+        return TorOnionAddress(self.onion_uri, self.publicPort)
 
 class TorProcessProtocol(protocol.ProcessProtocol):
 
