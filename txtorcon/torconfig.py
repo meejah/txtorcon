@@ -76,9 +76,6 @@ class TorOnionListeningPort(object):
 
     implements(IListeningPort)
 
-    _type = 'onion'
-    _addressType = TorOnionAddress
-
     def __init__(self, listeningPort, host, port):
         self.listeningPort = listeningPort
         self.host = host
@@ -91,7 +88,7 @@ class TorOnionListeningPort(object):
         self.listeningPort.stopListening()
 
     def getHost(self):
-        return self._addressType(self.host, self.port)
+       return TorOnionAddress(self.host, self.port)
 
 
 def DefaultTCP4EndpointGenerator(*args, **kw):
@@ -139,18 +136,11 @@ class TCPHiddenServiceEndpointParser(object):
 
         if controlPort is not None:
             controlPort = int(controlPort)
-        else:
-            # BUG: choose an available tcp port
-            controlPort = 9089
 
         if socksPort is not None:
             socksPort = int(socksPort)
-        else:
-            socksPort = 0
 
         config = TorConfig()
-        # BUG: choose an available socksport
-        # unless the user specifies one (set to 0 to disable)
         config.SOCKSPort = socksPort
         config.ControlPort = controlPort
 
@@ -213,16 +203,28 @@ class TCPHiddenServiceEndpoint(object):
             implements IServerEndpoint (by default TCP4ServerEndpoint)
         """
 
-        self.reactor = reactor
-        self.config = config
-        self.public_port = public_port
-
         # A callable that generates a new random port to try
         # listening on. Defaults to `random.randrange(1024, 65535)`
         self.port_generator = functools.partial(random.randrange, 1024, 65534)
 
+        self.reactor = reactor
+        self.config = config
+
+        # if the tor socks or control ports are set to None
+        # by our endpoint parser then we must choose available ports
+        if self.config.protocol is None:
+            """this code breaks the endpoint unit tests"""
+
+            if self.config.SOCKSPort is None:
+                self.config.SOCKSPort = self.getAvailableTCPPort()
+
+            if self.config.ControlPort is None:
+                self.config.ControlPort = self.getAvailableTCPPort()
+
+        self.public_port = public_port
+
         if local_port is None:
-            self.local_port = self.port_generator()
+            self.local_port = self.getAvailableTCPPort()
 
         self.endpoint_generator = endpoint_generator
         self.hidden_service_dir = hidden_service_dir
@@ -235,6 +237,13 @@ class TCPHiddenServiceEndpoint(object):
             self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
         else:
             self._update_onion(self.hidden_service_dir)
+
+    def getAvailableTCPPort(self):
+        """
+        This function should return a tcp port which is gauranteed to be available on localhost.
+        BUG: Fix this!
+        """
+        return self.port_generator()
 
     def _update_onion(self, thedir):
         """
