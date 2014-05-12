@@ -30,9 +30,8 @@ def setup_failed(arg):
 
 
 def setup_complete(port):
-    print "I have set up a hidden service, advertised at: %s" % (port,)
-    print "http://%s:%d" % (port.onion_uri, port.onion_port)
-    print "locally listening on", port.getHost()
+    print "Received an IListeningPort %s" % (port,)
+    print "..whose `getHost` gives us a %s" % port.getHost()
 
 
 def progress(percent, tag, message):

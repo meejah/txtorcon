@@ -18,7 +18,6 @@ from twisted.internet.interfaces import IStreamServerEndpoint, IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from zope.interface import implements
 from zope.interface import implementer
-from twisted.internet.tcp import Port
 from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IAddress
 from twisted.python.util import FancyEqMixin
@@ -37,12 +36,6 @@ class TorNotFound(RuntimeError):
     """
     Raised by launch_tor() in case the tor binary was unspecified and could
     not be found by consulting the shell.
-    """
-
-class TorOnionNonexistantException(RuntimeError):
-    """
-    Raised by TCPHiddenServiceEndpoint in case tor doesn't create our
-    hidden service `hostname` file.
     """
 
 @implementer(IAddress)
@@ -73,18 +66,32 @@ class TorOnionAddress(FancyEqMixin, object):
         return hash((self.type, self.host, self.port))
 
 
-class TorOnionListeningPort(Port):
+class TorOnionListeningPort(object):
+    """
+    Our TCPHiddenServiceEndpoint's `listen` method will return a deferred
+    which fires an instance of this object.
+    The `getHost` method will return a TorOnionAddress instance... which
+    can be used to determine the onion address of a newly created Tor Hidden Service.
+    """
+
     implements(IListeningPort)
 
     _type = 'onion'
     _addressType = TorOnionAddress
 
-    def __init__(self, host, port):
+    def __init__(self, listeningPort, host, port):
+        self.listeningPort = listeningPort
         self.host = host
         self.port = port
 
+    def startListening(self):
+        self.listeningPort.startListening()
+
+    def stopListening(self):
+        self.listeningPort.stopListening()
+
     def getHost(self):
-        return self._addressType('onion', host, port)
+        return self._addressType(self.host, self.port)
 
 
 def DefaultTCP4EndpointGenerator(*args, **kw):
@@ -223,13 +230,11 @@ class TCPHiddenServiceEndpoint(object):
                 self.onion_uri = hnfile.read().strip()
         except IOError:
             self.onion_uri = None
-            raise TorOnionNonexistantException(hn)
         try:
             with open(pk, 'r') as pkfile:
                 self.onion_private_key = pkfile.read().strip()
         except IOError:
             self.onion_private_key = None
-            raise TorOnionNonexistantException(pk)
 
     def _create_hiddenservice(self, arg):
         """
@@ -278,9 +283,7 @@ class TCPHiddenServiceEndpoint(object):
         accepted the hidden service's config.
         """
         self.protocolfactory = protocolfactory
-
         if self.hiddenservice is None:
-
             if self.config.protocol is None:
                 ## launch tor proc if not already launched before configuring
                 d = launch_tor(self.config, self.reactor, progress_updates=None, timeout=60)
@@ -296,7 +299,6 @@ class TCPHiddenServiceEndpoint(object):
             ## want a Deferred so the _create_listener flow is the
             ## same
             d = defer.succeed(self)
-
         d.addCallback(self._create_listener).addErrback(self._retry_local_port)
         return d
 
@@ -347,12 +349,17 @@ class TCPHiddenServiceEndpoint(object):
         if not self.check_local_endpoint(self.tcp_endpoint):
             raise RuntimeError("Endpoint doesn't appear to be a local interface.")
         d = self.tcp_endpoint.listen(self.protocolfactory)
-
         d.addCallbacks(self._create_onion_address, self._retry_local_port)
         return d
 
     def _create_onion_address(self, listeningPort):
-        return TorOnionAddress(self.onion_uri, self.publicPort)
+        """
+        This function receives a TCP Port (from twisted.internet.tcp import Port)
+        and returns a TorOnionListeningPort
+        """
+
+        return TorOnionListeningPort(listeningPort, self.onion_uri, self.publicPort)
+
 
 class TorProcessProtocol(protocol.ProcessProtocol):
 
