@@ -114,10 +114,7 @@ def DefaultTCP4EndpointGenerator(*args, **kw):
 class TCPHiddenServiceEndpointParser(object):
     prefix = "onion"
 
-    def _parseServer(self, reactor, publicPort=None, localPort=None, controlPort=None, socksPort=None, hiddenServiceDir=None):
-
-        if publicPort is not None:
-            publicPort = int(publicPort)
+    def _parseServer(self, reactor, public_port, localPort=None, controlPort=None, socksPort=None, hiddenServiceDir=None):
 
         if localPort is not None:
             localPort = int(localPort)
@@ -125,6 +122,7 @@ class TCPHiddenServiceEndpointParser(object):
         if controlPort is not None:
             controlPort = int(controlPort)
         else:
+            # BUG: choose an available tcp port
             controlPort = 9089
 
         if socksPort is not None:
@@ -133,10 +131,12 @@ class TCPHiddenServiceEndpointParser(object):
             socksPort = 0
 
         config = TorConfig()
-        config.SOCKSPort = socksPort
+        # BUG: choose an available socksport
+        # unless the user specifies one (set to 0 to disable)
+        config.SOCKSPort = 0
         config.ControlPort = controlPort
 
-        return TCPHiddenServiceEndpoint(reactor, config, publicPort, hidden_service_dir=hiddenServiceDir, local_port=localPort)
+        return TCPHiddenServiceEndpoint(reactor, config, int(public_port), hidden_service_dir=hiddenServiceDir, local_port=localPort)
 
     def parseStreamServer(self, reactor, *args, **kwargs):
         return self._parseServer(reactor, *args, **kwargs)

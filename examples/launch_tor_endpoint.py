@@ -38,9 +38,9 @@ def progress(percent, tag, message):
     bar = int(percent / 10)
     print '[%s%s] %s' % ('#' * bar, '.' * (10 - bar), message)
 
-hs_endpoint = serverFromString(reactor, "onion:publicPort=80")
-#hs_endpoint = serverFromString(reactor, "onion:controlPort=9089:localPort=8080:publicPort=80")
-#hs_endpoint = serverFromString(reactor, "onion:controlPort=9089:localPort=8080:publicPort=80:hiddenServiceDir=/home/human/src/txtorcon/hidserv")
+hs_endpoint = serverFromString(reactor, "onion:80")
+#hs_endpoint = serverFromString(reactor, "onion:80:controlPort=9089:localPort=8080")
+#hs_endpoint = serverFromString(reactor, "onion:80:controlPort=9089:localPort=8080:hiddenServiceDir=/home/human/src/txtorcon/hidserv")
 
 d = hs_endpoint.listen(site)
 d.addCallbacks(setup_complete, setup_failed)
