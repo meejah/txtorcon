@@ -72,6 +72,10 @@ class TorOnionListeningPort(object):
     which fires an instance of this object.
     The `getHost` method will return a TorOnionAddress instance... which
     can be used to determine the onion address of a newly created Tor Hidden Service.
+
+    `startListening` and `stopListening` methods proxy to the "TCP ListeningPort" object...
+    which implements IListeningPort interface but has many more responsibilities we needn't
+    worry about here.
     """
 
     implements(IListeningPort)
@@ -210,11 +214,11 @@ class TCPHiddenServiceEndpoint(object):
         self.reactor = reactor
         self.config = config
 
-        # if the tor socks or control ports are set to None
-        # by our endpoint parser then we must choose available ports
+        # if we are not in a unit test
         if self.config.protocol is None:
-            """this code breaks the endpoint unit tests"""
 
+            # if the tor socks or control ports are set to None
+            # by our endpoint parser then we must choose available ports
             if self.config.SOCKSPort is None:
                 self.config.SOCKSPort = self.getAvailableTCPPort()
 
