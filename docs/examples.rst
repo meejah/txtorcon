@@ -5,8 +5,23 @@ In the :file:`examples/` sub-directory are a few different
 mostly-simple ways of using txtorcon. They all show how to set up a
 connection and then wait for and use various information from Tor.
 
+.. _hello_darkweb.py:
 
-.. _dissalow_streams_by_port.py:
+:file:`hello_darkweb.py`
+------------------------
+
+:download:`Download the example <../examples/hello_darkweb.py>`.
+
+This is a minimal (but still working) hidden-service set up using the
+endpoint parsers (these are Twisted ``IPlugin`` implementations; see
+`the documentation
+<https://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.serverFromString.html>`_
+for more).  It even shows Tor's progress messages on the console.
+
+.. literalinclude:: ../examples/hello_darkweb.py
+
+
+.. _disallow_streams_by_port.py:
 
 :file:`disallow_streams_by_port.py`
 -----------------------------------

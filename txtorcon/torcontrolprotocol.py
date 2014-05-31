@@ -801,7 +801,7 @@ class TorControlProtocol(LineOnlyReceiver):
         self.response = ''
         if self.code >= 200 and self.code < 300:
             if self.defer is None:
-                raise RuntimeError("Got a response, but didn't issue a command.")
+                raise RuntimeError('Got a response, but didn\'t issue a command: "%s"' % resp)
             if resp.endswith('\nOK'):
                 resp = resp[:-3]
             self.defer.callback(resp)
