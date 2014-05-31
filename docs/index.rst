@@ -11,10 +11,52 @@ txtorcon is a `Twisted <https://twistedmatrix.com/>`_-based `Python
 This would be of interest to anyone wishing to write event-based
 software in Python that talks to a Tor program.
 
-**Cut to the chase** by perusing the `Walkthrough <walkthrough.html>`_.
+There is a `Walkthrough <walkthrough.html>`_.
 
-The main code is under 2000 lines according to ohcount, or 4500 lines
-including tests. Some features and motivating examples:
+The main code is around 2300 lines according to ohcount, or about 5600
+lines including tests. With **full endpoint support, any endpoint-aware
+Twisted application can easily use an automatically-launched Tor**.
+
+With txtorcon installed, you can use ``"onion:"`` port/endpoint
+strings with any endpoint-aware Twisted program. For example, to use
+Twisted Web to serve your ``~/public_html`` as a hidden service
+(``-n`` *means don't daemonize and log to stdout*):
+
+.. code-block:: shell-session
+
+    $ twistd -n web --port "onion:80" --path ~/public_html
+    2014-05-30 21:40:23-0600 [-] Log opened.
+    #...truncated
+    2014-05-30 21:41:16-0600 [TorControlProtocol,client] Tor launching: 90% Establishing a Tor circuit
+    2014-05-30 21:41:17-0600 [TorControlProtocol,client] Tor launching: 100% Done
+    2014-05-30 21:41:17-0600 [TorControlProtocol,client] Site starting on 46197
+    2014-05-30 21:41:17-0600 [TorControlProtocol,client] Starting factory <twisted.web.server.Site instance at 0x7f57667d0cb0>
+    2014-05-30 21:41:17-0600 [TorControlProtocol,client] Set up hidden service "2vrrgqtpiaildmsm.onion" on port 80
+
+A slight change to the Echo Server example on the front page of
+`Twisted's Web site <https://twistedmatrix.com/trac>`_ can make it
+appear as a hidden service:
+
+.. code-block:: python
+
+    from twisted.internet import protocol, reactor, endpoints
+
+    class Echo(protocol.Protocol):
+        def dataReceived(self, data):
+            self.transport.write(data)
+
+    class EchoFactory(protocol.Factory):
+        def buildProtocol(self, addr):
+            return Echo()
+
+    endpoints.serverFromString("onion:1234").listen(EchoFactory())
+    reactor.run()
+
+This is just a one-line change. Note there isn't even an "import
+txtorcon" (although it does need to be installed so that Twisted finds
+the ``IPlugin`` that does the parsing).
+
+Some (other) features and motivating examples:
 
  - :class:`txtorcon.TorControlProtocol` implements the control-spec protocol (only)
     - see :ref:`monitor.py` which listens for events (SETEVENT ones)
