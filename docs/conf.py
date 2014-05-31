@@ -19,6 +19,9 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('.'))
 
+## we have a custom-changed alabaster theme...
+sys.path.insert(0, os.path.join(os.path.split(__file__)[0], '_themes'))
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -127,8 +130,33 @@ html_theme_options = {
 # documentation.
 #html_theme_options = {}
 
-# Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = []
+## playing with alabaster, from https://github.com/bitprophet/alabaster
+
+import alabaster
+
+html_theme_path = [alabaster.get_path()]
+extensions.append('alabaster')
+html_theme = 'alabaster'
+html_sidebars = {
+   '**': [
+       'about.html', 'navigation.html', 'searchbox.html', 'donate.html',
+   ]
+}
+html_theme_options = {
+    'logo': 'logo.svg',
+    'github_button': 'false',
+    'github_user': 'meejah',
+    'github_repo': 'txtorcon',
+    'travis_button': 'true',
+    'coveralls_button': 'true',
+    'logo_name': 'true',
+    'description': 'Control Tor from Twisted',
+    'logo_text_align': 'center',
+    'flattr_uri': 'http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub',
+    'note_bg': '#ccddcc',
+    'note_border': '#839496',
+}
+
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -140,7 +168,8 @@ html_short_title = 'txtorcon docs'
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 #html_logo = 'avatar.png'
-html_logo = 'logo.png'
+#html_logo = 'logo.png'
+#html_logo = 'logo.svg'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32

@@ -669,9 +669,9 @@ s Fast Guard Running Stable Unnamed Valid
 w Bandwidth=51500
 p reject 1-65535""")
 
-        expected = [('new', {'id':456}),
+        expected = [('new', {'id': 456}),
                     ('launched', {}),
-                    ('extend', {'id':123})
+                    ('extend', {'id': 123})
                     ]
         listen = CircuitListener(expected)
         ## first add a Circuit before we listen

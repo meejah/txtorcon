@@ -33,29 +33,6 @@ Twisted Web to serve your ``~/public_html`` as a hidden service
     2014-05-30 21:41:17-0600 [TorControlProtocol,client] Starting factory <twisted.web.server.Site instance at 0x7f57667d0cb0>
     2014-05-30 21:41:17-0600 [TorControlProtocol,client] Set up hidden service "2vrrgqtpiaildmsm.onion" on port 80
 
-A slight change to the Echo Server example on the front page of
-`Twisted's Web site <https://twistedmatrix.com/trac>`_ can make it
-appear as a hidden service:
-
-.. code-block:: python
-
-    from twisted.internet import protocol, reactor, endpoints
-
-    class Echo(protocol.Protocol):
-        def dataReceived(self, data):
-            self.transport.write(data)
-
-    class EchoFactory(protocol.Factory):
-        def buildProtocol(self, addr):
-            return Echo()
-
-    endpoints.serverFromString("onion:1234").listen(EchoFactory())
-    reactor.run()
-
-This is just a one-line change. Note there isn't even an "import
-txtorcon" (although it does need to be installed so that Twisted finds
-the ``IPlugin`` that does the parsing).
-
 Some (other) features and motivating examples:
 
  - :class:`txtorcon.TorControlProtocol` implements the control-spec protocol (only)
@@ -72,12 +49,39 @@ Some (other) features and motivating examples:
     - see also :ref:`launch_tor_with_hiddenservice.py`
 
  - helpers to launch new slave Tor instances
+    - use :class:`txtorcon.TCPHiddenServiceEndpoint` and :api:`twisted.internet.endpoints.serverFromString <serverFromString>` if you can
     - uses TAKEOWNERSHIP and __OwningControllerProcess (killing connection causes Tor to exit)
     - see :ref:`launch_tor.py`
     - see :ref:`launch_tor_with_hiddenservice.py`
 
  - :class:`txtorcon.TCPHiddenServiceEndpoint` to simplify hidden service listening into Twisteds endpoint paradigm.
     - see :ref:`launch_tor_endpoint.py`
+
+
+A slight change to the Echo Server example on the front page of
+`Twisted's Web site <https://twistedmatrix.com/trac>`_ can make it
+appear as a hidden service:
+
+.. code-block:: python
+
+    from __future__ import print_function
+    from twisted.internet import protocol, reactor, endpoints
+
+    class Echo(protocol.Protocol):
+        def dataReceived(self, data):
+            self.transport.write(data)
+
+    class EchoFactory(protocol.Factory):
+        def buildProtocol(self, addr):
+            return Echo()
+
+    endpoints.serverFromString(reactor, "onion:1234").listen(EchoFactory()).addCallback(lambda x: print(x.getHost()))
+    reactor.run()
+
+This is just a one-line change. Note there isn't even an "import
+txtorcon" (although it does need to be installed so that Twisted finds
+the ``IPlugin`` that does the parsing).
+
 
 This documentation was generated |today|.
 

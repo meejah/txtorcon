@@ -1,14 +1,16 @@
-txtorcon README
-===============
+README
+======
 
-Full, built **documentation at ReadTheDocs
-https://txtorcon.readthedocs.org**
+Documentation at https://txtorcon.readthedocs.org
 
 .. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
     :target: https://www.travis-ci.org/meejah/txtorcon
 
 .. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
     :target: https://coveralls.io/r/meejah/txtorcon
+
+.. image:: http://api.flattr.com/button/flattr-badge-large.png
+    :target: http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub
 
 
 quick start
@@ -18,7 +20,8 @@ For the impatient, there are two quick ways to install this::
 
    $ pip install txtorcon
 
-or, if you checked out or downloaded the source::
+(Thanks to Lunar^ for all his packaging work) or, if you checked out
+or downloaded the source::
 
    $ python setup.py install
 
@@ -109,17 +112,17 @@ not-test code.
 dependencies / requirements
 ---------------------------
 
--  `twisted <http://twistedmatrix.com>`_: I am working against Twisted
-   11.1.0 on Debian with Python 2.7.2. Twisted 12 works fine as
-   well. Twisted does not yet support Python 3.
+- `twisted <http://twistedmatrix.com>`_: txtorcon should work with any
+   Twisted 11.1.0 or newer. I am working against Twisted 13.2.0 on
+   Debian with Python 2.7.6. Twisted 12 works fine as well. Twisted
+   does not yet support Python 3.
 
 -  `GeoIP <https://www.maxmind.com/app/python>`_: **optional** provides location
    information for ip addresses; you will want to download GeoLite City
    from `MaxMind <https://www.maxmind.com/app/geolitecity>`_ or pay them
    for more accuracy. Or use tor-geoip, which makes this sort-of
-   optional, in that we'll query Tor for the if the GeoIP database
-   doesn't have an answer but I haven't bothered removing the dependency
-   yet. It also does ASN lookups if you installed that MaxMind database.
+   optional, in that we'll query Tor for the IP if the GeoIP database
+   doesn't have an answer. It also does ASN lookups if you installed that MaxMind database.
 
 -  `python-ipaddr <http://code.google.com/p/ipaddr-py/>`_: **optional**.
    Google's IP address manipulation code.

@@ -1,31 +1,31 @@
 #!/usr/bin/env python
 
-##
-## This uses a custom txtorcon.IStreamAttacher to force streams to use
-## circuits that exit in the same country (as supplied by GeoIP) and
-## builds such a circuit if one isn't available yet.
-##
-## Note that you can do something very similar to this with Tor's
-## config file as well by setting something like:
-##
-## ExitNodes {us},{ca}
-##
-## ...in your torrc. The above just exits from those countries, not
-## the one in which the Web server is located, however. So, this is a
-## little redundant, but gives you the idea of how to do these sorts
-## of things.
-##
-## Another thing to note is that the DNS lookup is a stream before the
-## name is looked up, so the DNS lookup may occur from whatever stream
-## Tor chose for that (we return None, which causes the attacher to
-## tell Tor to attach that stream itself). This presents a problem for
-## sites which optimize the server they deliver based on DNS -- if you
-## lookup from X you'll get a server near/in X, which for our next
-## step will make "the site" appear to be there.
-##
-## The only "solution" for this would be to do the lookup locally, but
-## that defeats the purpose of Tor.
-##
+#
+# This uses a custom txtorcon.IStreamAttacher to force streams to use
+# circuits that exit in the same country (as supplied by GeoIP) and
+# builds such a circuit if one isn't available yet.
+#
+# Note that you can do something very similar to this with Tor's
+# config file as well by setting something like:
+#
+# ExitNodes {us},{ca}
+#
+# ...in your torrc. The above just exits from those countries, not
+# the one in which the Web server is located, however. So, this is a
+# little redundant, but gives you the idea of how to do these sorts
+# of things.
+#
+# Another thing to note is that the DNS lookup is a stream before the
+# name is looked up, so the DNS lookup may occur from whatever stream
+# Tor chose for that (we return None, which causes the attacher to
+# tell Tor to attach that stream itself). This presents a problem for
+# sites which optimize the server they deliver based on DNS -- if you
+# lookup from X you'll get a server near/in X, which for our next
+# step will make "the site" appear to be there.
+#
+# The only "solution" for this would be to do the lookup locally, but
+# that defeats the purpose of Tor.
+#
 
 import random
 
@@ -46,17 +46,18 @@ class MyStreamListener(txtorcon.StreamListenerMixin):
 
     def stream_attach(self, stream, circuit):
         print "stream", stream.id, " attached to circuit", circuit.id,
-        print "with path:", '->'.join(map(lambda x: x.location.countrycode, circuit.path))
+        print "with path:", '->'.join(map(lambda x: x.location.countrycode,
+                                          circuit.path))
 
 
 class MyAttacher(txtorcon.CircuitListenerMixin):
     implements(txtorcon.IStreamAttacher)
 
     def __init__(self, state):
-        ## pointer to our TorState object
+        # pointer to our TorState object
         self.state = state
-        ## circuits for which we are awaiting completion so we can
-        ## finish our attachment to them.
+        # circuits for which we are awaiting completion so we can
+        # finish our attachment to them.
         self.waiting_circuits = []
 
     def waiting_on(self, circuit):
@@ -71,18 +72,20 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
             return
         # only output for circuits we're waiting on
         if self.waiting_on(circuit):
-            print "  circuit %d (%s). Path now %s" % (circuit.id, router.id_hex,
-                                                      '->'.join(map(lambda x: x.location.countrycode,
-                                                                    circuit.path)))
+            path = '->'.join(map(lambda x: x.location.countrycode,
+                                 circuit.path))
+            print "  circuit %d (%s). Path now %s" % (circuit.id,
+                                                      router.id_hex,
+                                                      path)
 
     def circuit_built(self, circuit):
         "ICircuitListener"
         if circuit.purpose != 'GENERAL':
             return
 
-        print "circuit built", circuit.id, '->'.join(map(lambda r:
-                                                         r.location.countrycode,
-                                                         circuit.path))
+        path = '->'.join(map(lambda r: r.location.countrycode,
+                             circuit.path))
+        print "circuit built", circuit.id, path
         for (circid, d, stream_cc) in self.waiting_circuits:
             if circid == circuit.id:
                 self.waiting_circuits.remove((circid, d, stream_cc))
@@ -90,7 +93,8 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
 
     def circuit_failed(self, circuit, kw):
         if self.waiting_on(circuit):
-            print "A circuit we requested", circuit.id, "has failed. Reason:", kw['REASON']
+            print "A circuit we requested", circuit.id,
+            print "has failed. Reason:", kw['REASON']
 
             circid, d, stream_cc = None, None, None
             for x in self.waiting_circuits:
@@ -107,7 +111,7 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
         """
         IStreamAttacher API
         """
-        if not stream.target_host in self.state.addrmap.addr:
+        if stream.target_host not in self.state.addrmap.addr:
             print "No AddrMap entry for", stream.target_host,
             print "so I don't know where it exits; get Tor to attach stream."
             return None
@@ -117,8 +121,8 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
         print "Stream to", ip, "exiting in", stream_cc
 
         if stream_cc is None:
-            ## returning None tells TorState to ask Tor to select a
-            ## circuit instead
+            # returning None tells TorState to ask Tor to select a
+            # circuit instead
             print "   unknown country, Tor will assign stream"
             return None
 
@@ -134,30 +138,30 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
                 print "  found suitable circuit:", circ
                 return circ
 
-        ## if we get here, we haven't found a circuit that exits in
-        ## the country GeoIP claims our target server is in, so we
-        ## need to build one.
+        # if we get here, we haven't found a circuit that exits in
+        # the country GeoIP claims our target server is in, so we
+        # need to build one.
         print "Didn't find a circuit, building one"
 
-        ## we need to return a Deferred which will callback with our
-        ## circuit, however built_circuit only callbacks with the
-        ## message from Tor saying it heard about our request. So when
-        ## that happens, we push our real Deferred into the
-        ## waiting_circuits list which will get pop'd at some point
-        ## when the circuit_built() listener callback happens.
+        # we need to return a Deferred which will callback with our
+        # circuit, however built_circuit only callbacks with the
+        # message from Tor saying it heard about our request. So when
+        # that happens, we push our real Deferred into the
+        # waiting_circuits list which will get pop'd at some point
+        # when the circuit_built() listener callback happens.
 
         d = defer.Deferred()
         self.request_circuit_build(stream_cc, d)
         return d
 
     def request_circuit_build(self, stream_cc, deferred_to_callback):
-        ## for exits, we can select from any router that's in the
-        ## correct country.
+        # for exits, we can select from any router that's in the
+        # correct country.
         last = filter(lambda x: x.location.countrycode == stream_cc,
                       self.state.routers.values())
 
-        ## start with an entry guard, put anything in the middle and
-        ## put one of our exits at the end.
+        # start with an entry guard, put anything in the middle and
+        # put one of our exits at the end.
         path = [random.choice(self.state.entry_guards.values()),
                 random.choice(self.state.routers.values()),
                 random.choice(last)]
@@ -183,7 +187,10 @@ class MyAttacher(txtorcon.CircuitListenerMixin):
                 self.attacher.waiting_circuits.append((circ.id, self.d,
                                                        self.stream_cc))
 
-        return self.state.build_circuit(path).addCallback(AppendWaiting(self, deferred_to_callback, stream_cc)).addErrback(log.err)
+        d = self.state.build_circuit(path)
+        d.addCallback(AppendWaiting(self, deferred_to_callback, stream_cc))
+        d.addErrback(log.err)
+        return d
 
 
 def do_setup(state):

@@ -80,7 +80,9 @@ Tor for all the current relays and creates a :class:`Router <txtorcon.Router>` i
 which there are currently about 5000. TorControlProtocol alone is much
 faster (dozens of milliseconds).
 
-The code to do this would look something like::
+The code to do this would look something like:
+
+.. sourcecode:: python
 
    from twisted.internet import reactor
    from twisted.internet.endpoints import TCP4ClientEndpoint

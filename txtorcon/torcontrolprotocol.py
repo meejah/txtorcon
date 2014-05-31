@@ -431,7 +431,7 @@ class TorControlProtocol(LineOnlyReceiver):
         :return: a ``Deferred`` which callbacks with Tor's response
             (``OK`` or something like ``552 Unrecognized signal code "foo"``).
         """
-        if not nm in self.valid_signals:
+        if nm not in self.valid_signals:
             raise RuntimeError("Invalid signal " + nm)
         return self.queue_command('SIGNAL %s' % nm)
 
@@ -460,7 +460,7 @@ class TorControlProtocol(LineOnlyReceiver):
             show how to tie in Stem parsing if you want
         """
 
-        if not evt in self.valid_events.values():
+        if evt not in self.valid_events.values():
             try:
                 evt = self.valid_events[evt]
             except:
@@ -473,7 +473,7 @@ class TorControlProtocol(LineOnlyReceiver):
         return None
 
     def remove_event_listener(self, evt, cb):
-        if not evt in self.valid_events.values():
+        if evt not in self.valid_events.values():
             try:
                 evt = self.valid_events[evt]
             except:

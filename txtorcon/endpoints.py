@@ -52,16 +52,23 @@ def get_global_tor(reactor, socks_port=None, control_port=None,
                    progress_updates=None,
                    _tor_launcher=lambda r, c, p: launch_tor(c, r, progress_updates=p)):
     """
-    See description of :method:`txtorcon.TCPHiddenServiceEndpoint.global_tor`
+    See description of :class:`txtorcon.TCPHiddenServiceEndpoint`'s class-method ``global_tor``
 
-    This returns a Deferred that fires a TorConfig which is bootstrapped.
+    :param socks_port:
+         a SOCKS port for Tor to listen on. ``None`` means don't listen.
+
+    :param control_port:
+        a TCP port upon which to run the launched Tor's
+        control-protocol (selected by the OS by default).
+
+    :param progress_updates:
+        A callable that takes 3 args: ``percent, tag, message`` which
+        is called when Tor announcing some progress setting itself up.
+
+    :returns:
+        a ``Deferred`` that fires a :class:`txtorcon.TorConfig` which is bootstrapped.
 
     The _tor_launcher keyword arg is internal-only.
-
-    FIXME TODO XXX see tor_instance_at() down at the bottom; might be
-    worth reviving that instead? (i.e. a possible tor per
-    control-port, so if you pass a new control-port you'd get a
-    different instance etc)
     """
     global _global_tor_config
     global _global_tor_lock
@@ -117,13 +124,13 @@ class TCPHiddenServiceEndpoint(object):
 
     There are three main ways to use this class, and you are
     encouraged to use the @classmethod ways of creating instances:
-    :method:`txtorcon.TCPHiddenServiceEndpoint.system_tor <system_tor>`
-    :method:`txtorcon.TCPHiddenServiceEndpoint.global_tor <global_tor>`
-    :method:`txtorcon.TCPHiddenServiceEndpoint.private_tor <private_tor>`
+    `system_tor <#txtorcon.TCPHiddenServiceEndpoint.system_tor>`_,
+    `global_tor <#txtorcon.TCPHiddenServiceEndpoint.global_tor>`_,
+    and `private_tor <#txtorcon.TCPHiddenServiceEndpoint.private_tor>`_
 
     1. system_tor(...) connects to an already-started tor on the
        endpoint you specify; stricly speaking not a "system" tor since
-       you could have spawned it some other way. See Tor bug 11291
+       you could have spawned it some other way. See `Tor bug 11291 <https://trac.torproject.org/projects/tor/ticket/11291>`_
        however.
 
     2. global_tor(...) refers to a single possible Tor instance
@@ -142,10 +149,10 @@ class TCPHiddenServiceEndpoint(object):
     No matter how you came by your instance, calling `listen()` on it
     causes Tor to be launched or connected-to, your hidden service to
     be added, (XXX and check the descriptor is uploaded! FIXME) and
-    you get a Deferred with an IListeningPort whose getHost() will
-    return a TorOnionAddress. The port object will also implement
-    IHiddenSerivce so you can get the locally-listening address and
-    hidden serivce directory:
+    you get a ``Deferred`` with an ``IListeningPort`` whose
+    ``getHost()`` will return a :class:`txtorcon.TorOnionAddress`. The port
+    object will also implement :class:`txtorcon.IHiddenService` so you can get the
+    locally-listening address and hidden serivce directory::
 
         endpoint = ...
         port = yield endpoint.listen(...)
@@ -157,14 +164,14 @@ class TCPHiddenServiceEndpoint(object):
     returns (via Deferred) an object that implements
     :api:`twisted.internet.interfaces.IStreamServerEndpoint`
 
-    :ivar onion_uri: the public key, like `timaq4ygg2iegci7.onion`
-        which came from the hidden_service_dir's `hostname` file
+    :ivar onion_uri: the public key, like ``timaq4ygg2iegci7.onion``
+        which came from the hidden_service_dir's ``hostname`` file
 
-    :ivar onion_private_key: the contents of `hidden_service_dir/private_key`
+    :ivar onion_private_key: the contents of ``hidden_service_dir/private_key``
 
 
     :ivar hiddenServiceDir: the data directory, either passed in or created
-        with `tempfile.mkstemp`
+        with ``tempfile.mkstemp``
     """
 
     @classmethod
@@ -268,7 +275,7 @@ class TCPHiddenServiceEndpoint(object):
 
         :param config:
             :class:`txtorcon.TorConfig` instance (doesn't need to be
-            bootstrapped) or a Deferred. Note that `save()` will be
+            bootstrapped) or a Deferred. Note that ``save()`` will be
             called on this at least once. FIXME should I just accept a
             TorControlProtocol instance instead, and create my own
             TorConfig?
@@ -495,20 +502,20 @@ class TCPHiddenServiceEndpointParser(object):
     :api:`twisted.internet.endpoints.serverFromString
     <serverFromString>` with a string argument like:
 
-    onion:80:localPort=9876:controlPort=9052:hiddenServiceDir=/dev/shm/foo
+    ``onion:80:localPort=9876:controlPort=9052:hiddenServiceDir=/dev/shm/foo``
 
     ...or simply:
 
-    onion:80
+    ``onion:80``
 
     If controlPort is specified, it means connect to an already-running Tor on
     that port and add a hidden-serivce to it.
 
-    localPort and SOCKSPort are optional and if not specified are given a random value between
-    1024 and 65536.
+    localPort and SOCKSPort are optional and if not specified,
+    SOCKSPort is 0 and localPort is selected by the OS.
 
     If hiddenServiceDir is not specified, one is created with
-    tempfile.mkstemp(). The IStreamServerEndpoint will be an instance of
+    ``tempfile.mkstemp()``. The IStreamServerEndpoint will be an instance of
     :class:`txtorcon.TCPHiddenServiceEndpoint`
     """
     prefix = "onion"

@@ -28,7 +28,7 @@ class Listener(object):
                     raise RuntimeError('Expected argument to have value "%s", not "%s"' % (v, args))
             elif k == 'kwargs':
                 for (key, value) in v.items():
-                    if not key in kw:
+                    if key not in kw:
                         print key, value, k, v, kw
                         raise RuntimeError('Expected keyword argument for key "%s" but found nothing.' % key)
                     elif kw[key] != value:
@@ -131,7 +131,7 @@ class StreamTests(unittest.TestCase):
         self.assertEqual(stream.state, 'NEWRESOLVE')
 
     def test_listener_new(self):
-        listener = Listener([('new', {'target_port':9001})])
+        listener = Listener([('new', {'target_port': 9001})])
 
         stream = Stream(self)
         stream.listen(listener)
@@ -140,8 +140,9 @@ class StreamTests(unittest.TestCase):
     def test_listener_attach(self):
         self.circuits[186] = FakeCircuit(186)
 
-        listener = Listener([('new', {'target_host':'www.yahoo.com', 'target_port':80}),
-                             ('attach', {'target_addr':maybe_ip_addr('1.2.3.4')})])
+        listener = Listener([('new', {'target_host': 'www.yahoo.com',
+                                      'target_port': 80}),
+                             ('attach', {'target_addr': maybe_ip_addr('1.2.3.4')})])
 
         stream = Stream(self)
         stream.listen(listener)
@@ -154,7 +155,8 @@ class StreamTests(unittest.TestCase):
         "Attachment is via SENTCONNECT on .onion addresses (for example)"
         self.circuits[186] = FakeCircuit(186)
 
-        listener = Listener([('new', {'target_host':'www.yahoo.com', 'target_port':80}),
+        listener = Listener([('new', {'target_host': 'www.yahoo.com',
+                                      'target_port': 80}),
                              ('attach', {})])
 
         stream = Stream(self)
@@ -199,7 +201,8 @@ class StreamTests(unittest.TestCase):
         "Change a stream-id mid-stream."
         self.circuits[186] = FakeCircuit(186)
 
-        listener = Listener([('new', {'target_host':'www.yahoo.com', 'target_port':80}),
+        listener = Listener([('new', {'target_host': 'www.yahoo.com',
+                                      'target_port': 80}),
                              ('attach', {}),
                              ('succeeded', {})])
 
@@ -221,7 +224,8 @@ class StreamTests(unittest.TestCase):
         self.circuits[123] = FakeCircuit(123)
         self.circuits[456] = FakeCircuit(456)
 
-        listener = Listener([('new', {'target_host':'www.yahoo.com', 'target_port':80}),
+        listener = Listener([('new', {'target_host': 'www.yahoo.com',
+                                      'target_port': 80}),
                              ('attach', {}),
                              ('detach', {'kwargs': dict(reason='END', remote_reason='MISC')}),
                              ('attach', {})])
@@ -243,8 +247,9 @@ class StreamTests(unittest.TestCase):
     def test_listener_close(self):
         self.circuits[186] = FakeCircuit(186)
 
-        listener = Listener([('new', {'target_host':'www.yahoo.com', 'target_port':80}),
-                             ('attach', {'target_addr':maybe_ip_addr('1.2.3.4')}),
+        listener = Listener([('new', {'target_host': 'www.yahoo.com',
+                                      'target_port': 80}),
+                             ('attach', {'target_addr': maybe_ip_addr('1.2.3.4')}),
                              ('closed', {'kwargs': dict(REASON='END', REMOTE_REASON='DONE')})])
         stream = Stream(self)
         stream.listen(listener)
@@ -255,8 +260,9 @@ class StreamTests(unittest.TestCase):
         self.assertEqual(len(self.circuits[186].streams), 0)
 
     def test_listener_fail(self):
-        listener = Listener([('new', {'target_host':'www.yahoo.com', 'target_port':80}),
-                             ('attach', {'target_addr':maybe_ip_addr('1.2.3.4')}),
+        listener = Listener([('new', {'target_host': 'www.yahoo.com',
+                                      'target_port': 80}),
+                             ('attach', {'target_addr': maybe_ip_addr('1.2.3.4')}),
                              ('failed', {'kwargs': dict(REASON='TIMEOUT', REMOTE_REASON='DESTROYED')})])
         stream = Stream(self)
         stream.listen(listener)
@@ -272,7 +278,8 @@ class StreamTests(unittest.TestCase):
         str(stream)
 
     def test_ipv6(self):
-        listener = Listener([('new', {'target_host':'::1', 'target_port':80})])
+        listener = Listener([('new', {'target_host': '::1',
+                                      'target_port': 80})])
 
         stream = Stream(self)
         stream.listen(listener)
@@ -284,7 +291,8 @@ class StreamTests(unittest.TestCase):
         self.assertEqual(stream.target_addr, maybe_ip_addr('::1'))
 
     def test_ipv6_source(self):
-        listener = Listener([('new', {'source_addr':maybe_ip_addr('::1'), 'source_port':12345})])
+        listener = Listener([('new', {'source_addr': maybe_ip_addr('::1'),
+                                      'source_port': 12345})])
 
         stream = Stream(self)
         stream.listen(listener)

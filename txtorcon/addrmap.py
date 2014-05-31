@@ -75,7 +75,8 @@ class Addr(object):
                     diff = datetime.timedelta(seconds=0)
                 else:
                     diff = self.expires - self.created
-                self.expiry = self.map.scheduler.callLater(diff.seconds, self._expire)
+                self.expiry = self.map.scheduler.callLater(diff.seconds,
+                                                           self._expire)
 
             else:
                 diff = self.expires - oldexpires
@@ -129,5 +130,5 @@ class AddrMap(object):
             getattr(listener, method)(*args, **kwargs)
 
     def add_listener(self, listener):
-        if not listener in self.listeners:
+        if listener not in self.listeners:
             self.listeners.append(IAddrListener(listener))

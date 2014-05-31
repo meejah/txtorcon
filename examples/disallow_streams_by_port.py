@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
-##
-## This uses a very simple custom txtorcon.IStreamAttacher to disallow
-## certain streams based solely on their port; by default it closes
-## all streams on port 80 or 25 without ever attaching them to a
-## circuit.
-##
-## For a more complex IStreamAttacher example, see
-## attach_streams_by_country.py
-##
+#
+# This uses a very simple custom txtorcon.IStreamAttacher to disallow
+# certain streams based solely on their port; by default it closes
+# all streams on port 80 or 25 without ever attaching them to a
+# circuit.
+#
+# For a more complex IStreamAttacher example, see
+# attach_streams_by_country.py
+#
 
 from twisted.python import log
 from twisted.internet import reactor

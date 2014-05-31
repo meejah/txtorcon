@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-##
-## This example uses ICircuitListener to monitor how many circuits have
-## failed since the monitor started up. If this figure is more than 50%,
-## a warning-level message is logged.
-##
-## Like the :ref:`stream_circuit_logger.py` example, we also log all new
-## circuits.
-##
+#
+# This example uses ICircuitListener to monitor how many circuits have
+# failed since the monitor started up. If this figure is more than 50%,
+# a warning-level message is logged.
+#
+# Like the :ref:`stream_circuit_logger.py` example, we also log all new
+# circuits.
+#
 
 import functools
 import sys
@@ -23,15 +23,19 @@ class Options(usage.Options):
     """
 
     optParameters = [
-        ['failed', 'f', 0, 'Starting value for number of failed circuits.', int],
-        ['built', 'b', 0, 'Starting value for the total number of built cicuits.', int],
-        ['connect', 'c', None, 'Tor control socket to connect to in host:port format, like "localhost:9051" (the default).'],
+        ['failed', 'f', 0, 'Starting value for number of failed circuits.',
+         int],
+        ['built', 'b', 0,
+         'Starting value for the total number of built cicuits.', int],
+        ['connect', 'c', None, 'Tor control socket to connect to in '
+         'host:port format, like "localhost:9051" (the default).'],
         ['delay', 'n', 60, 'Seconds to wait between status updates.', int]]
 
     def __init__(self):
         usage.Options.__init__(self)
         self['guards'] = []
-        self.docs['guard'] = 'Specify the name, built and failed rates like "SomeTorNode,10,42". Can be specified multiple times.'
+        self.docs['guard'] = 'Specify the name, built and failed rates ' \
+            'like "SomeTorNode,10,42". Can be specified multiple times.'
 
     def opt_guard(self, value):
         name, built, failed = value.split(',')
@@ -55,10 +59,14 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
                                 float(self.built_circuits +
                                       self.failed_circuits))
         if self.percent > 50.0:
-            print 'WARNING: %02.1f percent of all routes have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.built_circuits)
+            print 'WARNING: %02.1f percent of all routes' % self.percent
+            print ' have failed: %d failed, %d built' % (self.failed_circuits,
+                                                         self.built_circuits)
 
     def information(self):
-        rtn = '%02.1f%% of all circuits have failed: %d failed, %d built' % (self.percent, self.failed_circuits, self.built_circuits)
+        rtn = '%02.1f%% of all circuits' % self.percent
+        rtn += 'have failed: %d failed, %d built' % (self.failed_circuits,
+                                                     self.built_circuits)
         for g in self.per_guard_built.keys():
             per_guard_percent = 100.0 * (self.per_guard_failed[g] /
                                          (self.per_guard_built[g] +
@@ -68,8 +76,12 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
                 if g == guard.name or g == guard.id_hex:
                     current = '*'
                     break
-            rtn = rtn + '\n %s %s: %d built, %d failed: %02.1f%%' % (current, g, self.per_guard_built[g], self.per_guard_failed[g],
-                                                                     per_guard_percent)
+            rtn = rtn + '\n %s %s: %d built, %d failed: %02.1f%%' % \
+                (current,
+                 g,
+                 self.per_guard_built[g],
+                 self.per_guard_failed[g],
+                 per_guard_percent)
         return rtn
 
     def circuit_built(self, circuit):
@@ -79,15 +91,18 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
             return
 
         if circuit.purpose == 'GENERAL':
-            if len(circuit.path) > 0 and circuit.path[0] not in self.state.entry_guards.values():
-                print "WEIRD: first circuit hop not in entry guards:", circuit, circuit.path, circuit.purpose
-                return
+            if len(circuit.path) > 0:
+                if circuit.path[0] not in self.state.entry_guards.values():
+                    print "WEIRD: first circuit hop not in entry guards:",
+                    print circuit, circuit.path, circuit.purpose
+                    return
 
             self.built_circuits += 1
             self.update_percent()
 
             if len(circuit.path) != 3 and len(circuit.path) != 4:
-                print "WEIRD: circuit has odd pathlength:", circuit, circuit.path
+                print "WEIRD: circuit has odd pathlength:",
+                print circuit, circuit.path
             try:
                 self.per_guard_built[circuit.path[0].unique_name] += 1.0
             except KeyError:
@@ -105,16 +120,18 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
             return
 
         if circuit.purpose == 'GENERAL':
-            if len(circuit.path) > 1 and circuit.path[0] not in self.state.entry_guards.values():
-                ## note that single-hop circuits are built for various
-                ## internal reasons (and it seems they somtimes use
-                ## GENERAL anyway)
-                print "WEIRD: first circuit hop not in entry guards:", circuit, circuit.path
-                return
+            if len(circuit.path) > 1:
+                if circuit.path[0] not in self.state.entry_guards.values():
+                    # note that single-hop circuits are built for various
+                    # internal reasons (and it seems they somtimes use
+                    # GENERAL anyway)
+                    print "WEIRD: first circuit hop not in entry guards:",
+                    print circuit, circuit.path
+                    return
 
             self.failed_circuits += 1
             print "failed", circuit.id
-            if not circuit.id in self.failed_circuit_ids:
+            if circuit.id not in self.failed_circuit_ids:
                 self.failed_circuit_ids.append(circuit.id)
             else:
                 print "WARNING: duplicate message for", circuit
@@ -130,8 +147,9 @@ class CircuitFailureWatcher(txtorcon.CircuitListenerMixin):
 
 
 def setup(options, listener, state):
-    print 'Connected to a Tor version %s at %s' % (state.protocol.version,
-                                                   state.protocol.transport.addr)
+    print 'Connected to a Tor version', state.protocol.version,
+    print 'at', state.protocol.transport.addr
+
     listener.failed_circuits = int(options['failed'])
     listener.built_circuits = int(options['built'])
     listener.state = state  # FIXME use ctor (ditto for options, probably)

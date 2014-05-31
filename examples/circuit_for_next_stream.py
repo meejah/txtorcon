@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-##
-## This allows you to create a particular circuit, which is then used
-## for the very next (non-Tor-internal) stream created. The use-case
-## here might be something like, "I'm going to connect a long-lived
-## stream in a moment *cough*IRC*cough*, so I'd like a circuit through
-## high-uptime nodes"
-##
+#
+# This allows you to create a particular circuit, which is then used
+# for the very next (non-Tor-internal) stream created. The use-case
+# here might be something like, "I'm going to connect a long-lived
+# stream in a moment *cough*IRC*cough*, so I'd like a circuit through
+# high-uptime nodes"
+#
 
 import sys
 import functools
@@ -33,7 +33,7 @@ class MyAttacher(txtorcon.CircuitListenerMixin, txtorcon.StreamListenerMixin):
 
     def __init__(self, state):
         self.state = state
-        ## the circuit which we will use to attach the next stream to
+        # the circuit which we will use to attach the next stream to
         self.circuit = None
 
     def set_circuit(self, circuit):
@@ -64,7 +64,8 @@ class MyAttacher(txtorcon.CircuitListenerMixin, txtorcon.StreamListenerMixin):
 
     def stream_attach(self, stream, circuit):
         print "stream", stream.id, "attached to circuit", circuit.id,
-        print "with path:", '->'.join(map(lambda x: x.location.countrycode, circuit.path))
+        print "with path:", '->'.join(map(lambda x: x.location.countrycode,
+                                          circuit.path))
         if self.circuit is circuit:
             print "...so we're done."
             reactor.stop()
@@ -86,7 +87,8 @@ def do_setup(path, state):
     print
     print "General-purpose circuits:"
     for c in filter(lambda x: x.purpose == 'GENERAL', state.circuits.values()):
-        print ' ', c.id, '->'.join(map(lambda x: x.location.countrycode, c.path))
+        path = '->'.join(map(lambda x: x.location.countrycode, c.path))
+        print ' ', c.id, path
 
     print "Building our Circuit:", path
     real_path = []
@@ -95,10 +97,12 @@ def do_setup(path, state):
             print name
             if name == 'X':
                 if len(real_path) == 0:
-                    real_path.append(random.choice(state.entry_guards.values()))
+                    g = random.choice(state.entry_guards.values())
+                    real_path.append(g)
 
                 else:
-                    real_path.append(random.choice(state.routers.values()))
+                    g = random.choice(state.routers.values())
+                    real_path.append(g)
 
             else:
                 real_path.append(state.routers[name])
@@ -108,7 +112,9 @@ def do_setup(path, state):
         sys.exit(1)
 
     print "...using routers:", real_path
-    return state.build_circuit(real_path).addCallback(attacher.set_circuit).addErrback(log.err)
+    d = state.build_circuit(real_path)
+    d.addCallback(attacher.set_circuit).addErrback(log.err)
+    return d
 
 
 def setup_failed(arg):

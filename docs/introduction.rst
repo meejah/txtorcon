@@ -23,3 +23,9 @@ capable of:
 
 Comments (positive or negative) appreciated. Even better if they come
 with patches.
+
+.. role:: raw-html(raw)
+   :format: html
+
+:raw-html:`<script type="text/javascript" src="https://asciinema.org/a/5654.js" id="asciicast-5654" async></script>`
+

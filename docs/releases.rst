@@ -15,6 +15,8 @@ unreleased
    have endpoint parser plugins for Twisted! This means code like
    ``serverFromString("onion:80").listen(...)`` is enough to start a
    service. See the **4-line example** :ref:`hello-darkweb.py`
+ * add ``api_version`` kwarg to TorControlProtocol
+
 
 v0.9.2
 ------
@@ -36,7 +38,6 @@ v0.9.2
  * more test-coverage
  * small patch from `enriquefynn <https://github.com/enriquefynn>`_ improving ``tor`` binary locating
  * strip OK lines in TorControlProtocol (see `issue #8 <https://github.com/meejah/txtorcon/issues/8>`_)
- * add ``api_version`` kwarg to TorControlProtocol
  * use TERM not KILL when Tor launch times out (see `issue #68 <https://github.com/meejah/txtorcon/pull/68>`_) from ``hellais``
 
 

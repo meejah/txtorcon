@@ -139,7 +139,10 @@ class Circuit(object):
         return (now - self.time_created).seconds
 
     def _create_flags(self, kw):
-        "this clones the kw dict, adding a lower-case version of every key (duplicated in stream.py; put in util?)"
+        """
+        this clones the kw dict, adding a lower-case version of every
+        key (duplicated in stream.py; put in util?)
+        """
 
         flags = {}
         for k in kw.keys():
@@ -169,8 +172,9 @@ class Circuit(object):
             self.path = []
             [x.circuit_launched(self) for x in self.listeners]
         else:
-            if self.state != 'FAILED' and self.state != 'CLOSED' and len(args) > 2:
-                self.update_path(args[2].split(','))
+            if self.state != 'FAILED' and self.state != 'CLOSED':
+                if len(args) > 2:
+                    self.update_path(args[2].split(','))
 
         if self.state == 'BUILT':
             [x.circuit_built(self) for x in self.listeners]
@@ -235,4 +239,6 @@ class Circuit(object):
                 oldpath = self.path
 
     def __str__(self):
-        return "<Circuit %d %s [%s] for %s>" % (self.id, self.state, ' '.join(map(lambda x: x.ip, self.path)), self.purpose)
+        path = ' '.join(map(lambda x: x.ip, self.path))
+        return "<Circuit %d %s [%s] for %s>" % (self.id, self.state, path,
+                                                self.purpose)
