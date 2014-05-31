@@ -6,3 +6,4 @@ wheel
 twine
 pyflakes
 pep8
+mock
