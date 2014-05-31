@@ -16,6 +16,7 @@ unreleased
    ``serverFromString("onion:80").listen(...)`` is enough to start a
    service. See the **4-line example** :ref:`hello-darkweb.py`
  * add ``api_version`` kwarg to TorControlProtocol
+ * switch to a slightly-modified `Alabaster Sphinx theme <https://github.com/bitprophet/alabaster>`_
 
 
 v0.9.2
