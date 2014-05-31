@@ -126,7 +126,7 @@ class TCPHiddenServiceEndpoint(object):
        however.
 
     2. global_tor(...) refers to a single possible Tor instance
-       txtorcon-wide. So the first call to this launches a new Tor, and
+       per python process. So the first call to this launches a new Tor, and
        subsequent calls re-use the existing Tor (that is, add more hidden
        services to it).
 
@@ -284,8 +284,7 @@ class TCPHiddenServiceEndpoint(object):
             If not None, point to a HiddenServiceDir directory
             (i.e. with "hostname" and "private_key" files in it). If
             not provided, one is created with temp.mkstemp() AND
-            DELETED when the reactor shuts down. (XXX can we do it
-            sooner? stopListening())
+            DELETED when the reactor shuts down.
 
         :param endpoint_generator:
             A callable that generates a new instance of something that
@@ -342,7 +341,7 @@ class TCPHiddenServiceEndpoint(object):
         Implement :api:`twisted.internet.interfaces.IStreamServerEndpoint <IStreamServerEndpoint>`.
 
         Returns a Deferred that delivers an
-        :api:`twisted.internet.interfaces.IPort` implementation.
+        :api:`twisted.internet.interfaces.IListeningPort` implementation.
 
         This port can also be adapted to two other interfaces:
 
