@@ -46,12 +46,15 @@ class EndpointTests(unittest.TestCase):
         self.config = TorConfig(self.protocol)
         self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual')
         self.protocol.answers.append('HiddenServiceOptions')
+        self.patcher = patch('txtorcon.torconfig.find_tor_binary', return_value='/not/tor')
+        self.patcher.start()
 
     def tearDown(self):
         from txtorcon import endpoints
         endpoints._global_tor_config = None
         del endpoints._global_tor_lock
         endpoints._global_tor_lock = defer.DeferredLock()
+        self.patcher.stop()
 
     @defer.inlineCallbacks
     def test_global_tor_error(self):
