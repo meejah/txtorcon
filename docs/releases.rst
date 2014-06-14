@@ -6,18 +6,19 @@ in master your project depends upon, let me know and I'll do a
 release. Starting with v0.8.0 versions are following `semantic
 versioning <http://semver.org/>`_.
 
-unreleased
-----------
+v0.10.0
+-------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.9.3*
+*June 13, 2014*
 
+ * `txtorcon-0.10.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.10.0.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.10.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.10.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.10.0.tar.gz>`_)
  * In collaboration with `David Stainton <https://github.com/david415>`_ after a pull-request, we
    have endpoint parser plugins for Twisted! This means code like
    ``serverFromString("onion:80").listen(...)`` is enough to start a
    service. See the **4-line example** :ref:`hello-darkweb.py`
  * The above **also** means that **any** endpoint-using Twisted program can immediately offer its TCP services via Hidden Service with **no code changes**.    For example, using Twisted Web to serve a WSGI web application would be simply: ``twistd web --port onion:80 --wsgi web.app``
  * switch to a slightly-modified `Alabaster Sphinx theme <https://github.com/bitprophet/alabaster>`_
- * added :doc:`howtos` to documentation
+ * added :doc:`howtos` to documentation (see :ref:`howto-endpoint`)
 
 
 v0.9.2

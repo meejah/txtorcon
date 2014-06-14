@@ -50,14 +50,15 @@ in a hurry, you could try this:
    # apt-get update
    # apt-get install -t wheezy-backports python-txtorcon
 
+.. _howto-endpoint:
 
-Leverage Endpoints with Any Twisted Program
--------------------------------------------
+Endpoints Enable Tor With Any Twisted Service
+---------------------------------------------
 
-As of v0.9.3, there is full support for :api:`twisted.plugin.IPlugin
-<IPlugin>` -based endpoint parsers. This adds an ``onion:`` type
-string to the system. (If you're unfamiliar with Twisted's endpoint
-system, `read their high-level documentation
+As of v0.10.0, there is full support for :api:`twisted.plugin.IPlugin
+<IPlugin>`-based endpoint parsers. This adds an ``onion:`` prefix to
+the system. (If you're unfamiliar with Twisted's endpoint system,
+`read their high-level documentation
 <http://twistedmatrix.com/documents/current/core/howto/endpoints.html>`_
 first).
 
