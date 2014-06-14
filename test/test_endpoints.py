@@ -145,30 +145,6 @@ class EndpointTests(unittest.TestCase):
         ding.assert_called_with(*args)
         
 
-    def __test_listen_already_used_port(self):
-        """Ensure that we call the port_generator() again if we can't listen on a given port"""
-        self._called = 0
-        def generate_two_ports():
-            self._called += 1
-            yield 123
-            self._called += 1
-            yield 456
-        port_gen = generate_two_ports()
-
-        self.reactor.failures = 1
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 999,
-                                      port_generator=port_gen.next)
-        d = ep.listen(NoOpProtocolFactory())
-        self.config.bootstrap()
-        self.assertEqual(self._called, 2)
-        self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
-
-        def confirm_listening_port(arg):
-            self.assertEqual(456, arg.get_local_address().port)
-        d.addCallback(confirm_listening_port)
-        return d
-        
-
     def test_multiple_listen(self):
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d0 = ep.listen(NoOpProtocolFactory())
