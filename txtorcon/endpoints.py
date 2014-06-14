@@ -73,11 +73,7 @@ def get_global_tor(reactor, control_port=None,
 
     try:
         if _global_tor_config is None:
-            _global_tor_config = config = TorConfig()
-            if control_port is None:
-                control_port = yield available_tcp_port(reactor)
-            config.ControlPort = control_port
-            config.SOCKSPort = 0
+            _global_tor_config = config = yield _create_default_config(reactor)
 
             # start Tor launching
             yield _tor_launcher(reactor, config, progress_updates)
@@ -91,6 +87,19 @@ def get_global_tor(reactor, control_port=None,
         defer.returnValue(_global_tor_config)
     finally:
         _global_tor_lock.release()
+
+
+@defer.inlineCallbacks
+def _create_default_config(reactor, control_port=None):
+    """
+    Internal method to create a new TorConfig instance with defaults.
+    """
+    config = TorConfig()
+    if control_port is None:
+        control_port = yield available_tcp_port(reactor)
+    config.ControlPort = control_port
+    config.SOCKSPort = 0
+    defer.returnValue(config)
 
 
 class IProgressProvider(Interface):
@@ -245,12 +254,7 @@ class TCPHiddenServiceEndpoint(object):
 
         @defer.inlineCallbacks
         def _launch(control_port):
-            # FIXME this code-block duplicated in get_global_tor(), basically
-            config = TorConfig()
-            if control_port is None:
-                control_port = yield available_tcp_port(reactor)
-            config.ControlPort = control_port
-            config.SOCKSPort = 0
+            config = yield _create_default_config(reactor, control_port)
             yield launch_tor(config, reactor, progress_updates=progress)
             yield config.post_bootstrap
             defer.returnValue(config)
