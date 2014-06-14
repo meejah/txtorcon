@@ -58,6 +58,14 @@ class EndpointTests(unittest.TestCase):
             # should be an error
             pass
 
+    @defer.inlineCallbacks
+    def test_endpoint_properties(self):
+        ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
+        self.assertEqual(None, ep.onion_private_key)
+        self.assertEqual(None, ep.onion_uri)
+        ep.hiddenservice = Mock()
+        ep.hiddenservice.private_key = 'mumble'
+        self.assertEqual('mumble', ep.onion_private_key)
 
     @defer.inlineCallbacks
     def test_private_tor(self):
