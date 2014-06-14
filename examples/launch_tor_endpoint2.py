@@ -33,6 +33,7 @@ def setup_complete(port):
     print "Hidden serivce:", port.getHost()
     print "    locally at:", txtorcon.IHiddenService(port).local_address.getHost()
 
+
 def progress(percent, tag, message):
     bar = int(percent / 10)
     print '[%s%s] %s' % ('#' * bar, '.' * (10 - bar), message)

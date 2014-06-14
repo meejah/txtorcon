@@ -32,6 +32,7 @@ def setup_complete(port):
     print "http://%s:%d" % (port.getHost().onion_uri, port.getHost().onion_port)
     print "locally listening on", port.local_address.getHost()
     print "Will stop in 60 seconds..."
+
     def blam(x):
         print "%d..." % x
     reactor.callLater(50, blam, 10)

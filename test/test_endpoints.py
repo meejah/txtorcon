@@ -290,21 +290,7 @@ class EndpointLaunchTests(unittest.TestCase):
         # values from a server-endpoint-string)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# FIXME should probably go somewhere else, so other tests can easily use these.
 class FakeProtocol(object):
     implements(IProtocol)
 
@@ -410,4 +396,3 @@ class FakeReactorTcp(FakeReactor):
             print "BLAAAAAM", args
         r.connect = blam
         return r
-

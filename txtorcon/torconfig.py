@@ -772,7 +772,6 @@ class TorConfig(object):
         ...and needs proper iterator tests in test_torconfig too
         '''
         return self.config.__iter__(*args, **kw)
-        
 
     def get_type(self, name):
         """
@@ -836,7 +835,7 @@ class TorConfig(object):
     def do_post_bootstrap(self, arg):
         self.post_bootstrap.callback(self)
         self.__dict__['post_bootstrap'] = None
-        return self #arg
+        return self
 
     def needs_save(self):
         return len(self.unsaved) > 0

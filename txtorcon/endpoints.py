@@ -482,7 +482,7 @@ class TorOnionListeningPort(object):
     # hidden_service_dir IHiddenService API fulfilled in ctor
     @property
     def tor_config(self):
-        return self._config_ref() # None if ref dead
+        return self._config_ref()  # None if ref dead
 
 
 @implementer(IStreamServerEndpointStringParser, IPlugin)
