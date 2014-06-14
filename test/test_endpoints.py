@@ -47,26 +47,12 @@ class EndpointTests(unittest.TestCase):
         endpoints._global_tor_lock = defer.DeferredLock()
 
     @defer.inlineCallbacks
-    def test_global_tor(self):
-        config = yield get_global_tor(Mock(), _tor_launcher=lambda x, y, z: True)
-        self.assertEqual(0, config.SOCKSPort)
-
-    @defer.inlineCallbacks
     def test_global_tor_error(self):
-        config0 = yield get_global_tor(Mock(), socks_port=1234, _tor_launcher=lambda x, y, z: True)
-        self.assertEqual(1234, config0.SOCKSPort)
-        config1 = yield get_global_tor(Mock(), _tor_launcher=lambda x, y, z: True)
-        self.assertEqual(1234, config0.SOCKSPort)
-
+        config0 = yield get_global_tor(Mock(), _tor_launcher=lambda x, y, z: True)
+        # now if we specify a control_port it should be an error since
+        # the above should have launched one.
         try:
-            config2 = yield get_global_tor(Mock(), socks_port=4321, _tor_launcher=lambda x, y, z: True)
-            self.fail()
-        except RuntimeError as e:
-            # should be an error
-            pass
-
-        try:
-            config3 = yield get_global_tor(Mock(), control_port=111, _tor_launcher=lambda x, y, z: True)
+            config1 = yield get_global_tor(Mock(), control_port=111, _tor_launcher=lambda x, y, z: True)
             self.fail()
         except RuntimeError as e:
             # should be an error
@@ -236,21 +222,18 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(failure.type, error.CannotListenError)
         return None
 
-    @defer.inlineCallbacks
     def test_parse_via_plugin(self):
         # make sure we have a valid thing from get_global_tor without actually launching tor
         config = TorConfig()
         config.post_bootstrap = defer.succeed(config)
         from txtorcon import torconfig
         torconfig._global_tor_config = None
-        get_global_tor(self.reactor, socks_port=9998,
+        get_global_tor(self.reactor,
                        _tor_launcher=lambda react, config, prog: defer.succeed(config))
-        ep = serverFromString(self.reactor, 'onion:88:localPort=1234:socksPort=9998:hiddenServiceDir=/foo/bar')
+        ep = serverFromString(self.reactor, 'onion:88:localPort=1234:hiddenServiceDir=/foo/bar')
         self.assertEqual(ep.public_port, 88)
         self.assertEqual(ep.local_port, 1234)
         self.assertEqual(ep.hidden_service_dir, '/foo/bar')
-        ep.config = yield ep.config
-        self.assertEqual(ep.config.SOCKSPort, 9998)
 
 
 class EndpointLaunchTests(unittest.TestCase):
@@ -301,7 +284,7 @@ class EndpointLaunchTests(unittest.TestCase):
         """
 
         reactor = proto_helpers.MemoryReactor()
-        ep = serverFromString(reactor, 'onion:8888:controlPort=9055:localPort=1234:socksPort=9997')
+        ep = serverFromString(reactor, 'onion:8888:controlPort=9055:localPort=1234')
         r = yield ep.listen(NoOpProtocolFactory())
         self.assertEqual(global_tor.call_count, 0)
         self.assertEqual(private_tor.call_count, 0)
