@@ -77,6 +77,7 @@ def get_global_tor(reactor, control_port=None,
             if control_port is None:
                 control_port = yield available_tcp_port(reactor)
             config.ControlPort = control_port
+            config.SOCKSPort = 0
 
             # start Tor launching
             yield _tor_launcher(reactor, config, progress_updates)
@@ -244,10 +245,12 @@ class TCPHiddenServiceEndpoint(object):
 
         @defer.inlineCallbacks
         def _launch(control_port):
+            # FIXME this code-block duplicated in get_global_tor(), basically
             config = TorConfig()
             if control_port is None:
                 control_port = yield available_tcp_port(reactor)
             config.ControlPort = control_port
+            config.SOCKSPort = 0
             yield launch_tor(config, reactor, progress_updates=progress)
             yield config.post_bootstrap
             defer.returnValue(config)
