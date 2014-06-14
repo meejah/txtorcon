@@ -15,8 +15,9 @@ unreleased
    have endpoint parser plugins for Twisted! This means code like
    ``serverFromString("onion:80").listen(...)`` is enough to start a
    service. See the **4-line example** :ref:`hello-darkweb.py`
- * add ``api_version`` kwarg to TorControlProtocol
+ * The above **also** means that **any** endpoint-using Twisted program can immediately offer its TCP services via Hidden Service with **no code changes**.    For example, using Twisted Web to serve a WSGI web application would be simply: ``twistd web --port onion:80 --wsgi web.app``
  * switch to a slightly-modified `Alabaster Sphinx theme <https://github.com/bitprophet/alabaster>`_
+ * added ``api_version`` kwarg to TorControlProtocol
 
 
 v0.9.2
