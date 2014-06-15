@@ -21,7 +21,7 @@ v0.10.0
  * In collaboration with `David Stainton <https://github.com/david415>`_ after a pull-request, we
    have endpoint parser plugins for Twisted! This means code like
    ``serverFromString("onion:80").listen(...)`` is enough to start a
-   service. See the **4-line example** :ref:`hello-darkweb.py`
+   service. See the **4-line example** :ref:`hello_darkweb.py`
  * The above **also** means that **any** endpoint-using Twisted program can immediately offer its TCP services via Hidden Service with **no code changes**.    For example, using Twisted Web to serve a WSGI web application would be simply: ``twistd web --port onion:80 --wsgi web.app``
  * switch to a slightly-modified `Alabaster Sphinx theme <https://github.com/bitprophet/alabaster>`_
  * added :doc:`howtos` to documentation (see :ref:`howto-endpoint`, with demo "video")

@@ -394,7 +394,7 @@ class TorState(object):
 
     def set_attacher(self, attacher, myreactor):
         """
-        Provide an :class:`txtorcon.interface.IStreamAttacher to
+        Provide an :class:`txtorcon.interface.IStreamAttacher` to
         associate streams to circuits. This won't get turned on until
         after bootstrapping is completed. ('__LeaveStreamsUnattached'
         needs to be set to '1' and the existing circuits list needs to
@@ -468,10 +468,14 @@ class TorState(object):
         means to only close the circuit when it is no longer used by
         any streams).
 
-        :return: a Deferred which callbacks with the result of queuing
-        the command to Tor (usually "OK"). If you want to instead know
-        when the circuit is actually-gone, see :meth:`Circuit.close
-        <txtorcon.circuit.Circuit.close>`
+        :param circid:
+            Either a circuit-id (int) or a Circuit instance
+
+        :return:
+            a Deferred which callbacks with the result of queuing the
+            command to Tor (usually "OK"). If you want to instead know
+            when the circuit is actually-gone, see
+            :meth:`Circuit.close <txtorcon.circuit.Circuit.close>`
         """
 
         if type(circid) != int:

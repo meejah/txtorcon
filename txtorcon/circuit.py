@@ -33,7 +33,6 @@ class Circuit(object):
     :ivar state:
         contains a string from Tor describing the current state of the
         stream. From control-spec.txt section 4.1.2, these are:
-
             - NEW: New request to connect
             - NEWRESOLVE: New request to resolve an address
             - REMAP: Address re-mapped to another
@@ -47,7 +46,6 @@ class Circuit(object):
     :ivar purpose:
         The reason this circuit was built. Values can currently be one
         of (but see control-spec.txt 4.1.1):
-
           - GENERAL
           - HS_CLIENT_INTRO
           - HS_CLIENT_REND
@@ -57,6 +55,7 @@ class Circuit(object):
           - CONTROLLER
 
         For most purposes, you'll want to look at GENERAL circuits only.
+
 
     :ivar id:
         The ID of this circuit, a number (or None if unset).
