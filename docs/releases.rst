@@ -18,7 +18,7 @@ v0.10.0
    service. See the **4-line example** :ref:`hello-darkweb.py`
  * The above **also** means that **any** endpoint-using Twisted program can immediately offer its TCP services via Hidden Service with **no code changes**.    For example, using Twisted Web to serve a WSGI web application would be simply: ``twistd web --port onion:80 --wsgi web.app``
  * switch to a slightly-modified `Alabaster Sphinx theme <https://github.com/bitprophet/alabaster>`_
- * added :doc:`howtos` to documentation (see :ref:`howto-endpoint`)
+ * added :doc:`howtos` to documentation (see :ref:`howto-endpoint`, with demo "video")
 
 
 v0.9.2

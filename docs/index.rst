@@ -33,6 +33,8 @@ Twisted Web to serve your ``~/public_html`` as a hidden service
     2014-05-30 21:41:17-0600 [TorControlProtocol,client] Starting factory <twisted.web.server.Site instance at 0x7f57667d0cb0>
     2014-05-30 21:41:17-0600 [TorControlProtocol,client] Set up hidden service "2vrrgqtpiaildmsm.onion" on port 80
 
+There's a `complete demonstration <https://asciinema.org/a/10145>`_ at asciinema.org.
+
 Some (other) features and motivating examples:
 
  - :class:`txtorcon.TorControlProtocol` implements the control-spec protocol (only)

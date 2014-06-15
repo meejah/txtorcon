@@ -55,6 +55,12 @@ in a hurry, you could try this:
 Endpoints Enable Tor With Any Twisted Service
 ---------------------------------------------
 
+.. raw:: html
+
+   <div style="margin-left: 3em;"><script type="text/javascript" src="https://asciinema.org/a/10145.js" id="asciicast-10145" async></script></div>
+
+(or view `directly on asciienma.org <https://asciinema.org/a/10145>`_).
+
 As of v0.10.0, there is full support for :api:`twisted.plugin.IPlugin
 <IPlugin>`-based endpoint parsers. This adds an ``onion:`` prefix to
 the system. (If you're unfamiliar with Twisted's endpoint system,
@@ -91,11 +97,28 @@ to the string:
    hostname private_key
    $ twistd web --port "onion:80:hiddenServiceDir=/srv/seekrit/my_service" --path ~/public_html
 
+To find out your service's hostname and where the private key is
+located, look in the ``twistd.log`` file, which will look something
+like this (trunacted for space):
+
+.. code-block:: shell-session
+
+   ...
+   2014-06-13 23:48:39-0600 [-] Spawning tor process from: /tmp/tortmpkh4bsM
+   2014-06-13 23:48:40-0600 [TorControlProtocol,client] 10% Finishing handshake with directory server
+   ...
+   2014-06-13 23:48:53-0600 [TorControlProtocol,client] 90% Establishing a Tor circuit
+   2014-06-13 23:48:54-0600 [TorControlProtocol,client] 100% Done
+   2014-06-13 23:48:54-0600 [TorControlProtocol,client] Site starting on 48275
+   2014-06-13 23:48:54-0600 [TorControlProtocol,client] Starting factory <twisted.web.server.Site instance at 0x7f1b6753e710>
+   2014-06-13 23:48:54-0600 [TorControlProtocol,client] Started hidden service "rv5gkzutsh2k5bzg.onion" on port 80
+   2014-06-13 23:48:54-0600 [TorControlProtocol,client] Keys are in "/tmp/tortmpoeZJYC".
+
 See :class:`txtorcon.TCPHiddenServiceEndpointParser` for all the
 available options. To test the Web server, you can simply launch with
 a local-only server string, like so:
 
-.. code-block::shell-session
+.. code-block:: shell-session
 
    $ twistd web --port "tcp:localhost:8080" --path ~/public_html
    $ curl http://localhost:8080/index.html
@@ -103,3 +126,11 @@ a local-only server string, like so:
 If you need more control over the options passed to Tor, you can use
 the existing Python APIs to accomplish any Tor configuration and
 launching you like (or connect to already-running Tor instances).
+
+Although Twisted Matrix themselves don't recommend doing "Web
+development" with Twisted, the Twisted Web server is a robust provider
+of HTTP and HTTPS services. It also supports WSGI so can easily front
+a Python-based Web application (e.g. Django or Flask).
+
+``twistd`` provides several other services as well; see `twistd(1)
+<http://linux.die.net/man/1/twistd>`_ for more information.
