@@ -61,7 +61,6 @@ class EndpointTests(unittest.TestCase):
         config = yield get_global_tor(Mock(), _tor_launcher=lambda x, y, z: True)
         self.assertEqual(0, config.SOCKSPort)
 
-
     @defer.inlineCallbacks
     def test_global_tor_error(self):
         config0 = yield get_global_tor(Mock(), _tor_launcher=lambda x, y, z: True)
