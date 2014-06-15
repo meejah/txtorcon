@@ -11,6 +11,12 @@ include docs/conf.py
 include docs/*.rst
 include docs/_static/*
 exclude docs/_static/*~
+include docs/_themes/*
+exclude docs/_themes/*~
+include docs/_themes/alabaster/*
+exclude docs/_themes/alabaster/*~
+include docs/_themes/alabaster/static/*
+exclude docs/_themes/alabaster/static/*~
 include examples/*
 exclude examples/*~
 include requirements.txt

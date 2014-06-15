@@ -9,7 +9,7 @@ versioning <http://semver.org/>`_.
 v0.10.0
 -------
 
-*June 13, 2014*
+*June 14, 2014*
 
  * `txtorcon-0.10.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.10.0.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.10.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.10.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.10.0.tar.gz>`_)
  * In collaboration with `David Stainton <https://github.com/david415>`_ after a pull-request, we

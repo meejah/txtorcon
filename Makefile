@@ -69,7 +69,12 @@ clean:
 counts:
 	ohcount -s txtorcon/*.py
 
-dist: dist/txtorcon-${VERSION}-py2-none-any.whl.asc dist/txtorcon-${VERSION}.tar.gz.asc
+test-release: dist
+	./test-release.sh $(shell pwd) ${VERSION}
+
+dist: dist/txtorcon-${VERSION}-py2-none-any.whl dist/txtorcon-${VERSION}.tar.gz
+
+dist-sigs: dist/txtorcon-${VERSION}-py2-none-any.whl.asc dist/txtorcon-${VERSION}.tar.gz.asc
 
 sdist: setup.py 
 	python setup.py sdist
