@@ -338,7 +338,7 @@ class TCPHiddenServiceEndpoint(object):
         self.progress_listeners.append(listener)
 
     def _tor_progress_update(self, prog, tag, summary):
-        log.msg('Tor launching: %d%% %s' % (prog, summary))
+        log.msg('%d%% %s' % (prog, summary))
         for p in self.progress_listeners:
             p(prog, tag, summary)
 
@@ -395,6 +395,7 @@ class TCPHiddenServiceEndpoint(object):
         yield self.config.save()
 
         log.msg('Started hidden service "%s" on port %d' % (self.onion_uri, self.public_port))
+        log.msg('Keys are in "%s".' % (self.hidden_service_dir,))
         defer.returnValue(TorOnionListeningPort(self.tcp_listening_port,
                                                 self.hidden_service_dir,
                                                 self.onion_uri,

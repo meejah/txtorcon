@@ -367,6 +367,7 @@ def launch_tor(config, reactor,
                                                         data_directory))
 
     try:
+        log.msg('Spawning tor process with DataDirectory', data_directory)
         transport = reactor.spawnProcess(process_protocol, tor_binary,
                                          args=(tor_binary, '-f', torrc),
                                          env={'HOME': data_directory},
