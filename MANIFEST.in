@@ -15,6 +15,7 @@ include docs/_themes/*
 exclude docs/_themes/*~
 include docs/_themes/alabaster/*
 exclude docs/_themes/alabaster/*~
+exclude docs/_themes/alabaster/*.pyc
 include docs/_themes/alabaster/static/*
 exclude docs/_themes/alabaster/static/*~
 include examples/*
