@@ -8,3 +8,4 @@ txtorcon.egg-info/
 *.swp
 *~
 announcements/
+annotated_coverage/
