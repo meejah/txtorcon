@@ -13,6 +13,7 @@ from twisted.internet.interfaces import IReactorCore, IProtocolFactory, IProtoco
 
 from txtorcon import TorControlProtocol, ITorControlProtocol, TorConfig, DEFAULT_VALUE, HiddenService, launch_tor, TCPHiddenServiceEndpoint, TorNotFound, TCPHiddenServiceEndpointParser, IProgressProvider
 from txtorcon import torconfig
+from txtorcon.torconfig import TorProcessProtocol
 
 from txtorcon.util import delete_file_or_tree
 
@@ -1043,21 +1044,18 @@ class LaunchTorTests(unittest.TestCase):
         d.addErrback(self.fail)
         return d
 
-    def confirm_progress(self, exp, *args, **kwargs):
-        self.assertEqual(exp, args)
-        self.got_progress = True
-
     def test_progress_updates(self):
-        from txtorcon.torconfig import TorProcessProtocol
-
         self.got_progress = False
-        proto = TorProcessProtocol(None, functools.partial(self.confirm_progress,
-                                                           (10, 'tag', 'summary')))
+        def confirm_progress(p, t, s):
+            self.assertEqual(p, 10)
+            self.assertEqual(t, 'tag')
+            self.assertEqual(s, 'summary')
+            self.got_progress = True
+        proto = TorProcessProtocol(None, confirm_progress)
         proto.progress(10, 'tag', 'summary')
         self.assertTrue(self.got_progress)
 
     def test_status_updates(self):
-        from txtorcon.torconfig import TorProcessProtocol
 
         proto = TorProcessProtocol(None)
         proto.status_client("NOTICE CONSENSUS_ARRIVED")
