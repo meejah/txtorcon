@@ -3,6 +3,8 @@ import shutil
 import tempfile
 import functools
 
+from mock import Mock
+
 from zope.interface import implements
 from twisted.trial import unittest
 from twisted.test import proto_helpers
@@ -665,7 +667,7 @@ class FakeReactor(task.Clock):
         self.test.assertEqual(args[0], 'before')
         self.test.assertEqual(args[1], 'shutdown')
         ## we know this is just for the temporary file cleanup, so we
-        ## nuke it right away to avoid polluting /tmp but calling the
+        ## nuke it right away to avoid polluting /tmp by calling the
         ## callback now.
         args[2]()
 
@@ -730,9 +732,11 @@ class LaunchTorTests(unittest.TestCase):
         self.assertTrue(len(todel) > 0)
         ## the "12" is just arbitrary, we check it later in the error-message
         proto.processEnded(Failure(error.ProcessTerminated(12, None, 'statusFIXME')))
+        self.assertEqual(1, len(self.flushLoggedErrors(RuntimeError)))
         self.assertEqual(len(proto.to_delete), 0)
         for f in todel:
             self.assertTrue(not os.path.exists(f))
+        return None
 
     def test_basic_launch(self):
         config = TorConfig()
@@ -786,7 +790,7 @@ class LaunchTorTests(unittest.TestCase):
             return proto.post_bootstrap
 
         def on_protocol(proto):
-            proto.outReceived('Bootstrapped 100%\n')
+            proto.outReceived('Bootstrapped 90%\n')
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
@@ -794,7 +798,8 @@ class LaunchTorTests(unittest.TestCase):
         creator = functools.partial(connector, self.protocol, self.transport)
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
         d.addCallback(self.setup_complete_fails)
-        return self.assertFailure(d, Exception)
+        self.flushLoggedErrors(RuntimeError)
+        return d
 
     def test_launch_with_timeout(self):
         config = TorConfig()
@@ -834,6 +839,7 @@ class LaunchTorTests(unittest.TestCase):
 
         self.assertTrue(d.called)
         self.assertTrue(d.result.getErrorMessage().strip().endswith('Tor was killed (TERM).'))
+        self.flushLoggedErrors(RuntimeError)
         return self.assertFailure(d, RuntimeError)
 
     def test_launch_with_timeout_that_doesnt_expire(self):
@@ -931,7 +937,6 @@ class LaunchTorTests(unittest.TestCase):
 
         def on_protocol(proto):
             proto.outReceived('Bootstrapped 90%\n')
-            proto.outReceived('Bootstrapped 100%\n')
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
@@ -958,7 +963,6 @@ class LaunchTorTests(unittest.TestCase):
 
         def on_protocol(proto):
             proto.outReceived('Bootstrapped 90%\n')
-            proto.outReceived('Bootstrapped 100%\n')
 
         my_dir = tempfile.mkdtemp(prefix='tortmp')
         config.DataDirectory = my_dir
@@ -1051,14 +1055,28 @@ class LaunchTorTests(unittest.TestCase):
             self.assertEqual(t, 'tag')
             self.assertEqual(s, 'summary')
             self.got_progress = True
-        proto = TorProcessProtocol(None, confirm_progress)
-        proto.progress(10, 'tag', 'summary')
+        process = TorProcessProtocol(None, confirm_progress)
+        process.progress(10, 'tag', 'summary')
         self.assertTrue(self.got_progress)
 
     def test_status_updates(self):
+        process = TorProcessProtocol(None)
+        process.status_client("NOTICE CONSENSUS_ARRIVED")
 
-        proto = TorProcessProtocol(None)
-        proto.status_client("NOTICE CONSENSUS_ARRIVED")
+    def test_tor_launch_success_then_shutdown(self):
+        """
+        There was an error where we double-callbacked a deferred,
+        i.e. success and then shutdown. This repeats it.
+        """
+        process = TorProcessProtocol(None)
+        process.status_client('STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=cabbage')
+        self.assertEqual(None, process.connected_cb)
+        class Value(object):
+            exitCode = 123
+        class Status(object):
+            value = Value()
+        process.processEnded(Status())
+        self.assertEquals(len(self.flushLoggedErrors(RuntimeError)), 1)
 
 
 class ErrorTests(unittest.TestCase):

@@ -176,7 +176,11 @@ class TorProcessProtocol(protocol.ProcessProtocol):
                 err = RuntimeError('\n'.join(self.stdout) + "\n\nTor was killed (%s)." % status.value.signal)
         else:
             err = RuntimeError('\n'.join(self.stdout) + "\n\nTor exited with error-code %d" % status.value.exitCode)
-        self.connected_cb.errback(err)
+
+        log.err(err)
+        if self.connected_cb:
+            self.connected_cb.errback(err)
+            self.connected_cb = None
 
     def progress(self, percent, tag, summary):
         """
@@ -211,7 +215,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             if self._timeout_delayed_call:
                 self._timeout_delayed_call.cancel()
                 self._timeout_delayed_call = None
-            self.connected_cb.callback(self)
+            if self.connected_cb:
+                self.connected_cb.callback(self)
+                self.connected_cb = None
 
     def tor_connected(self, proto):
         txtorlog.msg("tor_connected %s" % proto)
@@ -376,9 +382,11 @@ def launch_tor(config, reactor,
         transport.closeStdin()
 
     except RuntimeError, e:
-        process_protocol.connected_cb.errback(e)
+        return defer.fail(e)
 
-    return process_protocol.connected_cb
+    if process_protocol.connected_cb:
+        return process_protocol.connected_cb
+    return defer.succeed(process_protocol)
 
 
 class TorConfigType(object):
