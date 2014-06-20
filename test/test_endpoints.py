@@ -33,6 +33,8 @@ from txtorcon import TorOnionAddress
 from txtorcon.endpoints import NoOpProtocolFactory
 from txtorcon.endpoints import get_global_tor                       # FIXME
 
+import util
+
 
 class EndpointTests(unittest.TestCase):
 
@@ -191,7 +193,8 @@ class EndpointTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_explicit_data_dir(self):
         config = TorConfig()
-        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, '/mumble/mumble')
+        td = tempfile.mkdtemp()
+        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, td)
 
         # fake out some things so we don't actually have to launch + bootstrap
         class FakeTorProcessProtocol(object):
@@ -206,7 +209,8 @@ class EndpointTests(unittest.TestCase):
         # with the explicit directory we passed in above
         port = yield ep.listen(NoOpProtocolFactory())
         self.assertEqual(1, len(config.HiddenServices))
-        self.assertEqual(config.HiddenServices[0].dir, '/mumble/mumble')
+        self.assertEqual(config.HiddenServices[0].dir, td)
+        shutil.rmtree(td)
 
     def test_failure(self):
         self.reactor.failures = 1
@@ -232,6 +236,49 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.public_port, 88)
         self.assertEqual(ep.local_port, 1234)
         self.assertEqual(ep.hidden_service_dir, '/foo/bar')
+
+    def test_parse_user_path(self):
+        # this makes sure we expand users and symlinks in
+        # hiddenServiceDir args. see Issue #77
+
+        # make sure we have a valid thing from get_global_tor without actually launching tor
+        config = TorConfig()
+        config.post_bootstrap = defer.succeed(config)
+        from txtorcon import torconfig
+        torconfig._global_tor_config = None
+        get_global_tor(self.reactor,
+                       _tor_launcher=lambda react, config, prog: defer.succeed(config))
+        ep = serverFromString(self.reactor, 'onion:88:localPort=1234:hiddenServiceDir=~/blam/blarg')
+        # would be nice to have a fixed path here, but then would have
+        # to run as a known user :/
+        # maybe using the docker stuff to run integration tests better here?
+        self.assertEqual(os.path.expanduser('~/blam/blarg'), ep.hidden_service_dir)
+
+    def test_parse_relative_path(self):
+        # this makes sure we convert a relative path to absolute
+        # hiddenServiceDir args. see Issue #77
+
+        # make sure we have a valid thing from get_global_tor without actually launching tor
+        config = TorConfig()
+        config.post_bootstrap = defer.succeed(config)
+        from txtorcon import torconfig
+        torconfig._global_tor_config = None
+        get_global_tor(self.reactor,
+                       _tor_launcher=lambda react, config, prog: defer.succeed(config))
+
+        orig = os.path.realpath('.')
+        try:
+            with util.TempDir() as t:
+                t = str(t)
+                os.chdir(t)
+                os.mkdir(os.path.join(t, 'foo'))
+                os.mkdir(os.path.join(t, 'foo', 'blam'))
+
+                ep = serverFromString(self.reactor, 'onion:88:localPort=1234:hiddenServiceDir=foo/blam')
+                self.assertEqual(os.path.join(t, 'foo', 'blam'), ep.hidden_service_dir)
+
+        finally:
+            os.chdir(orig)
 
 
 class EndpointLaunchTests(unittest.TestCase):

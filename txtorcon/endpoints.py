@@ -312,6 +312,7 @@ class TCPHiddenServiceEndpoint(object):
 
         if self.hidden_service_dir is None:
             self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
+            log.msg('Will delete "%s" at shutdown.' % self.hidden_service_dir)
             delete = functools.partial(shutil.rmtree, self.hidden_service_dir)
             reactor.addSystemEventTrigger('before', 'shutdown', delete)
 
@@ -388,6 +389,9 @@ class TCPHiddenServiceEndpoint(object):
 
         # NOTE at some point, we can support unix sockets here
         # once Tor does. See bug #XXX
+        if not os.path.exists(self.hidden_service_dir):
+                log.msg('Creating "%s".' % self.hidden_service_dir)
+                os.makedirs(self.hidden_service_dir)
         self.hiddenservice = HiddenService(self.config, self.hidden_service_dir,
                                            ['%d 127.0.0.1:%d' % (self.public_port,
                                                                  self.local_port)])
@@ -531,6 +535,14 @@ class TCPHiddenServiceEndpointParser(object):
         if localPort is not None:
             localPort = int(localPort)
 
+        hsd = hiddenServiceDir
+        if hsd:
+            orig = hsd
+            hsd = os.path.expanduser(hsd)
+            hsd = os.path.realpath(hsd)
+            if orig != hsd:
+                log.msg('Using "%s" for hsd' % hsd)
+
         if controlPort:
             try:
                 ep = clientFromString(reactor, "tcp:127.0.0.1:%d" % int(controlPort))
@@ -538,10 +550,10 @@ class TCPHiddenServiceEndpointParser(object):
                 ep = clientFromString(reactor, "unix:%s" % controlPort)
             return TCPHiddenServiceEndpoint.system_tor(reactor, ep,
                                                        public_port,
-                                                       hidden_service_dir=hiddenServiceDir,
+                                                       hidden_service_dir=hsd,
                                                        local_port=localPort)
 
         return TCPHiddenServiceEndpoint.global_tor(reactor, public_port,
-                                                   hidden_service_dir=hiddenServiceDir,
+                                                   hidden_service_dir=hsd,
                                                    local_port=localPort,
                                                    control_port=controlPort)
