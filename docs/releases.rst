@@ -11,6 +11,9 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.10.1*
 
+ * issue #78: Add tox tests and fix for Twisted 12.0.0 (and prior), as this is what Debian squeeze ships
+ * issue #77: properly expand relative and tilde paths for ``hiddenServiceDir`` via endpoints
+
 
 v0.10.0
 -------
