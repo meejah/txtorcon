@@ -5,6 +5,9 @@ VERSION = 0.10.0
 test:
 	trial --reporter=text test
 
+tox:
+	tox -i http://localhost:3141/root/pypi
+
 # see also http://docs.docker.io/en/latest/use/baseimages/
 dockerbase-wheezy:
 	@echo 'Building a minimal "wheezy" system.'
