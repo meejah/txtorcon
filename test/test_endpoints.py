@@ -115,7 +115,7 @@ class EndpointTests(unittest.TestCase):
             return bam
         with patch('txtorcon.endpoints.launch_tor') as m:
             with patch('txtorcon.endpoints.build_tor_connection', new_callable=boom) as btc:
-                client = clientFromString(self.reactor, "tcp:localhost:port=9050")
+                client = clientFromString(self.reactor, "tcp:host=localhost:port=9050")
                 ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
                                                                client, 80)
                 port = yield ep.listen(NoOpProtocolFactory())

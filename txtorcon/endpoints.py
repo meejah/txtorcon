@@ -545,9 +545,9 @@ class TCPHiddenServiceEndpointParser(object):
 
         if controlPort:
             try:
-                ep = clientFromString(reactor, "tcp:127.0.0.1:%d" % int(controlPort))
+                ep = clientFromString(reactor, "tcp:host=127.0.0.1:port=%d" % int(controlPort))
             except ValueError:
-                ep = clientFromString(reactor, "unix:%s" % controlPort)
+                ep = clientFromString(reactor, "unix:path=%s" % controlPort)
             return TCPHiddenServiceEndpoint.system_tor(reactor, ep,
                                                        public_port,
                                                        hidden_service_dir=hsd,
