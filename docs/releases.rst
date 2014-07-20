@@ -9,8 +9,16 @@ versioning <http://semver.org/>`_.
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.10.1*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.11.0*
 
+
+v0.10.1
+-------
+
+*July 20, 2014*
+
+ * `txtorcon-0.10.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.10.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.10.1>`_ (:download:`local-sig </../signatues/txtorcon-0.10.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.10.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.10.1.tar.gz>`_) 
+ * fix bug incorrectly issuing RuntimeError in brief window of time on event-listeners
  * issue #78: Add tox tests and fix for Twisted 12.0.0 (and prior), as this is what Debian squeeze ships
  * issue #77: properly expand relative and tilde paths for ``hiddenServiceDir`` via endpoints
 
