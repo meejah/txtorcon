@@ -461,6 +461,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def remove_event_listener(self, evt, cb):
         if evt not in self.valid_events.values():
+            # this lets us pass a string or a real event-object
             try:
                 evt = self.valid_events[evt]
             except:
@@ -468,6 +469,9 @@ class TorControlProtocol(LineOnlyReceiver):
 
         evt.unlisten(cb)
         if len(evt.callbacks) == 0:
+            # note there's a slight window here for an event of this
+            # type to come in before the SETEVENTS succeeds; see
+            # _handle_notify which explicitly ignore this case.
             del self.events[evt.name]
             self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
 
@@ -548,8 +552,9 @@ class TorControlProtocol(LineOnlyReceiver):
         if args[0] in self.events:
             self.events[args[0]].got_update(rest[len(args[0]) + 1:])
             return
-
-        raise RuntimeError("Wasn't listening for event of type " + args[0])
+        # not considering this an error, as there's a slight window
+        # after remove_event_listener is called (so the handler is
+        # deleted) but the SETEVENTS command has not yet succeeded
 
     def _maybe_issue_command(self):
         """

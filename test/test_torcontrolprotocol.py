@@ -511,12 +511,7 @@ OK''' % cookietmp.name)
 
     def test_notify_error(self):
         self.protocol._set_valid_events('CIRC')
-
-        try:
-            self.send("650 CIRC 1000 EXTENDED moria1,moria2")
-            self.assertTrue(False)
-        except Exception, e:
-            self.assertTrue("Wasn't listening" in str(e))
+        self.send("650 CIRC 1000 EXTENDED moria1,moria2")
 
     def test_getinfo(self):
         d = self.protocol.get_info("version")
