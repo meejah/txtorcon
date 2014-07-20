@@ -1050,6 +1050,7 @@ class LaunchTorTests(unittest.TestCase):
 
     def test_progress_updates(self):
         self.got_progress = False
+
         def confirm_progress(p, t, s):
             self.assertEqual(p, 10)
             self.assertEqual(t, 'tag')
@@ -1071,8 +1072,10 @@ class LaunchTorTests(unittest.TestCase):
         process = TorProcessProtocol(None)
         process.status_client('STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=cabbage')
         self.assertEqual(None, process.connected_cb)
+
         class Value(object):
             exitCode = 123
+
         class Status(object):
             value = Value()
         process.processEnded(Status())
