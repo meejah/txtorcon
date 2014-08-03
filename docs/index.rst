@@ -132,6 +132,7 @@ Known Users:
 ------------
 
  - txtorcon received a brief mention `at 29C3 <http://media.ccc.de/browse/congress/2012/29c3-5306-en-the_tor_software_ecosystem_h264.html>`_ starting at 12:20 (or via `youtube <http://youtu.be/yG2-ci95h78?t=12m27s>`_).
+ - `carml <https://github.com/meejah/carml>`_ command-line utilities for Tor
  - `APAF <https://github.com/globaleaks/APAF>`_ anonymous Python application framework
  - `OONI <https://ooni.torproject.org/>`_ the Open Observatory of Network Interference
 
