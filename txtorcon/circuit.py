@@ -126,7 +126,7 @@ class Circuit(object):
         d.addCallback(close_command_is_queued)
         return self._closing_deferred
 
-    def age(self, now=datetime.datetime.now()):
+    def age(self, now=datetime.datetime.utcnow()):
         """
         Returns an integer which is the difference in seconds from
         'now' to when this circuit was created.
