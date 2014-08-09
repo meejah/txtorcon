@@ -22,8 +22,17 @@ Release Checklist
     * add the signatures to "signatues/"
     * add ALL FOUR files to dist/ (OR fix twine commands)
 
+ * (if not on signing machine) do "make dist"
+   * scp dist/txtorcon-X.Y.Z.tar.gz dist/txtorcon-X.Y.Z-py2-none-any.whl.asc signingmachine:
+   * sign both, with .asc detached signatures (see Makefile for command)
+   * copy signatures back to build machine, in dist/
+   * double-check that they validate
+
  * generate sha256sum for each:
       sha256sum dist/txtorcon-X.Y.Z.tar.gz dist/txtorcon-X.Y.Z-py2-none-any.whl
+
+ * copy signature files to <root of dist>/signatures and commit them
+   along with the above changes for versions, etc.
 
  * draft email to tor-dev (and probably twisted-python):
     * example: https://lists.torproject.org/pipermail/tor-dev/2014-January/006111.html
@@ -55,6 +64,8 @@ Release Checklist
             thanks,
             meejah
 
+ * copy release announcement to signing machine, update code
+
  * create signed tag
     * git tag -s -u meejah@meejah.ca -F path/to/release-announcement-X-Y-Z vX.Y.Z
 
@@ -72,6 +83,7 @@ Release Checklist
  * upload release
     * to PyPI: "make release" (which uses twine so this isn't the same step as "sign the release")
        * make sure BOTH the .tar.gz and .tar.gz.asc (ditto for .whl) are in the dist/ directory first!!)
+       * ls dist/txtorcon-${VERSION}*
        * note this depends on a ~/.pypirc file with [server-login] section containing "username:" and "password:"
     * to github: use web-upload interface to upload the 4 files (both dists, both signature)
 
