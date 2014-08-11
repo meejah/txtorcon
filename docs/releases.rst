@@ -11,6 +11,9 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.11.0*
 
+ * More control for ``launch_tor``: access stdout, stderr in real-time
+   and control whether we kill Tor on and stderr output. See issue #79.
+
 
 v0.10.1
 -------

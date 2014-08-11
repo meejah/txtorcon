@@ -44,7 +44,8 @@ class TorNotFound(RuntimeError):
 class TorProcessProtocol(protocol.ProcessProtocol):
 
     def __init__(self, connection_creator, progress_updates=None, config=None,
-                 ireactortime=None, timeout=None):
+                 ireactortime=None, timeout=None, kill_on_stderr=True,
+                 stdout=None, stderr=None):
         """
         This will read the output from a Tor process and attempt a
         connection to its control port when it sees any 'Bootstrapped'
@@ -80,6 +81,15 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             setting up of Tor to have failed. Must supply ireactortime
             if you supply this.
 
+        :param kill_on_stderr:
+            When True, kill subprocess if we receive anything on stderr
+
+        :param stdout:
+            Anything subprocess writes to stdout is sent to .write() on this
+
+        :param stderr:
+            Anything subprocess writes to stderr is sent to .write() on this
+
         :ivar tor_protocol: The TorControlProtocol instance connected
             to the Tor this :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>`` is speaking to. Will be valid
             when the `connected_cb` callback runs.
@@ -98,8 +108,10 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
         self.attempted_connect = False
         self.to_delete = []
-        self.stderr = []
-        self.stdout = []
+        self.kill_on_stderr = kill_on_stderr
+        self.stderr = stderr
+        self.stdout = stdout
+        self.collected_stdout = StringIO()
 
         self._setup_complete = False
         self._did_timeout = False
@@ -115,7 +127,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
         """
 
-        self.stdout.append(data)
+        if self.stdout:
+            self.stdout.write(data)
 
         ## minor hack: we can't try this in connectionMade because
         ## that's when the process first starts up so Tor hasn't
@@ -147,9 +160,12 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
         """
 
-        self.stderr.append(data)
-        self.transport.loseConnection()
-        raise RuntimeError("Received stderr output from slave Tor process: " + data)
+        if self.stderr:
+            self.stderr.write(data)
+
+        if self.kill_on_stderr:
+            self.transport.loseConnection()
+            raise RuntimeError("Received stderr output from slave Tor process: " + data)
 
     def cleanup(self):
         """
@@ -171,11 +187,11 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
         if status.value.exitCode is None:
             if self._did_timeout:
-                err = RuntimeError('\n'.join(self.stdout) + "\n\nTimeout waiting for Tor launch..")
+                err = RuntimeError("Timeout waiting for Tor launch..")
             else:
-                err = RuntimeError('\n'.join(self.stdout) + "\n\nTor was killed (%s)." % status.value.signal)
+                err = RuntimeError("Tor was killed (%s)." % status.value.signal)
         else:
-            err = RuntimeError('\n'.join(self.stdout) + "\n\nTor exited with error-code %d" % status.value.exitCode)
+            err = RuntimeError("Tor exited with error-code %d" % status.value.exitCode)
 
         log.err(err)
         if self.connected_cb:
@@ -243,12 +259,15 @@ def launch_tor(config, reactor,
                tor_binary=None,
                progress_updates=None,
                connection_creator=None,
-               timeout=None):
-    """
-    launches a new Tor process with the given config.
+               timeout=None,
+               kill_on_stderr=True,
+               stdout=None, stderr=None):
+    """launches a new Tor process with the given config.
 
-    If Tor prints anything on stderr, we kill off the process, close
-    the TorControlProtocol and raise an exception.
+    :param kill_on_stderr:
+        When True (the default), if Tor prints anything on stderr we
+        kill off the process, close the TorControlProtocol and raise
+        an exception.
 
     :param config: an instance of :class:`txtorcon.TorConfig` with any
         configuration values you want. :meth:`txtorcon.TorConfig.save`
@@ -271,6 +290,14 @@ def launch_tor(config, reactor,
         callable that should return a Deferred that delivers an
         :api:`twisted.internet.interfaces.IProtocol <IProtocol>` or ConnectError.
         See :api:`twisted.internet.interfaces.IStreamClientEndpoint`.connect
+
+    :param stdout: a file-like object to which we write anything that
+        Tor prints on stdout (just needs to support write()).
+
+    :param stderr: a file-like object to which we write anything that
+        Tor prints on stderr (just needs .write()). Note that we kill Tor
+        off by default if anything appears on stderr; pass "no_kill=True"
+        if you don't like the behavior.
 
     :return: a Deferred which callbacks with a TorProcessProtocol
         connected to the fully-bootstrapped Tor; this has a
@@ -313,6 +340,12 @@ def launch_tor(config, reactor,
         log.msg("Config was unsaved when launch_tor() called; calling save().")
         config.save()
 
+    # make sure we got things that have write() for stderr, stdout
+    # kwargs
+    for arg in [stderr, stdout]:
+        if arg and not getattr(arg, "write"):
+            raise RuntimeError('File-like object needed for stdout or stderr args.')
+
     try:
         data_directory = config.DataDirectory
         user_set_data_directory = True
@@ -350,7 +383,10 @@ def launch_tor(config, reactor,
     if connection_creator is None:
         connection_creator = functools.partial(TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
                                                TorProtocolFactory())
-    process_protocol = TorProcessProtocol(connection_creator, progress_updates, config, reactor, timeout)
+    process_protocol = TorProcessProtocol(connection_creator, progress_updates,
+                                          config, reactor, timeout,
+                                          kill_on_stderr,
+                                          stdout, stderr)
 
     # we set both to_delete and the shutdown events because this
     # process might be shut down way before the reactor, but if the

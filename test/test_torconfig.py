@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import functools
+from StringIO import StringIO
 
 from mock import Mock
 
@@ -714,7 +715,9 @@ class LaunchTorTests(unittest.TestCase):
         proto._check_timeout.stop()
         proto.checkTimeout()
 
-    def setup_complete_no_errors(self, proto, config):
+    def setup_complete_no_errors(self, proto, config, stdout, stderr):
+        self.assertEqual("Bootstrapped 100%\n", stdout.getvalue())
+        self.assertEqual("", stderr.getvalue())
         todel = proto.to_delete
         self.assertTrue(len(todel) > 0)
         proto.processEnded(Failure(error.ProcessDone(0)))
@@ -727,7 +730,9 @@ class LaunchTorTests(unittest.TestCase):
         ## protocol connection
         self.assertEquals(config.protocol, proto.tor_protocol)
 
-    def setup_complete_fails(self, proto):
+    def setup_complete_fails(self, proto, stdout, stderr):
+        self.assertEqual("Bootstrapped 90%\n", stdout.getvalue())
+        self.assertEqual("", stderr.getvalue())
         todel = proto.to_delete
         self.assertTrue(len(todel) > 0)
         ## the "12" is just arbitrary, we check it later in the error-message
@@ -768,9 +773,11 @@ class LaunchTorTests(unittest.TestCase):
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         self.othertrans = trans
+        fakeout = StringIO()
+        fakeerr = StringIO()
         creator = functools.partial(connector, self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
-        d.addCallback(self.setup_complete_no_errors, config)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo', stdout=fakeout, stderr=fakeerr)
+        d.addCallback(self.setup_complete_no_errors, config, fakeout, fakeerr)
         return d
 
     def check_setup_failure(self, fail):
@@ -795,9 +802,11 @@ class LaunchTorTests(unittest.TestCase):
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         self.othertrans = trans
+        fakeout = StringIO()
+        fakeerr = StringIO()
         creator = functools.partial(connector, self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
-        d.addCallback(self.setup_complete_fails)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo', stdout=fakeout, stderr=fakeerr)
+        d.addCallback(self.setup_complete_fails, fakeout, fakeerr)
         self.flushLoggedErrors(RuntimeError)
         return d
 
@@ -881,7 +890,9 @@ class LaunchTorTests(unittest.TestCase):
         self.assertTrue(d.called)
         self.assertTrue(d.result.tor_protocol == self.protocol)
 
-    def setup_fails_stderr(self, fail):
+    def setup_fails_stderr(self, fail, stdout, stderr):
+        self.assertEqual('', stdout.getvalue())
+        self.assertEqual('Something went horribly wrong!\n', stderr.getvalue())
         self.assertTrue('Something went horribly wrong!' in fail.getErrorMessage())
         ## cancel the errback chain, we wanted this
         return None
@@ -903,11 +914,14 @@ class LaunchTorTests(unittest.TestCase):
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         self.othertrans = trans
+        fakeout = StringIO()
+        fakeerr = StringIO()
         creator = functools.partial(connector, self.protocol, self.transport)
         d = launch_tor(config, FakeReactor(self, trans, on_protocol),
-                       connection_creator=creator, tor_binary='/bin/echo')
+                       connection_creator=creator, tor_binary='/bin/echo',
+                       stdout=fakeout, stderr=fakeerr)
         d.addCallback(self.fail)        # should't get callback
-        d.addErrback(self.setup_fails_stderr)
+        d.addErrback(self.setup_fails_stderr, fakeout, fakeerr)
         self.assertFalse(self.protocol.on_disconnect)
         return d
 
