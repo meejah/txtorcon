@@ -771,11 +771,13 @@ w Bandwidth=33
 p reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999""")
         ## the routers list is always keyed with both name and hash
         self.assertEqual(len(self.controller.routers_by_name), 2)
+        self.assertEqual(len(self.controller.routers_by_hash), 2)
         self.assertTrue('right2privassy3' in self.controller.routers)
         self.assertTrue('Unnamed' in self.controller.routers)
 
         self.controller.routers.clear()
         self.controller.routers_by_name.clear()
+        self.controller.routers_by_hash.clear()
 
     def test_circuit_status(self):
         self.controller._update_network_status("""ns/all=
@@ -798,4 +800,5 @@ p reject 1-65535""")
 
         self.controller.routers.clear()
         self.controller.routers_by_name.clear()
+        self.controller.routers_by_hash.clear()
         self.controller.circuits.clear()
