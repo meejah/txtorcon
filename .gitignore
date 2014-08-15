@@ -9,3 +9,4 @@ txtorcon.egg-info/
 *~
 announcements/
 annotated_coverage/
+twisted/plugins/dropin.cache
