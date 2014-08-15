@@ -4,11 +4,12 @@ import weakref
 import tempfile
 import functools
 
+from txtorcon.util import available_tcp_port
+
 from twisted.internet import defer
 from twisted.python import log
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamServerEndpoint
-from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IAddress
 from twisted.internet.interfaces import IReactorCore
@@ -22,23 +23,6 @@ from zope.interface import Interface, Attribute
 
 from torconfig import TorConfig, launch_tor, HiddenService
 from torstate import build_tor_connection
-
-
-@defer.inlineCallbacks
-def available_tcp_port(reactor):
-    """
-    Returns a Deferred firing an available TCP port on localhost.
-    It does so by listening on port 0; then stopListening and fires the
-    assigned port number.
-
-    FIXME move to util?
-    """
-
-    endpoint = serverFromString(reactor, 'tcp:0:interface=127.0.0.1')
-    port = yield endpoint.listen(NoOpProtocolFactory())
-    address = port.getHost()
-    yield port.stopListening()
-    defer.returnValue(address.port)
 
 
 _global_tor_config = None
@@ -405,19 +389,6 @@ class TCPHiddenServiceEndpoint(object):
                                                 self.onion_uri,
                                                 self.public_port,
                                                 self.config))
-
-
-@implementer(IProtocolFactory)
-class NoOpProtocolFactory:
-    """
-    This is an IProtocolFactory that does nothing. Used for testing,
-    and for :method:`available_tcp_port`
-    """
-    def noop(self, *args, **kw):
-        pass
-    buildProtocol = noop
-    doStart = noop
-    doStop = noop
 
 
 @implementer(IAddress)

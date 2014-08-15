@@ -1,8 +1,3 @@
-
-##
-## wrapper for GeoIP since the API for city vs. country is different.
-##
-
 import glob
 import os
 import hmac
@@ -11,6 +6,12 @@ import shutil
 import socket
 import subprocess
 import struct
+
+from twisted.internet import defer
+from twisted.internet.interfaces import IProtocolFactory
+from twisted.internet.endpoints import serverFromString
+
+from zope.interface import implementer
 
 try:
     import GeoIP as _GeoIP
@@ -241,3 +242,31 @@ class NetLocation:
                 self.asn = asn.org_by_addr(self.ip)
             except:
                 self.asn = None
+
+
+@implementer(IProtocolFactory)
+class NoOpProtocolFactory:
+    """
+    This is an IProtocolFactory that does nothing. Used for testing,
+    and for :method:`available_tcp_port`
+    """
+    def noop(self, *args, **kw):
+        pass
+    buildProtocol = noop
+    doStart = noop
+    doStop = noop
+
+
+@defer.inlineCallbacks
+def available_tcp_port(reactor):
+    """
+    Returns a Deferred firing an available TCP port on localhost.
+    It does so by listening on port 0; then stopListening and fires the
+    assigned port number.
+    """
+
+    endpoint = serverFromString(reactor, 'tcp:0:interface=127.0.0.1')
+    port = yield endpoint.listen(NoOpProtocolFactory())
+    address = port.getHost()
+    yield port.stopListening()
+    defer.returnValue(address.port)
