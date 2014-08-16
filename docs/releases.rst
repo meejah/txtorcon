@@ -13,7 +13,12 @@ unreleased
 
  * More control for ``launch_tor``: access stdout, stderr in real-time
    and control whether we kill Tor on and stderr output. See issue #79.
+ * Warning about ``build_circuit`` being called without a guard first
+   is now optional (default is still warn) (from arlolra_)
+ * ``available_tcp_port()`` now in util (from arlolra_)
+ * ``TorState`` now has a ``.routers_by_hash`` member (from arlolra_)
 
+.. _arlolra: https://github.com/arlolra
 
 v0.10.1
 -------
