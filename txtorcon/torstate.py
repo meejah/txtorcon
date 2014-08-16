@@ -517,7 +517,7 @@ class TorState(object):
             desired. To allow Tor to choose the routers itself, pass
             None (the default) for routers.
 
-        :param using_guards: A warming is issued if the first router
+        :param using_guards: A warning is issued if the first router
             isn't in self.entry_guards.
 
         :return:
