@@ -23,7 +23,7 @@ Release Checklist
     * add ALL FOUR files to dist/ (OR fix twine commands)
 
  * (if not on signing machine) do "make dist"
-   * scp dist/txtorcon-X.Y.Z.tar.gz dist/txtorcon-X.Y.Z-py2-none-any.whl.asc signingmachine:
+   * scp dist/txtorcon-X.Y.Z.tar.gz dist/txtorcon-X.Y.Z-py2-none-any.whl signingmachine:
    * sign both, with .asc detached signatures (see Makefile for command)
    * copy signatures back to build machine, in dist/
    * double-check that they validate
