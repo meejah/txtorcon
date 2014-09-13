@@ -105,7 +105,7 @@ Code available at https://github.com/meejah/txtorcon
 
 - meejah@meejah.ca (public key: :download:`meejah.asc <../meejah.asc>`)
 - ``git clone git://github.com/meejah/txtorcon.git``
-- **``pip install txtorcon``**
+- ``pip install txtorcon``
 - Watch an `asciinema demo <http://asciinema.org/a/5654>`_ for an overview.
 
 
