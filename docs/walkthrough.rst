@@ -5,11 +5,14 @@ Walkthrough
 .. _virtualenv: http://www.virtualenv.org/en/latest/
 
 If this is your first time using a Tor controller library, you're in
-the right spot. I presume at least some familiarity with Twisted_ and
-asynchronous programming.
+the right spot. I presume at least some `familiarity <http://krondo.com/?page_id=1327>`_
+with Twisted_ and asynchronous programming.
+
 
 What We'll Learn
 ----------------
+.. _NEWNYM: https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt#l380
+.. _walkthrough directory: https://github.com/meejah/txtorcon/tree/master/walkthrough
 
 In this tutorial, I will go through several examples building up a
 small program. We will:
@@ -19,9 +22,9 @@ small program. We will:
  * change the configuration; 
  * get some information from Tor; 
  * listen for events;
- * and send a NEWNYM signal.
+ * and send a NEWNYM_ signal.
 
-All the code examples are also in the ``walkthrough`` directory.
+All the code examples are also in the `walkthrough directory`_.
 
 Install txtorcon in a virtualenv
 --------------------------------
@@ -37,7 +40,7 @@ For the virtualenv, first get the code::
    cd txtorcon
 
 Now, we can use the Makefile there to create ourselves a virtualenv,
-activate it and install all the pre-requisites:
+activate it and install all the pre-requisites::
 
    make venv
    . venv/bin/activate
@@ -116,6 +119,9 @@ script will exit::
 Launch Our Own Tor
 ------------------
 
+.. _GETINFO: https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt#l444
+.. _mkdtemp: https://docs.python.org/2/library/tempfile.html?highlight=mkdtem#tempfile.mkdtemp
+
 For some use-cases you will want to launch a private Tor
 instance. txtorcon provides :meth:`txtorcon.launch_tor` to do just that. This also
 uses some Tor commands to link the controller to the Tor instance, so
@@ -123,9 +129,10 @@ that if the connection is lost Tor will shut itself down.
 
 The main difference between connecting and launching is that you have
 to provide a configuration to launch a Tor with. This is provided via
-a TorConfig instance. This class is a little "magic" in order to
-provide a nice API, and so you simply set configuration options as
-members. A minimal configuration to launch a Tor might be::
+a :class:`TorConfig<txtorcon.TorConfig>` instance. This class is a
+little "magic" in order to provide a nice API, and so you simply set
+configuration options as members. A minimal configuration to launch a Tor might
+be::
 
    config = txtorcon.TorConfig()
    config.ORPort = 0
@@ -137,7 +144,8 @@ example, if you want to maintain state (or hidden service keys)
 between launches, provide your own ``DataDirectory``. The configuration
 keys ``launch_tor`` adds are:
 
- * ``DataDirectory`` a mkdtemp directory in ``/tmp/`` (which is deleted at exit, unless it was user-specified)
+ * ``DataDirectory`` a mkdtemp_ directory in ``/tmp/`` (which is deleted at
+   exit, unless it was user-specified)
  * ``ControlPort`` is set to 9052 unless already specified
  * ``CookieAuthentication`` is set to 1
  * ``__OwningControllerProcess`` is set to our PID
@@ -193,7 +201,7 @@ information to your user. Here's a full example::
 If you've never seen the ``defer.inlineCallbacks`` decorator, then you
 should `read up on it
 <https://twistedmatrix.com/documents/current/api/twisted.internet.defer.html#inlineCallbacks>`_.
-Once we get the Tor instance launched, we just make two GETINFO calls
+Once we get the Tor instance launched, we just make two GETINFO_ calls
 and then exit (which will cause the underlying Tor to also exit).
 
 Putting It All Together
@@ -204,7 +212,7 @@ one or connecting to a running one) and basically done nothing but
 exit.
 
 Let's do something slightly more interesting. We will connect to a
-running Tor (like the first example), issue the NEWNYM signal (which
+running Tor (like the first example), issue the NEWNYM_ signal (which
 tells Tor to no longer use any existing circuits for new connections)
 and then continuously monitor two events: circuit events via
 ``TorState`` interfaces and ``INFO`` messages via a raw
@@ -235,7 +243,7 @@ First, we add a simple implementation of :class:`txtorcon.ICircuitListener`::
 Next, to illustrate setting up TorState from a TorControlProtocol
 directly, we add a ``main()`` method that uses ``inlineCallbacks`` to do a
 few things sequentially after startup. First we use
-``TorControlProtocol.signal`` to send a ``NEWNYM`` request. After that we
+``TorControlProtocol.signal`` to send a NEWNYM_ request. After that we
 create a ``TorState`` instance, print out all existing circuits and set
 up listeners for circuit events (an instance of ``MyCircuitListener``)
 and INFO messages (via our own method).
