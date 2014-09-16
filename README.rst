@@ -139,11 +139,14 @@ dependencies / requirements
    diagrams, if you like) but those tests are skipped if "dot" isn't
    in your path
 
+.. BEGIN_INSTALL
 In any case, on a `Debian <http://www.debian.org/>`_ wheezy, squeeze or
 Ubuntu system, this should work::
 
-    apt-get install python-setuptools python-twisted python-ipaddr python-geoip graphviz
-    apt-get install python-sphinx python-repoze.sphinx.autointerface python-coverage # for develoment
+    apt-get install -y python-setuptools python-twisted python-ipaddr python-geoip graphviz tor
+    apt-get install -y python-sphinx python-repoze.sphinx.autointerface python-coverage # for development
+
+.. END_INSTALL
 
 Using pip this would be::
 

@@ -6,7 +6,9 @@ txtorcon.egg-info/
 *.pyo
 *.pyc
 *.swp
+*.swo
 *~
 announcements/
 annotated_coverage/
 twisted/plugins/dropin.cache
+docs/_build
