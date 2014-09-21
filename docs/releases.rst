@@ -11,6 +11,7 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.12.0*
 
+ * doc, code and import cleanups from `Kali Kaneko <https://github.com/kalikaneko>`_
 
 v0.11.0
 -------
