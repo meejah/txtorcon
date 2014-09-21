@@ -117,6 +117,11 @@ to Lunar::
     apt-get update
     apt-get install python-txtorcon 
 
+It also `appears txtorcon is in Gentoo
+<http://packages.gentoo.org/package/net-libs/txtorcon>`_ but I don't
+use Gentoo (if anyone has a shell-snippet that installs it, send a
+pull-request).
+
 **Installing the wheel files** requires a recent pip and
 setuptools. At least on Debian, it is important to upgrade setuptools
 *before* pip. This procedure appears to work fine::
