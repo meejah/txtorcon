@@ -272,10 +272,11 @@ class EndpointTests(unittest.TestCase):
                 t = str(t)
                 os.chdir(t)
                 os.mkdir(os.path.join(t, 'foo'))
-                os.mkdir(os.path.join(t, 'foo', 'blam'))
+                hsdir = os.path.join(t, 'foo', 'blam')
+                os.mkdir(hsdir)
 
                 ep = serverFromString(self.reactor, 'onion:88:localPort=1234:hiddenServiceDir=foo/blam')
-                self.assertEqual(os.path.join(t, 'foo', 'blam'), ep.hidden_service_dir)
+                self.assertEqual(os.path.realpath(hsdir), ep.hidden_service_dir)
 
         finally:
             os.chdir(orig)
