@@ -140,6 +140,7 @@ Known Users:
  - `carml <https://github.com/meejah/carml>`_ command-line utilities for Tor
  - `APAF <https://github.com/globaleaks/APAF>`_ anonymous Python application framework
  - `OONI <https://ooni.torproject.org/>`_ the Open Observatory of Network Interference
+ - `exitaddr <https://github.com/arlolra/exitaddr>`_ scan Tor exit addresses
 
 
 Official Releases:
