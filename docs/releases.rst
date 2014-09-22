@@ -12,6 +12,9 @@ unreleased
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.12.0*
 
  * doc, code and import cleanups from `Kali Kaneko <https://github.com/kalikaneko>`_
+ * Issue #80: honour ``ControlPort 0`` in incoming TorConfig
+   instance. The caller owns both pieces: you have to figure out when
+   it's bootstraped, and are responsible for killing it off.
 
 v0.11.0
 -------
