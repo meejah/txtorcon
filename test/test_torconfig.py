@@ -772,7 +772,6 @@ class LaunchTorTests(unittest.TestCase):
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
-        self.othertrans = trans
         fakeout = StringIO()
         fakeerr = StringIO()
         creator = functools.partial(connector, self.protocol, self.transport)
@@ -801,7 +800,6 @@ class LaunchTorTests(unittest.TestCase):
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
-        self.othertrans = trans
         fakeout = StringIO()
         fakeerr = StringIO()
         creator = functools.partial(connector, self.protocol, self.transport)
@@ -838,7 +836,6 @@ class LaunchTorTests(unittest.TestCase):
 
         trans = FakeProcessTransportNeverBootstraps()
         trans.protocol = self.protocol
-        self.othertrans = trans
         creator = functools.partial(connector, self.protocol, self.transport)
         react = FakeReactor(self, trans, on_protocol)
         d = launch_tor(config, react, connection_creator=creator,
@@ -879,7 +876,6 @@ class LaunchTorTests(unittest.TestCase):
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
-        self.othertrans = trans
         creator = functools.partial(connector, self.protocol, self.transport)
         react = FakeReactor(self, trans, on_protocol)
         d = launch_tor(config, react, connection_creator=creator,
@@ -913,7 +909,6 @@ class LaunchTorTests(unittest.TestCase):
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
-        self.othertrans = trans
         fakeout = StringIO()
         fakeerr = StringIO()
         creator = functools.partial(connector, self.protocol, self.transport)
@@ -954,7 +949,6 @@ class LaunchTorTests(unittest.TestCase):
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
-        self.othertrans = trans
         creator = functools.partial(Connector(), self.protocol, self.transport)
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
         d.addCallback(self.setup_complete_fails)
@@ -982,7 +976,6 @@ class LaunchTorTests(unittest.TestCase):
         config.DataDirectory = my_dir
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
-        self.othertrans = trans
         creator = functools.partial(Connector(), self.protocol, self.transport)
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
 
@@ -1017,7 +1010,6 @@ class LaunchTorTests(unittest.TestCase):
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
-        self.othertrans = trans
         creator = functools.partial(Connector(), self.protocol, self.transport)
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
 
@@ -1050,7 +1042,6 @@ class LaunchTorTests(unittest.TestCase):
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
-        self.othertrans = trans
         creator = functools.partial(Connector(), self.protocol, self.transport)
         d = launch_tor(config, FakeReactor(self, trans, on_protocol), connection_creator=creator, tor_binary='/bin/echo')
 
@@ -1117,7 +1108,6 @@ class ErrorTests(unittest.TestCase):
             torconfig.find_tor_binary = lambda: None
             trans = FakeProcessTransport()
             trans.protocol = self.protocol
-            self.othertrans = trans
             creator = functools.partial(Connector(), self.protocol, self.transport)
             try:
                 d = launch_tor(config, FakeReactor(self, trans, lambda x: None), connection_creator=creator)
