@@ -702,6 +702,11 @@ class FakeProcessTransportNeverBootstraps(FakeProcessTransport):
         self.protocol.dataReceived('650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=90 TAG=circuit_create SUMMARY="Establishing a Tor circuit"\r\n')
 
 
+class FakeProcessTransportNoProtocol(FakeProcessTransport):
+    def closeStdin(self):
+        pass
+
+
 class LaunchTorTests(unittest.TestCase):
 
     def setUp(self):
@@ -1085,6 +1090,32 @@ class LaunchTorTests(unittest.TestCase):
             value = Value()
         process.processEnded(Status())
         self.assertEquals(len(self.flushLoggedErrors(RuntimeError)), 1)
+
+    def test_launch_tor_no_control_port(self):
+        '''
+        See Issue #80. This allows you to launch tor with a TorConfig
+        with ControlPort=0 in case you don't want a control connection
+        at all. In this case you get back a TorProcessProtocol and you
+        own both pieces. (i.e. you have to kill it yourself).
+        '''
+
+        config = TorConfig()
+        config.ControlPort = 0
+        trans = FakeProcessTransportNoProtocol()
+        trans.protocol = self.protocol
+
+        def creator(*args, **kw):
+            print "Bad: connection creator called"
+            self.fail()
+
+        def on_protocol(proto):
+            self.process_proto = proto
+        pp = launch_tor(config,
+                        FakeReactor(self, trans, on_protocol),
+                        connection_creator=creator, tor_binary='/bin/echo')
+        self.assertTrue(pp.called)
+        self.assertEqual(pp.result, self.process_proto)
+        return pp
 
 
 class ErrorTests(unittest.TestCase):
