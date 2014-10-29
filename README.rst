@@ -20,8 +20,7 @@ For the impatient, there are two quick ways to install this::
 
    $ pip install txtorcon
 
-(Thanks to Lunar^ for all his packaging work) or, if you checked out
-or downloaded the source::
+... or, if you checked out or downloaded the source::
 
    $ python setup.py install
 
@@ -33,8 +32,8 @@ PYTHONPATH::
 Then, you will want to explore the examples. Try "python
 examples/stream\_circuit\_logger.py" for instance.
 
-On Debian testing (jessie), or with wheezy-backports you can install
-version 0.8.2::
+On Debian testing (jessie), or with wheezy-backports (big thanks to
+Lunar^ for all his packaging work) you can install easily::
 
     $ apt-get install python-txtorcon
 
