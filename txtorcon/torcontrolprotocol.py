@@ -588,10 +588,8 @@ class TorControlProtocol(LineOnlyReceiver):
         Errback if authentication fails.
         """
 
-        if self.post_bootstrap:
-            self.post_bootstrap.errback(fail)
-            return None
-        return fail
+        self.post_bootstrap.errback(fail)
+        return None
 
     def _safecookie_authchallenge(self, reply):
         """
@@ -696,7 +694,6 @@ class TorControlProtocol(LineOnlyReceiver):
         yield self.queue_command('USEFEATURE EXTENDED_EVENTS')
 
         self.post_bootstrap.callback(self)
-        self.post_bootstrap = None
         defer.returnValue(self)
 
     ##

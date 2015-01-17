@@ -123,11 +123,7 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append('config/names=\nfoo Boolean')
         self.protocol.answers.append({'foo': 'bar'})
         cfg = TorConfig(self.protocol)
-        self.assertEqual(cfg.get_type('foo'), torconfig.Boolean)
-        errs = self.flushLoggedErrors(ValueError)
-        self.assertEqual(len(errs), 1)
-        ## dunno if asserting strings in messages is a good idea...
-        self.assertTrue('invalid literal' in errs[0].getErrorMessage())
+        return self.assertFailure(cfg.post_bootstrap, ValueError)
 
     def test_contains(self):
         cfg = TorConfig()
@@ -171,18 +167,14 @@ class ConfigTests(unittest.TestCase):
     def test_int_parser_error(self):
         self.protocol.answers.append('config/names=\nfoo Integer')
         self.protocol.answers.append({'foo': '123foo'})
-        TorConfig(self.protocol)
-        errs = self.flushLoggedErrors(ValueError)
-        self.assertEqual(len(errs), 1)
-        self.assertTrue(isinstance(errs[0].value, ValueError))
+        cfg = TorConfig(self.protocol)
+        self.assertFailure(cfg.post_bootstrap, ValueError)
 
     def test_int_parser_error_2(self):
         self.protocol.answers.append('config/names=\nfoo Integer')
         self.protocol.answers.append({'foo': '1.23'})
-        TorConfig(self.protocol)
-        errs = self.flushLoggedErrors(ValueError)
-        self.assertEqual(len(errs), 1)
-        self.assertTrue(isinstance(errs[0].value, ValueError))
+        cfg = TorConfig(self.protocol)
+        return self.assertFailure(cfg.post_bootstrap, ValueError)
 
     def test_linelist_parser(self):
         self.protocol.answers.append('config/names=\nfoo LineList')
@@ -206,10 +198,8 @@ class ConfigTests(unittest.TestCase):
     def test_float_parser_error(self):
         self.protocol.answers.append('config/names=\nfoo Float')
         self.protocol.answers.append({'foo': '1.23fff'})
-        TorConfig(self.protocol)
-        errs = self.flushLoggedErrors(ValueError)
-        self.assertEqual(len(errs), 1)
-        self.assertTrue(isinstance(errs[0].value, ValueError))
+        cfg = TorConfig(self.protocol)
+        return self.assertFailure(cfg.post_bootstrap, ValueError)
 
     def test_list(self):
         self.protocol.answers.append('config/names=\nbing CommaList')
@@ -222,6 +212,7 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append('config/names=\nbing CommaList')
         self.protocol.answers.append({'bing': 'foo'})
         conf = TorConfig(self.protocol)
+        self.assertTrue(conf.post_bootstrap.called)
         self.assertEqual(conf.config['bing'], ['foo'])
 
     def test_multi_list_space(self):
@@ -264,10 +255,24 @@ class ConfigTests(unittest.TestCase):
 
     def test_invalid_parser(self):
         self.protocol.answers.append('config/names=\nSomethingExciting NonExistantParserType')
-        TorConfig(self.protocol)
-        errs = self.flushLoggedErrors()
-        self.assertEqual(len(errs), 1)
-        self.assertTrue('NonExistantParserType' in str(errs[0]))
+        cfg = TorConfig(self.protocol)
+        return self.assertFailure(cfg.post_bootstrap, RuntimeError)
+
+    def test_iteration(self):
+        conf = TorConfig()
+        conf.SOCKSPort = 9876
+        conf.save()
+        x = list(conf)
+        self.assertEqual(x, ['SOCKSPort'])
+        conf.save()
+
+    def test_get_type(self):
+        self.protocol.answers.append('config/names=\nSomethingExciting CommaList')
+        self.protocol.answers.append({'SomethingExciting': 'a,b'})
+        conf = TorConfig(self.protocol)
+
+        from txtorcon.torconfig import CommaList
+        self.assertEqual(conf.get_type('SomethingExciting'), CommaList)
 
     def foo(self, *args):
         print "FOOO", args
@@ -499,7 +504,7 @@ class LogTests(unittest.TestCase):
 
     def test_set_wrong_object(self):
         conf = TorConfig(self.protocol)
-
+        self.assertTrue(conf.post_bootstrap.called)
         try:
             conf.log = ('this', 'is', 'a', 'tuple')
             self.fail()
@@ -666,6 +671,10 @@ HiddenServicePort=90 127.0.0.1:2345''')
         self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServicePort=80 127.0.0.1:1234\n')
 
         conf = TorConfig(self.protocol)
+        self.assertTrue(self.protocol.post_bootstrap.called)
+        self.assertTrue(conf.post_bootstrap == None or conf.post_bootstrap.called)
+        self.assertEqual(len(conf.hiddenservices), 1)
+        self.assertTrue(conf.hiddenservices[0].conf)
         conf.hiddenservices[0].version = 3
         self.assertTrue(conf.needs_save())
         conf.hiddenservices[0].version = 4
@@ -867,6 +876,79 @@ class LaunchTorTests(unittest.TestCase):
         d.addCallback(self.setup_complete_fails, fakeout, fakeerr)
         self.flushLoggedErrors(RuntimeError)
         return d
+
+    def test_launch_with_timeout_no_ireactortime(self):
+        config = TorConfig()
+        return self.assertRaises(RuntimeError,
+            launch_tor, config, None, timeout=5, tor_binary='/bin/echo')
+
+    def test_launch_root_changes_tmpdir_ownership(self):
+        config = TorConfig()
+        try:
+            launch_tor(config, None, timeout=5, tor_binary='/bin/echo')
+            self.fail("Should have thrown an error")
+        except RuntimeError:
+            pass
+
+    @defer.inlineCallbacks
+    def test_launch_timeout_exception(self):
+        self.protocol = FakeControlProtocol([])
+        self.protocol.answers.append('''config/names=
+DataDirectory String
+ControlPort Port''')
+        self.protocol.answers.append({'DataDirectory':'foo'})
+        self.protocol.answers.append({'ControlPort':0})
+        config = TorConfig(self.protocol)
+        yield config.post_bootstrap
+        config.DataDirectory = '/dev/null'
+
+        trans = Mock()
+        d = launch_tor(config, FakeReactor(self, trans, Mock()), tor_binary='/bin/echo')
+        tpp = yield d
+        tpp.transport = trans
+        trans.signalProcess = Mock(side_effect=error.ProcessExitedAlready)
+        trans.loseConnection = Mock()
+
+        tpp.timeout_expired()
+
+        tpp.transport.loseConnection.assert_called()
+
+    @defer.inlineCallbacks
+    def test_launch_timeout_process_exits(self):
+        # cover the "one more edge case" where we get a processEnded()
+        # but we've already "done" a timeout.
+        self.protocol = FakeControlProtocol([])
+        self.protocol.answers.append('''config/names=
+DataDirectory String
+ControlPort Port''')
+        self.protocol.answers.append({'DataDirectory':'foo'})
+        self.protocol.answers.append({'ControlPort':0})
+        config = TorConfig(self.protocol)
+        yield config.post_bootstrap
+        config.DataDirectory = '/dev/null'
+
+        trans = Mock()
+        d = launch_tor(config, FakeReactor(self, trans, Mock()), tor_binary='/bin/echo')
+        tpp = yield d
+        tpp.timeout_expired()
+        tpp.transport = trans
+        trans.signalProcess = Mock()
+        trans.loseConnection = Mock()
+        status = Mock()
+        status.value.exitCode = None
+        self.assertTrue(tpp._did_timeout)
+        tpp.processEnded(status)
+
+        errs = self.flushLoggedErrors(RuntimeError)
+        self.assertEqual(1, len(errs))
+
+    def test_launch_wrong_stdout(self):
+        config = TorConfig()
+        try:
+            launch_tor(config, None, stdout=object(), tor_binary='/bin/echo')
+            self.fail("Should have thrown an error")
+        except RuntimeError:
+            pass
 
     def test_launch_with_timeout(self):
         config = TorConfig()

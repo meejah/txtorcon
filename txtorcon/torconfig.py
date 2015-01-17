@@ -776,7 +776,7 @@ class TorConfig(object):
                 self.bootstrap()
 
         else:
-            self.post_bootstrap.callback(self)
+            self.do_post_bootstrap(self)
 
         self.__dict__['_setup_'] = None
 
@@ -805,8 +805,6 @@ class TorConfig(object):
         self.__dict__['post_bootstrap'] = defer.Deferred()
         if proto.post_bootstrap:
             proto.post_bootstrap.addCallback(self.bootstrap)
-        else:
-            self.bootstrap()
         return self.__dict__['post_bootstrap']
 
     def _update_proto(self, proto):
@@ -922,18 +920,17 @@ class TorConfig(object):
                 "Can't listen for CONF_CHANGED event; won't stay up-to-date "
                 "with other clients.")
         d = self.protocol.get_info_raw("config/names")
-        d.addCallbacks(self._do_setup, log.err)
+        d.addCallback(self._do_setup)
         d.addCallback(self.do_post_bootstrap)
         d.addErrback(self.do_post_errback)
 
-    def do_post_errback(self, fail):
-        self.post_bootstrap.errback(fail)
-        self.__dict__['post_bootstrap'] = None
+    def do_post_errback(self, f):
+        self.post_bootstrap.errback(f)
         return None
 
     def do_post_bootstrap(self, arg):
-        self.post_bootstrap.callback(self)
-        self.__dict__['post_bootstrap'] = None
+        if not self.post_bootstrap.called:
+            self.post_bootstrap.callback(self)
         return self
 
     def needs_save(self):
@@ -991,7 +988,6 @@ class TorConfig(object):
         if self.protocol:
             d = self.protocol.set_conf(*args)
             d.addCallback(self._save_completed)
-            d.addErrback(log.err)
             return d
 
         else:

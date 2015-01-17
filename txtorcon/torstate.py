@@ -253,10 +253,7 @@ class TorState(object):
 
         self.post_bootstrap = defer.Deferred()
         if bootstrap:
-            if self.protocol.post_bootstrap:
-                self.protocol.post_bootstrap.addCallback(self._bootstrap).addErrback(self.post_bootstrap.errback)
-            else:
-                self._bootstrap()
+            self.protocol.post_bootstrap.addCallback(self._bootstrap).addErrback(self.post_bootstrap.errback)
 
     def _router_begin(self, data):
         args = data.split()
