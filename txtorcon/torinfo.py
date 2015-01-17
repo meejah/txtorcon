@@ -37,6 +37,9 @@ class MagicContainer(object):
     def __len__(self):
         return len(object.__getattribute__(self, 'attrs'))
 
+    def __dir__(self):
+        return object.__getattribute__(self, 'attrs').keys()
+
     def __getattribute__(self, name):
         sup = super(MagicContainer, self)
         if sup.__getattribute__('_setup') is False:
@@ -47,6 +50,9 @@ class MagicContainer(object):
             return attrs.keys()
 
         else:
+            if name.startswith('__'):
+                return sup.__getattribute__(name)
+
             try:
                 return attrs[name]
             except KeyError:
@@ -157,12 +163,24 @@ class TorInfo(object):
     ## iterator protocol
 
     def __getitem__(self, idx):
-        return object.__getattribute__(self, 'attrs').items()[idx][1]
+        sup = super(TorInfo, self)
+        if sup.__getattribute__('_setup') is True:
+            return object.__getattribute__(self, 'attrs').items()[idx][1]
+        raise TypeError("No __getitem__ until we've setup.")
 
     def __len__(self):
-        return len(object.__getattribute__(self, 'attrs'))
+        sup = super(TorInfo, self)
+        if sup.__getattribute__('_setup') is True:
+            return len(object.__getattribute__(self, 'attrs'))
+        raise TypeError("No length until we're setup.")
 
     ## change our attribute behavior based on the value of _setup
+
+    def __dir__(self):
+        sup = super(TorInfo, self)
+        if sup.__getattribute__('_setup') is True:
+            return sup.__getattribute__('attrs').keys()
+        return sup.__getattribute__('__dict__').keys()
 
     def __getattribute__(self, name):
         sup = super(TorInfo, self)

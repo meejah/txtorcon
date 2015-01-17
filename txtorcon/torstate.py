@@ -378,9 +378,9 @@ class TorState(object):
             try:
                 pid = parse_keywords(pid)['process/pid']
                 self.tor_pid = int(pid)
-            except KeyError:
+            except:
                 self.tor_pid = 0
-        elif self.protocol.is_owned:
+        if not self.tor_pid and self.protocol.is_owned:
             self.tor_pid = self.protocol.is_owned
 
         self.post_bootstrap.callback(self)

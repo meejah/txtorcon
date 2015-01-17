@@ -12,6 +12,7 @@ if sys.platform in ('linux2', 'darwin'):
     import pwd
 
 from twisted.python import log
+from twisted.python.failure import Failure
 from twisted.internet import defer, error, protocol
 from twisted.internet.interfaces import IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -378,7 +379,7 @@ def launch_tor(config, reactor,
     # make sure we got things that have write() for stderr, stdout
     # kwargs
     for arg in [stderr, stdout]:
-        if arg and not getattr(arg, "write"):
+        if arg and not getattr(arg, "write", None):
             raise RuntimeError(
                 'File-like object needed for stdout or stderr args.')
 
@@ -550,6 +551,12 @@ class CommaList(TorConfigType):
         return map(string.strip, s.split(','))
 
 
+# FIXME: in latest master; what is it?
+# Tor source says "A list of strings, separated by commas and optional
+# whitespace, representing intervals in seconds, with optional units"
+class TimeIntervalCommaList(CommaList):
+    pass
+
 ## FIXME: is this really a comma-list?
 class RouterList(CommaList):
     pass
@@ -578,8 +585,11 @@ class LineList(TorConfigType):
 config_types = [Boolean, Boolean_Auto, LineList, Integer, SignedInteger, Port,
                 TimeInterval, TimeMsecInterval,
                 DataSize, Float, Time, CommaList, String, LineList, Filename,
-                RouterList]
+                RouterList, TimeIntervalCommaList]
 
+
+def is_list_config_type(klass):
+    return 'List' in klass.__name__ or klass.__name__ in ['HiddenServices']
 
 def _wrapture(orig):
     """
@@ -638,7 +648,7 @@ class HiddenService(object):
     127.0.0.1:1234']))
     """
 
-    def __init__(self, config, thedir, ports, auth=None, ver=2):
+    def __init__(self, config, thedir, ports, auth=None, ver=2, group_readable=0):
         """
         config is the TorConfig to which this will belong (FIXME,
         can't we make this automatic somehow?), thedir corresponds to
@@ -760,8 +770,6 @@ class TorConfig(object):
         if control is None:
             self._protocol = None
             self.__dict__['_slutty_'] = None
-            self.__dict__['config']['HiddenServices'] = _ListWrapper(
-                [], functools.partial(self.mark_unsaved, 'HiddenServices'))
 
         else:
             self._protocol = ITorControlProtocol(control)
@@ -771,6 +779,9 @@ class TorConfig(object):
 
         self.parsers = {}
         '''Instances of the parser classes, subclasses of TorConfigType'''
+
+        self.list_parsers = set(['hiddenservices'])
+        '''All the names (keys from .parsers) that are a List of something.'''
 
         self.post_bootstrap = defer.Deferred()
         if self.protocol:
@@ -846,6 +857,11 @@ class TorConfig(object):
         else:
             super(TorConfig, self).__setattr__(name, value)
 
+    def _maybe_create_listwrapper(self, rn):
+        if rn.lower() in self.list_parsers and rn not in self.config:
+            self.config[rn] = _ListWrapper([], functools.partial(
+                self.mark_unsaved, rn))
+
     def __getattr__(self, name):
         """
         on purpose, we don't return self.saved if the key is in there
@@ -853,10 +869,10 @@ class TorConfig(object):
         ``things which might get into the running Tor if save() were
         to be called''
         """
-
         rn = self._find_real_name(name)
         if '_slutty_' in self.__dict__ and rn in self.unsaved:
             return self.unsaved[rn]
+        self._maybe_create_listwrapper(rn)
         return self.config[rn]
 
     def __contains__(self, item):
@@ -1005,8 +1021,8 @@ class TorConfig(object):
         return self
 
     def _find_real_name(self, name):
-        for x in self.__dict__['config'].keys():
-            if x.lower() == name:
+        for x in self.__dict__['parsers'].keys() + self.__dict__['config'].keys():
+            if x.lower() == name.lower():
                 return x
         return name
 
@@ -1042,18 +1058,16 @@ class TorConfig(object):
             v = yield self.protocol.get_conf(name)
             v = v[name]
 
-            self.parsers[name] = inst
-
-            if value == 'LineList':
-                ## FIXME should move to the parse() method, but it
-                ## doesn't have access to conf object etc.
-                self.config[self._find_real_name(name)] = _ListWrapper(
-                    self.parsers[name].parse(v), functools.partial(
-                        self.mark_unsaved, name))
+            rn = self._find_real_name(name)
+            self.parsers[rn] = inst
+            if is_list_config_type(inst.__class__):
+                self.list_parsers.add(rn)
+                parsed = self.parsers[rn].parse(v)
+                self.config[rn] = _ListWrapper(
+                    parsed, functools.partial(self.mark_unsaved, rn))
 
             else:
-                self.config[
-                    self._find_real_name(name)] = self.parsers[name].parse(v)
+                self.config[rn] = self.parsers[rn].parse(v)
 
         # can't just return in @inlineCallbacks-decorated methods
         defer.returnValue(self)
