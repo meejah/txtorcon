@@ -44,7 +44,18 @@ class FakeControlProtocol:
         self.post_bootstrap = defer.succeed(self)
         self.on_disconnect = defer.Deferred()
         self.sets = []
-        self.events = {}
+        self.events = {} # event type -> callback
+        self.pending_events = {} # event type -> list
+
+    def event_happened(self, event_type, *args):
+        '''
+        Use this in your tests to send 650 events when an event-listener is added.
+        XXX Also if we've *already* added one? Do that if there's a use-case for it
+        '''
+        if event_type in self.pending_events:
+            self.pending_events[event_type].append(args)
+        else:
+            self.pending_events[event_type] = [args]
 
     def answer_pending(self, answer):
         d = self.pending[0]
@@ -80,6 +91,12 @@ class FakeControlProtocol:
 
     def add_event_listener(self, nm, cb):
         self.events[nm] = cb
+        if nm in self.pending_events:
+            for event in self.pending_events[nm]:
+                cb(*event)
+
+    def remove_event_listener(self, nm, cb):
+        del self.events[nm]
 
 
 class CheckAnswer:

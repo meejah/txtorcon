@@ -14,6 +14,7 @@ class FakeControlProtocol:
 
     def __init__(self, answers):
         self.answers = answers
+        self.pending = []
         self.post_bootstrap = defer.succeed(self)
 
     def get_info_raw(self, info):

@@ -45,6 +45,11 @@ class EndpointTests(unittest.TestCase):
         endpoints._global_tor_lock = defer.DeferredLock()
         self.reactor = FakeReactorTcp(self)
         self.protocol = FakeControlProtocol([])
+        self.protocol.event_happened(
+            'INFO',
+            'connection_dir_client_reached_eof(): Uploaded rendezvous '\
+            'descriptor (status 200 ("Service descriptor (v2) stored"))'
+        )
         self.config = TorConfig(self.protocol)
         self.protocol.answers.append('config/names=\nHiddenServiceOptions Virtual')
         self.protocol.answers.append('HiddenServiceOptions')
@@ -185,32 +190,24 @@ class EndpointTests(unittest.TestCase):
 
     def test_already_bootstrapped(self):
         self.config.bootstrap()
-
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d = ep.listen(NoOpProtocolFactory())
         return d
 
     @defer.inlineCallbacks
     def test_explicit_data_dir(self):
-        config = TorConfig()
-        td = tempfile.mkdtemp()
-        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, td)
-
-        # fake out some things so we don't actually have to launch + bootstrap
-        class FakeTorProcessProtocol(object):
-            tor_protocol = self.reactor.protocol
-        process = FakeTorProcessProtocol()
-        ep._launch_tor = Mock(return_value=process)
-        config._update_proto(Mock())
-        config.bootstrap()
-        yield config.post_bootstrap
+        config = TorConfig(self.protocol)
+        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, '/dev/null')
 
         # make sure listen() correctly configures our hidden-serivce
         # with the explicit directory we passed in above
-        port = yield ep.listen(NoOpProtocolFactory())
+        d = ep.listen(NoOpProtocolFactory())
+        def foo(fail):
+            print "ERROR", fail
+        d.addErrback(foo)
+        port = yield d
         self.assertEqual(1, len(config.HiddenServices))
-        self.assertEqual(config.HiddenServices[0].dir, td)
-        shutil.rmtree(td)
+        self.assertEqual(config.HiddenServices[0].dir, '/dev/null')
 
     def test_failure(self):
         self.reactor.failures = 1

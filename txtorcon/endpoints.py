@@ -357,6 +357,11 @@ class TCPHiddenServiceEndpoint(object):
         FIXME TODO: also listen for an INFO-level Tor message (does
         exist, #tor-dev says) that indicates the hidden service's
         descriptor is published.
+
+        It is "connection_dir_client_reached_eof(): Uploaded
+        rendezvous descriptor (status 200 ("Service descriptor (v2)
+        stored"))" at INFO level.
+
         """
 
         self.protocolfactory = protocolfactory
@@ -378,14 +383,34 @@ class TCPHiddenServiceEndpoint(object):
 
         # NOTE at some point, we can support unix sockets here
         # once Tor does. See bug #XXX
+
+        # specifically NOT creating the hidden-service dir; letting
+        # Tor do it will more-likely result in a usable situation...
         if not os.path.exists(self.hidden_service_dir):
-                log.msg('Creating "%s".' % self.hidden_service_dir)
-                os.makedirs(self.hidden_service_dir)
+            log.msg('Noting that "%s" does not exist; letting Tor create it.' % self.hidden_service_dir)
+
+        # listen for the descriptor upload event
+        info_callback = defer.Deferred()
+        def info_event(msg):
+            # XXX giant hack here; Right Thing would be to implement a
+            # "real" event in Tor and listen for that.
+            if 'Service descriptor (v2) stored' in msg:
+                info_callback.callback(None)
+        self.config.protocol.add_event_listener('INFO', info_event)
+
         self.hiddenservice = HiddenService(
             self.config, self.hidden_service_dir,
-            ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)])
+            ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+            group_readable=1)
         self.config.HiddenServices.append(self.hiddenservice)
         yield self.config.save()
+
+        self._tor_progress_update(100.0, 'wait_descriptor',
+                                  'Waiting for descriptor upload...')
+        yield info_callback  # awaits an INFO log-line from Tor .. sketchy
+        yield self.config.protocol.remove_event_listener('INFO', info_event)
+        self._tor_progress_update(100.0, 'wait_descriptor',
+                                  'At least one descriptor uploaded.')
 
         log.msg(
             'Started hidden service "%s" on port %d' %
