@@ -313,29 +313,29 @@ class TorState(object):
     def _bootstrap(self, arg=None):
         "This takes an arg so we can use it as a callback (see __init__)."
 
-        ## update list of routers (must be before we do the
-        ## circuit-status) note that we're feeding each line
-        ## incrementally to a state-machine called
-        ## _network_status_parser, set up in constructor. "ns" should
-        ## be the empty string, but we call _update_network_status for
-        ## the de-duplication of named routers
+        # update list of routers (must be before we do the
+        # circuit-status) note that we're feeding each line
+        # incrementally to a state-machine called
+        # _network_status_parser, set up in constructor. "ns" should
+        # be the empty string, but we call _update_network_status for
+        # the de-duplication of named routers
 
         ns = yield self.protocol.get_info_incremental('ns/all',
                                                       self._network_status_parser.process)
         self._update_network_status(ns)
 
-        ## update list of existing circuits
+        # update list of existing circuits
         cs = yield self.protocol.get_info_raw('circuit-status')
         self._circuit_status(cs)
 
-        ## update list of streams
+        # update list of streams
         ss = yield self.protocol.get_info_raw('stream-status')
         self._stream_status(ss)
 
-        ## update list of existing address-maps
+        # update list of existing address-maps
         key = 'address-mappings/all'
         am = yield self.protocol.get_info_raw(key)
-        ## strip addressmappsings/all= and OK\n from raw data
+        # strip addressmappsings/all= and OK\n from raw data
         am = am[len(key) + 1:]
         for line in am.split('\n'):
             if len(line.strip()) == 0:
@@ -347,14 +347,15 @@ class TorState(object):
         entries = yield self.protocol.get_info_raw("entry-guards")
         for line in entries.split('\n')[1:]:
             if len(line.strip()) == 0 or line.strip() == 'OK':
+                # XXX does this ever really happen?
                 continue
             args = line.split()
             (name, status) = args[:2]
             name = name[:41]
 
-            ## this is sometimes redundant, as a missing entry guard
-            ## usually means it won't be in our list of routers right
-            ## now, but just being on the safe side
+            # this is sometimes redundant, as a missing entry guard
+            # usually means it won't be in our list of routers right
+            # now, but just being on the safe side
             if status.lower() != 'up':
                 self.unusable_entry_guards.append(line)
                 continue
@@ -364,10 +365,10 @@ class TorState(object):
             except KeyError:
                 self.unusable_entry_guards.append(line)
 
-        ## in case process/pid doesn't exist and we don't know the PID
-        ## because we own it, we just leave it as 0 (previously
-        ## guessed using psutil, but that only works if there's
-        ## exactly one tor running anyway)
+        # in case process/pid doesn't exist and we don't know the PID
+        # because we own it, we just leave it as 0 (previously
+        # guessed using psutil, but that only works if there's
+        # exactly one tor running anyway)
         try:
             pid = yield self.protocol.get_info_raw("process/pid")
         except TorProtocolError:
@@ -446,7 +447,7 @@ class TorState(object):
         """
 
         if type(stream) != int:
-            ## assume it's a Stream instance
+            # assume it's a Stream instance
             stream = stream.id
         try:
             reason = int(reason)
@@ -458,7 +459,7 @@ class TorState(object):
 
         flags = flags_from_dict(kwargs)
 
-        ## stream is now an ID no matter what we passed in
+        # stream is now an ID no matter what we passed in
         cmd = 'CLOSESTREAM %d %d%s' % (stream, reason, flags)
         return self.protocol.queue_command(cmd)
 
@@ -640,7 +641,7 @@ class TorState(object):
             self._network_status_parser.process(line)
 
         txtorlog.msg(len(self.routers_by_name), "named routers found.")
-        ## remove any names we added that turned out to have dups
+        # remove any names we added that turned out to have dups
         for (k, v) in self.routers.items():
             if v is None:
                 txtorlog.msg(len(self.routers_by_name[k]), "dups:", k)
