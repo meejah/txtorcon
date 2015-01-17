@@ -166,6 +166,34 @@ class EndpointTests(unittest.TestCase):
         ep._tor_progress_update(*args)
         ding.assert_called_with(*args)
 
+    @patch('txtorcon.endpoints.launch_tor')
+    def test_progress_updates_private_tor(self, tor):
+        ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
+        tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
+        return ep
+
+    def __test_progress_updates_system_tor(self):
+        ep = TCPHiddenServiceEndpoint.system_tor(self.reactor, 1234)
+        ep._tor_progress_update(40, "FOO", "foo to bar")
+        return ep
+
+    @patch('txtorcon.endpoints.get_global_tor')
+    def test_progress_updates_global_tor(self, tor):
+        ep = TCPHiddenServiceEndpoint.global_tor(self.reactor, 1234)
+        tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
+        return ep
+
+    def test_hiddenservice_key_unfound(self):
+        ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234, hidden_service_dir='/dev/null')
+        # FIXME Mock() should work somehow for this, but I couldn't make it "go"
+        class Blam(object):
+            @property
+            def private_key(self):
+                raise IOError("blam")
+        ep.hiddenservice = Blam()
+        self.assertEqual(ep.onion_private_key, None)
+        return ep
+
     def test_multiple_listen(self):
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d0 = ep.listen(NoOpProtocolFactory())
@@ -397,8 +425,8 @@ def port_generator():
         yield x
 
 
-from test_torconfig import FakeReactor  # FIXME
-from test_torconfig import FakeProcessTransport  # FIXME
+from test_torconfig import FakeReactor  # FIXME put in util or something?
+from test_torconfig import FakeProcessTransport  # FIXME importing from other test sucks
 from test_torconfig import FakeControlProtocol  # FIXME
 
 

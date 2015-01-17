@@ -2,9 +2,10 @@ import os
 import shutil
 import tempfile
 import functools
+from getpass import getuser
 from StringIO import StringIO
 
-from mock import Mock
+from mock import Mock, patch
 
 from zope.interface import implements
 from twisted.trial import unittest
@@ -356,6 +357,38 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(self.protocol.sets[0], ('Log', 'foo'))
         self.assertEqual(self.protocol.sets[1], ('Log', 'bar'))
 
+    @defer.inlineCallbacks
+    def test_attach_protocol(self):
+        self.protocol.answers.append('config/names=\nLog LineList')
+        self.protocol.answers.append({'Log': 'foo'})
+
+        conf = TorConfig()
+        d = conf.attach_protocol(self.protocol)
+        yield d
+
+        conf.log.append('bar')
+        yield conf.save()
+
+        self.assertEqual(len(self.protocol.sets), 2)
+        self.assertEqual(self.protocol.sets[0], ('Log', 'foo'))
+        self.assertEqual(self.protocol.sets[1], ('Log', 'bar'))
+
+    def test_attach_protocol_but_already_have_one(self):
+        conf = TorConfig(self.protocol)
+        self.assertRaises(RuntimeError, conf.attach_protocol, self.protocol)
+
+    def test_no_confchanged_event(self):
+        conf = TorConfig(self.protocol)
+        self.protocol.add_event_listener = Mock(side_effect=RuntimeError)
+        d = defer.Deferred()
+        self.protocol.get_info_raw = Mock(return_value=d)
+        conf.bootstrap()
+        # this should log a message, do we really care what?
+
+    def test_attribute_access(self):
+        conf = TorConfig(self.protocol)
+        self.assertNotIn('_slutty_', conf.__dict__)
+        self.assertNotIn('foo', conf)
 
 class LogTests(unittest.TestCase):
 
@@ -400,6 +433,7 @@ class LogTests(unittest.TestCase):
         self.assertTrue(conf.needs_save())
         conf.save()
 
+        self.assertEqual(1, len(self.protocol.sets))
         self.assertEqual(self.protocol.sets[0], ('Log', 'info file /tmp/foo.log'))
 
     def test_log_set_pop(self):
@@ -581,7 +615,7 @@ HiddenServiceAuthorizeClient Dependant''')
     def test_add_hidden_service_to_empty_config(self):
         conf = TorConfig()
         h = HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)
-        conf.hiddenservices.append(h)
+        conf.HiddenServices.append(h)
         self.assertEqual(len(conf.hiddenservices), 1)
         self.assertEqual(h, conf.hiddenservices[0])
         self.assertTrue(conf.needs_save())
@@ -765,10 +799,14 @@ class LaunchTorTests(unittest.TestCase):
             self.assertTrue(not os.path.exists(f))
         return None
 
-    def test_basic_launch(self):
+    @patch('txtorcon.torconfig.os.geteuid')
+    def test_basic_launch(self, geteuid):
+        # pretend we're root to exercise the "maybe chown data dir" codepath
+        geteuid.return_value = 0
         config = TorConfig()
         config.ORPort = 1234
         config.SOCKSPort = 9999
+        config.User = getuser()
 
         def connector(proto, trans):
             proto._set_valid_events('STATUS_CLIENT')
@@ -1135,11 +1173,11 @@ class LaunchTorTests(unittest.TestCase):
         return pp
 
 
+from mock import patch
 class ErrorTests(unittest.TestCase):
-    def test_no_tor_binary(self):
+    @patch('txtorcon.torconfig.find_tor_binary')
+    def test_no_tor_binary(self, ftb):
         """FIXME: do I really need all this crap in here?"""
-        from txtorcon import torconfig
-        oldone = torconfig.find_tor_binary
         self.transport = proto_helpers.StringTransport()
         config = TorConfig()
         d = None
@@ -1151,19 +1189,16 @@ class ErrorTests(unittest.TestCase):
                 proto.post_bootstrap.callback(proto)
                 return proto.post_bootstrap
 
+        self.protocol = FakeControlProtocol([])
+        torconfig.find_tor_binary = lambda: None
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        creator = functools.partial(Connector(), self.protocol, self.transport)
         try:
-            self.protocol = FakeControlProtocol([])
-            torconfig.find_tor_binary = lambda: None
-            trans = FakeProcessTransport()
-            trans.protocol = self.protocol
-            creator = functools.partial(Connector(), self.protocol, self.transport)
-            try:
-                d = launch_tor(config, FakeReactor(self, trans, lambda x: None), connection_creator=creator)
-                self.fail()
+            d = launch_tor(config, FakeReactor(self, trans, lambda x: None), connection_creator=creator)
+            self.fail()
 
-            except TorNotFound:
-                pass  # success!
-        finally:
-            torconfig.find_tor_binary = oldone
+        except TorNotFound:
+            pass  # success!
 
         return d

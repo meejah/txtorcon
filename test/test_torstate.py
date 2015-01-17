@@ -8,7 +8,7 @@ from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 import os
 import tempfile
 
-from txtorcon import TorControlProtocol, TorProtocolError, TorState, Stream, Circuit, build_tor_connection
+from txtorcon import TorControlProtocol, TorProtocolError, TorState, Stream, Circuit, build_tor_connection, build_local_tor_connection
 from txtorcon.interface import ITorControlProtocol, IStreamAttacher, ICircuitListener, IStreamListener, StreamListenerMixin, CircuitListenerMixin
 
 
@@ -256,6 +256,32 @@ class BootstrapTests(unittest.TestCase):
         p.proto.post_bootstrap.callback(p.proto)
         return d
 
+    def test_build_with_answers_guards_unfound_entry(self):
+        p = FakeEndpointAnswers(['',    # ns/all
+                                 '',    # circuit-status
+                                 '',    # stream-status
+                                 '',    # address-mappings/all
+                                 '\n\nkerblam up\nOK\n'     # entry-guards
+                                 ])
+
+        d = build_tor_connection(p, build_state=True)
+        d.addCallback(self.confirm_state)
+        d.addCallback(self.confirm_no_pid)
+        p.proto.post_bootstrap.callback(p.proto)
+        return d
+
+    def test_build_local_unix(self):
+        reactor = FakeReactor(self)
+        d = build_local_tor_connection(reactor)
+        d.addErrback(lambda _: None)
+        return d
+
+    def test_build_local_tcp(self):
+        reactor = FakeReactor(self)
+        d = build_local_tor_connection(reactor, socket=None)
+        d.addErrback(lambda _: None)
+        return d
+
 
 class StateTests(unittest.TestCase):
 
@@ -292,6 +318,11 @@ class StateTests(unittest.TestCase):
         self.state._stream_status('stream-status=123 SUCCEEDED 496 www.example.com:6667')
         self.assertEqual(len(self.state.streams), 1)
 
+    def test_multiple_streams(self):
+        self.state.circuits[496] = FakeCircuit(496)
+        self.state._stream_status('stream-status=\r\n123 SUCCEEDED 496 www.example.com:6667\r\n124 SUCCEEDED 496 www.example.com:6667')
+        self.assertEqual(len(self.state.streams), 2)
+
     def send(self, line):
         self.protocol.dataReceived(line.strip() + "\r\n")
 
@@ -304,6 +335,7 @@ class StateTests(unittest.TestCase):
         d = self.state.post_bootstrap
 
         self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
+        self.protocol.is_owned = 999
         self.state._bootstrap()
 
         self.send("250+ns/all=")
@@ -1027,6 +1059,10 @@ s Fast Guard Running Stable Valid
     def test_build_circuit_no_routers(self):
         self.state.build_circuit()
         self.assertEqual(self.transport.value(), 'EXTENDCIRCUIT 0\r\n')
+
+    def test_build_circuit_unfound_router(self):
+        self.state.build_circuit(routers=['AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'])
+        self.assertEqual(self.transport.value(), 'EXTENDCIRCUIT 0 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\r\n')
 
     def circuit_callback(self, circ):
         self.assertTrue(isinstance(circ, Circuit))

@@ -3,6 +3,7 @@ from twisted.trial import unittest
 import sys
 import types
 import functools
+from unittest import skipIf
 
 
 def fake_import(orig, name, *args, **kw):
@@ -14,16 +15,20 @@ def fake_import(orig, name, *args, **kw):
 
 class TestImports(unittest.TestCase):
 
+    @skipIf('pypy' in sys.version.lower(), "Doesn't work in PYPY")
     def test_no_GeoIP(self):
         """
-        Make sure we don't explode if there's no ipaddr module
+        Make sure we don't explode if there's no GeoIP module
         """
 
         global __import__
         orig = __import__
         try:
             # attempt to ensure we've unimportted txtorcon.util
-            del sys.modules['txtorcon.util']
+            try:
+                del sys.modules['txtorcon.util']
+            except KeyError:
+                pass
             import gc
             gc.collect()
 
@@ -41,9 +46,10 @@ class TestImports(unittest.TestCase):
         finally:
             __import__ = orig
 
+    @skipIf('pypy' in sys.version.lower(), "Doesn't work in PYPY")
     def test_no_ipaddr(self):
         """
-        make sure the code we run if there's no GeoIP installed
+        make sure the code we run if there's no ipaddr installed
         doesn't do anything horrific
         """
 

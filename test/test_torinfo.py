@@ -151,6 +151,7 @@ something/two a second documentation string
         d.addCallback(CheckAnswer(self, 'bar'))
         return d
 
+    @defer.inlineCallbacks
     def test_attribute_access(self):
         '''
         test that our post-setup TorInfo pretends to only have
@@ -162,10 +163,22 @@ something/one a documentation string
 something/two a second documentation string
 ''')
         info = TorInfo(self.protocol)
-
-        self.assertTrue(dir(info) == ['something'])
+        yield self.protocol.post_bootstrap
+        self.assertTrue('something' in dir(info))
         self.assertTrue(dir(info.something) == ['one', 'two'] or
                         dir(info.something) == ['two', 'one'])
+
+    def test_member_access(self):
+        self.protocol.answers.append('info/names blam a thinkg\r\n')
+        info = TorInfo(self.protocol)
+        from txtorcon import torinfo
+        c = torinfo.MagicContainer(None)
+        c._setup = True
+        self.assertEqual([], c.__members__)
+        self.assertEqual(['info'], info.__members__)
+        # make sure __magic__ attr access doesn't throw
+        c.__class__
+        self.assertRaises(AttributeError, lambda: c.foo_mc_bar_bar)
 
     def test_iterator_access(self):
         '''
@@ -189,6 +202,18 @@ something/two a second documentation string
         for x in info.something:
             all.append(x)
         self.assertTrue(len(all) == 2)
+
+
+    def test_accessors_not_setup(self):
+        info = TorInfo(self.protocol)
+        self.assertTrue(info.__dict__['_setup'] == False)
+        self.assertRaises(TypeError, len, info)
+        dir(info)
+        try:
+            info[0]
+            self.fail("Should have raised TypeError")
+        except TypeError:
+            pass
 
     def handle_error(self, f):
         if 'Already had something' in f.getErrorMessage():
@@ -263,7 +288,7 @@ multi/path/arg/* a documentation string
 config/* a documentation string
 ''')
         info = TorInfo(self.protocol)
-        self.assertTrue(dir(info) == [])
+        self.assertEqual(dir(info), [])
 
     def test_other_bootstrap(self):
         self.protocol.answers.append('''info/names=

@@ -1,10 +1,11 @@
+from mock import patch
 from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.internet.interfaces import IProtocolFactory
 from zope.interface import implements
 
-from txtorcon.util import process_from_address, delete_file_or_tree, find_keywords, ip_from_int, find_tor_binary
+from txtorcon.util import process_from_address, delete_file_or_tree, find_keywords, ip_from_int, find_tor_binary, maybe_ip_addr
 
 import os
 import tempfile
@@ -230,3 +231,23 @@ class TestFindTor(unittest.TestCase):
     def test_find_tor_unfound(self):
         "test searching by globs"
         self.assertEqual(None, find_tor_binary(system_tor=False, globs=()))
+
+    @patch('txtorcon.util.subprocess.Popen')
+    def test_find_ioerror(self, popen):
+        "test searching with which, but it fails"
+        popen.side_effect = OSError
+        self.assertEqual(None, find_tor_binary(system_tor=True, globs=()))
+
+
+class TestIpAddr(unittest.TestCase):
+
+    @patch('txtorcon.util.ipaddr')
+    def test_create_ipaddr(self, ipaddr):
+        ip = maybe_ip_addr('1.2.3.4')
+
+    @patch('txtorcon.util.ipaddr')
+    def test_create_ipaddr(self, ipaddr):
+        def foo(blam):
+            raise ValueError('testing')
+        ipaddr.IPAddress.side_effect = foo
+        ip = maybe_ip_addr('1.2.3.4')

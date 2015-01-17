@@ -174,6 +174,7 @@ class Stream(object):
             self.source_port = int(kw['SOURCE_ADDR'][last_colon + 1:])
 
         self.state = args[1]
+        # XXX why not using the state-machine stuff? ;)
         if self.state in ['NEW', 'NEWRESOLVE', 'SUCCEEDED']:
             if self.target_host is None:
                 last_colon = args[3].rfind(':')

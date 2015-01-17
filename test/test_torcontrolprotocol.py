@@ -1,5 +1,7 @@
 from __future__ import with_statement
 
+from os.path import exists
+
 from twisted.python import log, failure
 from twisted.trial import unittest
 from twisted.test import proto_helpers
@@ -116,6 +118,19 @@ class AuthenticationTests(unittest.TestCase):
 
         ## now make sure we DID try to authenticate
         self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
+
+    def test_authenticate_password_deferred_but_no_password(self):
+        d = defer.Deferred()
+        self.protocol.password_function = lambda: d
+        self.protocol.makeConnection(self.transport)
+        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
+        self.transport.clear()
+        self.send('250-PROTOCOLINFO 1')
+        self.send('250-AUTH METHODS=HASHEDPASSWORD')
+        self.send('250-VERSION Tor="0.2.2.34"')
+        self.send('250 OK')
+        d.callback(None)
+        return self.assertFailure(self.protocol.post_bootstrap, RuntimeError)
 
     def confirmAuthFailed(self, *args):
         self.auth_failed = True
@@ -456,6 +471,20 @@ OK''' % cookietmp.name)
         self.send("250 OK")
         self._wait(d)
         self.assertEqual(self.transport.value(), "SETCONF foo=bar baz=1\r\n")
+
+    def test_quit(self):
+        d = self.protocol.quit()
+        self.send("250 OK")
+        self._wait(d)
+        self.assertEqual(self.transport.value(), "QUIT\r\n")
+
+    def test_dot(self):
+        # just checking we don't expode
+        self.protocol.graphviz_data()
+
+    def test_debug(self):
+        self.protocol.start_debug()
+        self.assertTrue(exists('txtorcon-debug.log'))
 
     def error(self, failure):
         print "ERROR", failure

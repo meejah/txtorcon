@@ -103,8 +103,7 @@ class IProgressProvider(Interface):
 
 @implementer(IStreamServerEndpoint, IProgressProvider)
 class TCPHiddenServiceEndpoint(object):
-    """
-    This represents something listening on an arbitrary local port
+    """This represents something listening on an arbitrary local port
     that has a Tor configured with a Hidden Service pointing at
     it. :api:`twisted.internet.endpoints.TCP4ServerEndpoint
     <TCP4ServerEndpoint>` is used under the hood to do the local
@@ -137,11 +136,11 @@ class TCPHiddenServiceEndpoint(object):
 
     No matter how you came by your instance, calling `listen()` on it
     causes Tor to be launched or connected-to, your hidden service to
-    be added, (XXX and check the descriptor is uploaded! FIXME) and
-    you get a ``Deferred`` with an ``IListeningPort`` whose
-    ``getHost()`` will return a :class:`txtorcon.TorOnionAddress`. The port
-    object will also implement :class:`txtorcon.IHiddenService` so you can get
-    the locally-listening address and hidden serivce directory::
+    be added, checks that the descriptor is uploaded and you get a
+    ``Deferred`` with an ``IListeningPort`` whose ``getHost()`` will
+    return a :class:`txtorcon.TorOnionAddress`. The port object will
+    also implement :class:`txtorcon.IHiddenService` so you can get the
+    locally-listening address and hidden serivce directory::
 
         endpoint = ...
         port = yield endpoint.listen(...)
@@ -161,6 +160,7 @@ class TCPHiddenServiceEndpoint(object):
 
     :ivar hiddenServiceDir: the data directory, either passed in or created
         with ``tempfile.mkstemp``
+
     """
 
     @classmethod
