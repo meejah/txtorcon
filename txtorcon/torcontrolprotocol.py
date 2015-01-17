@@ -19,7 +19,6 @@ import types
 import base64
 
 DEFAULT_VALUE = 'DEFAULT'
-DEBUG = False
 
 
 class TorProtocolError(RuntimeError):
@@ -298,10 +297,21 @@ class TorControlProtocol(LineOnlyReceiver):
         ## hand-set initial state default start state is first in the
         ## list; the above looks nice in dotty though
         self.fsm.state = idle
-        if DEBUG:
-            self.debuglog = open('txtorcon-debug.log', 'w')
-            with open('fsm.dot', 'w') as fsmfile:
-                fsmfile.write(self.fsm.dotty())
+        self.stop_debug()
+
+    def start_debug(self):
+        self.debuglog = open('txtorcon-debug.log', 'w')
+
+    def stop_debug(self):
+        def noop(*args, **kw):
+            pass
+        class NullLog(object):
+            write = noop
+            flush = noop
+        self.debuglog = NullLog()
+
+    def graphviz_data(self):
+        return self.fsm.dotty()
 
     ## see end of file for all the state machine matcher and
     ## transition methods.
@@ -520,10 +530,8 @@ class TorControlProtocol(LineOnlyReceiver):
         :api:`twisted.protocols.basic.LineOnlyReceiver` API
         """
 
-        if DEBUG:
-            self.debuglog.write(line + '\n')
-            self.debuglog.flush()
-
+        self.debuglog.write(line + '\n')
+        self.debuglog.flush()
         self.fsm.process(line)
 
     def connectionMade(self):
@@ -570,10 +578,8 @@ class TorControlProtocol(LineOnlyReceiver):
             (d, cmd, cmd_arg) = self.command
             self.defer = d
 
-            if DEBUG:
-                #print "NOTIFY",code,rest
-                self.debuglog.write(cmd + '\n')
-                self.debuglog.flush()
+            self.debuglog.write(cmd + '\n')
+            self.debuglog.flush()
 
             self.transport.write(cmd + '\r\n')
 
