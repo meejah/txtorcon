@@ -9,16 +9,19 @@ txtorcon is a `Twisted <https://twistedmatrix.com/>`_-based `Python
 <https://www.torproject.org/>`_, following `control-spec
 <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_.
 This would be of interest to anyone wishing to write event-based
-software in Python that talks to a Tor program.
+software in Python that talks to (and/or launches) a Tor program.
+
+You get real-time access to all state in Tor (circuits, streams,
+logging, hidden-services) and utilities to launch or connect to running
+Tor instances (including Tor Browser Bundle).
 
 There is a `Walkthrough <walkthrough.html>`_ and `HOWTOs <howtos.html>`_.
 
 The main code is around 2300 lines according to ohcount, or about 5600
-lines including tests. With **full endpoint support, any endpoint-aware
-Twisted application can easily use an automatically-launched Tor**.
+lines including tests.
 
 With txtorcon installed, you can use ``"onion:"`` port/endpoint
-strings with any endpoint-aware Twisted program. For example, to use
+strings with **any endpoint-aware Twisted program**. For example, to use
 Twisted Web to serve your ``~/public_html`` as a hidden service
 (``-n`` *means don't daemonize and log to stdout*):
 
