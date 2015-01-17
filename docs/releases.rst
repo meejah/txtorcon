@@ -15,6 +15,19 @@ unreleased
  * Issue #80: honour ``ControlPort 0`` in incoming TorConfig
    instance. The caller owns both pieces: you have to figure out when
    it's bootstraped, and are responsible for killing it off.
+ * If GeoIP data isn't loaded in Tor, it sends protocol errors if
+   txtorcon also hasn't got GeoIP data, and Router queries for
+   country-code fail; this error is now ignored.
+ * **100% unit-test coverage!** (line coverage)
+ * PyPy support (well, all tests pass)
+ * TCP4HiddenServiceEndpoint now waits for descriptor upload before
+   the ``listen()`` call does its callback (this means when using
+   ``onion:`` endpoint strings, or any of the :doc:`endpoints APIs
+   <txtorcon-endpoints>` your hidden service is 100% ready for action
+   when you receive the callback)
+ * ``TimeIntervalCommaList`` from Tor config supported
+ * :class:`TorControlProtocol <txtorcon.TorControlProtocol>` now has a ``.all_routers`` member (a ``set()`` of all Routers)
+
 
 v0.11.0
 -------
