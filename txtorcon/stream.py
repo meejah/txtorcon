@@ -228,10 +228,9 @@ class Stream(object):
         else:
             raise RuntimeError("Unknown state: %s" % self.state)
 
-        ## see if we attached to a circuit. I believe this only
-        ## happens on a SENTCONNECT or REMAP. DETACHED is excluded so
-        ## we don't immediately re-add the circuit we just detached
-        ## from
+        # see if we attached to a circuit. I believe this only happens
+        # on a SENTCONNECT or REMAP. DETACHED is excluded so we don't
+        # immediately re-add the circuit we just detached from
         if self.state not in ['CLOSED', 'FAILED', 'DETACHED']:
             cid = int(args[2])
             if cid == 0:

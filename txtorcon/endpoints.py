@@ -169,7 +169,6 @@ class TCPHiddenServiceEndpoint(object):
         """
         This returns a TCPHiddenServiceEndpoint connected to the
         endpoint you specify in `control_endpoint`. After connecting, a
-
         single hidden service is added. The endpoint can be a Unix
         socket if Tor's `ControlSocket` option was used (instead of
         `ControlPort`).
@@ -177,7 +176,7 @@ class TCPHiddenServiceEndpoint(object):
         .. note::
 
             If Tor bug #11291 is not yet fixed, this won't work if you
-            only have Group access.
+            only have Group access. XXX FIXME re-test
         """
 
         @defer.inlineCallbacks
@@ -333,8 +332,7 @@ class TCPHiddenServiceEndpoint(object):
 
     @defer.inlineCallbacks
     def listen(self, protocolfactory):
-        """
-        Implement :api:`twisted.internet.interfaces.IStreamServerEndpoint
+        """Implement :api:`twisted.internet.interfaces.IStreamServerEndpoint
         <IStreamServerEndpoint>`.
 
         Returns a Deferred that delivers an

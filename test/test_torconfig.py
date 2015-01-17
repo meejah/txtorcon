@@ -3,6 +3,7 @@ import shutil
 import tempfile
 import functools
 from getpass import getuser
+from mock import patch
 from StringIO import StringIO
 
 from mock import Mock, patch
@@ -267,12 +268,13 @@ class ConfigTests(unittest.TestCase):
         conf.save()
 
     def test_get_type(self):
-        self.protocol.answers.append('config/names=\nSomethingExciting CommaList')
+        self.protocol.answers.append('config/names=\nSomethingExciting CommaList\nHiddenServices Dependant')
         self.protocol.answers.append({'SomethingExciting': 'a,b'})
         conf = TorConfig(self.protocol)
 
-        from txtorcon.torconfig import CommaList
+        from txtorcon.torconfig import CommaList, HiddenService
         self.assertEqual(conf.get_type('SomethingExciting'), CommaList)
+        self.assertEqual(conf.get_type('HiddenServices'), HiddenService)
 
     def foo(self, *args):
         print "FOOO", args
@@ -531,7 +533,7 @@ class CreateTorrcTests(unittest.TestCase):
         config = TorConfig()
         config.SocksPort = 1234
         config.hiddenservices = [HiddenService(config, '/some/dir', '80 127.0.0.1:1234',
-                                               'auth', 2)]
+                                               'auth', 2, True)]
         config.Log = ['80 127.0.0.1:80', '90 127.0.0.1:90']
         config.save()
         torrc = config.create_torrc()
@@ -554,30 +556,36 @@ class HiddenServiceTests(unittest.TestCase):
         self.protocol.answers.append('''config/names=
 HiddenServiceOptions Virtual
 HiddenServiceVersion Dependant
+HiddenServiceDirGroupReadable Dependant
 HiddenServiceAuthorizeClient Dependant''')
 
+    @defer.inlineCallbacks
     def test_options_hidden(self):
-        self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServicePort=80 127.0.0.1:1234\n')
+        self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServicePort=80 127.0.0.1:1234\nHiddenServiceDirGroupReadable=1\n')
 
         conf = TorConfig(self.protocol)
+        yield conf.post_bootstrap
+        self.assertTrue(conf.post_bootstrap.called)
         self.assertTrue('HiddenServiceOptions' not in conf.config)
+        self.assertTrue('HiddenServices' in conf.config)
         self.assertEqual(len(conf.HiddenServices), 1)
 
         self.assertTrue(not conf.needs_save())
-        conf.hiddenservices.append(HiddenService(conf, '/some/dir', '80 127.0.0.1:2345', 'auth', 2))
+        conf.hiddenservices.append(HiddenService(conf, '/some/dir', '80 127.0.0.1:2345', 'auth', 2, True))
         conf.hiddenservices[0].ports.append('443 127.0.0.1:443')
         self.assertTrue(conf.needs_save())
         conf.save()
-        self.assertEqual(conf.get_type('HiddenServices'), HiddenService)
 
-        self.assertEqual(len(self.protocol.sets), 7)
+        self.assertEqual(len(self.protocol.sets), 9)
         self.assertEqual(self.protocol.sets[0], ('HiddenServiceDir', '/fake/path'))
-        self.assertEqual(self.protocol.sets[1], ('HiddenServicePort', '80 127.0.0.1:1234'))
-        self.assertEqual(self.protocol.sets[2], ('HiddenServicePort', '443 127.0.0.1:443'))
-        self.assertEqual(self.protocol.sets[3], ('HiddenServiceDir', '/some/dir'))
-        self.assertEqual(self.protocol.sets[4], ('HiddenServicePort', '80 127.0.0.1:2345'))
-        self.assertEqual(self.protocol.sets[5], ('HiddenServiceVersion', '2'))
-        self.assertEqual(self.protocol.sets[6], ('HiddenServiceAuthorizeClient', 'auth'))
+        self.assertEqual(self.protocol.sets[1], ('HiddenServiceDirGroupReadable', '1'))
+        self.assertEqual(self.protocol.sets[2], ('HiddenServicePort', '80 127.0.0.1:1234'))
+        self.assertEqual(self.protocol.sets[3], ('HiddenServicePort', '443 127.0.0.1:443'))
+        self.assertEqual(self.protocol.sets[4], ('HiddenServiceDir', '/some/dir'))
+        self.assertEqual(self.protocol.sets[5], ('HiddenServiceDirGroupReadable', '1'))
+        self.assertEqual(self.protocol.sets[6], ('HiddenServicePort', '80 127.0.0.1:2345'))
+        self.assertEqual(self.protocol.sets[7], ('HiddenServiceVersion', '2'))
+        self.assertEqual(self.protocol.sets[8], ('HiddenServiceAuthorizeClient', 'auth'))
 
     def test_save_no_protocol(self):
         conf = TorConfig()
@@ -592,6 +600,7 @@ HiddenServiceAuthorizeClient Dependant''')
         self.assertEqual(2, len(conf.HiddenServices))
 
     def test_onion_keys(self):
+        # FIXME test without crapping on filesystem
         self.protocol.answers.append('HiddenServiceDir=/fake/path\n')
         d = tempfile.mkdtemp()
 
@@ -629,11 +638,14 @@ HiddenServiceAuthorizeClient Dependant''')
         conf = TorConfig()
         h0 = HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)
         h1 = HiddenService(conf, '/fake/path', ['90 127.0.0.1:4321'], '', 3)
-        conf.hiddenservices.append(h0)
+        h2 = HiddenService(conf, '/fake/path', ['90 127.0.0.1:5432'], '', 3, True)
+        conf.hiddenservices = [h0]
         conf.hiddenservices.append(h1)
-        self.assertEqual(len(conf.hiddenservices), 2)
+        conf.hiddenservices.append(h2)
+        self.assertEqual(len(conf.hiddenservices), 3)
         self.assertEqual(h0, conf.hiddenservices[0])
         self.assertEqual(h1, conf.hiddenservices[1])
+        self.assertEqual(h2, conf.hiddenservices[2])
         self.assertTrue(conf.needs_save())
 
     def test_multiple_startup_services(self):
@@ -706,7 +718,6 @@ HiddenServicePort=90 127.0.0.1:2345''')
         self.assertTrue(not conf.needs_save())
         conf.hiddenservices[0].ports.append('90 127.0.0.1:2345')
         self.assertTrue(conf.needs_save())
-
 
 class FakeReactor(task.Clock):
     implements(IReactorCore)
@@ -882,13 +893,18 @@ class LaunchTorTests(unittest.TestCase):
         return self.assertRaises(RuntimeError,
             launch_tor, config, None, timeout=5, tor_binary='/bin/echo')
 
-    def test_launch_root_changes_tmpdir_ownership(self):
+    @patch('txtorcon.torconfig.sys')
+    @patch('txtorcon.torconfig.pwd')
+    @patch('txtorcon.torconfig.os.geteuid')
+    @patch('txtorcon.torconfig.os.chown')
+    def test_launch_root_changes_tmpdir_ownership(self, chown, euid, _pwd, _sys):
+        _pwd.return_value = 1000
+        _sys.platform = 'linux2'
+        euid.return_value = 0
         config = TorConfig()
-        try:
-            launch_tor(config, None, timeout=5, tor_binary='/bin/echo')
-            self.fail("Should have thrown an error")
-        except RuntimeError:
-            pass
+        config.User = 'chuffington'
+        d = launch_tor(config, Mock(), tor_binary='/bin/echo')
+        self.assertEqual(1, chown.call_count)
 
     @defer.inlineCallbacks
     def test_launch_timeout_exception(self):

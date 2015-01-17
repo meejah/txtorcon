@@ -130,12 +130,12 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         if self.stdout:
             self.stdout.write(data)
 
-        ## minor hack: we can't try this in connectionMade because
-        ## that's when the process first starts up so Tor hasn't
-        ## opened any ports properly yet. So, we presume that after
-        ## its first output we're good-to-go. If this fails, we'll
-        ## reset and try again at the next output (see this class'
-        ## tor_connection_failed)
+        # minor hack: we can't try this in connectionMade because
+        # that's when the process first starts up so Tor hasn't
+        # opened any ports properly yet. So, we presume that after
+        # its first output we're good-to-go. If this fails, we'll
+        # reset and try again at the next output (see this class'
+        # tor_connection_failed)
 
         txtorlog.msg(data)
         if not self.attempted_connect and self.connection_creator \
@@ -174,7 +174,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         Clean up my temporary files.
         """
 
-        [delete_file_or_tree(f) for f in self.to_delete]
+        all([delete_file_or_tree(f) for f in self.to_delete])
         self.to_delete = []
 
     def processEnded(self, status):
@@ -215,10 +215,10 @@ class TorProcessProtocol(protocol.ProcessProtocol):
     ## the below are all callbacks
 
     def tor_connection_failed(self, failure):
-        ## FIXME more robust error-handling please, like a timeout so
-        ## we don't just wait forever after 100% bootstrapped (that
-        ## is, we're ignoring these errors, but shouldn't do so after
-        ## we'll stop trying)
+        # FIXME more robust error-handling please, like a timeout so
+        # we don't just wait forever after 100% bootstrapped (that
+        # is, we're ignoring these errors, but shouldn't do so after
+        # we'll stop trying)
         self.attempted_connect = False
 
     def status_client(self, arg):
@@ -666,12 +666,13 @@ class HiddenService(object):
         self.dir = thedir
         self.version = ver
         self.authorize_client = auth
+        self.group_readable = group_readable
 
-        ## there are two magic attributes, "hostname" and "private_key"
-        ## these are gotten from the dir if they're still None when
-        ## accessed. Note that after a SETCONF has returned '250 OK'
-        ## it seems from tor code that the keys will always have been
-        ## created on disk by that point
+        # there are two magic attributes, "hostname" and "private_key"
+        # these are gotten from the dir if they're still None when
+        # accessed. Note that after a SETCONF has returned '250 OK'
+        # it seems from tor code that the keys will always have been
+        # created on disk by that point
 
         if not isinstance(ports, types.ListType):
             ports = [ports]
@@ -703,13 +704,15 @@ class HiddenService(object):
         Helper method used by TorConfig when generating a torrc file.
         """
 
-        rtn = [('HiddenServiceDir', self.dir)]
+        rtn = [('HiddenServiceDir', str(self.dir))]
+        if self.conf._supports['HiddenServiceDirGroupReadable'] and self.group_readable:
+            rtn.append(('HiddenServiceDirGroupReadable', str(1)))
         for x in self.ports:
-            rtn.append(('HiddenServicePort', x))
+            rtn.append(('HiddenServicePort', str(x)))
         if self.version:
-            rtn.append(('HiddenServiceVersion', self.version))
+            rtn.append(('HiddenServiceVersion', str(self.version)))
         if self.authorize_client:
-            rtn.append(('HiddenServiceAuthorizeClient', self.authorize_client))
+            rtn.append(('HiddenServiceAuthorizeClient', str(self.authorize_client)))
         return rtn
 
 
@@ -782,6 +785,14 @@ class TorConfig(object):
 
         self.list_parsers = set(['hiddenservices'])
         '''All the names (keys from .parsers) that are a List of something.'''
+
+        # during bootstrapping we decide whether we support the
+        # following features. A thing goes in here if TorConfig
+        # behaves differently depending upon whether it shows up in
+        # "GETINFO config/names"
+        self._supports = dict(
+            HiddenServiceDirGroupReadable=False
+        )
 
         self.post_bootstrap = defer.Deferred()
         if self.protocol:
@@ -977,17 +988,9 @@ class TorConfig(object):
             if key == 'HiddenServices':
                 self.config['HiddenServices'] = value
                 for hs in value:
-                    args.append('HiddenServiceDir')
-                    args.append(hs.dir)
-                    for p in hs.ports:
-                        args.append('HiddenServicePort')
-                        args.append(str(p))
-                    if hs.version:
-                        args.append('HiddenServiceVersion')
-                        args.append(str(hs.version))
-                    if hs.authorize_client:
-                        args.append('HiddenServiceAuthorizeClient')
-                        args.append(hs.authorize_client)
+                    for (k, v) in hs.config_attributes():
+                        args.append(k)
+                        args.append(v)
                 continue
 
             if isinstance(value, types.ListType):
@@ -1033,6 +1036,9 @@ class TorConfig(object):
                 continue
 
             (name, value) = line.split()
+            if name in self._supports:
+                self._supports[name] = True
+
             if name == 'HiddenServiceOptions':
                 ## set up the "special-case" hidden service stuff
                 servicelines = yield self.protocol.get_conf_raw(
@@ -1087,11 +1093,12 @@ class TorConfig(object):
             k, v = line.split('=')
             if k == 'HiddenServiceDir':
                 if directory is not None:
-                    hs.append(HiddenService(self, directory, ports, auth, ver))
+                    hs.append(HiddenService(self, directory, ports, auth, ver, group_read))
                 directory = v
                 ports = []
                 ver = None
                 auth = None
+                group_read = 0
 
             elif k == 'HiddenServicePort':
                 ports.append(v)
@@ -1102,11 +1109,14 @@ class TorConfig(object):
             elif k == 'HiddenServiceAuthorizeClient':
                 auth = v
 
+            elif k == 'HiddenServiceDirGroupReadable':
+                group_read = int(v)
+
             else:
                 raise RuntimeError("Can't parse HiddenServiceOptions: " + k)
 
         if directory is not None:
-            hs.append(HiddenService(self, directory, ports, auth, ver))
+            hs.append(HiddenService(self, directory, ports, auth, ver, group_read))
 
         name = 'HiddenServices'
         self.config[name] = _ListWrapper(
