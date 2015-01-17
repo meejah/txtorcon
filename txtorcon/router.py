@@ -95,8 +95,11 @@ class Router(object):
         else:
             self._location = NetLocation(None)
         if not self._location.countrycode and self.ip != 'unknown':
-            ## see if Tor is magic and knows more...
-            self.controller.get_info_raw('ip-to-country/' + self.ip).addCallback(self._set_country)
+            # see if Tor is magic and knows more...
+            d = self.controller.get_info_raw('ip-to-country/' + self.ip)
+            d.addCallback(self._set_country)
+            # ignore errors (e.g. "GeoIP Information not loaded")
+            d.addErrback(lambda _: None)
         return self._location
 
     @property
