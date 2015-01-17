@@ -193,6 +193,7 @@ class TorState(object):
         self.circuits = {}               # keys on id (integer)
         self.streams = {}                # keys on id (integer)
 
+        self.all_routers = set()         # list of unique routers
         self.routers = {}                # keys by hexid (string) and by unique names
         self.routers_by_name = {}        # keys on name, value always list (many duplicate "Unnamed" routers, for example)
         self.routers_by_hash = {}        # keys by hexid (string)
@@ -285,6 +286,7 @@ class TorState(object):
             self.routers[self._router.name] = self._router
         self.routers[self._router.id_hex] = self._router
         self.routers_by_hash[self._router.id_hex] = self._router
+        self.all_routers.add(self._router)
 
     def _router_flags(self, data):
         args = data.split()
@@ -633,6 +635,7 @@ class TorState(object):
         from NS and NEWCONSENSUS events.
         """
 
+        self.all_routers = set()
         for line in data.split('\n'):
             self._network_status_parser.process(line)
 
