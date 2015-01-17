@@ -704,23 +704,16 @@ class HiddenService(object):
 
 
 class TorConfig(object):
-    """
-    This class abstracts out Tor's config so that you don't have to
+    """This class abstracts out Tor's config so that you don't have to
     realize things like: in order to successfully set multiple listen
     addresses, you must put them all (and the or-ports) in one SETCONF
     call.
 
     Also, it gives easy access to all the configuration options
     present. This is loaded at "bootstrap" time (when all values are
-    loaded) providing attribute-based access thereafter. If you set an
-    item AND we're bootstrapped to a Tor, THEN that valud is NOT
-    reflected in Tor until you do save() -- and neither is it
-    reflected in the TorConfig instance until that time. So, you might
-    get slightly confusing behavior like: ``config.SOCKSPort=1234;
-    print config.SOCKSPort`` which will still print 9050 or whatever
-    the original value is. (TODO is this really a good idea?
-    Especially since we "need" the other behavior for "build config
-    from scratch" use-case)
+    loaded) providing attribute-based access thereafter. Note that
+    after you set some number of items, you need to do a save() before
+    these are sent to Tor (and then they will be done as one SETCONF).
 
     You may also use this class to construct a configuration from
     scratch (e.g. to give to :func:`txtorcon.launch_tor`). In this
@@ -730,8 +723,19 @@ class TorConfig(object):
     Note that you do not need to call save() if you're just using
     TorConfig to create a .torrc file or for input to launch_tor().
 
-    This listens for CONF_CHANGED events to update the cached data in
-    the event other controllers (etc) changed it.
+    This class also listens for CONF_CHANGED events to update the
+    cached data in the event other controllers (etc) changed it.
+
+    There is a lot of magic attribute stuff going on in here (which
+    might be a bad idea, overall) but the *intent* is that you can
+    just set Tor options and it will all Just Work. For config items
+    that take multiple values, set that to a list. For example::
+
+        conf = TorConfig(...)
+        conf.SOCKSPort = [9050, 1337]
+        conf.HiddenServices.append(HiddenService(...))
+
+    (Incoming objects, like lists, are intercepted and wrapped).
 
     FIXME: when is CONF_CHANGED introduced in Tor? Can we do anything
     like it for prior versions?
@@ -746,6 +750,7 @@ class TorConfig(object):
 
         - once I determine a value is default, is there any way to
           actually get what this value is?
+
     """
 
     def __init__(self, control=None):
