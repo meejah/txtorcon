@@ -184,7 +184,7 @@ class TorControlProtocol(LineOnlyReceiver):
     :meth:`txtorcon.TorState.build_circuit` allows you to build custom
     circuits.
 
-    :meth:`txtorcon.TorControlProtocol.add_event_listener` can be used
+   :meth:`txtorcon.TorControlProtocol.add_event_listener` can be used
     to listen for specific events.
 
     To see how circuit and stream listeners are used, see

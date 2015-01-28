@@ -125,7 +125,7 @@ class Stream(object):
     def close(self, **kw):
         """
         This asks Tor to close the underlying stream object. See
-        :method:`txtorcon.interface.ITorControlProtocol.close_stream`
+        :meth:`txtorcon.interface.ITorControlProtocol.close_stream`
         for details.
 
         Although Tor currently takes no flags, it allows you to; any

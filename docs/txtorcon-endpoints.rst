@@ -24,9 +24,9 @@ TorOnionListeningPort
 IProgressProvider
 -----------------
 
-.. autoclass:: txtorcon.IProgressProvider
+.. autointerface:: txtorcon.IProgressProvider
 
 IHiddenService
------------------
+--------------
 
-.. autoclass:: txtorcon.IHiddenService
+.. autointerface:: txtorcon.IHiddenService

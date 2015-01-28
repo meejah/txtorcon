@@ -165,6 +165,10 @@ class TorState(object):
     This is also a good example of the various listeners, and acts as
     an :class:`txtorcon.interface.ICircuitContainer` and
     :class:`txtorcon.interface.IRouterContainer`.
+
+    :cvar DO_NOT_ATTACH:
+    Constant to return from an IAttacher indicating you don't want to
+    attach this stream at all.
     """
 
     implements(ICircuitListener, ICircuitContainer, IRouterContainer,

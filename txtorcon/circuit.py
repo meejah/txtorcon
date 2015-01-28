@@ -54,7 +54,7 @@ class Circuit(object):
           - TESTING
           - CONTROLLER
 
-        For most purposes, you'll want to look at GENERAL circuits only.
+    For most purposes, you'll want to look at GENERAL circuits only.
 
 
     :ivar id:
@@ -105,7 +105,7 @@ class Circuit(object):
     def close(self, **kw):
         """
         This asks Tor to close the underlying circuit object. See
-        :method:`txtorcon.torstate.TorState.close_circuit`
+        :meth:`txtorcon.torstate.TorState.close_circuit`
         for details.
 
         You may pass keyword arguments to take care of any Flags Tor
