@@ -11,7 +11,7 @@ with Twisted_ and asynchronous programming.
 
 What We'll Learn
 ----------------
-.. _NEWNYM: https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt#l380
+.. _NEWNYM: https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n379
 .. _walkthrough directory: https://github.com/meejah/txtorcon/tree/master/walkthrough
 
 In this tutorial, I will go through several examples building up a
