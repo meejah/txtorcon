@@ -12,3 +12,7 @@ announcements/
 annotated_coverage/
 twisted/plugins/dropin.cache
 docs/_build
+.coverage
+.tox
+venv/
+venv_tox_*/
