@@ -305,6 +305,7 @@ class TorControlProtocol(LineOnlyReceiver):
     def stop_debug(self):
         def noop(*args, **kw):
             pass
+
         class NullLog(object):
             write = noop
             flush = noop

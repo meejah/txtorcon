@@ -47,7 +47,7 @@ class EndpointTests(unittest.TestCase):
         self.protocol = FakeControlProtocol([])
         self.protocol.event_happened(
             'INFO',
-            'connection_dir_client_reached_eof(): Uploaded rendezvous '\
+            'connection_dir_client_reached_eof(): Uploaded rendezvous '
             'descriptor (status 200 ("Service descriptor (v2) stored"))'
         )
         self.config = TorConfig(self.protocol)
@@ -185,6 +185,7 @@ class EndpointTests(unittest.TestCase):
 
     def test_hiddenservice_key_unfound(self):
         ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234, hidden_service_dir='/dev/null')
+
         # FIXME Mock() should work somehow for this, but I couldn't make it "go"
         class Blam(object):
             @property
@@ -230,6 +231,7 @@ class EndpointTests(unittest.TestCase):
         # make sure listen() correctly configures our hidden-serivce
         # with the explicit directory we passed in above
         d = ep.listen(NoOpProtocolFactory())
+
         def foo(fail):
             print "ERROR", fail
         d.addErrback(foo)

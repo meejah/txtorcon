@@ -557,6 +557,7 @@ class CommaList(TorConfigType):
 class TimeIntervalCommaList(CommaList):
     pass
 
+
 ## FIXME: is this really a comma-list?
 class RouterList(CommaList):
     pass
@@ -590,6 +591,7 @@ config_types = [Boolean, Boolean_Auto, LineList, Integer, SignedInteger, Port,
 
 def is_list_config_type(klass):
     return 'List' in klass.__name__ or klass.__name__ in ['HiddenServices']
+
 
 def _wrapture(orig):
     """

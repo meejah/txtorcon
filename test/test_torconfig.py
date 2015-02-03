@@ -46,8 +46,8 @@ class FakeControlProtocol:
         self.post_bootstrap = defer.succeed(self)
         self.on_disconnect = defer.Deferred()
         self.sets = []
-        self.events = {} # event type -> callback
-        self.pending_events = {} # event type -> list
+        self.events = {}  #: event type -> callback
+        self.pending_events = {}  #: event type -> list
 
     def event_happened(self, event_type, *args):
         '''
@@ -397,6 +397,7 @@ class ConfigTests(unittest.TestCase):
         self.assertNotIn('_slutty_', conf.__dict__)
         self.assertNotIn('foo', conf)
 
+
 class LogTests(unittest.TestCase):
 
     def setUp(self):
@@ -684,7 +685,7 @@ HiddenServicePort=90 127.0.0.1:2345''')
 
         conf = TorConfig(self.protocol)
         self.assertTrue(self.protocol.post_bootstrap.called)
-        self.assertTrue(conf.post_bootstrap == None or conf.post_bootstrap.called)
+        self.assertTrue(conf.post_bootstrap is None or conf.post_bootstrap.called)
         self.assertEqual(len(conf.hiddenservices), 1)
         self.assertTrue(conf.hiddenservices[0].conf)
         conf.hiddenservices[0].version = 3
@@ -718,6 +719,7 @@ HiddenServicePort=90 127.0.0.1:2345''')
         self.assertTrue(not conf.needs_save())
         conf.hiddenservices[0].ports.append('90 127.0.0.1:2345')
         self.assertTrue(conf.needs_save())
+
 
 class FakeReactor(task.Clock):
     implements(IReactorCore)
@@ -890,8 +892,10 @@ class LaunchTorTests(unittest.TestCase):
 
     def test_launch_with_timeout_no_ireactortime(self):
         config = TorConfig()
-        return self.assertRaises(RuntimeError,
-            launch_tor, config, None, timeout=5, tor_binary='/bin/echo')
+        return self.assertRaises(
+            RuntimeError,
+            launch_tor, config, None, timeout=5, tor_binary='/bin/echo'
+        )
 
     @patch('txtorcon.torconfig.sys')
     @patch('txtorcon.torconfig.pwd')
@@ -912,8 +916,8 @@ class LaunchTorTests(unittest.TestCase):
         self.protocol.answers.append('''config/names=
 DataDirectory String
 ControlPort Port''')
-        self.protocol.answers.append({'DataDirectory':'foo'})
-        self.protocol.answers.append({'ControlPort':0})
+        self.protocol.answers.append({'DataDirectory': 'foo'})
+        self.protocol.answers.append({'ControlPort': 0})
         config = TorConfig(self.protocol)
         yield config.post_bootstrap
         config.DataDirectory = '/dev/null'
@@ -937,8 +941,8 @@ ControlPort Port''')
         self.protocol.answers.append('''config/names=
 DataDirectory String
 ControlPort Port''')
-        self.protocol.answers.append({'DataDirectory':'foo'})
-        self.protocol.answers.append({'ControlPort':0})
+        self.protocol.answers.append({'DataDirectory': 'foo'})
+        self.protocol.answers.append({'ControlPort': 0})
         config = TorConfig(self.protocol)
         yield config.post_bootstrap
         config.DataDirectory = '/dev/null'
@@ -1271,7 +1275,6 @@ ControlPort Port''')
         return pp
 
 
-from mock import patch
 class ErrorTests(unittest.TestCase):
     @patch('txtorcon.torconfig.find_tor_binary')
     def test_no_tor_binary(self, ftb):

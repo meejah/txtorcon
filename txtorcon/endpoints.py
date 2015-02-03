@@ -389,6 +389,7 @@ class TCPHiddenServiceEndpoint(object):
 
         # listen for the descriptor upload event
         info_callback = defer.Deferred()
+
         def info_event(msg):
             # XXX giant hack here; Right Thing would be to implement a
             # "real" event in Tor and listen for that.
