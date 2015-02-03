@@ -719,16 +719,15 @@ class HiddenService(object):
 
 
 class TorConfig(object):
-    """This class abstracts out Tor's config so that you don't have to
-    realize things like: in order to successfully set multiple listen
-    addresses, you must put them all (and the or-ports) in one SETCONF
-    call.
+    """This class abstracts out Tor's config, and can be used both to
+    create torrc files from nothing and track live configuration of a Tor
+    instance.
 
     Also, it gives easy access to all the configuration options
-    present. This is loaded at "bootstrap" time (when all values are
-    loaded) providing attribute-based access thereafter. Note that
-    after you set some number of items, you need to do a save() before
-    these are sent to Tor (and then they will be done as one SETCONF).
+    present. This is initialized at "bootstrap" time, providing
+    attribute-based access thereafter. Note that after you set some
+    number of items, you need to do a save() before these are sent to
+    Tor (and then they will be done as one SETCONF).
 
     You may also use this class to construct a configuration from
     scratch (e.g. to give to :func:`txtorcon.launch_tor`). In this

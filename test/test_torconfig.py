@@ -276,6 +276,14 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(conf.get_type('SomethingExciting'), CommaList)
         self.assertEqual(conf.get_type('HiddenServices'), HiddenService)
 
+    def test_immediate_hiddenservice_append(self):
+        '''issue #88. we check that a .append(hs) works on a blank TorConfig'''
+        conf = TorConfig()
+        hs = HiddenService(conf, '/dev/null', ['80 127.0.0.1:1234'])
+        conf.HiddenServices.append(hs)
+        self.assertEqual(len(conf.HiddenServices), 1)
+        self.assertEqual(conf.HiddenServices[0], hs)
+
     def foo(self, *args):
         print "FOOO", args
 
