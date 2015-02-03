@@ -9,17 +9,26 @@ versioning <http://semver.org/>`_.
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.12.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.13.0*
 
+
+v0.12.0
+-------
+
+*February 2, 2014*
+
+ * `txtorcon-0.12.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.12.0>`_ (:download:`local-sig </../signatues/txtorcon-0.12.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.12.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.12.0.tar.gz>`_)
  * doc, code and import cleanups from `Kali Kaneko <https://github.com/kalikaneko>`_
+ * HiddenServiceDirGroupReadable support
  * Issue #80: honour ``ControlPort 0`` in incoming TorConfig
    instance. The caller owns both pieces: you have to figure out when
    it's bootstraped, and are responsible for killing it off.
- * If GeoIP data isn't loaded in Tor, it sends protocol errors if
-   txtorcon also hasn't got GeoIP data, and Router queries for
-   country-code fail; this error is now ignored.
+ * Issue #88: clarify documentation and fix appending to some config lists
+ * If GeoIP data isn't loaded in Tor, it sends protocol errors; if
+   txtorcon also hasn't got GeoIP data, the queries for country-code
+   fail; this error is now ignored.
  * **100% unit-test coverage!** (line coverage)
- * PyPy support (well, all tests pass)
+ * PyPy support (well, at least all tests pass)
  * TCP4HiddenServiceEndpoint now waits for descriptor upload before
    the ``listen()`` call does its callback (this means when using
    ``onion:`` endpoint strings, or any of the :doc:`endpoints APIs
