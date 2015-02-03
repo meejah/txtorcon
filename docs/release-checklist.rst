@@ -56,6 +56,11 @@ Release Checklist
                https://pypi.python.org/pypi/txtorcon/0.10.0
                https://github.com/meejah/txtorcon/releases/tag/v0.10.0
 
+            Releases are also available from the hidden service:
+
+               http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz
+               http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz.asc
+
             sha256sum reports:
 
                910ff3216035de0a779cfc167c0545266ff1f26687b163fc4655f298aca52d74  txtorcon-0.10.0-py2-none-any.whl
