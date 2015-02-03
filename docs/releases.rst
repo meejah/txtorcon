@@ -37,6 +37,7 @@ v0.12.0
    when you receive the callback)
  * ``TimeIntervalCommaList`` from Tor config supported
  * :class:`TorControlProtocol <txtorcon.TorControlProtocol>` now has a ``.all_routers`` member (a ``set()`` of all Routers)
+ * documentation fix from `sammyshj <https://github.com/sammyshj>`_
 
 
 v0.11.0
