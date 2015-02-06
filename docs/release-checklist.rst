@@ -61,10 +61,13 @@ Release Checklist
                http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz
                http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz.asc
 
-            sha256sum reports:
+            You can verify the sha256sum of both by running the following 4 lines
+            in a shell wherever you have the files downloaded:
 
-               910ff3216035de0a779cfc167c0545266ff1f26687b163fc4655f298aca52d74  txtorcon-0.10.0-py2-none-any.whl
-               c93f3d0f21d53c6b4c1521fc8d9dc2c9aff4a9f60497becea207d1738fa78279  txtorcon-0.10.0.tar.gz
+            cat <<EOF | sha256sum --check
+            910ff3216035de0a779cfc167c0545266ff1f26687b163fc4655f298aca52d74  txtorcon-0.10.0-py2-none-any.whl
+            c93f3d0f21d53c6b4c1521fc8d9dc2c9aff4a9f60497becea207d1738fa78279  txtorcon-0.10.0.tar.gz
+            EOF
 
             thanks,
             meejah
@@ -90,6 +93,7 @@ Release Checklist
        * make sure BOTH the .tar.gz and .tar.gz.asc (ditto for .whl) are in the dist/ directory first!!)
        * ls dist/txtorcon-${VERSION}*
        * note this depends on a ~/.pypirc file with [server-login] section containing "username:" and "password:"
+    * git push --tags github master
     * to github: use web-upload interface to upload the 4 files (both dists, both signature)
 
  * make announcement
