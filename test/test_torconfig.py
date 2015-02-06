@@ -62,6 +62,7 @@ class FakeControlProtocol:
         self.sets = []
         self.events = {}  #: event type -> callback
         self.pending_events = {}  #: event type -> list
+        self.is_owned = -1
 
     def event_happened(self, event_type, *args):
         '''
@@ -88,6 +89,13 @@ class FakeControlProtocol:
         d = defer.succeed(self.answers[0])
         self.answers = self.answers[1:]
         return d
+
+    @defer.inlineCallbacks
+    def get_info_incremental(self, info, cb):
+        text = yield self.get_info_raw(info)
+        for line in text.split('\r\n'):
+            cb(line)
+        defer.returnValue('')  # FIXME uh....what's up at torstate.py:350?
 
     def get_conf(self, info):
         if len(self.answers) == 0:

@@ -155,6 +155,10 @@ def flags_from_dict(kw):
     return flags
 
 
+@implementer(ICircuitListener)
+@implementer(ICircuitContainer)
+@implementer(IRouterContainer)
+@implementer(IStreamListener)
 class TorState(object):
     """
     This tracks the current state of Tor using a TorControlProtocol.
@@ -181,10 +185,17 @@ class TorState(object):
     attach this stream at all.
     """
 
-    implements(ICircuitListener, ICircuitContainer, IRouterContainer,
-               IStreamListener)
+    @classmethod
+    def from_protocol(cls, protocol, **kw):
+        '''
+        Create a new, boot-strapped TorState from a TorControlProtocol instance.
 
-    def __init__(self, protocol, bootstrap=True, write_state_diagram=False):
+        :return: a Deferred that fires with a TorState instance
+        '''
+        state = TorState(protocol, bootstrap=True)
+        return state.post_bootstrap
+
+    def __init__(self, protocol, bootstrap=True):
         self.protocol = ITorControlProtocol(protocol)
         # fixme could use protocol.on_disconnect to re-connect; see issue #3
 

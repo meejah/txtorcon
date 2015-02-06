@@ -197,22 +197,6 @@ class FakeEndpointAnswers:
         return defer.succeed(self.proto)
 
 
-class FakeControlProtocol:
-    implements(ITorControlProtocol)  # actually we don't, it's a lie
-
-    def __init__(self):
-        self.is_owned = None
-        self.post_bootstrap = defer.succeed(self)
-        self.on_disconnect = defer.Deferred()
-
-
-class InternalMethodsTests(unittest.TestCase):
-
-    def test_state_diagram(self):
-        TorState(FakeControlProtocol(), bootstrap=False, write_state_diagram=True)
-        self.assertTrue(os.path.exists('routerfsm.dot'))
-
-
 class BootstrapTests(unittest.TestCase):
 
     def confirm_proto(self, x):
@@ -375,60 +359,35 @@ class StateTests(unittest.TestCase):
     def send(self, line):
         self.protocol.dataReceived(line.strip() + "\r\n")
 
+    @defer.inlineCallbacks
     def test_bootstrap_callback(self):
         '''
         FIXME: something is still screwy with this; try throwing an
         exception from TorState.bootstrap and we'll just hang...
         '''
 
-        d = self.state.post_bootstrap
+        from test_torconfig import FakeControlProtocol
+        protocol = FakeControlProtocol(
+            [
+                "ns/all=",  # ns/all
+                "",  # circuit-status
+                "",  # stream-status
+                "",  # address-mappings/all
+                "entry-guards=\r\n$0000000000000000000000000000000000000000=name up\r\n$1111111111111111111111111111111111111111=foo up\r\n$9999999999999999999999999999999999999999=eman unusable 2012-01-01 22:00:00\r\n", # entry-guards
+                "99999",  # process/pid
+                "??",  # ip-to-country/0.0.0.0
+            ]
+        )
 
-        self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
-        self.protocol.is_owned = 999
-        self.state._bootstrap()
 
-        self.send("250+ns/all=")
-        self.send(".")
-        self.send("250 OK")
+        state = yield TorState.from_protocol(protocol)
 
-        self.send("250+circuit-status=")
-        self.send(".")
-        self.send("250 OK")
 
-        self.send("250-stream-status=")
-        self.send("250 OK")
-
-        self.send("250-address-mappings/all=")
-        self.send("250 OK")
-
-        for ignored in self.state.event_map.items():
-            self.send("250 OK")
-
-        fakerouter = object()
-        self.state.routers['$0000000000000000000000000000000000000000'] = fakerouter
-        self.state.routers['$9999999999999999999999999999999999999999'] = fakerouter
-        self.send("250+entry-guards=")
-        self.send("$0000000000000000000000000000000000000000=name up")
-        self.send("$1111111111111111111111111111111111111111=foo up")
-        self.send("$9999999999999999999999999999999999999999=eman unusable 2012-01-01 22:00:00")
-        self.send(".")
-        self.send("250 OK")
-
-        # implicitly created Router object for the $1111...11 lookup
-        # but 0.0.0.0 will have to country, so Router will ask Tor
-        # for one via GETINFO ip-to-country
-        self.send("250-ip-to-country/0.0.0.0=??")
-        self.send("250 OK")
-
-        self.assertEqual(len(self.state.entry_guards), 2)
-        self.assertTrue('$0000000000000000000000000000000000000000' in self.state.entry_guards)
-        self.assertEqual(self.state.entry_guards['$0000000000000000000000000000000000000000'], fakerouter)
-        self.assertTrue('$1111111111111111111111111111111111111111' in self.state.entry_guards)
-
-        self.assertEqual(len(self.state.unusable_entry_guards), 1)
-        self.assertTrue('$9999999999999999999999999999999999999999' in self.state.unusable_entry_guards[0])
-
-        return d
+        self.assertEqual(len(state.entry_guards), 2)
+        self.assertTrue('$0000000000000000000000000000000000000000' in state.entry_guards)
+        self.assertTrue('$1111111111111111111111111111111111111111' in state.entry_guards)
+        self.assertEqual(len(state.unusable_entry_guards), 1)
+        self.assertTrue('$9999999999999999999999999999999999999999' in state.unusable_entry_guards[0])
 
     def test_bootstrap_existing_addresses(self):
         '''
