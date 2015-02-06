@@ -1,3 +1,4 @@
+from datetime import datetime
 from twisted.trial import unittest
 from twisted.internet import defer
 
@@ -41,6 +42,10 @@ class RouterTests(unittest.TestCase):
         self.assertEqual(
             router.id_hex,
             "$00786E43CCC5409753F25E36031C5CEA6EA43702"
+        )
+        self.assertTrue(
+            isinstance(router.modified,
+                       datetime)
         )
         self.assertEqual(router.policy, '')
 

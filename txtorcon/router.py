@@ -1,3 +1,4 @@
+from datetime import datetime
 from util import NetLocation
 import types
 
@@ -69,11 +70,22 @@ class Router(object):
     unique_name = property(lambda x: x.name_is_unique and x.name or x.id_hex)
     "has the hex id if this router's name is not unique, or its name otherwise"
 
+    @property
+    def modified(self):
+        if self._modified is None:
+            self._modified = datetime.strptime(
+                self._modified_unparsed,
+                '%Y-%m-%f %H:%M:%S'
+            )
+        return self._modified
+
     def update(self, name, idhash, orhash, modified, ip, orport, dirport):
         self.name = name
         self.id_hash = idhash
         self.or_hash = orhash
-        self.modified = modified
+        # modified is lazy-parsed, approximately doubling router-parsing time
+        self._modified_unparsed = modified
+        self._modified = None
         self.ip = ip
         self.or_port = orport
         self.dir_port = dirport
