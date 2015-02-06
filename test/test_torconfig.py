@@ -883,7 +883,8 @@ class LaunchTorTests(unittest.TestCase):
         self.assertEqual("", stderr.getvalue())
         todel = proto.to_delete
         self.assertTrue(len(todel) > 0)
-        proto.processEnded(Failure(error.ProcessDone(0)))
+        # ...because we know it's a TorProcessProtocol :/
+        proto.cleanup()
         self.assertEqual(len(proto.to_delete), 0)
         for f in todel:
             self.assertTrue(not os.path.exists(f))

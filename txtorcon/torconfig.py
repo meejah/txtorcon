@@ -184,10 +184,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
         self.cleanup()
 
-        if isinstance(status.value,
-                      error.ProcessDone) and not self._did_timeout:
-            return
-
         if status.value.exitCode is None:
             if self._did_timeout:
                 err = RuntimeError("Timeout waiting for Tor launch..")
@@ -407,28 +403,41 @@ def launch_tor(config, reactor,
         control_port = 9052  # FIXME choose a random, unoccupied one?
         config.ControlPort = control_port
 
+    # so, we support passing in ControlPort=0 -- not really sure if
+    # this is a good idea (since then the caller has to kill the tor
+    # off, etc), but at least one person has requested it :/
     if control_port != 0:
         config.CookieAuthentication = 1
         config.__OwningControllerProcess = os.getpid()
+        if connection_creator is None:
+            connection_creator = functools.partial(
+                TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
+                TorProtocolFactory()
+            )
     else:
         connection_creator = None
 
-    config.save()
+    # NOTE well, that if we don't pass "-f" then Tor will merrily load
+    # it's default torrc, and apply our options over top... :/
+    config_args = ['-f', '/non-existant', '--ignore-missing-torrc']
 
-    (fd, torrc) = tempfile.mkstemp(prefix='tortmp')
-    os.write(fd, config.create_torrc())
-    os.close(fd)
+    # ...now add all our config options on the command-line. This
+    # avoids writing a temporary torrc.
+    for (k, v) in config.config_args():
+        config_args.append(k)
+        config_args.append(v)
 
-    # txtorlog.msg('Running with config:\n', open(torrc, 'r').read())
+    # txtorlog.msg('Running with config:\n', ' '.join(config_args))
 
-    if connection_creator is None and control_port > 0:
-        connection_creator = functools.partial(
-            TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
-            TorProtocolFactory())
-    process_protocol = TorProcessProtocol(connection_creator, progress_updates,
-                                          config, reactor, timeout,
-                                          kill_on_stderr,
-                                          stdout, stderr)
+    process_protocol = TorProcessProtocol(
+        connection_creator,
+        progress_updates,
+        config, reactor,
+        timeout,
+        kill_on_stderr,
+        stdout,
+        stderr
+    )
 
     # we set both to_delete and the shutdown events because this
     # process might be shut down way before the reactor, but if the
@@ -438,24 +447,23 @@ def launch_tor(config, reactor,
 
     # we don't want to delete the user's directories, just temporary
     # ones this method created.
-    if user_set_data_directory:
-        process_protocol.to_delete = [torrc]
-        reactor.addSystemEventTrigger('before', 'shutdown',
-                                      functools.partial(delete_file_or_tree,
-                                                        torrc))
-    else:
-        process_protocol.to_delete = [torrc, data_directory]
-        reactor.addSystemEventTrigger('before', 'shutdown',
-                                      functools.partial(delete_file_or_tree,
-                                                        torrc,
-                                                        data_directory))
+    if not user_set_data_directory:
+        process_protocol.to_delete = [data_directory]
+        reactor.addSystemEventTrigger(
+            'before', 'shutdown',
+            functools.partial(delete_file_or_tree, data_directory)
+        )
 
     try:
         log.msg('Spawning tor process with DataDirectory', data_directory)
-        transport = reactor.spawnProcess(process_protocol, tor_binary,
-                                         args=(tor_binary, '-f', torrc),
-                                         env={'HOME': data_directory},
-                                         path=data_directory)
+        args = [tor_binary] + config_args
+        transport = reactor.spawnProcess(
+            process_protocol,
+            tor_binary,
+            args=args,
+            env={'HOME': data_directory},
+            path=data_directory
+        )
         # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
         transport.closeStdin()
 
@@ -896,12 +904,14 @@ class TorConfig(object):
             return True
         return item in self.config
 
-    def __iter__(self, *args, **kw):
+    def __iter__(self):
         '''
-        FIXME should work with .saved as well!
-        ...and needs proper iterator tests in test_torconfig too
+        FIXME needs proper iterator tests in test_torconfig too
         '''
-        return self.config.__iter__(*args, **kw)
+        for x in self.config.__iter__():
+            yield x
+        for x in self.__dict__['unsaved'].__iter__():
+            yield x
 
     def get_type(self, name):
         """
@@ -1126,27 +1136,49 @@ class TorConfig(object):
                 raise RuntimeError("Can't parse HiddenServiceOptions: " + k)
 
         if directory is not None:
-            hs.append(HiddenService(self, directory, ports, auth, ver, group_read))
+            hs.append(
+                HiddenService(
+                    self, directory, ports, auth, ver, group_read
+                )
+            )
 
         name = 'HiddenServices'
         self.config[name] = _ListWrapper(
             hs, functools.partial(self.mark_unsaved, name))
 
-    def create_torrc(self):
-        rtn = StringIO()
+    def config_args(self):
+        '''
+        Returns an iterator of 2-tuples (config_name, value), one for
+        each configuration option in this config. This is more-or-less
+        and internal method, but see, e.g., launch_tor()'s
+        implementation if you thing you need to use this for
+        something.
+
+        See :meth:`txtorcon.TorConfig.create_torrc` which returns a
+        string which is also a valid ``torrc`` file
+
+        '''
 
         for (k, v) in self.config.items() + self.unsaved.items():
             if type(v) is _ListWrapper:
                 if k.lower() == 'hiddenservices':
                     for x in v:
                         for (kk, vv) in x.config_attributes():
-                            rtn.write('%s %s\n' % (kk, vv))
+                            yield (str(kk), str(vv))
 
                 else:
+                    # FIXME actually, is this right? don't we want ALL
+                    # the values in one string?!
                     for x in v:
-                        rtn.write('%s %s\n' % (k, x))
+                        yield (str(k), str(x))
 
             else:
-                rtn.write('%s %s\n' % (k, v))
+                yield (str(k), str(v))
+
+    def create_torrc(self):
+        rtn = StringIO()
+
+        for (k, v) in self.config_args():
+            rtn.write('%s %s\n' % (k, v))
 
         return rtn.getvalue()
