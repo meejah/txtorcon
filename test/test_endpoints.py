@@ -45,6 +45,7 @@ class EndpointTests(unittest.TestCase):
         endpoints._global_tor_lock = defer.DeferredLock()
         self.reactor = FakeReactorTcp(self)
         self.protocol = FakeControlProtocol([])
+        self.protocol.event_happened('INFO', 'something craaaaaaazy')
         self.protocol.event_happened(
             'INFO',
             'connection_dir_client_reached_eof(): Uploaded rendezvous '

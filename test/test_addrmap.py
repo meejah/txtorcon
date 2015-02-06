@@ -171,6 +171,13 @@ class AddrMapTests(unittest.TestCase):
     def addrmap_added(self, addr):
         self.addrmap.append(addr)
 
+    def test_double_add_listener(self):
+        am = AddrMap()
+        am.add_listener(self)
+        am.add_listener(self)
+
+        self.assertEqual(1, len(am.listeners))
+
     def test_listeners(self):
         self.expires = []
         self.addrmap = []

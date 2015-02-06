@@ -45,6 +45,13 @@ class FsmTests(unittest.TestCase):
         self.assertWarns(RuntimeWarning, "No next state",
                          txtorcon.spaghetti.__file__, fsm.process, "")
 
+    def test_two_states(self):
+        fsm = FSM([])
+        idle = State("I")
+        notidle = State("N")
+        fsm.add_state(idle)
+        fsm.add_state(notidle)
+
     def test_no_matcher(self):
         idle = State("I")
         other = State("O")

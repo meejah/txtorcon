@@ -43,10 +43,10 @@ class RouterTests(unittest.TestCase):
             router.id_hex,
             "$00786E43CCC5409753F25E36031C5CEA6EA43702"
         )
-        self.assertTrue(
-            isinstance(router.modified,
-                       datetime)
-        )
+
+        # we assert this twice to cover the cached + uncached cases
+        self.assertTrue(isinstance(router.modified, datetime))
+        self.assertTrue(isinstance(router.modified, datetime))
         self.assertEqual(router.policy, '')
 
     def test_unique_name(self):

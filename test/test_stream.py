@@ -212,6 +212,8 @@ class StreamTests(unittest.TestCase):
 
         stream = Stream(self)
         stream.listen(listener)
+        stream.listen(listener)
+        self.assertEqual(len(stream.listeners), 1)
         stream.unlisten(listener)
         self.assertEqual(len(stream.listeners), 0)
 

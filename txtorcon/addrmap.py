@@ -42,7 +42,7 @@ class Addr(object):
         if gmtexpires is None:
             if len(args) == 3:
                 gmtexpires = expires
-            elif len(args) > 3:
+            else:
                 if args[2] == 'NEVER':
                     gmtexpires = args[2]
                 else:
