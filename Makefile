@@ -38,6 +38,13 @@ coverage:
 	coverage -a -d annotated_coverage
 	coverage report --show-missing
 
+htmlcoverage:
+	coverage run --source=txtorcon `which trial` test
+	coverage -a -d annotated_coverage
+	coverage report --show-missing
+	coverage html  # creates htmlcov/
+	sensible-browser htmlcov/index.html
+
 # dang, this is a little annoying. maybe add a shell-script which
 # looks for "coverage" or "python-coverage"??
 coverage-debian:
