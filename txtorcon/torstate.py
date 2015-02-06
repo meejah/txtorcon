@@ -238,39 +238,37 @@ class TorState(object):
             def __call__(self, *args):
                 raise RuntimeError(self.msg % tuple(args))
 
-        def nothing(*args):
-            pass
-
         waiting_r = State("waiting_r")
         waiting_w = State("waiting_w")
         waiting_p = State("waiting_p")
         waiting_s = State("waiting_s")
 
         def ignorable_line(x):
-            return x.strip() == '.' or x.strip() == 'OK' or x[:3] == 'ns/' or x.strip() == ''
+            x = x.strip()
+            return x in ['.', 'OK', ''] or x.startswith('ns/')
 
-        waiting_r.add_transition(Transition(waiting_r, ignorable_line, nothing))
-        waiting_r.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin))
+        waiting_r.add_transition(Transition(waiting_r, ignorable_line, None))
+        waiting_r.add_transition(Transition(waiting_s, lambda x: x.startswith('r '), self._router_begin))
         # FIXME use better method/func than die!!
-        waiting_r.add_transition(Transition(waiting_r, lambda x: x[:2] != 'r ', die('Expected "r " while parsing routers not "%s"')))
+        waiting_r.add_transition(Transition(waiting_r, lambda x: not x.startswith('r '), die('Expected "r " while parsing routers not "%s"')))
 
-        waiting_s.add_transition(Transition(waiting_w, lambda x: x[:2] == 's ', self._router_flags))
-        waiting_s.add_transition(Transition(waiting_s, lambda x: x[:2] == 'a ', self._router_address))
-        waiting_s.add_transition(Transition(waiting_r, ignorable_line, nothing))
-        waiting_s.add_transition(Transition(waiting_r, lambda x: x[:2] != 's ' and x[:2] != 'a ', die('Expected "s " while parsing routers not "%s"')))
-        waiting_s.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
+        waiting_s.add_transition(Transition(waiting_w, lambda x: x.startswith('s '), self._router_flags))
+        waiting_s.add_transition(Transition(waiting_s, lambda x: x.startswith('a '), self._router_address))
+        waiting_s.add_transition(Transition(waiting_r, ignorable_line, None))
+        waiting_s.add_transition(Transition(waiting_r, lambda x: not x.startswith('s ') and not x.startswith('a '), die('Expected "s " while parsing routers not "%s"')))
+        waiting_s.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', None))
 
-        waiting_w.add_transition(Transition(waiting_p, lambda x: x[:2] == 'w ', self._router_bandwidth))
-        waiting_w.add_transition(Transition(waiting_r, ignorable_line, nothing))
-        waiting_w.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin))  # "w" lines are optional
-        waiting_w.add_transition(Transition(waiting_r, lambda x: x[:2] != 'w ', die('Expected "w " while parsing routers not "%s"')))
-        waiting_w.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
+        waiting_w.add_transition(Transition(waiting_p, lambda x: x.startswith('w '), self._router_bandwidth))
+        waiting_w.add_transition(Transition(waiting_r, ignorable_line, None))
+        waiting_w.add_transition(Transition(waiting_s, lambda x: x.startswith('r '), self._router_begin))  # "w" lines are optional
+        waiting_w.add_transition(Transition(waiting_r, lambda x: not x.startswith('w '), die('Expected "w " while parsing routers not "%s"')))
+        waiting_w.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', None))
 
-        waiting_p.add_transition(Transition(waiting_r, lambda x: x[:2] == 'p ', self._router_policy))
-        waiting_p.add_transition(Transition(waiting_r, ignorable_line, nothing))
-        waiting_p.add_transition(Transition(waiting_s, lambda x: x[:2] == 'r ', self._router_begin))  # "p" lines are optional
+        waiting_p.add_transition(Transition(waiting_r, lambda x: x.startswith('p '), self._router_policy))
+        waiting_p.add_transition(Transition(waiting_r, ignorable_line, None))
+        waiting_p.add_transition(Transition(waiting_s, lambda x: x.startswith('r '), self._router_begin))  # "p" lines are optional
         waiting_p.add_transition(Transition(waiting_r, lambda x: x[:2] != 'p ', die('Expected "p " while parsing routers not "%s"')))
-        waiting_p.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', nothing))
+        waiting_p.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', None))
 
         self._network_status_parser = FSM([waiting_r, waiting_s, waiting_w, waiting_p])
 
