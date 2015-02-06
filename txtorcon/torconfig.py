@@ -820,6 +820,8 @@ class TorConfig(object):
 
         self.__dict__['_setup_'] = None
 
+    # FIXME should re-name this to "tor_protocol" to be consistent
+    # with other things? Or rename the other things?
     """
     read-only access to TorControlProtocol. Call attach_protocol() to
     set it, which can only be done if we don't already have a
