@@ -57,13 +57,13 @@ class Addr(object):
 
         fmt = "%Y-%m-%d %H:%M:%S"
 
-        ## if we already have expiry times, etc then we want to
-        ## properly delay our timeout
+        # if we already have expiry times, etc then we want to
+        # properly delay our timeout
 
         oldexpires = self.expires
 
         if gmtexpires.upper() == 'NEVER':
-            ## FIXME can I just select a date 100 years in the future instead?
+            # FIXME can I just select a date 100 years in the future instead?
             self.expires = None
         else:
             self.expires = datetime.datetime.strptime(gmtexpires, fmt)

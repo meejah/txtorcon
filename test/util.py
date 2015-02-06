@@ -5,9 +5,11 @@ import shutil
 
 class TempDir(object):
     '''
-    This is a simple context manager that handles creating and cleaning up a tempdir.
+    This is a simple context manager that handles creating and
+    cleaning up a tempdir.
 
     See also: https://gist.github.com/meejah/6430613
+
     '''
 
     def __enter__(self, *args):

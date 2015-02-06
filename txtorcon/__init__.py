@@ -1,5 +1,5 @@
-## for now, this needs to be changed in setup.py also until I find a
-## better solution
+# for now, this needs to be changed in setup.py also until I find a
+# better solution
 __version__ = '0.12.0'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
@@ -11,9 +11,18 @@ __copyright__ = 'Copyright 2012-2014'
 from txtorcon.router import Router
 from txtorcon.circuit import Circuit
 from txtorcon.stream import Stream
-from txtorcon.torcontrolprotocol import TorControlProtocol, TorProtocolError, TorProtocolFactory, DEFAULT_VALUE
-from txtorcon.torstate import TorState, build_tor_connection, build_local_tor_connection
-from txtorcon.torconfig import TorConfig, HiddenService, TorProcessProtocol, launch_tor, TorNotFound
+from txtorcon.torcontrolprotocol import TorControlProtocol
+from txtorcon.torcontrolprotocol import TorProtocolError
+from txtorcon.torcontrolprotocol import TorProtocolFactory
+from txtorcon.torcontrolprotocol import DEFAULT_VALUE
+from txtorcon.torstate import TorState
+from txtorcon.torstate import build_tor_connection
+from txtorcon.torstate import build_local_tor_connection
+from txtorcon.torconfig import TorConfig
+from txtorcon.torconfig import HiddenService
+from txtorcon.torconfig import TorProcessProtocol
+from txtorcon.torconfig import launch_tor
+from txtorcon.torconfig import TorNotFound
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress
@@ -33,8 +42,8 @@ __all__ = ["Router",
            "TorControlProtocol", "TorProtocolError", "TorProtocolFactory",
            "TorState", "DEFAULT_VALUE",
            "TorInfo",
-           "build_tor_connection", "build_local_tor_connection", "launch_tor", "TorNotFound",
-           "TorConfig", "HiddenService", "TorProcessProtocol",
+           "build_tor_connection", "build_local_tor_connection", "launch_tor",
+           "TorNotFound", "TorConfig", "HiddenService", "TorProcessProtocol",
            "TorInfo",
            "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",
            "IHiddenService", "IProgressProvider",
@@ -46,5 +55,6 @@ __all__ = ["Router",
            "ITorControlProtocol",
            "IStreamListener", "IStreamAttacher", "StreamListenerMixin",
            "ICircuitContainer", "ICircuitListener", "CircuitListenerMixin",
-           "IRouterContainer", "IAddrListener", "IProgressProvider", "IHiddenService",
+           "IRouterContainer", "IAddrListener", "IProgressProvider",
+           "IHiddenService",
            ]

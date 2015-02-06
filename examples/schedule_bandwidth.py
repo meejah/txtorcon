@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-##
-## Here, we do something possible-useful and schedule changes to the
-## "BandWidthRate" and optionally "BandWidthBurst" settings in Tor.
-##
+# Here, we do something possible-useful and schedule changes to the
+# "BandWidthRate" and optionally "BandWidthBurst" settings in Tor.
 
 import datetime
 from twisted.internet import reactor

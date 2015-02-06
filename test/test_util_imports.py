@@ -7,7 +7,6 @@ from unittest import skipIf
 
 
 def fake_import(orig, name, *args, **kw):
-    ##print "IMPORTING", name
     if name in ['GeoIP', 'ipaddr']:
         raise ImportError('testing!')
     return orig(*((name,) + args), **kw)

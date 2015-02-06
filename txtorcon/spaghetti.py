@@ -22,18 +22,16 @@ class FSM(object):
         self.states = states
 
     def process(self, data):
-        #print self,"process",data
         if self.state is None:
             raise RuntimeError("There is no initial state.")
         next_state = self.state.process(data)
         if next_state:
-            #print "changing to",next_state.name,next_state
             self.state = next_state
         else:
             warnings.warn("No next state", RuntimeWarning)
 
     def add_state(self, state):
-        ## first added state is initial state
+        # first added state is initial state
         if len(self.states) == 0:
             self.state = state
         self.states.append(state)
@@ -52,7 +50,6 @@ class State(object):
         self.transitions = []
 
     def process(self, data):
-        #print self.name,"process",data
         for t in self.transitions:
             r = t.process(data)
             if r is not None:
@@ -94,7 +91,6 @@ class Transition(object):
         self.next_state = next_state
         if self.next_state is None:
             raise RuntimeError("next_state must be valid")
-        #print self,self.matcher,self.handler
 
     def match(self, data):
         """
@@ -102,7 +98,6 @@ class Transition(object):
         data by default. may override instead of providing a matcher
         methdo to ctor.
         """
-        #print self,"match",data,self.matcher
         if self.matcher is not None:
             return self.matcher(data)
         return True
@@ -114,7 +109,6 @@ class Transition(object):
         """
         if self.handler:
             state = self.handler(data)
-            #print "got",state
             if state is None:
                 return self.next_state
             return state
@@ -122,7 +116,6 @@ class Transition(object):
 
     def process(self, data):
         """return next state, or None if not handled."""
-        #print self,"process",data
         if self.match(data):
             return self.handle(data)
         return None

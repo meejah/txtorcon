@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-##
-## This uses an IStreamListener and an ICircuitListener to log all
-## built circuits and all streams that succeed.
-##
+# This uses an IStreamListener and an ICircuitListener to log all
+# built circuits and all streams that succeed.
 
 import sys
 from twisted.python import log
@@ -13,14 +11,20 @@ import txtorcon
 
 def logCircuit(circuit):
     path = '->'.join(map(lambda x: str(x.location.countrycode), circuit.path))
-    log.msg('Circuit %d (%s) is %s for purpose "%s"' % (circuit.id, path, circuit.state, circuit.purpose))
+    log.msg('Circuit %d (%s) is %s for purpose "%s"' %
+            (circuit.id, path, circuit.state, circuit.purpose))
 
 
 def logStream(stream, state):
     circ = ''
     if stream.circuit:
-        circ = ' via circuit %d (%s)' % (stream.circuit.id, '->'.join(map(lambda x: x.location.countrycode, stream.circuit.path)))
-    proc = txtorcon.util.process_from_address(stream.source_addr, stream.source_port, state)
+        path = '->'.join(map(lambda x: x.location.countrycode, stream.circuit.path))
+        circ = ' via circuit %d (%s)' % (stream.circuit.id, path)
+    proc = txtorcon.util.process_from_address(
+        stream.source_addr,
+        stream.source_port,
+        state
+    )
     if proc:
         proc = ' from process "%s"' % (proc, )
 
@@ -28,11 +32,14 @@ def logStream(stream, state):
         proc = ' for Tor internal use'
 
     else:
-        proc = ' from remote "%s:%s"' % (str(stream.source_addr), str(stream.source_port))
-    log.msg('Stream %d to %s:%d attached%s%s' % (stream.id, stream.target_host, stream.target_port, circ, proc))
+        proc = ' from remote "%s:%s"' % (str(stream.source_addr),
+                                         str(stream.source_port))
+    log.msg('Stream %d to %s:%d attached%s%s' %
+            (stream.id, stream.target_host, stream.target_port, circ, proc))
 
 
-class StreamCircuitLogger(txtorcon.StreamListenerMixin, txtorcon.CircuitListenerMixin):
+class StreamCircuitLogger(txtorcon.StreamListenerMixin,
+                          txtorcon.CircuitListenerMixin):
 
     def __init__(self, state):
         self.state = state

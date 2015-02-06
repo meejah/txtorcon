@@ -76,13 +76,14 @@ class ConfigMethod(object):
         n = self.info_key.replace('/', '.')
         n = n.replace('-', '_')
         s = '%s(%s)' % (n, 'arg' if self.takes_arg else '')
-        #print s
         return s
 
     def __call__(self, *args):
         if self.takes_arg:
             if len(args) != 1:
-                raise TypeError('"%s" takes exactly one argument' % self.info_key)
+                raise TypeError(
+                    '"%s" takes exactly one argument' % self.info_key
+                )
             req = '%s/%s' % (self.info_key, str(args[0]))
 
         else:
@@ -92,11 +93,13 @@ class ConfigMethod(object):
             req = self.info_key
 
         def stripper(key, arg):
-            ## strip "keyname="
-            ## sometimes keyname= is followed by a newline, so the final .strip()
+            # strip "keyname="
+            # sometimes keyname= is followed by a newline, so final .strip()
             return arg.strip()[len(key) + 1:].strip()
 
-        return self.proto.get_info_raw(req).addCallback(functools.partial(stripper, req))
+        d = self.proto.get_info_raw(req)
+        d.addCallback(functools.partial(stripper, req))
+        return d
 
     def __str__(self):
         arg = ''
@@ -106,8 +109,7 @@ class ConfigMethod(object):
 
 
 class TorInfo(object):
-    """
-    Implements some attribute magic over top of TorControlProtocol so
+    """Implements some attribute magic over top of TorControlProtocol so
     that all the available GETINFO values are gettable in a little
     easier fashion. Dashes are replaced by underscores (since dashes
     aren't valid in method/attribute names for Python). Some of the
@@ -127,19 +129,21 @@ class TorInfo(object):
         info.traffic.written().addCallback(cb)
         info.ip_to_country('8.8.8.8').addCallback(cb)
 
-    For interactive use -- or even checking things progammatically -- TorInfo
-    pretends it only has attributes that coorespond to valid GETINFO calls.
-    So for example, dir(info) will only return all the currently valid top-level
-    things. In the above example this might be ['traffic', 'ip_to_country'] (of
-    course in practice this is a much longer list). And "dir(info.traffic)" might
-    return ['read', 'written']
+    For interactive use -- or even checking things progammatically --
+    TorInfo pretends it only has attributes that coorespond to valid
+    GETINFO calls.  So for example, dir(info) will only return all the
+    currently valid top-level things. In the above example this might
+    be ['traffic', 'ip_to_country'] (of course in practice this is a
+    much longer list). And "dir(info.traffic)" might return ['read',
+    'written']
 
-    For something similar to this for configuration (GETCONF, SETCONF) see
-    TorConfig which is quite a lot more complicated (internally) since you can set
-    config items.
+    For something similar to this for configuration (GETCONF, SETCONF)
+    see TorConfig which is quite a lot more complicated (internally)
+    since you can set config items.
 
-    NOTE that 'GETINFO config/*' is not supported as it's the only case that's not a
-    leaf, but theoretically a method.
+    NOTE that 'GETINFO config/*' is not supported as it's the only
+    case that's not a leaf, but theoretically a method.
+
     """
 
     def __init__(self, control, errback=None):
@@ -160,7 +164,7 @@ class TorInfo(object):
     def _add_attribute(self, n, v):
         self.attrs[n] = v
 
-    ## iterator protocol
+    # iterator protocol
 
     def __getitem__(self, idx):
         sup = super(TorInfo, self)
@@ -174,7 +178,7 @@ class TorInfo(object):
             return len(object.__getattribute__(self, 'attrs'))
         raise TypeError("No length until we're setup.")
 
-    ## change our attribute behavior based on the value of _setup
+    # change our attribute behavior based on the value of _setup
 
     def __dir__(self):
         sup = super(TorInfo, self)
@@ -202,7 +206,8 @@ class TorInfo(object):
         raise AttributeError(name)
 
     def bootstrap(self, *args):
-        d = self.protocol.get_info_raw("info/names").addCallback(self._do_setup)
+        d = self.protocol.get_info_raw("info/names")
+        d.addCallback(self._do_setup)
         if self.errback:
             d.addErrback(self.errback)
         d.addCallback(self._setup_complete)
@@ -213,26 +218,26 @@ class TorInfo(object):
             x.dump('')
 
     def _do_setup(self, data):
-        # FIXME figure out why network-status doesn't work (get nothing back from
-        # Tor it seems, although stem does get an answer). this is a space-separated
-        # list of ~2500 OR id's; could it be that LineReceiver can't handle it?
+        # FIXME figure out why network-status doesn't work (get
+        # nothing back from Tor it seems, although stem does get an
+        # answer). this is a space-separated list of ~2500 OR id's;
+        # could it be that LineReceiver can't handle it?
         added_magic = []
         for line in data.split('\n'):
             if line == "info/names=" or line.strip() == '':
                 continue
 
-            #print "LINE:",line
             (name, documentation) = line.split(' ', 1)
-            ## FIXME think about this -- this is the only case where
-            ## there's something that's a directory
-            ## (i.e. MagicContainer) AND needs to be a ConfigMethod as
-            ## well...but doesn't really seem very useful. Somewhat
-            ## simpler to not support this case for now...
+            # FIXME think about this -- this is the only case where
+            # there's something that's a directory
+            # (i.e. MagicContainer) AND needs to be a ConfigMethod as
+            # well...but doesn't really seem very useful. Somewhat
+            # simpler to not support this case for now...
             if name == 'config/*':
                 continue
 
             if name.endswith('/*'):
-                ## this takes an arg, so make a method
+                # this takes an arg, so make a method
                 bits = name[:-2].split('/')
                 takes_arg = True
 
@@ -246,7 +251,9 @@ class TorInfo(object):
                 if bit in mine.attrs:
                     mine = mine.attrs[bit]
                     if not isinstance(mine, MagicContainer):
-                        raise RuntimeError("Already had something: %s for %s" % (bit, name))
+                        raise RuntimeError(
+                            "Already had something: %s for %s" % (bit, name)
+                        )
 
                 else:
                     c = MagicContainer(bit)
@@ -255,8 +262,11 @@ class TorInfo(object):
                     mine = c
             n = bits[-1].replace('-', '_')
             if n in mine.attrs:
-                raise RuntimeError("Already had something: %s for %s" % (n, name))
-            mine._add_attribute(n, ConfigMethod('/'.join(bits), self.protocol, takes_arg))
+                raise RuntimeError(
+                    "Already had something: %s for %s" % (n, name)
+                )
+            mine._add_attribute(n, ConfigMethod('/'.join(bits),
+                                                self.protocol, takes_arg))
 
         for c in added_magic:
             c._setup_complete()

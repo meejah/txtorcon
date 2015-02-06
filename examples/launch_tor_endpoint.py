@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-##
-## Here we set up a Twisted Web server and then launch a slave tor
-## with a configured hidden service directed at the Web server we set
-## up. This uses serverFromString to translate the "onion" endpoint descriptor
-## into a TCPHiddenServiceEndpoint object...
-##
+# Here we set up a Twisted Web server and then launch a slave tor
+# with a configured hidden service directed at the Web server we set
+# up. This uses serverFromString to translate the "onion" endpoint descriptor
+# into a TCPHiddenServiceEndpoint object...
 
 from twisted.internet import reactor
 from twisted.web import server, resource
@@ -51,14 +49,17 @@ def progress(percent, tag, message):
 # several ways to proceed here and what they mean:
 #
 # ep0:
-#    launch a new Tor instance, configure a hidden service on some port and pubish descriptor for port 80
+#    launch a new Tor instance, configure a hidden service on some
+#    port and pubish descriptor for port 80
 # ep1:
 #    connect to existing Tor via control-port 9051, configure a hidden
 #    service listening locally on 8080, publish a descriptor for port
 #    80 and use an explicit hiddenServiceDir (where "hostname" and
-#    "private_key" files are put by Tor). We set SOCKS port explicitly, too.
+#    "private_key" files are put by Tor). We set SOCKS port
+#    explicitly, too.
 # ep2:
-#    all the same as ep1, except we launch a new Tor (because no "controlPort=9051")
+#    all the same as ep1, except we launch a new Tor (because no
+#    "controlPort=9051")
 #
 
 ep0 = "onion:80"

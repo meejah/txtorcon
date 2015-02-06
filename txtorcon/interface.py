@@ -141,8 +141,8 @@ class ICircuitContainer(Interface):
         is started (not necessarily finished inside Tor).
         """
 
-    ## FIXME do we need an IStreamContainer that Stream instances get?
-    ## (Currently, they get an ICircuitContainer...)
+    # FIXME do we need an IStreamContainer that Stream instances get?
+    # (Currently, they get an ICircuitContainer...)
     def close_stream(stream, **kwargs):
         """
         Close a stream.
@@ -175,7 +175,8 @@ class ICircuitListener(Interface):
 
     def circuit_closed(circuit, **kw):
         """
-        A circuit has been closed cleanly (won't be in controller's list any more).
+        A circuit has been closed cleanly (won't be in controller's list
+        any more).
 
         :param kw:
             A dict of additional args. REASON is alsways included, and
@@ -192,6 +193,7 @@ class ICircuitListener(Interface):
             remote_reason=None, **kw)) lower-case versions of all the
             keys are also provided (pointing to the same -- usually
             UPPERCASE -- strings as the upper-case keys).
+
         """
 
     def circuit_failed(circuit, **kw):

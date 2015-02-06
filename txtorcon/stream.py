@@ -58,10 +58,10 @@ class Stream(object):
 
         self.circuit_container = ICircuitContainer(circuitcontainer)
 
-        ## FIXME: Sphinx doesn't seem to understand these variable
-        ## docstrings, so consolidate with above if Sphinx is the
-        ## answer -- actually it does, so long as the :ivar: things
-        ## are never mentioned it seems.
+        # FIXME: Sphinx doesn't seem to understand these variable
+        # docstrings, so consolidate with above if Sphinx is the
+        # answer -- actually it does, so long as the :ivar: things
+        # are never mentioned it seems.
 
         self.id = None
         """An int, Tor's ID for this :class:`txtorcon.Circuit`"""
@@ -146,7 +146,10 @@ class Stream(object):
         return self._closing_deferred
 
     def _create_flags(self, kw):
-        "this clones the kw dict, adding a lower-case version of every key (duplicated in circuit.py; consider putting in util?)"
+        """
+        this clones the kw dict, adding a lower-case version of every key
+        (duplicated in circuit.py; consider putting in util?)
+        """
 
         flags = {}
         for k in kw.keys():
@@ -155,7 +158,7 @@ class Stream(object):
         return flags
 
     def update(self, args):
-        ## print "update",self.id,args
+        # print "update",self.id,args
 
         if self.id is None:
             self.id = int(args[0])
@@ -217,8 +220,8 @@ class Stream(object):
                 self.circuit.streams.remove(self)
                 self.circuit = None
 
-            ## FIXME does this count as closed?
-            ##self.maybe_call_closing_deferred()
+            # FIXME does this count as closed?
+            # self.maybe_call_closing_deferred()
             flags = self._create_flags(kw)
             [x.stream_detach(self, **flags) for x in self.listeners]
 
@@ -243,11 +246,17 @@ class Stream(object):
                     self.circuit = self.circuit_container.find_circuit(cid)
                     if self not in self.circuit.streams:
                         self.circuit.streams.append(self)
-                        [x.stream_attach(self, self.circuit) for x in self.listeners]
+                        for x in self.listeners:
+                            x.stream_attach(self, self.circuit)
 
                 else:
                     if self.circuit.id != cid:
-                        log.err(RuntimeError('Circuit ID changed from %d to %d.' % (self.circuit.id, cid)))
+                        log.err(
+                            RuntimeError(
+                                'Circuit ID changed from %d to %d.' %
+                                (self.circuit.id, cid)
+                            )
+                        )
 
     def maybe_call_closing_deferred(self):
         """

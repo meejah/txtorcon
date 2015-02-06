@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-##
-## Just listens for a few EVENTs from Tor (INFO NOTICE WARN ERR) and
-## prints out the contents, so functions like a log monitor.
-##
+# Just listens for a few EVENTs from Tor (INFO NOTICE WARN ERR) and
+# prints out the contents, so functions like a log monitor.
 
 from twisted.internet import reactor
 import txtorcon

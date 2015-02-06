@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-##
-## Launch a slave Tor by first making a TorConfig object.
-##
+# Launch a slave Tor by first making a TorConfig object.
 
 import functools
 from twisted.internet import reactor

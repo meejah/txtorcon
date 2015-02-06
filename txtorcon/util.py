@@ -25,16 +25,16 @@ asn = None
 
 
 def create_geoip(fname):
-    ## It's more "pythonic" to just wait for the exception,
-    ## but GeoIP prints out "Can't open..." messages for you,
-    ## which isn't desired here
+    # It's more "pythonic" to just wait for the exception,
+    # but GeoIP prints out "Can't open..." messages for you,
+    # which isn't desired here
     if not os.path.isfile(fname):
         raise IOError("Can't find %s" % fname)
 
     if GeoIP is None:
         return None
 
-    ## just letting any errors make it out
+    # just letting any errors make it out
     return GeoIP.open(fname, GeoIP.GEOIP_STANDARD)
 
 
@@ -81,9 +81,11 @@ def find_tor_binary(globs=('/usr/sbin/', '/usr/bin/',
     # Try to find the tor executable using the shell
     if system_tor:
         try:
-            proc = subprocess.Popen(('which tor'),
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    shell=True)
+            proc = subprocess.Popen(
+                ('which tor'),
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                shell=True
+            )
         except OSError:
             pass
         else:
@@ -130,7 +132,8 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
         a dict of key->value (both strings) of all name=value type
         keywords found in args.
     """
-    return dict(x.split('=', 1) for x in args if '=' in x and key_filter(x.split('=')[0]))
+    filtered = filter(lambda x: '=' in x and key_filter(x.split('=')[0]), args)
+    return dict(x.split('=', 1) for x in filtered)
 
 
 def delete_file_or_tree(*args):

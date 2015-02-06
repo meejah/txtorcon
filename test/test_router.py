@@ -12,10 +12,19 @@ class FakeController(object):
 class UtilityTests(unittest.TestCase):
 
     def test_hex_converters(self):
-        self.assertEqual(hexIdFromHash('AHhuQ8zFQJdT8l42Axxc6m6kNwI'), '$00786E43CCC5409753F25E36031C5CEA6EA43702')
-        self.assertEqual(hashFromHexId('$00786E43CCC5409753F25E36031C5CEA6EA43702'), 'AHhuQ8zFQJdT8l42Axxc6m6kNwI')
-        ## should work with or without leading $
-        self.assertEqual(hexIdFromHash(hashFromHexId('00786E43CCC5409753F25E36031C5CEA6EA43702')), '$00786E43CCC5409753F25E36031C5CEA6EA43702')
+        self.assertEqual(
+            hexIdFromHash('AHhuQ8zFQJdT8l42Axxc6m6kNwI'),
+            '$00786E43CCC5409753F25E36031C5CEA6EA43702'
+        )
+        self.assertEqual(
+            hashFromHexId('$00786E43CCC5409753F25E36031C5CEA6EA43702'),
+            'AHhuQ8zFQJdT8l42Axxc6m6kNwI'
+        )
+        # should work with or without leading $
+        self.assertEqual(
+            hexIdFromHash(hashFromHexId('00786E43CCC5409753F25E36031C5CEA6EA43702')),
+            '$00786E43CCC5409753F25E36031C5CEA6EA43702'
+        )
 
 
 class RouterTests(unittest.TestCase):
@@ -29,7 +38,10 @@ class RouterTests(unittest.TestCase):
                       "2011-12-16 15:11:34",
                       "77.183.225.114",
                       "24051", "24052")
-        self.assertEqual(router.id_hex, "$00786E43CCC5409753F25E36031C5CEA6EA43702")
+        self.assertEqual(
+            router.id_hex,
+            "$00786E43CCC5409753F25E36031C5CEA6EA43702"
+        )
         self.assertEqual(router.policy, '')
 
     def test_unique_name(self):
@@ -41,8 +53,14 @@ class RouterTests(unittest.TestCase):
                       "2011-12-16 15:11:34",
                       "77.183.225.114",
                       "24051", "24052")
-        self.assertEqual(router.id_hex, "$00786E43CCC5409753F25E36031C5CEA6EA43702")
-        self.assertEqual(router.unique_name, "$00786E43CCC5409753F25E36031C5CEA6EA43702")
+        self.assertEqual(
+            router.id_hex,
+            "$00786E43CCC5409753F25E36031C5CEA6EA43702"
+        )
+        self.assertEqual(
+            router.unique_name,
+            "$00786E43CCC5409753F25E36031C5CEA6EA43702"
+        )
         router.flags = ['Named']
         self.assertEqual(router.unique_name, "foo")
 
@@ -106,7 +124,9 @@ class RouterTests(unittest.TestCase):
     def test_countrycode(self):
         class CountryCodeController(object):
             def get_info_raw(self, i):
-                return defer.succeed('250-ip-to-country/127.1.2.3=ZZ\r\n250 OK')
+                return defer.succeed(
+                    '250-ip-to-country/127.1.2.3=ZZ\r\n250 OK'
+                )
         controller = CountryCodeController()
         router = Router(controller)
         router.update("foo",

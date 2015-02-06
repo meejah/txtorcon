@@ -212,7 +212,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         if self.progress_updates:
             self.progress_updates(percent, tag, summary)
 
-    ## the below are all callbacks
+    # the below are all callbacks
 
     def tor_connection_failed(self, failure):
         # FIXME more robust error-handling please, like a timeout so
@@ -257,8 +257,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.tor_protocol.add_event_listener(
             'STATUS_CLIENT', self.status_client)
 
-        ## FIXME: should really listen for these to complete as well
-        ## as bootstrap etc. For now, we'll be optimistic.
+        # FIXME: should really listen for these to complete as well
+        # as bootstrap etc. For now, we'll be optimistic.
         self.tor_protocol.queue_command('TAKEOWNERSHIP')
         self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
 
@@ -356,19 +356,19 @@ def launch_tor(config, reactor,
         the time, so FIXME look at Tor source.
     """
 
-    ## We have a slight problem with the approach: we need to pass a
-    ## few minimum values to a torrc file so that Tor will start up
-    ## enough that we may connect to it. Ideally, we'd be able to
-    ## start a Tor up which doesn't really do anything except provide
-    ## "AUTHENTICATE" and "GETINFO config/names" so we can do our
-    ## config validation.
+    # We have a slight problem with the approach: we need to pass a
+    # few minimum values to a torrc file so that Tor will start up
+    # enough that we may connect to it. Ideally, we'd be able to
+    # start a Tor up which doesn't really do anything except provide
+    # "AUTHENTICATE" and "GETINFO config/names" so we can do our
+    # config validation.
 
-    ## the other option here is to simply write a torrc version of our
-    ## config and get Tor to load that...which might be the best
-    ## option anyway.
+    # the other option here is to simply write a torrc version of our
+    # config and get Tor to load that...which might be the best
+    # option anyway.
 
-    ## actually, can't we pass them all as command-line arguments?
-    ## could be pushing some limits for giant configs...
+    # actually, can't we pass them all as command-line arguments?
+    # could be pushing some limits for giant configs...
 
     if tor_binary is None:
         tor_binary = find_tor_binary()
@@ -527,7 +527,7 @@ class TimeInterval(Integer):
     pass
 
 
-## not actually used?
+# not actually used?
 class TimeMsecInterval(TorConfigType):
     pass
 
@@ -541,7 +541,7 @@ class Float(TorConfigType):
         return float(s)
 
 
-## unused also?
+# unused also?
 class Time(TorConfigType):
     pass
 
@@ -558,7 +558,7 @@ class TimeIntervalCommaList(CommaList):
     pass
 
 
-## FIXME: is this really a comma-list?
+# FIXME: is this really a comma-list?
 class RouterList(CommaList):
     pass
 
@@ -650,7 +650,8 @@ class HiddenService(object):
     127.0.0.1:1234']))
     """
 
-    def __init__(self, config, thedir, ports, auth=None, ver=2, group_readable=0):
+    def __init__(self, config, thedir, ports,
+                 auth=None, ver=2, group_readable=0):
         """
         config is the TorConfig to which this will belong (FIXME,
         can't we make this automatic somehow?), thedir corresponds to
@@ -707,14 +708,17 @@ class HiddenService(object):
         """
 
         rtn = [('HiddenServiceDir', str(self.dir))]
-        if self.conf._supports['HiddenServiceDirGroupReadable'] and self.group_readable:
+        if self.conf._supports['HiddenServiceDirGroupReadable'] \
+           and self.group_readable:
             rtn.append(('HiddenServiceDirGroupReadable', str(1)))
         for x in self.ports:
             rtn.append(('HiddenServicePort', str(x)))
         if self.version:
             rtn.append(('HiddenServiceVersion', str(self.version)))
         if self.authorize_client:
-            rtn.append(('HiddenServiceAuthorizeClient', str(self.authorize_client)))
+            rtn.append(
+                ('HiddenServiceAuthorizeClient', str(self.authorize_client))
+            )
         return rtn
 
 
@@ -876,7 +880,7 @@ class TorConfig(object):
 
     def __getattr__(self, name):
         """
-        on purpose, we don't return self.saved if the key is in there
+        on purpose, we don't return self.unsaved if the key is in there
         because I want the config to represent the running Tor not
         ``things which might get into the running Tor if save() were
         to be called''
@@ -934,8 +938,8 @@ class TorConfig(object):
 
         conf = parse_keywords(arg, multiline_values=False)
         for (k, v) in conf.items():
-            ## v will be txtorcon.DEFAULT_VALUE already from
-            ## parse_keywords if it was unspecified
+            # v will be txtorcon.DEFAULT_VALUE already from
+            # parse_keywords if it was unspecified
             self.config[self._find_real_name(k)] = v
 
     def bootstrap(self, arg=None):
@@ -947,8 +951,8 @@ class TorConfig(object):
             self.protocol.add_event_listener(
                 'CONF_CHANGED', self._conf_changed)
         except RuntimeError:
-            ## for Tor versions which don't understand CONF_CHANGED
-            ## there's nothing we can really do.
+            # for Tor versions which don't understand CONF_CHANGED
+            # there's nothing we can really do.
             log.msg(
                 "Can't listen for CONF_CHANGED event; won't stay up-to-date "
                 "with other clients.")
@@ -1007,9 +1011,9 @@ class TorConfig(object):
             # update then, right?
             self.config[self._find_real_name(key)] = value
 
-        ## FIXME might want to re-think this, but currently there's no
-        ## way to put things into a config and get them out again
-        ## nicely...unless you just don't assign a protocol
+        # FIXME might want to re-think this, but currently there's no
+        # way to put things into a config and get them out again
+        # nicely...unless you just don't assign a protocol
         if self.protocol:
             d = self.protocol.set_conf(*args)
             d.addCallback(self._save_completed)
@@ -1025,7 +1029,8 @@ class TorConfig(object):
         return self
 
     def _find_real_name(self, name):
-        for x in self.__dict__['parsers'].keys() + self.__dict__['config'].keys():
+        keys = self.__dict__['parsers'].keys() + self.__dict__['config'].keys()
+        for x in keys:
             if x.lower() == name.lower():
                 return x
         return name
@@ -1041,7 +1046,7 @@ class TorConfig(object):
                 self._supports[name] = True
 
             if name == 'HiddenServiceOptions':
-                ## set up the "special-case" hidden service stuff
+                # set up the "special-case" hidden service stuff
                 servicelines = yield self.protocol.get_conf_raw(
                     'HiddenServiceOptions')
                 self._setup_hidden_services(servicelines)
@@ -1050,9 +1055,9 @@ class TorConfig(object):
             if value == 'Dependant':
                 continue
 
-            ## there's a thing called "Boolean+Auto" which is -1 for
-            ## auto, 0 for false and 1 for true. could be nicer if it
-            ## was called AutoBoolean or something, but...
+            # there's a thing called "Boolean+Auto" which is -1 for
+            # auto, 0 for false and 1 for true. could be nicer if it
+            # was called AutoBoolean or something, but...
             value = value.replace('+', '_')
 
             inst = None
@@ -1094,7 +1099,11 @@ class TorConfig(object):
             k, v = line.split('=')
             if k == 'HiddenServiceDir':
                 if directory is not None:
-                    hs.append(HiddenService(self, directory, ports, auth, ver, group_read))
+                    hs.append(
+                        HiddenService(
+                            self, directory, ports, auth, ver, group_read
+                        )
+                    )
                 directory = v
                 ports = []
                 ver = None

@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-##
-## Here we set up a Twisted Web server and then launch a slave tor
-## with a configured hidden service directed at the Web server we set
-## up. This uses serverFromString to translate the "onion" endpoint descriptor
-## into a TCPHiddenServiceEndpoint object...
-##
+# Here we set up a Twisted Web server and then launch a slave tor
+# with a configured hidden service directed at the Web server we set
+# up. This uses serverFromString to translate the "onion" endpoint descriptor
+# into a TCPHiddenServiceEndpoint object...
 
 import shutil
 
@@ -30,8 +28,9 @@ def setup_failed(arg):
 
 
 def setup_complete(port):
+    local = txtorcon.IHiddenService(port).local_address.getHost()
     print "Hidden serivce:", port.getHost()
-    print "    locally at:", txtorcon.IHiddenService(port).local_address.getHost()
+    print "    locally at:", local
 
 
 def progress(percent, tag, message):

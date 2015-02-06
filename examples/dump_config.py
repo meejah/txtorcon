@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-##
-## Simple usage example of TorConfig
-##
+# Simple usage example of TorConfig
 
 import sys
 import types

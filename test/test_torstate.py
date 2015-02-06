@@ -8,8 +8,19 @@ from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 import os
 import tempfile
 
-from txtorcon import TorControlProtocol, TorProtocolError, TorState, Stream, Circuit, build_tor_connection, build_local_tor_connection
-from txtorcon.interface import ITorControlProtocol, IStreamAttacher, ICircuitListener, IStreamListener, StreamListenerMixin, CircuitListenerMixin
+from txtorcon import TorControlProtocol
+from txtorcon import TorProtocolError
+from txtorcon import TorState
+from txtorcon import Stream
+from txtorcon import Circuit
+from txtorcon import build_tor_connection
+from txtorcon import build_local_tor_connection
+from txtorcon.interface import ITorControlProtocol
+from txtorcon.interface import IStreamAttacher
+from txtorcon.interface import ICircuitListener
+from txtorcon.interface import IStreamListener
+from txtorcon.interface import StreamListenerMixin
+from txtorcon.interface import CircuitListenerMixin
 
 
 class CircuitListener(object):
@@ -21,13 +32,21 @@ class CircuitListener(object):
 
     def checker(self, state, circuit, arg=None):
         if self.expected[0][0] != state:
-            raise RuntimeError('Expected event "%s" not "%s".' % (self.expected[0][0], state))
+            raise RuntimeError(
+                'Expected event "%s" not "%s".' %
+                (self.expected[0][0], state)
+            )
         for (k, v) in self.expected[0][1].items():
             if k == 'arg':
                 if v != arg:
-                    raise RuntimeError('Expected argument to have value "%s", not "%s"' % (arg, v))
+                    raise RuntimeError(
+                        'Expected argument to have value "%s", not "%s"' % (arg, v)
+                    )
             elif getattr(circuit, k) != v:
-                raise RuntimeError('Expected attribute "%s" to have value "%s", not "%s"' % (k, v, getattr(circuit, k)))
+                raise RuntimeError(
+                    'Expected attribute "%s" to have value "%s", not "%s"' %
+                    (k, v, getattr(circuit, k))
+                )
         self.expected = self.expected[1:]
 
     def circuit_new(self, circuit):
@@ -58,13 +77,21 @@ class StreamListener(object):
 
     def checker(self, state, stream, arg=None):
         if self.expected[0][0] != state:
-            raise RuntimeError('Expected event "%s" not "%s".' % (self.expected[0][0], state))
+            raise RuntimeError(
+                'Expected event "%s" not "%s".' % (self.expected[0][0], state)
+            )
         for (k, v) in self.expected[0][1].items():
             if k == 'arg':
                 if v != arg:
-                    raise RuntimeError('Expected argument to have value "%s", not "%s"' % (arg, v))
+                    raise RuntimeError(
+                        'Expected argument to have value "%s", not "%s"' %
+                        (arg, v)
+                    )
             elif getattr(stream, k) != v:
-                raise RuntimeError('Expected attribute "%s" to have value "%s", not "%s"' % (k, v, getattr(stream, k)))
+                raise RuntimeError(
+                    'Expected attribute "%s" to have value "%s", not "%s"' %
+                    (k, v, getattr(stream, k))
+                )
         self.expected = self.expected[1:]
 
     def stream_new(self, stream):
@@ -119,7 +146,8 @@ class FakeEndpoint:
     implements(IStreamClientEndpoint)
 
     def get_info_raw(self, keys):
-        return defer.succeed('\r\n'.join(map(lambda k: '%s=' % k, keys.split())))
+        ans = '\r\n'.join(map(lambda k: '%s=' % k, keys.split()))
+        return defer.succeed(ans)
 
     def get_info_incremental(self, key, linecb):
         linecb('%s=' % key)
@@ -130,7 +158,9 @@ class FakeEndpoint:
         self.proto.transport = proto_helpers.StringTransport()
         self.proto.get_info_raw = self.get_info_raw
         self.proto.get_info_incremental = self.get_info_incremental
-        self.proto._set_valid_events('GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL')
+        self.proto._set_valid_events(
+            'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
+        )
 
         return defer.succeed(self.proto)
 
@@ -160,7 +190,9 @@ class FakeEndpointAnswers:
         self.proto.transport = proto_helpers.StringTransport()
         self.proto.get_info_raw = self.get_info_raw
         self.proto.get_info_incremental = self.get_info_incremental
-        self.proto._set_valid_events('GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL')
+        self.proto._set_valid_events(
+            'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
+        )
 
         return defer.succeed(self.proto)
 
@@ -213,13 +245,21 @@ class BootstrapTests(unittest.TestCase):
         return d
 
     def test_build_unix_wrong_permissions(self):
-        self.assertRaises(ValueError, build_tor_connection, (FakeReactor(self), 'a non-existant filename'))
+        self.assertRaises(
+            ValueError,
+            build_tor_connection,
+            (FakeReactor(self), 'a non-existant filename')
+        )
 
     def test_build_wrong_size_tuple(self):
         self.assertRaises(TypeError, build_tor_connection, (1, 2, 3, 4))
 
     def test_build_wrong_args_entirely(self):
-        self.assertRaises(TypeError, build_tor_connection, 'incorrect argument')
+        self.assertRaises(
+            TypeError,
+            build_tor_connection,
+            'incorrect argument'
+        )
 
     def confirm_pid(self, state):
         self.assertEqual(state.tor_pid, 1234)
@@ -308,19 +348,28 @@ class StateTests(unittest.TestCase):
         self.state._stream_update("76 CLOSED 0 www.example.com:0 REASON=DONE")
 
     def test_stream_update(self):
-        ## we use a circuit ID of 0 so it doesn't try to look anything up but it's
-        ## not really correct to have a  SUCCEEDED w/o a valid circuit, I don't think
+        # we use a circuit ID of 0 so it doesn't try to look anything
+        # up but it's not really correct to have a SUCCEEDED w/o a
+        # valid circuit, I don't think
         self.state._stream_update('1610 SUCCEEDED 0 74.125.224.243:80')
         self.assertTrue(1610 in self.state.streams)
 
     def test_single_streams(self):
         self.state.circuits[496] = FakeCircuit(496)
-        self.state._stream_status('stream-status=123 SUCCEEDED 496 www.example.com:6667')
+        self.state._stream_status(
+            'stream-status=123 SUCCEEDED 496 www.example.com:6667'
+        )
         self.assertEqual(len(self.state.streams), 1)
 
     def test_multiple_streams(self):
         self.state.circuits[496] = FakeCircuit(496)
-        self.state._stream_status('stream-status=\r\n123 SUCCEEDED 496 www.example.com:6667\r\n124 SUCCEEDED 496 www.example.com:6667')
+        self.state._stream_status(
+            '\r\n'.join([
+                'stream-status=',
+                '123 SUCCEEDED 496 www.example.com:6667',
+                '124 SUCCEEDED 496 www.example.com:6667',
+            ])
+        )
         self.assertEqual(len(self.state.streams), 2)
 
     def send(self, line):
@@ -365,9 +414,9 @@ class StateTests(unittest.TestCase):
         self.send(".")
         self.send("250 OK")
 
-        ## implicitly created Router object for the $1111...11 lookup
-        ## but 0.0.0.0 will have to country, so Router will ask Tor
-        ## for one via GETINFO ip-to-country
+        # implicitly created Router object for the $1111...11 lookup
+        # but 0.0.0.0 will have to country, so Router will ask Tor
+        # for one via GETINFO ip-to-country
         self.send("250-ip-to-country/0.0.0.0=??")
         self.send("250 OK")
 
@@ -480,7 +529,11 @@ class StateTests(unittest.TestCase):
         self.send("250 OK")
         self.state.set_attacher(None, fr)
         self.send("250 OK")
-        self.assertEqual(self.transport.value(), 'SETCONF __LeaveStreamsUnattached=1\r\nSETCONF __LeaveStreamsUnattached=0\r\n')
+        self.assertEqual(
+            self.transport.value(),
+            'SETCONF __LeaveStreamsUnattached=1\r\nSETCONF'
+            ' __LeaveStreamsUnattached=0\r\n'
+        )
 
     def test_attacher(self):
         class MyAttacher(object):
@@ -548,8 +601,8 @@ class StateTests(unittest.TestCase):
         attacher = MyAttacher(self.state.circuits[1])
         self.state.set_attacher(attacher, FakeReactor(self))
 
-        ## boilerplate to finish enough set-up in the protocol so it
-        ## works
+        # boilerplate to finish enough set-up in the protocol so it
+        # works
         events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
         self.protocol._set_valid_events(events)
         self.state._add_events()
@@ -642,7 +695,12 @@ class StateTests(unittest.TestCase):
         stream = Stream(self.state)
         stream.id = 1
         self.state.streams[1] = stream
-        self.assertRaises(ValueError, self.state.close_stream, stream, 'FOO_INVALID_REASON')
+        self.assertRaises(
+            ValueError,
+            self.state.close_stream,
+            stream,
+            'FOO_INVALID_REASON'
+        )
 
     def test_close_circuit_with_id(self):
         circuit = Circuit(self.state)
@@ -694,7 +752,7 @@ class StateTests(unittest.TestCase):
         for ignored in self.state.event_map.items():
             self.send("250 OK")
 
-        ## we use this router later on in an EXTEND
+        # we use this router later on in an EXTEND
         self.state._update_network_status("""ns/all=
 r PPrivCom012 2CGDscCeHXeV/y1xFrq1EGqj5g4 QX7NVLwx7pwCuk6s8sxB4rdaCKI 2011-12-20 08:34:19 84.19.178.6 9001 0
 s Fast Guard Running Stable Unnamed Valid
@@ -706,22 +764,22 @@ p reject 1-65535""")
                     ('extend', {'id': 123})
                     ]
         listen = CircuitListener(expected)
-        ## first add a Circuit before we listen
+        # first add a Circuit before we listen
         self.protocol.dataReceived("650 CIRC 123 LAUNCHED PURPOSE=GENERAL\r\n")
         self.assertEqual(len(self.state.circuits), 1)
 
-        ## make sure we get added to existing circuits
+        # make sure we get added to existing circuits
         self.state.add_circuit_listener(listen)
         self.assertTrue(listen in self.state.circuits.values()[0].listeners)
 
-        ## now add a Circuit after we started listening
+        # now add a Circuit after we started listening
         self.protocol.dataReceived("650 CIRC 456 LAUNCHED PURPOSE=GENERAL\r\n")
         self.assertEqual(len(self.state.circuits), 2)
         self.assertTrue(listen in self.state.circuits.values()[0].listeners)
         self.assertTrue(listen in self.state.circuits.values()[1].listeners)
 
-        ## now update the first Circuit to ensure we're really, really
-        ## listening
+        # now update the first Circuit to ensure we're really, really
+        # listening
         self.protocol.dataReceived("650 CIRC 123 EXTENDED $D82183B1C09E1D7795FF2D7116BAB5106AA3E60E~PPrivCom012 PURPOSE=GENERAL\r\n")
         self.assertEqual(len(listen.expected), 0)
 
@@ -829,7 +887,7 @@ p accept 43,53
         self.assertEqual(r.bandwidth, 518000)
         self.assertEqual(len(self.state.routers_by_name['fake']), 2)
 
-        ## now we do an update
+        # now we do an update
         self.state._update_network_status('''ns/all=
 r fake YkkmgCNRV1/35OPWDvo7+1bmfoo tanLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 12.45.56.78 443 80
 s Exit Fast Guard HSDir Named Running Stable V2Dir Valid FutureProof Authority
@@ -850,8 +908,8 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         errors.
         """
 
-        ## bootstrap the TorState so we can send it a "real" 650
-        ## update
+        # bootstrap the TorState so we can send it a "real" 650
+        # update
 
         self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
         self.state._bootstrap()
@@ -878,7 +936,7 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
 
         self.send("250 OK")
 
-        ## state is now bootstrapped, we can send our NEWCONSENSUS update
+        # state is now bootstrapped, we can send our NEWCONSENSUS update
 
         self.protocol.dataReceived('\r\n'.join('''650+NEWCONSENSUS
 r Unnamed ABJlguUFz1lvQS0jq8nhTdRiXEk /zIVUg1tKMUeyUBoyimzorbQN9E 2012-05-23 01:10:22 219.94.255.254 9001 0
@@ -907,8 +965,8 @@ p reject 1-65535
         errors.
         """
 
-        ## bootstrap the TorState so we can send it a "real" 650
-        ## update
+        # bootstrap the TorState so we can send it a "real" 650
+        # update
 
         self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
         self.state._bootstrap()
@@ -935,7 +993,7 @@ p reject 1-65535
 
         self.send("250 OK")
 
-        ## state is now bootstrapped, we can send our NEWCONSENSUS update
+        # state is now bootstrapped, we can send our NEWCONSENSUS update
 
         self.protocol.dataReceived('\r\n'.join('''650+NEWCONSENSUS
 r Unnamed ABJlguUFz1lvQS0jq8nhTdRiXEk /zIVUg1tKMUeyUBoyimzorbQN9E 2012-05-23 01:10:22 219.94.255.254 9001 0
@@ -954,8 +1012,8 @@ w Bandwidth=166
         errors.
         """
 
-        ## bootstrap the TorState so we can send it a "real" 650
-        ## update
+        # bootstrap the TorState so we can send it a "real" 650
+        # update
 
         self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
         self.state._bootstrap()
@@ -982,7 +1040,7 @@ w Bandwidth=166
 
         self.send("250 OK")
 
-        ## state is now bootstrapped, we can send our NEWCONSENSUS update
+        # state is now bootstrapped, we can send our NEWCONSENSUS update
 
         self.protocol.dataReceived('\r\n'.join('''650+NEWCONSENSUS
 r Unnamed ABJlguUFz1lvQS0jq8nhTdRiXEk /zIVUg1tKMUeyUBoyimzorbQN9E 2012-05-23 01:10:22 219.94.255.254 9001 0
@@ -1046,14 +1104,14 @@ s Fast Guard Running Stable Valid
         path = []
         for x in range(3):
             path.append(FakeRouter("$%040d" % x))
-        ## can't just check flags for guard status, need to know if
-        ## it's in the running Tor's notion of Entry Guards
+        # can't just check flags for guard status, need to know if
+        # it's in the running Tor's notion of Entry Guards
         path[0].flags = ['guard']
 
         self.state.build_circuit(path, using_guards=True)
         self.assertEqual(self.transport.value(), 'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002\r\n')
-        ## should have gotten a warning about this not being an entry
-        ## guard
+        # should have gotten a warning about this not being an entry
+        # guard
         self.assertEqual(len(self.flushWarnings()), 1)
 
     def test_build_circuit_no_routers(self):
@@ -1077,19 +1135,19 @@ s Fast Guard Running Stable Valid
         path = []
         for x in range(3):
             path.append(FakeRouter("$%040d" % x))
-        ## can't just check flags for guard status, need to know if
-        ## it's in the running Tor's notion of Entry Guards
+        # can't just check flags for guard status, need to know if
+        # it's in the running Tor's notion of Entry Guards
         path[0].flags = ['guard']
 
-        ## FIXME TODO we should verify we get a circuit_new event for
-        ## this circuit
+        # FIXME TODO we should verify we get a circuit_new event for
+        # this circuit
 
         d = self.state.build_circuit(path, using_guards=True)
         d.addCallback(self.circuit_callback)
         self.assertEqual(self.transport.value(), 'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002\r\n')
         self.send('250 EXTENDED 1234')
-        ## should have gotten a warning about this not being an entry
-        ## guard
+        # should have gotten a warning about this not being an entry
+        # guard
         self.assertEqual(len(self.flushWarnings()), 1)
         return d
 

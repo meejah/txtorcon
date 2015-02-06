@@ -385,7 +385,10 @@ class TCPHiddenServiceEndpoint(object):
         # specifically NOT creating the hidden-service dir; letting
         # Tor do it will more-likely result in a usable situation...
         if not os.path.exists(self.hidden_service_dir):
-            log.msg('Noting that "%s" does not exist; letting Tor create it.' % self.hidden_service_dir)
+            log.msg(
+                'Noting that "%s" does not exist; letting Tor create it.' %
+                self.hidden_service_dir
+            )
 
         # listen for the descriptor upload event
         info_callback = defer.Deferred()

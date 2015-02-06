@@ -36,7 +36,9 @@ class PortFilterAttacher:
         """
         if stream.target_port in self.disallow_ports:
             print "Disallowing", stream, "to port", stream.target_port
-            self.state.close_stream(stream).addCallback(stream_closed).addErrback(log.err)
+            d = self.state.close_stream(stream)
+            d.addCallback(stream_closed)
+            d.addErrback(log.err)
             return txtorcon.TorState.DO_NOT_ATTACH
 
         # Ask Tor to assign stream to a circuit by itself

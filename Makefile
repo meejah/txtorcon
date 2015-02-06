@@ -46,7 +46,7 @@ coverage-debian:
 	python-coverage report
 
 pep8: txtorcon/*.py test/*.py examples/*.py
-	pep8 --ignore=E501,E265 $^
+	pep8 --ignore=E501 $^
 
 pep8count:
 	pep8 --ignore=E501,E265 $^ | wc -l

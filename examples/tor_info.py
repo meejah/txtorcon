@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
-##
-## Simple usage example of TorInfo. This class does some magic so that
-## once it's set up, all the attributes it has (or appears to) are
-## GETINFO ones, in a heirarchy. So where GETINFO specifies
-## "net/listeners/dns" TorInfo will have a "net" attribute that
-## contains at least "listeners", etcetera. The leaves are all methods
-## which return a Deferred. If the corresponding GETINFO takes an
-## argument, so does the leaf.
-##
-## Go straight to "setup_complete" for the goods -- this is called
-## after TorInfo and the underlying TorControlProtocol are set up.
-##
-## If you want to issue multiple GETINFO calls in one network
-## transaction, you'll have to use TorControlProtocol's get_info
-## instead.
-##
+# Simple usage example of TorInfo. This class does some magic so that
+# once it's set up, all the attributes it has (or appears to) are
+# GETINFO ones, in a heirarchy. So where GETINFO specifies
+# "net/listeners/dns" TorInfo will have a "net" attribute that
+# contains at least "listeners", etcetera. The leaves are all methods
+# which return a Deferred. If the corresponding GETINFO takes an
+# argument, so does the leaf.
+#
+# Go straight to "setup_complete" for the goods -- this is called
+# after TorInfo and the underlying TorControlProtocol are set up.
+#
+# If you want to issue multiple GETINFO calls in one network
+# transaction, you'll have to use TorControlProtocol's get_info
+# instead.
 
 import sys
 from twisted.internet import reactor, defer
@@ -54,7 +52,7 @@ def setup_complete(info):
     print "Top-Level Things:", dir(info)
 
     if True:
-        ## some examples of getting specific GETINFO callbacks
+        # some examples of getting specific GETINFO callbacks
         v = yield info.version()
         ip = yield info.ip_to_country('1.2.3.4')
         boot_phase = yield info.status.bootstrap_phase()
@@ -67,7 +65,7 @@ def setup_complete(info):
         print 'moria1:', ns
         print 'entry guards:', guards
 
-    ## now we dump everything, one at a time
+    # now we dump everything, one at a time
     d = recursive_dump('', info)
     d.addCallback(lambda x: reactor.stop())
     d.addErrback(error)

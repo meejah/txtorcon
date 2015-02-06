@@ -7,7 +7,7 @@ from interface import IRouterContainer
 
 from txtorcon.util import find_keywords
 
-#look like "2014-01-25T02:12:14.593772"
+# look like "2014-01-25T02:12:14.593772"
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 
@@ -77,11 +77,11 @@ class Circuit(object):
         self.build_flags = []
         self.flags = {}
 
-        ## this is used to hold a Deferred that will callback() when
-        ## this circuit is being CLOSED or FAILED.
+        # this is used to hold a Deferred that will callback() when
+        # this circuit is being CLOSED or FAILED.
         self._closing_deferred = None
 
-        ## caches parsed value for time_created()
+        # caches parsed value for time_created()
         self._time_created = None
 
     @property
@@ -89,7 +89,7 @@ class Circuit(object):
         if self._time_created is not None:
             return self._time_created
         if 'TIME_CREATED' in self.flags:
-            ## strip off milliseconds
+            # strip off milliseconds
             t = self.flags['TIME_CREATED'].split('.')[0]
             tstruct = time.strptime(t, TIME_FORMAT)
             self._time_created = datetime.datetime(*tstruct[:7])
@@ -150,7 +150,7 @@ class Circuit(object):
         return flags
 
     def update(self, args):
-        ##print "Circuit.update:",args
+        # print "Circuit.update:",args
         if self.id is None:
             self.id = int(args[0])
             [x.circuit_new(self) for x in self.listeners]
@@ -180,9 +180,9 @@ class Circuit(object):
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:
-                ## FIXME it seems this can/does happen if a remote
-                ## router crashes or otherwise shuts down a circuit
-                ## with streams on it still
+                # FIXME it seems this can/does happen if a remote
+                # router crashes or otherwise shuts down a circuit
+                # with streams on it still
                 log.err(RuntimeError("Circuit is %s but still has %d streams" %
                                      (self.state, len(self.streams))))
             flags = self._create_flags(kw)
@@ -228,8 +228,8 @@ class Circuit(object):
             if p[0] != '$':
                 break
 
-            ## this will create a Router if we give it a router
-            ## LongName that doesn't yet exist
+            # this will create a Router if we give it a router
+            # LongName that doesn't yet exist
             router = self.router_container.router_from_id(p)
 
             self.path.append(router)
