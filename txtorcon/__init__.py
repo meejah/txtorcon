@@ -29,6 +29,8 @@ from txtorcon.endpoints import TorOnionAddress
 from txtorcon.endpoints import TorOnionListeningPort
 from txtorcon.endpoints import TCPHiddenServiceEndpoint
 from txtorcon.endpoints import TCPHiddenServiceEndpointParser
+from txtorcon.endpoints import TorClientEndpoint
+from txtorcon.endpoints import TorClientEndpointStringParser
 from txtorcon.endpoints import IHiddenService
 from txtorcon.endpoints import IProgressProvider
 from txtorcon.endpoints import get_global_tor
