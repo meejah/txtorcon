@@ -1478,3 +1478,45 @@ class ErrorTests(unittest.TestCase):
             pass  # success!
 
         return d
+
+
+# the RSA keys have been shortened below for readability
+keydata = '''client-name bar
+descriptor-cookie O4rQyZ+IJr2PNHUdeXi0nA==
+client-key
+-----BEGIN RSA PRIVATE KEY-----
+MIICXQIBAAKBgQC1R/bPGTWnpGJpNCfT1KIfFq1QEGHz4enKSEKUDkz1CSEPOMGS
+bV37dfqTuI4klsFvdUsR3NpYXLin9xRWvw1viKwAN0y8cv5totl4qMxO5i+zcfVh
+bJiNvVv2EjfEyQaZfAy2PUfp/tAPYZMsyfps2DptWyNR
+-----END RSA PRIVATE KEY-----
+client-name foo
+descriptor-cookie btlj4+RsWEkxigmlszInhQ==
+client-key
+-----BEGIN RSA PRIVATE KEY-----
+MIICXgIBAAKBgQDdLdHU1fbABtFutOFtpdWQdv/9qG1OAc0r1TfaBtkPSNcLezcx
+SThalIEnRFfejy0suOHmsqspruvn0FEflIEQvFWeXAPvXg==
+-----END RSA PRIVATE KEY-----
+client-name quux
+descriptor-cookie asdlkjasdlfkjalsdkfffj==
+'''
+
+class HiddenServiceAuthTests(unittest.TestCase):
+
+    def test_parse_client_keys(self):
+        data = StringIO(keydata)
+        from txtorcon.torconfig import parse_client_keys
+
+        clients = list(parse_client_keys(data))
+
+        self.assertEqual(3, len(clients))
+        self.assertEqual('bar', clients[0].name)
+        self.assertEqual('O4rQyZ+IJr2PNHUdeXi0nA==', clients[0].cookie)
+        self.assertEqual('MIICXQIBAAKBgQC1R/bPGTWnpGJpNCfT1KIfFq1QEGHz4enKSEKUDkz1CSEPOMGSbV37dfqTuI4klsFvdUsR3NpYXLin9xRWvw1viKwAN0y8cv5totl4qMxO5i+zcfVhbJiNvVv2EjfEyQaZfAy2PUfp/tAPYZMsyfps2DptWyNR', clients[0].key)
+
+        self.assertEqual('foo', clients[1].name)
+        self.assertEqual('btlj4+RsWEkxigmlszInhQ==', clients[1].cookie)
+        self.assertEqual(clients[1].key, 'MIICXgIBAAKBgQDdLdHU1fbABtFutOFtpdWQdv/9qG1OAc0r1TfaBtkPSNcLezcxSThalIEnRFfejy0suOHmsqspruvn0FEflIEQvFWeXAPvXg==')
+
+        self.assertEqual('quux', clients[2].name)
+        self.assertEqual('asdlkjasdlfkjalsdkfffj==', clients[2].cookie)
+        self.assertEqual(None, clients[2].key)
