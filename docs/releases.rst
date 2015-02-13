@@ -12,6 +12,7 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.13.0*
 
+ * support ``basic`` and ``stealth`` hidden service authorization, and parse ``client_keys`` files.
  * 2x speedup for TorState parsing (mostly by lazy-parsing timestamps)
  * can now parse ~75000 microdescriptors/second per core of 3.4GHz Xeon E3
  * ``launch_tor`` now doesn't use a temporary ``torrc`` (command-line options instead)
