@@ -14,6 +14,12 @@ unreleased
 
  * :class:`txtorcon.interface.IStreamAttacher` handling was missing ``None`` and ``DO_NOT_ATTACH`` cases if a Deferred was returned.
  * add ``.is_built`` Deferred to :class:`txtorcon.Circuit` that get `callback()`d when the circuit becomes BUILT
+ * `david415 <https://github.com/david415>`_ ported his ``tor:``
+   endpoint parser so now both client and server endpoints are
+   supported. This means **any** Twisted program using endpoints can
+   use Tor as a client. For example, to connect to txtorcon's Web site:
+   ``ep = clientFromString("tor:timaq4ygg2iegci7.onion:80")``.
+   (In the future, I'd like to automatically launch Tor if required, too).
 
 
 v0.13.0

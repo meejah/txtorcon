@@ -188,7 +188,8 @@ class TorState(object):
     @classmethod
     def from_protocol(cls, protocol, **kw):
         '''
-        Create a new, boot-strapped TorState from a TorControlProtocol instance.
+        Create a new, boot-strapped TorState from a TorControlProtocol
+        instance.
 
         :return: a Deferred that fires with a TorState instance
         '''
