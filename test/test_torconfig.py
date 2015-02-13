@@ -35,6 +35,7 @@ from txtorcon import torconfig
 from txtorcon.torconfig import TorProcessProtocol
 
 from txtorcon.util import delete_file_or_tree
+from txtorcon.torconfig import parse_client_keys
 
 
 class FakeControlProtocol:
@@ -692,12 +693,18 @@ HiddenServiceAuthorizeClient Dependant''')
                 f.write('public')
             with open(os.path.join(d, 'private_key'), 'w') as f:
                 f.write('private')
+            with open(os.path.join(d, 'client_keys'), 'w') as f:
+                f.write('client-name hungry\ndescriptor-cookie omnomnom\n')
 
             conf = TorConfig(self.protocol)
             hs = HiddenService(conf, d, [])
 
             self.assertEqual(hs.hostname, 'public')
             self.assertEqual(hs.private_key, 'private')
+            self.assertEqual(len(hs.client_keys), 1)
+            self.assertEqual(hs.client_keys[0].name, 'hungry')
+            self.assertEqual(hs.client_keys[0].cookie, 'omnomnom')
+            self.assertEqual(hs.client_keys[0].key, None)
 
         finally:
             shutil.rmtree(d, ignore_errors=True)
@@ -745,7 +752,8 @@ HiddenServicePort=90 127.0.0.1:2345''')
 
         self.assertEqual(conf.hiddenservices[0].dir, '/fake/path')
         self.assertEqual(conf.hiddenservices[0].version, 2)
-        self.assertEqual(conf.hiddenservices[0].authorize_client, 'basic')
+        self.assertEqual(len(conf.hiddenservices[0].authorize_client), 1)
+        self.assertEqual(conf.hiddenservices[0].authorize_client[0], 'basic')
         self.assertEqual(len(conf.hiddenservices[0].ports), 1)
         self.assertEqual(conf.hiddenservices[0].ports[0], '80 127.0.0.1:1234')
 
@@ -794,7 +802,7 @@ HiddenServicePort=90 127.0.0.1:2345''')
         self.assertEqual(len(conf.hiddenservices), 1)
         self.assertEqual(conf.hiddenservices[0].dir, '/fake/path')
         self.assertEqual(conf.hiddenservices[0].version, 3)
-        self.assertEqual(conf.hiddenservices[0].authorize_client, '')
+        self.assertEqual(0, len(conf.hiddenservices[0].authorize_client))
         conf.hiddenservices[0].ports = ['123 127.0.0.1:4321']
         conf.save()
 
@@ -1504,7 +1512,6 @@ class HiddenServiceAuthTests(unittest.TestCase):
 
     def test_parse_client_keys(self):
         data = StringIO(keydata)
-        from txtorcon.torconfig import parse_client_keys
 
         clients = list(parse_client_keys(data))
 
@@ -1520,3 +1527,11 @@ class HiddenServiceAuthTests(unittest.TestCase):
         self.assertEqual('quux', clients[2].name)
         self.assertEqual('asdlkjasdlfkjalsdkfffj==', clients[2].cookie)
         self.assertEqual(None, clients[2].key)
+
+    def test_parse_error(self):
+        data = StringIO('client-name foo\nclient-name xxx\n')
+
+        self.assertRaises(
+            RuntimeError,
+            parse_client_keys, data
+        )

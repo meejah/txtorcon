@@ -642,6 +642,23 @@ class _ListWrapper(list):
         return '_ListWrapper' + super(_ListWrapper, self).__repr__()
 
 
+class HiddenServiceClientAuth(object):
+    """
+    Encapsulates a single client-authorization, as parsed from a
+    HiddenServiceDir's "client_keys" file if you have stealth or basic
+    authentication turned on.
+
+    :param name: the name you gave it in the HiddenServiceAuthorizeClient line
+    :param cookie: random password
+    :param key: RSA private key, or None if this was basic auth
+    """
+
+    def __init__(self, name, cookie, key=None):
+        self.name = name
+        self.cookie = cookie
+        self.key = parse_rsa_blob(key) if key else None
+
+
 class HiddenService(object):
     """
     Because hidden service configuration is handled specially by Tor,
@@ -659,31 +676,47 @@ class HiddenService(object):
     """
 
     def __init__(self, config, thedir, ports,
-                 auth=None, ver=2, group_readable=0):
+                 auth=[], ver=2, group_readable=0):
         """
-        config is the TorConfig to which this will belong (FIXME,
-        can't we make this automatic somehow?), thedir corresponds to
-        'HiddenServiceDir' and will ultimately contain a 'hostname'
-        and 'private_key' file, ports is a list of lines corresponding
-        to HiddenServicePort (like '80 127.0.0.1:1234' to advertise a
-        hidden service at port 80 and redirect it internally on
-        127.0.0.1:1234). auth corresponds to
-        HiddenServiceAuthenticateClient line (FIXME: is that lines?)
-        and ver corresponds to HiddenServiceVersion and is always 2
-        right now.
+        config is the TorConfig to which this will belong, thedir
+        corresponds to 'HiddenServiceDir' and will ultimately contain
+        a 'hostname' and 'private_key' file, ports is a list of lines
+        corresponding to HiddenServicePort (like '80 127.0.0.1:1234'
+        to advertise a hidden service at port 80 and redirect it
+        internally on 127.0.0.1:1234). auth corresponds to the
+        HiddenServiceAuthenticateClient lines and can be either a
+        string or a list of strings (like 'basic client0,client1' or
+        'stealth client5,client6') and ver corresponds to
+        HiddenServiceVersion and is always 2 right now.
+
+        XXX FIXME can we avoid having to pass the config object
+        somehow? Like provide a factory-function on TorConfig for
+        users instead?
         """
 
         self.conf = config
         self.dir = thedir
         self.version = ver
-        self.authorize_client = auth
         self.group_readable = group_readable
 
-        # there are two magic attributes, "hostname" and "private_key"
-        # these are gotten from the dir if they're still None when
-        # accessed. Note that after a SETCONF has returned '250 OK'
-        # it seems from tor code that the keys will always have been
-        # created on disk by that point
+        # HiddenServiceAuthorizeClient is a list
+        # in case people are passing '' for the auth
+        if not auth:
+            auth = []
+        elif not isinstance(auth, types.ListType):
+            auth = [auth]
+        self.authorize_client = _ListWrapper(
+            auth, functools.partial(
+                self.conf.mark_unsaved, 'HiddenServices'
+            )
+        )
+
+        # there are three magic attributes, "hostname" and
+        # "private_key" are gotten from the dir if they're still None
+        # when accessed. "client_keys" parses out any client
+        # authorizations. Note that after a SETCONF has returned '250
+        # OK' it seems from tor code that the keys will always have
+        # been created on disk by that point
 
         if not isinstance(ports, types.ListType):
             ports = [ports]
@@ -708,6 +741,13 @@ class HiddenService(object):
         if name in ('hostname', 'private_key'):
             with open(os.path.join(self.dir, name)) as f:
                 self.__dict__[name] = f.read().strip()
+        elif name == 'client_keys':
+            fname = os.path.join(self.dir, name)
+            keys = []
+            if os.path.exists(fname):
+                with open(fname) as f:
+                    keys = parse_client_keys(f)
+            self.__dict__[name] = keys
         return self.__dict__[name]
 
     def config_attributes(self):
@@ -728,36 +768,8 @@ class HiddenService(object):
         return rtn
 
 
-'''
-client-name bar
-descriptor-cookie O4rQyZ+IJr2PNHUdeXi0nA==
-client-key
------BEGIN RSA PRIVATE KEY-----
-MIICXQIBAAKBgQC1R/bPGTWnpGJpNCfT1KIfFq1QEGHz4enKSEKUDkz1CSEPOMGS
-bV37dfqTuI4klsFvdUsR3NpYXLin9xRWvw1viKwAN0y8cv5totl4qMxO5i+zcfVh
-oBqwzxFD0JVZVLlZjNYfSlkNnkDPmb7btcluzNETBP4IDo8rb2p2zCQc1wIDAQAB
-AoGAWhgg7n5N7zpAep6kKKAlzqObkQ4DUIz3f0P4atLMpn9aAdGoSpi2O7I/zcjM
-RBz0l+tIWuFTVtUGJNwkLJSZHP3FDkoZtOv1JDRD0cbnVClHQ6cOW7Asn/VhOiud
-0yTMkytN2wMpi/vpcQTs28yQdNi1486xPEx8/WEQH2azLJECQQDmkQ18+2gp0eBS
-AdW+9WPsd9RhwKKmDKCJ2TUMN+/4u1WLMx2pARuHqKKOvrWP7vlv7epEoKqWFajc
-3M4B4oupAkEAyUckoM4SOi1YNky9DqFUXrZ1Bl2UVVv15J0BB4jMnYFoSjirVn+i
-4cYHwOBPsvUdkW6OQWvn3gc69Dj5ht60fwJABPFlJaHKKONb+MYbS/28x6wF/JaB
-pietJWdnsLxeQ6nYeqR85UulyHHAEmlaQRyxcknadOAw6AjM1vdQ3095CQJBAKGG
-LzXAyc3YL887nAiOnTd4sscN+AjcSKNS/819Eb9gZ0IQ4icDPMJ0eiplmG/j1vur
-vgtwPd3m7X+p7U03kZ8CQQCHS0lciMezXoDVoi7uljnsFFbbB0HMNXKxcsxym1eQ
-bJiNvVv2EjfEyQaZfAy2PUfp/tAPYZMsyfps2DptWyNR
------END RSA PRIVATE KEY-----
-'''
-
 def parse_rsa_blob(lines):
     return ''.join(lines[1:-1])
-
-
-class HiddenServiceClientAuth(object):
-    def __init__(self, name, cookie, key=None):
-        self.name = name
-        self.cookie = cookie
-        self.key = parse_rsa_blob(key) if key else None
 
 
 def parse_client_keys(stream):
@@ -1232,7 +1244,7 @@ class TorConfig(object):
                 directory = v
                 ports = []
                 ver = None
-                auth = None
+                auth = []
                 group_read = 0
 
             elif k == 'HiddenServicePort':
@@ -1242,7 +1254,7 @@ class TorConfig(object):
                 ver = int(v)
 
             elif k == 'HiddenServiceAuthorizeClient':
-                auth = v
+                auth.append(v)
 
             elif k == 'HiddenServiceDirGroupReadable':
                 group_read = int(v)
