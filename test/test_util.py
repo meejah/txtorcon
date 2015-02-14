@@ -47,6 +47,24 @@ class TestGeoIpDatabaseLoading(unittest.TestCase):
         from txtorcon import util
         self.assertRaises(IOError, util.create_geoip, '_missing_path_')
 
+    def test_missing_geoip_module(self):
+        "return none if geoip module is missing"
+        from txtorcon import util
+        _GeoIP = util.GeoIP
+        util.GeoIP = None
+        (fd, f) = tempfile.mkstemp()
+        ret_val = util.create_geoip(f)
+        delete_file_or_tree(f)
+        util.GeoIP = _GeoIP
+        self.assertEquals(ret_val, None)
+
+    def test_return_geoip_object(self):
+        from txtorcon import util
+        (fd, f) = tempfile.mkstemp()
+        ret_val = util.create_geoip(f)
+        delete_file_or_tree(f)
+        self.assertEquals(type(ret_val).__name__, 'GeoIP')
+
 
 class TestFindKeywords(unittest.TestCase):
 
