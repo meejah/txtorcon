@@ -56,7 +56,10 @@ class TestImports(unittest.TestCase):
         orig = __import__
         try:
             # attempt to ensure we've unimportted txtorcon.util
-            del sys.modules['txtorcon.util']
+            try:
+                del sys.modules['txtorcon.util']
+            except KeyError:
+                pass
             import gc
             gc.collect()
 

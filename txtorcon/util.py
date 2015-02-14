@@ -145,6 +145,8 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
     with "$hash=name" looks like a keyword argument (but it isn't). If you
     don't want this, override the "key_filter" argument to this method.
 
+    :param args: a list of strings, each with one key=value pair
+
     :return:
         a dict of key->value (both strings) of all name=value type
         keywords found in args.

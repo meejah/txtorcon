@@ -64,6 +64,7 @@ pyflakescount:
 	pyflakes txtorcon/ examples/ | wc -l
 
 clean:
+	-rm twisted/plugins/dropin.cache
 	-rm -rf _trial_temp
 	-rm -rf build
 	-rm -rf dist
