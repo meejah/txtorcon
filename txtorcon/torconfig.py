@@ -6,6 +6,7 @@ import string
 import types
 import functools
 import tempfile
+import warnings
 from StringIO import StringIO
 import shlex
 if sys.platform in ('linux2', 'darwin'):
@@ -1117,6 +1118,13 @@ class TorConfig(object):
                         )
                     )
                 directory = v
+                _directory = directory
+                directory = os.path.abspath(directory)
+                if directory != _directory:
+                    warnings.warn(
+                        "Directory path: %s changed to absolute path: %s" % (_directory, directory),
+                        RuntimeWarning
+                    )
                 ports = []
                 ver = None
                 auth = None

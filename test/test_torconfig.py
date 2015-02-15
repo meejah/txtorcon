@@ -762,6 +762,11 @@ HiddenServicePort=90 127.0.0.1:2345''')
         except RuntimeError, e:
             self.assertTrue('parse' in str(e))
 
+    def test_hidden_service_directory_absolute_path(self):
+        conf = TorConfig(FakeControlProtocol(['config/names=']))
+        conf._setup_hidden_services('HiddenServiceDir=/fake/path/../path')
+        self.assertEqual(len(self.flushWarnings()), 1)
+
     def test_multiple_modify_hidden_service(self):
         self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServicePort=80 127.0.0.1:1234\n')
 
