@@ -807,6 +807,8 @@ def parse_client_keys(stream):
 
         def set_cookie(self, cookie):
             self.cookie = cookie.split()[1]
+            if self.cookie.endswith('=='):
+                self.cookie = self.cookie[:-2]
 
         def add_key_line(self, line):
             self.key.append(line)

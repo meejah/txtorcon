@@ -1517,15 +1517,15 @@ class HiddenServiceAuthTests(unittest.TestCase):
 
         self.assertEqual(3, len(clients))
         self.assertEqual('bar', clients[0].name)
-        self.assertEqual('O4rQyZ+IJr2PNHUdeXi0nA==', clients[0].cookie)
+        self.assertEqual('O4rQyZ+IJr2PNHUdeXi0nA', clients[0].cookie)
         self.assertEqual('MIICXQIBAAKBgQC1R/bPGTWnpGJpNCfT1KIfFq1QEGHz4enKSEKUDkz1CSEPOMGSbV37dfqTuI4klsFvdUsR3NpYXLin9xRWvw1viKwAN0y8cv5totl4qMxO5i+zcfVhbJiNvVv2EjfEyQaZfAy2PUfp/tAPYZMsyfps2DptWyNR', clients[0].key)
 
         self.assertEqual('foo', clients[1].name)
-        self.assertEqual('btlj4+RsWEkxigmlszInhQ==', clients[1].cookie)
+        self.assertEqual('btlj4+RsWEkxigmlszInhQ', clients[1].cookie)
         self.assertEqual(clients[1].key, 'MIICXgIBAAKBgQDdLdHU1fbABtFutOFtpdWQdv/9qG1OAc0r1TfaBtkPSNcLezcxSThalIEnRFfejy0suOHmsqspruvn0FEflIEQvFWeXAPvXg==')
 
         self.assertEqual('quux', clients[2].name)
-        self.assertEqual('asdlkjasdlfkjalsdkfffj==', clients[2].cookie)
+        self.assertEqual('asdlkjasdlfkjalsdkfffj', clients[2].cookie)
         self.assertEqual(None, clients[2].key)
 
     def test_parse_error(self):
