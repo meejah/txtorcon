@@ -118,7 +118,7 @@ to Lunar::
 
     echo "deb http://ftp.ca.debian.org/debian/ wheezy-backports main" >> /etc/apt/sources.list
     apt-get update
-    apt-get install python-txtorcon 
+    apt-get install python-txtorcon
 
 It also `appears txtorcon is in Gentoo
 <http://packages.gentoo.org/package/net-libs/txtorcon>`_ but I don't

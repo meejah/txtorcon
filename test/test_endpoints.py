@@ -361,6 +361,32 @@ class EndpointTests(unittest.TestCase):
         finally:
             os.chdir(orig)
 
+    @defer.inlineCallbacks
+    def test_stealth_auth(self):
+        '''
+        make sure we produce a HiddenService instance with stealth-auth
+        lines if we had authentication specified in the first place.
+        '''
+
+        config = TorConfig(self.protocol)
+        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, '/dev/null',
+                                      stealth_auth=['alice', 'bob'])
+
+        # make sure listen() correctly configures our hidden-serivce
+        # with the explicit directory we passed in above
+        d = ep.listen(NoOpProtocolFactory())
+
+        def foo(fail):
+            print "ERROR", fail
+        d.addErrback(foo)
+        port = yield d
+        self.assertEqual(1, len(config.HiddenServices))
+        self.assertEqual(config.HiddenServices[0].dir, '/dev/null')
+        self.assertEqual(config.HiddenServices[0].authorize_client[0], 'stealth alice,bob')
+        self.assertEqual(None, ep.onion_uri)
+        config.HiddenServices[0].hostname = 'oh my'
+        self.assertEqual('oh my', ep.onion_uri)
+
 
 class EndpointLaunchTests(unittest.TestCase):
 
