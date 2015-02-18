@@ -775,6 +775,27 @@ HiddenServicePort=90 127.0.0.1:2345''')
         conf._setup_hidden_services('HiddenServiceDir=/fake/path/../path')
         self.assertEqual(len(self.flushWarnings()), 1)
 
+    def test_hidden_service_same_directory(self):
+        conf = TorConfig(FakeControlProtocol(['config/names=']))
+        servicelines = '''HiddenServiceDir=/fake/path
+HiddenServiceDir=/fake/path'''
+        self.assertRaises(RuntimeError, conf._setup_hidden_services, servicelines)
+
+        conf = TorConfig()
+        conf.HiddenServices = [HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
+        conf.HiddenServices.append(HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234']))
+        self.assertTrue(conf.needs_save())
+        self.assertRaises(RuntimeError, conf.save)
+
+        conf = TorConfig()
+        conf.HiddenServices = [HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
+        conf.HiddenServices.append(HiddenService(conf, '/fake/path/two', ['80 127.0.0.1:1234']))
+        self.assertTrue(conf.needs_save())
+        conf.save()
+        conf.hiddenservices[1].dir = '/fake/path'
+        self.assertTrue(conf.needs_save())
+        self.assertRaises(RuntimeError, conf.save)
+
     def test_multiple_modify_hidden_service(self):
         self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServicePort=80 127.0.0.1:1234\n')
 
