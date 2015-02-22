@@ -234,6 +234,7 @@ class EndpointTests(unittest.TestCase):
 
         def check(arg):
             self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
+            self.assertEqual(len(self.config.HiddenServices), 1)
         d0.addCallback(check).addErrback(self.fail)
         return d0
 

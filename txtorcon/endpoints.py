@@ -400,11 +400,12 @@ class TCPHiddenServiceEndpoint(object):
                 info_callback.callback(None)
         self.config.protocol.add_event_listener('INFO', info_event)
 
-        self.hiddenservice = HiddenService(
-            self.config, self.hidden_service_dir,
-            ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
-            group_readable=1)
-        self.config.HiddenServices.append(self.hiddenservice)
+        if not self.hidden_service_dir in map(lambda hs: hs.dir, self.config.HiddenServices):
+            self.hiddenservice = HiddenService(
+                self.config, self.hidden_service_dir,
+                ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+                group_readable=1)
+            self.config.HiddenServices.append(self.hiddenservice)
         yield self.config.save()
 
         self._tor_progress_update(100.0, 'wait_descriptor',
