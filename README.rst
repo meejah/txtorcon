@@ -217,7 +217,7 @@ contact information
 -------------------
 
 For novelty value, the Web site (with built documentation and so forth)
-can be viewed via Tor at https://timaq4ygg2iegci7.onion although the
+can be viewed via Tor at http://timaq4ygg2iegci7.onion although the
 code itself is hosted via git::
 
     torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git
