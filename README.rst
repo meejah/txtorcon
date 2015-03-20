@@ -53,7 +53,7 @@ If you want to use unix sockets to speak to tor::
    ControlSocketsGroupWritable 1
    ControlSocket /var/run/tor/control
 
-The defaults used by :meth:`txtorcon.build_local_tor_connection` will
+The defaults used by py:meth:`txtorcon.build_local_tor_connection` will
 find a Tor on ``9051`` or ``/var/run/tor/control``
 
 
@@ -139,6 +139,7 @@ dependencies / requirements
    in your path
 
 .. BEGIN_INSTALL
+
 In any case, on a `Debian <http://www.debian.org/>`_ wheezy, squeeze or
 Ubuntu system, this should work::
 
