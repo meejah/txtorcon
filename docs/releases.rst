@@ -17,9 +17,9 @@ unreleased
  * can now parse ~75000 microdescriptors/second per core of 3.4GHz Xeon E3
  * ``launch_tor`` now doesn't use a temporary ``torrc`` (command-line options instead)
  * tons of pep8 cleanups
- * several improvements to hidden-service configuration from `samgtr`_.
+ * several improvements to hidden-service configuration from `sambuddhabasu1`_.
 
-.. _samgtr: https://github.com/sammyshj
+.. _sambuddhabasu1: https://github.com/sammyshj
 
 
 v0.12.0
