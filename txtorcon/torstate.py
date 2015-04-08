@@ -311,6 +311,17 @@ class TorState(object):
         if self._router.id_hex in self.routers:
             # FIXME should I do an update() on this one??
             self._router = self.routers[self._router.id_hex]
+            # FIXME refactor
+            args = data.split()
+            self._router.update(
+                args[1],                 # nickname
+                args[2],                 # idhash
+                args[3],                 # orhash
+                args[4] + ' ' + args[5], # modified (like '%Y-%m-%f %H:%M:%S')
+                args[6],                 # ip address
+                args[7],                 # ORPort
+                args[8],                 # DirPort
+            )
             return
 
         if self._router.name in self.routers_by_name:
@@ -348,6 +359,29 @@ class TorState(object):
         args = data.split()
         self._router.policy = args[1:]
         self._router = None
+
+    @defer.inlineCallbacks
+    def update_routers(self, ids):
+        """
+        If you used `load_routers=False` when constructing this TorState,
+        you can only depend on router information being valid after
+        you've waited for the Deferred this method fires.
+
+        Pass an iterable of IDs of routers.
+        """
+
+        updates = []
+        for id in ids:
+            d = self.protocol.get_info('ns/id/%s' % id)
+            def foo(arg):
+                assert len(arg.values()) == 1
+                for line in arg.values()[0].split('\n'):
+                    self._network_status_parser.process(line)
+                return arg
+            d.addCallback(foo)
+            updates.append(d)
+        res = yield defer.DeferredList(updates)
+        # print("RES", res)
 
     @defer.inlineCallbacks
     def _bootstrap(self, arg=None):
@@ -426,9 +460,10 @@ class TorState(object):
         if not self.tor_pid and self.protocol.is_owned:
             self.tor_pid = self.protocol.is_owned
 
-        elapsed = time.time() - self._start_init  # XXX debugging
-        del self._start_init
-        print "Startup took %.2fs" % elapsed
+        if False:
+            elapsed = time.time() - self._start_init  # XXX debugging
+            del self._start_init
+            print "Startup took %.2fs" % elapsed
         self.post_bootstrap.callback(self)
         self.post_boostrap = None
 
