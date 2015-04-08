@@ -114,6 +114,16 @@ class Router(object):
             d.addErrback(lambda _: None)
         return self._location
 
+    def get_country(self):
+        """
+        Asks Tor for the network location, and returns a Deferred which
+        fires with the answer (which is then cached and can be gotten
+        from `self.location.countrycode`)
+        """
+        d = self.controller.get_info_raw('ip-to-country/' + self.ip)
+        d.addCallback(self._set_country)
+        return d
+
     @property
     def flags(self):
         """
@@ -211,6 +221,7 @@ class Router(object):
         """
 
         self.location.countrycode = c.split()[0].split('=')[1].strip().upper()
+        return self.location.countrycode
 
     def __repr__(self):
         n = self.id_hex
