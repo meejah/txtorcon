@@ -10,3 +10,4 @@ pep8
 mock
 ipaddr
 GeoIP
+stem
