@@ -194,7 +194,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
     implements(ITorControlProtocol)
 
-    def __init__(self, password_function=None):
+    def __init__(self, password_function=None, use_stem=False):
         """
         :param password_function:
             A zero-argument callable which returns a password (or
@@ -206,6 +206,12 @@ class TorControlProtocol(LineOnlyReceiver):
         """If set, a callable to query for a password to use for
         authentication to Tor (default is to use COOKIE, however). May
         return Deferred."""
+
+        self.use_stem = use_stem
+        """If set, make use of the classes and APIs defined in Stem.
+        If not, return the value as a string that is already being done
+        in txtorcon. For more information, see `Stem
+        <https://stem.torproject.org/api.html>`_"""
 
         self.version = None
         """Version of Tor we've connected to."""
@@ -344,7 +350,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def get_info(self, *args):
         """
-        Uses GETINFO to obtain informatoin from Tor.
+        Uses GETINFO to obtain information from Tor.
 
         :param args:
             should be a list or tuple of strings which are valid
@@ -726,6 +732,12 @@ class TorControlProtocol(LineOnlyReceiver):
 
         self.version = yield self.get_info('version')
         self.version = self.version['version']
+        if self.use_stem:
+            try:
+                import stem.version as stem_version
+                self.version = stem_version.Version(self.version)
+            except ImportError:
+                pass
         txtorlog.msg("Connected to a Tor with VERSION", self.version)
         eventnames = yield self.get_info('events/names')
         eventnames = eventnames['events/names']

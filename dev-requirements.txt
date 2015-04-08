@@ -11,3 +11,4 @@ mock
 # these are optional for users, but for testing we need them
 ipaddr
 GeoIP
+stem
