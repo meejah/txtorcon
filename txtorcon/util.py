@@ -47,7 +47,7 @@ def maybe_create_db(path):
 city, asn, country = map(maybe_create_db,
                          ("/usr/share/GeoIP/GeoLiteCity.dat",
                           "/usr/share/GeoIP/GeoIPASNum.dat",
-                          "/usr/share/GeoIP/IP.dat"))
+                          "/usr/share/GeoIP/GeoIP.dat"))
 
 try:
     import ipaddr as _ipaddr
