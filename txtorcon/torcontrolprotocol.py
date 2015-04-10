@@ -716,14 +716,8 @@ class TorControlProtocol(LineOnlyReceiver):
         callback.
         """
 
-        # unfortunately I don't see a way to get this from the runing
-        # tor like the events...so this was taken from some version
-        # of the control-spec and must be kept up-to-date (or accpet
-        # any signal name and just wait for the reply?
-        # FIXME XXX there is now "GETINFO signal/names"
-        self.valid_signals = ["RELOAD", "DUMP", "DEBUG", "NEWNYM",
-                              "CLEARDNSCACHE"]
-
+        self.valid_signals = yield self.get_info('signal/names')
+        self.valid_signals = self.valid_signals['signal/names']
         self.version = yield self.get_info('version')
         self.version = self.version['version']
         txtorlog.msg("Connected to a Tor with VERSION", self.version)
