@@ -404,7 +404,6 @@ OK''' % cookietmp.name)
         self.assertEqual(self.protocol.valid_signals, valid_signals)
 
     def confirm_version_use_stem(self, arg):
-        self.assertEqual(type(self.protocol.version).__name__, 'Version')
         self.assertEqual(self.protocol.version.major, 0)
         self.assertEqual(self.protocol.version.minor, 2)
         self.assertEqual(self.protocol.version.micro, 5)
