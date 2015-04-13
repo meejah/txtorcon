@@ -7,7 +7,7 @@ txtorcon
 txtorcon is a `Twisted <https://twistedmatrix.com/>`_-based `Python
 <http://python.org/>`_ asynchronous controller library for `Tor
 <https://www.torproject.org/>`_, following `control-spec
-<https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_.
+<https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_.
 This would be of interest to anyone wishing to write event-based
 software in Python that talks to (and/or launches) a Tor program.
 
