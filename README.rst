@@ -24,6 +24,10 @@ For the impatient, there are two quick ways to install this::
 
    $ python setup.py install
 
+For OSX, we can install txtorcon with the help of easy_install::
+
+   $ easy_install txtorcon
+
 To avoid installing, you can just add the base of the source to your
 PYTHONPATH::
 
