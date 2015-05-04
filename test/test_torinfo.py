@@ -80,6 +80,9 @@ class ProtocolIntegrationTests(unittest.TestCase):
         self.send('250 OK')
 
         # now we're in _bootstrap() in TorControlProtocol()
+        self.send("250-signal/names=")
+        self.send("250 OK")
+
         self.send("250-version=foo")
         self.send("250 OK")
 
