@@ -10,12 +10,12 @@ from setuptools import setup
 
 ## can't just naively import these from txtorcon, as that will only
 ## work if you already installed the dependencies :(
-__version__ = '0.12.0'
+__version__ = '0.13.0'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/txtorcon'
 __license__ = 'MIT'
-__copyright__ = 'Copyright 2012-2014'
+__copyright__ = 'Copyright 2012-2015'
 
 def pip_to_requirements(s):
     """
