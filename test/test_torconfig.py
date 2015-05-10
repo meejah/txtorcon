@@ -1534,6 +1534,7 @@ client-name quux
 descriptor-cookie asdlkjasdlfkjalsdkfffj==
 '''
 
+
 class HiddenServiceAuthTests(unittest.TestCase):
 
     def test_parse_client_keys(self):

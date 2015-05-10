@@ -373,15 +373,13 @@ class StateTests(unittest.TestCase):
                 "",  # circuit-status
                 "",  # stream-status
                 "",  # address-mappings/all
-                "entry-guards=\r\n$0000000000000000000000000000000000000000=name up\r\n$1111111111111111111111111111111111111111=foo up\r\n$9999999999999999999999999999999999999999=eman unusable 2012-01-01 22:00:00\r\n", # entry-guards
+                "entry-guards=\r\n$0000000000000000000000000000000000000000=name up\r\n$1111111111111111111111111111111111111111=foo up\r\n$9999999999999999999999999999999999999999=eman unusable 2012-01-01 22:00:00\r\n",  # entry-guards
                 "99999",  # process/pid
                 "??",  # ip-to-country/0.0.0.0
             ]
         )
 
-
         state = yield TorState.from_protocol(protocol)
-
 
         self.assertEqual(len(state.entry_guards), 2)
         self.assertTrue('$0000000000000000000000000000000000000000' in state.entry_guards)

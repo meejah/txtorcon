@@ -798,7 +798,7 @@ def parse_client_keys(stream):
             self.key = []
 
         def create_key(self):
-            if self.name != None:
+            if self.name is not None:
                 self.keys.append(HiddenServiceClientAuth(self.name, self.cookie, self.key))
             self.reset()
 
@@ -813,7 +813,6 @@ def parse_client_keys(stream):
 
         def add_key_line(self, line):
             self.key.append(line)
-
 
     from txtorcon.spaghetti import FSM, State, Transition
     init = State('init')

@@ -400,7 +400,7 @@ class TCPHiddenServiceEndpoint(object):
                 info_callback.callback(None)
         self.config.protocol.add_event_listener('INFO', info_event)
 
-        if not self.hidden_service_dir in map(lambda hs: hs.dir, self.config.HiddenServices):
+        if self.hidden_service_dir not in map(lambda hs: hs.dir, self.config.HiddenServices):
             self.hiddenservice = HiddenService(
                 self.config, self.hidden_service_dir,
                 ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],

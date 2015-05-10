@@ -282,13 +282,13 @@ class TorState(object):
         self._router = Router(self.protocol)
         self._router.from_consensus = True
         self._router.update(
-            args[1],                 # nickname
-            args[2],                 # idhash
-            args[3],                 # orhash
-            args[4] + ' ' + args[5], # modified (like '%Y-%m-%f %H:%M:%S')
-            args[6],                 # ip address
-            args[7],                 # ORPort
-            args[8],                 # DirPort
+            args[1],                  # nickname
+            args[2],                  # idhash
+            args[3],                  # orhash
+            args[4] + ' ' + args[5],  # modified (like '%Y-%m-%f %H:%M:%S')
+            args[6],                  # ip address
+            args[7],                  # ORPort
+            args[8],                  # DirPort
         )
 
         if self._router.id_hex in self.routers:
