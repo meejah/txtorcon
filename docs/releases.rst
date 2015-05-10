@@ -10,8 +10,15 @@ versioning <http://semver.org/>`_.
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.13.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.14.0*
 
+
+v0.13.0
+-------
+
+*May 10, 2015*
+
+ * `txtorcon-0.13.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.13.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.13.0>`_ (:download:`local-sig </../signatues/txtorcon-0.13.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.13.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.13.0.tar.gz>`_)
  * support ``basic`` and ``stealth`` hidden service authorization, and parse ``client_keys`` files.
  * 2x speedup for TorState parsing (mostly by lazy-parsing timestamps)
  * can now parse ~75000 microdescriptors/second per core of 3.4GHz Xeon E3
