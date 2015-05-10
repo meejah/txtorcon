@@ -18,6 +18,7 @@ unreleased
  * ``launch_tor`` now doesn't use a temporary ``torrc`` (command-line options instead)
  * tons of pep8 cleanups
  * several improvements to hidden-service configuration from `sambuddhabasu1`_.
+ * populated valid signals from ``GETINFO signals/names`` from `sambuddhabasu1`_.
 
 .. _sambuddhabasu1: https://github.com/sammyshj
 
