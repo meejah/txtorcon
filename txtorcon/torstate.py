@@ -622,10 +622,13 @@ class TorState(object):
                             self.state = state
 
                         def __call__(self, arg):
-                            circid = arg.id
-                            self.state.protocol.queue_command(
-                                "ATTACHSTREAM %d %d" % (self.stream_id, circid)
-                            )
+                            if arg is None:
+                                return self.state.protocol.queue_command("ATTACHSTREAM %d 0" % stream.id)
+                            else:
+                                circid = arg.id
+                                return self.state.protocol.queue_command(
+                                    "ATTACHSTREAM %d %d" % (self.stream_id, circid)
+                                )
 
                     circ.addCallback(IssueStreamAttach(self, stream.id))
                     circ.addErrback(log.err)
