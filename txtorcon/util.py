@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import with_statement
+
 import glob
 import os
 import hmac
@@ -23,6 +29,15 @@ city = None
 country = None
 asn = None
 
+try:
+    unicode
+except NameError:
+    py3k = True
+    basestring = str
+else:
+    py3k = False
+    basestring = basestring
+
 
 def create_geoip(fname):
     # It's more "pythonic" to just wait for the exception,
@@ -44,10 +59,10 @@ def maybe_create_db(path):
     except IOError:
         return None
 
-city, asn, country = map(maybe_create_db,
+city, asn, country = list(map(maybe_create_db,
                          ("/usr/share/GeoIP/GeoLiteCity.dat",
                           "/usr/share/GeoIP/GeoIPASNum.dat",
-                          "/usr/share/GeoIP/GeoIP.dat"))
+                          "/usr/share/GeoIP/GeoIP.dat")))
 
 try:
     import ipaddr as _ipaddr
@@ -132,7 +147,7 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
         a dict of key->value (both strings) of all name=value type
         keywords found in args.
     """
-    filtered = filter(lambda x: '=' in x and key_filter(x.split('=')[0]), args)
+    filtered = [x for x in args if '=' in x and key_filter(x.split('=')[0])]
     return dict(x.split('=', 1) for x in filtered)
 
 

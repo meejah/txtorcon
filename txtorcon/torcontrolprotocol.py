@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+from __future__ import print_function
 from __future__ import with_statement
 
 from twisted.python import log
@@ -11,11 +15,10 @@ from txtorcon.util import hmac_sha256, compare_via_hash
 from txtorcon.log import txtorlog
 
 from txtorcon.interface import ITorControlProtocol
-from spaghetti import FSM, State, Transition
+from .spaghetti import FSM, State, Transition
 
 import os
 import re
-import types
 import base64
 
 DEFAULT_VALUE = 'DEFAULT'
@@ -142,7 +145,7 @@ def parse_keywords(lines, multiline_values=True):
         if '=' in line and ' ' not in line.split('=', 1)[0]:
             if key:
                 if key in rtn:
-                    if isinstance(rtn[key], types.ListType):
+                    if isinstance(rtn[key], list):
                         rtn[key].append(unquote(value))
                     else:
                         rtn[key] = [rtn[key], unquote(value)]
@@ -164,7 +167,7 @@ def parse_keywords(lines, multiline_values=True):
                 value = value + '\n' + line
     if key:
         if key in rtn:
-            if isinstance(rtn[key], types.ListType):
+            if isinstance(rtn[key], list):
                 rtn[key].append(unquote(value))
             else:
                 rtn[key] = [rtn[key], unquote(value)]
@@ -323,7 +326,7 @@ class TorControlProtocol(LineOnlyReceiver):
         GETINFO command. See :meth:`getinfo
         <txtorcon.TorControlProtocol.get_info>`
         """
-        info = ' '.join(map(lambda x: str(x), list(args)))
+        info = ' '.join([str(x) for x in list(args)])
         return self.queue_command('GETINFO %s' % info)
 
     def get_info_incremental(self, key, line_cb):
@@ -411,7 +414,7 @@ class TorControlProtocol(LineOnlyReceiver):
             d = defer.Deferred()
             d.errback(RuntimeError("Expected an even number of arguments."))
             return d
-        strargs = map(lambda x: str(x), args)
+        strargs = [str(x) for x in args]
         keys = [strargs[i] for i in range(0, len(strargs), 2)]
         values = [strargs[i] for i in range(1, len(strargs), 2)]
 
@@ -419,7 +422,7 @@ class TorControlProtocol(LineOnlyReceiver):
             if ' ' in s:
                 return '"%s"' % s
             return s
-        values = map(maybe_quote, values)
+        values = [maybe_quote(v) for v in values]
         args = ' '.join(map(lambda x, y: '%s=%s' % (x, y), keys, values))
         return self.queue_command('SETCONF ' + args)
 

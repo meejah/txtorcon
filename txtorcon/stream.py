@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Contains an implementation of a :class:`Stream abstraction used by
 :class:`TorState to represent all streams in Tor's state. There is
@@ -8,6 +10,11 @@ listening for stream updates (see also
 to attach streams to circuits "by hand"
 
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
 
 from twisted.python import log
 from twisted.internet import defer
