@@ -5,7 +5,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-from zope.interface import implements, Interface, Attribute
+from zope.interface import implementer
+from zope.interface import Interface, Attribute
 
 
 class IStreamListener(Interface):
@@ -59,14 +60,13 @@ class IStreamListener(Interface):
         """
 
 
+@implementer(IStreamListener)
 class StreamListenerMixin(object):
     """
     Implements all of :class:`txtorcon.IStreamListener` with no-op
     methods. You may subclass from this if you don't care about most
     of the notifications.
     """
-
-    implements(IStreamListener)
 
     def stream_new(self, stream):
         pass
@@ -227,12 +227,12 @@ class ICircuitListener(Interface):
         """
 
 
+@implementer(ICircuitListener)
 class CircuitListenerMixin(object):
     """
     Implements all of ICircuitListener with no-op methods. Subclass
     from this if you don't care about most of the notifications.
     """
-    implements(ICircuitListener)
 
     def circuit_new(self, circuit):
         pass

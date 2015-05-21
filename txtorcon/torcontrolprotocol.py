@@ -9,7 +9,8 @@ from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.error import ConnectionDone
 from twisted.protocols.basic import LineOnlyReceiver
-from zope.interface import implements
+
+from zope.interface import implementer
 
 from txtorcon.util import hmac_sha256, compare_via_hash
 from txtorcon.log import txtorlog
@@ -42,6 +43,7 @@ class TorProtocolError(RuntimeError):
         return str(self.code) + ' ' + self.text
 
 
+@implementer(IProtocolFactory)
 class TorProtocolFactory(object):
     """
     Builds TorControlProtocol objects. Implements IProtocolFactory for
@@ -50,8 +52,6 @@ class TorProtocolFactory(object):
     If your running Tor doesn't support COOKIE authentication, then
     you should supply a password callback.
     """
-
-    implements(IProtocolFactory)
 
     def __init__(self, password_function=lambda: None):
         """
@@ -176,6 +176,7 @@ def parse_keywords(lines, multiline_values=True):
     return rtn
 
 
+@implementer(ITorControlProtocol)
 class TorControlProtocol(LineOnlyReceiver):
     """
     This is the main class that talks to a Tor and implements the "raw"
@@ -194,8 +195,6 @@ class TorControlProtocol(LineOnlyReceiver):
     :class:`txtorcon.TorState`, which is also the place to go if you
     wish to add your own stream or circuit listeners.
     """
-
-    implements(ITorControlProtocol)
 
     def __init__(self, password_function=None):
         """
