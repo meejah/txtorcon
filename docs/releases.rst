@@ -33,7 +33,7 @@ v0.13.0
 v0.12.0
 -------
 
-*February 3, 2014*
+*February 3, 2015*
 
  * `txtorcon-0.12.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.12.0>`_ (:download:`local-sig </../signatues/txtorcon-0.12.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.12.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.12.0.tar.gz>`_)
  * doc, code and import cleanups from `Kali Kaneko <https://github.com/kalikaneko>`_
