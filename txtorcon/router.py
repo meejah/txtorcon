@@ -7,7 +7,8 @@ from __future__ import with_statement
 
 from datetime import datetime
 from .util import NetLocation
-from .util import basestring
+
+import six
 
 
 def hexIdFromHash(thehash):
@@ -139,7 +140,7 @@ class Router(object):
         There is some current work in Twisted for open-ended constants
         (enums) support however, it seems.
         """
-        if isinstance(flags, basestring):
+        if isinstance(flags, six.text_type):
             flags = flags.split()
         self._flags = [x.lower() for x in flags]
         self.name_is_unique = 'named' in self._flags

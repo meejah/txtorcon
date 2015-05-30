@@ -35,15 +35,6 @@ city = None
 country = None
 asn = None
 
-try:
-    unicode
-except NameError:
-    py3k = True
-    basestring = str
-else:
-    py3k = False
-    basestring = basestring
-
 
 def create_geoip(fname):
     # It's more "pythonic" to just wait for the exception,
