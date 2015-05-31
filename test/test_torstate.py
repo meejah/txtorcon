@@ -134,7 +134,7 @@ class FakeReactor:
         raise RuntimeError('connectUNIX: ' + str(args))
 
 
-class FakeCircuit:
+class FakeCircuit(Circuit):
 
     def __init__(self, id=-999):
         self.streams = []
@@ -555,6 +555,7 @@ class StateTests(unittest.TestCase):
                 return defer.succeed(self.answer)
 
         self.state.circuits[1] = FakeCircuit(1)
+        self.state.circuits[1].state = 'BUILT'
         attacher = MyAttacher(self.state.circuits[1])
         self.state.set_attacher(attacher, FakeReactor(self))
 
@@ -573,6 +574,7 @@ class StateTests(unittest.TestCase):
         self.assertEqual(len(self.protocol.commands), 1)
         self.assertEqual(self.protocol.commands[0][1], 'ATTACHSTREAM 1 1')
 
+    @defer.inlineCallbacks
     def test_attacher_errors(self):
         class MyAttacher(object):
             implements(IStreamAttacher)
@@ -592,7 +594,7 @@ class StateTests(unittest.TestCase):
         stream.id = 3
         msg = ''
         try:
-            self.state._maybe_attach(stream)
+            yield self.state._maybe_attach(stream)
         except Exception, e:
             msg = str(e)
         self.assertTrue('circuit unknown' in msg)
@@ -600,10 +602,18 @@ class StateTests(unittest.TestCase):
         attacher.answer = self.state.circuits[1]
         msg = ''
         try:
-            self.state._maybe_attach(stream)
+            yield self.state._maybe_attach(stream)
         except Exception, e:
             msg = str(e)
         self.assertTrue('only attach to BUILT' in msg)
+
+        attacher.answer = 'not a Circuit instance'
+        msg = ''
+        try:
+            yield self.state._maybe_attach(stream)
+        except Exception, e:
+            msg = str(e)
+        self.assertTrue('Circuit instance' in msg)
 
     def test_attacher_no_attach(self):
         class MyAttacher(object):

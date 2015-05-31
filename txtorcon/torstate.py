@@ -435,16 +435,16 @@ class TorState(object):
             self.attacher = None
 
         if self.attacher is None:
-            self.undo_attacher()
+            d = self.undo_attacher()
             if self.cleanup:
                 react.removeSystemEventTrigger(self.cleanup)
                 self.cleanup = None
 
         else:
-            self.protocol.set_conf("__LeaveStreamsUnattached", "1")
+            d = self.protocol.set_conf("__LeaveStreamsUnattached", "1")
             self.cleanup = react.addSystemEventTrigger('before', 'shutdown',
                                                        self.undo_attacher)
-        return None
+        return d
 
     stream_close_reasons = {
         'REASON_MISC': 1,               # (catch-all for unlisted reasons)
@@ -597,55 +597,68 @@ class TorState(object):
         (neither attaching it, nor telling Tor to attach it).
         """
 
-        if self.attacher:
-            if stream.target_host is not None \
-               and '.exit' in stream.target_host:
-                # we want to totally ignore .exit URIs as these are
-                # used to specify a particular exit node, and trying
-                # to do STREAMATTACH on them will fail with an error
-                # from Tor anyway.
-                txtorlog.msg("ignore attacher:", stream)
-                return
+        if self.attacher is None:
+            return None
 
-            circ = self.attacher.attach_stream(stream, self.circuits)
-            if circ is self.DO_NOT_ATTACH:
-                return
+        if stream.target_host is not None \
+           and '.exit' in stream.target_host:
+            # we want to totally ignore .exit URIs as these are
+            # used to specify a particular exit node, and trying
+            # to do STREAMATTACH on them will fail with an error
+            # from Tor anyway.
+            txtorlog.msg("ignore attacher:", stream)
+            return
 
+        # handle async or sync .attach() the same
+        circ_d = defer.maybeDeferred(
+            self.attacher.attach_stream,
+            stream, self.circuits,
+        )
+
+        # actually do the attachment logic; .attach() can return 3 things:
+        #    1. None: let Tor do whatever it wants
+        #    2. DO_NOT_ATTACH: don't attach the stream at all
+        #    3. Circuit instance: attach to the provided circuit
+        def issue_stream_attach(circ):
             if circ is None:
-                self.protocol.queue_command("ATTACHSTREAM %d 0" % stream.id)
+                # tell Tor to do what it likes
+                return self.protocol.queue_command("ATTACHSTREAM %d 0" % stream.id)
+
+            elif circ is self.DO_NOT_ATTACH:
+                # do nothing; don't attach the stream
+                return
 
             else:
-                if isinstance(circ, defer.Deferred):
-                    class IssueStreamAttach:
-                        def __init__(self, state, streamid):
-                            self.stream_id = streamid
-                            self.state = state
-
-                        def __call__(self, arg):
-                            if arg is None:
-                                return self.state.protocol.queue_command("ATTACHSTREAM %d 0" % stream.id)
-                            else:
-                                circid = arg.id
-                                return self.state.protocol.queue_command(
-                                    "ATTACHSTREAM %d %d" % (self.stream_id, circid)
-                                )
-
-                    circ.addCallback(IssueStreamAttach(self, stream.id))
-                    circ.addErrback(log.err)
-
-                else:
-                    if circ.id not in self.circuits:
-                        raise RuntimeError(
-                            "Attacher returned a circuit unknown to me."
-                        )
-                    if circ.state != 'BUILT':
-                        raise RuntimeError(
-                            "Can only attach to BUILT circuits; %d is in %s." %
-                            (circ.id, circ.state)
-                        )
-                    self.protocol.queue_command(
-                        "ATTACHSTREAM %d %d" % (stream.id, circ.id)
+                # should get a Circuit instance; check it for suitability
+                if not isinstance(circ, Circuit):
+                    raise RuntimeError(
+                        "IStreamAttacher.attach() must return a Circuit instance "
+                        "(or None or DO_NOT_ATTACH): %s"
                     )
+                if circ.id not in self.circuits:
+                    raise RuntimeError(
+                        "Attacher returned a circuit unknown to me."
+                    )
+                if circ.state != 'BUILT':
+                    raise RuntimeError(
+                        "Can only attach to BUILT circuits; %d is in %s." %
+                        (circ.id, circ.state)
+                    )
+                # we've got a valid Circuit instance; issue the command
+                return self.protocol.queue_command(
+                    "ATTACHSTREAM %d %d" % (stream.id, circ.id)
+                )
+
+        # not ideal, but there's not really a good way to let the
+        # caller handler errors :/ since we ultimately call this due
+        # to an async request from Tor. Mostly these errors will be
+        # logic or syntax errors in the caller's code anyway.
+        def _error(f):
+            print "Failure while attaching stream:", f
+            return f
+        circ_d.addCallback(issue_stream_attach)
+        circ_d.addErrback(_error)
+        return circ_d
 
     def _circuit_status(self, data):
         """Used internally as a callback for updating Circuit information"""

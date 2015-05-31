@@ -106,9 +106,7 @@ class IStreamAttacher(Interface):
         also return a Deferred which will callback with the desired
         circuit. In this case, you will probably need to be aware that
         the callback from :meth:`txtorcon.TorState.build_circuit` does
-        NOT call back with a Circuit (just Tor's response of 'EXTEND
-        1234') and any circuit you do return must be in the BUILT
-        state anyway (which the above will not).
+        not wait for the circuit to be in BUILT state.
 
         See :ref:`attach_streams_by_country.py` for a complete
         example of using a Deferred in an IStreamAttacher.
