@@ -59,6 +59,9 @@ class Circuit(object):
 
     :ivar id:
         The ID of this circuit, a number (or None if unset).
+
+    :ivar is_built:
+        A Deferred that will callback() when this Circuit hits BUILT state.
     """
 
     def __init__(self, routercontainer):
@@ -76,6 +79,9 @@ class Circuit(object):
         self.state = 'UNKNOWN'
         self.build_flags = []
         self.flags = {}
+
+        #: callback()d when this circuit hits BUILT
+        self.is_built = defer.Deferred()
 
         # this is used to hold a Deferred that will callback() when
         # this circuit is being CLOSED or FAILED.
@@ -177,6 +183,8 @@ class Circuit(object):
 
         if self.state == 'BUILT':
             [x.circuit_built(self) for x in self.listeners]
+            if not self.is_built.called:
+                self.is_built.callback(self)
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:
