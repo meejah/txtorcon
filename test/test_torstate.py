@@ -1079,6 +1079,14 @@ s Fast Guard Running Stable Valid
         self.state.build_circuit(routers=['AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'], using_guards=False)
         self.assertEqual(self.transport.value(), 'EXTENDCIRCUIT 0 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\r\n')
 
+    def test_build_circuit_invalid_hexid(self):
+        self.assertRaises(
+            RuntimeError,
+            self.state.build_circuit,
+            routers=['not a hex id'],
+            using_guards=False,
+        )
+
     def circuit_callback(self, circ):
         self.assertTrue(isinstance(circ, Circuit))
         self.assertEqual(circ.id, 1234)
