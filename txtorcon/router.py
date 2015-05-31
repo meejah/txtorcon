@@ -140,7 +140,7 @@ class Router(object):
         There is some current work in Twisted for open-ended constants
         (enums) support however, it seems.
         """
-        if isinstance(flags, six.text_type):
+        if isinstance(flags, six.string_types):
             flags = flags.split()
         self._flags = [x.lower() for x in flags]
         self.name_is_unique = 'named' in self._flags

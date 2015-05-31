@@ -583,9 +583,11 @@ class TorState(object):
                     first = False
                 else:
                     cmd += ','
-                if isinstance(router, six.text_type) and len(router) == 40 \
-                   and hashFromHexId(router):
-                    cmd += router
+                if isinstance(router, six.string_types):
+                    if len(router) == 40 and hashFromHexId(router):
+                        cmd += router
+                    else:
+                        raise RuntimeError("Wanted a hex-ID but got '%s'." % router)
                 else:
                     cmd += router.id_hex[1:]
         d = self.protocol.queue_command(cmd)
