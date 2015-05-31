@@ -17,29 +17,20 @@ __url__ = 'https://github.com/meejah/txtorcon'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2012-2015'
 
-def pip_to_requirements(s):
-    """
-    Change a PIP-style requirements.txt string into one suitable for setup.py
-    """
-
-    if s.startswith('#'):
-        return ''
-    m = re.match('(.*)([>=]=[.0-9]*).*', s)
-    if m:
-        return '%s (%s)' % (m.group(1), m.group(2))
-    return s.strip()
-
 
 setup(name = 'txtorcon',
       version = __version__,
       description = 'Twisted-based Tor controller client, with state-tracking and configuration abstractions.',
       long_description = open('README.rst', 'r').read(),
       keywords = ['python', 'twisted', 'tor', 'tor controller'],
-      ## way to have "development requirements"?
-      requires = filter(len, map(pip_to_requirements, open('requirements.txt').readlines())),
-      ## FIXME is requires even doing anything? why is format
-      ## apparently different for install_requires?
-      install_requires = ['Twisted>=11.1.0', 'zope.interface>=3.6.1'],
+      install_requires = open('requirements.txt').readlines(),
+      # "pip install -e .[dev]" will install development requirements
+      extras_require=dict(
+          dev=[
+              'mock',
+              'GeoIP',
+          ],
+      ),
       classifiers = ['Framework :: Twisted',
                      'Development Status :: 4 - Beta',
                      'Intended Audience :: Developers',
