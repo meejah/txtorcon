@@ -12,6 +12,8 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.14.0*
 
+ * :class:`txtorcon.interface.IStreamAttacher` handling was missing ``None`` and ``DO_NOT_ATTACH`` cases if a Deferred was returned.
+
 
 v0.13.0
 -------
