@@ -573,6 +573,37 @@ class StateTests(unittest.TestCase):
         self.assertEqual(len(self.protocol.commands), 1)
         self.assertEqual(self.protocol.commands[0][1], 'ATTACHSTREAM 1 1')
 
+    def test_attacher_defer_no_attach(self):
+        class MyAttacher(object):
+            implements(IStreamAttacher)
+
+            def __init__(self, answer):
+                self.streams = []
+                self.answer = answer
+
+            def attach_stream(self, stream, circuits):
+                self.streams.append(stream)
+                return defer.succeed(self.answer)
+
+        self.state.circuits[1] = FakeCircuit(1)
+        attacher = MyAttacher(None)
+        self.state.set_attacher(attacher, FakeReactor(self))
+
+        # boilerplate to finish enough set-up in the protocol so it
+        # works
+        events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
+        self.protocol._set_valid_events(events)
+        self.state._add_events()
+        for ignored in self.state.event_map.items():
+            self.send("250 OK")
+
+        self.send("650 STREAM 1 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
+        self.send("650 STREAM 1 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
+        self.assertEqual(len(attacher.streams), 1)
+        self.assertEqual(attacher.streams[0].id, 1)
+        self.assertEqual(len(self.protocol.commands), 1)
+        self.assertEqual(self.protocol.commands[0][1], 'ATTACHSTREAM 1 0')
+
     def test_attacher_errors(self):
         class MyAttacher(object):
             implements(IStreamAttacher)
