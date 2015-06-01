@@ -650,16 +650,19 @@ class TorState(object):
                     "ATTACHSTREAM %d %d" % (stream.id, circ.id)
                 )
 
-        # not ideal, but there's not really a good way to let the
-        # caller handler errors :/ since we ultimately call this due
-        # to an async request from Tor. Mostly these errors will be
-        # logic or syntax errors in the caller's code anyway.
-        def _error(f):
-            print "Failure while attaching stream:", f
-            return f
         circ_d.addCallback(issue_stream_attach)
-        circ_d.addErrback(_error)
+        circ_d.addErrback(self._attacher_error)
         return circ_d
+
+    def _attacher_error(self, fail):
+        """
+        not ideal, but there's not really a good way to let the caller
+        handler errors :/ since we ultimately call this due to an
+        async request from Tor. Mostly these errors will be logic or
+        syntax errors in the caller's code anyway.
+        """
+        print "Failure while attaching stream:", fail
+        return fail
 
     def _circuit_status(self, data):
         """Used internally as a callback for updating Circuit information"""

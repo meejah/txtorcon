@@ -312,6 +312,8 @@ class StateTests(unittest.TestCase):
     def setUp(self):
         self.protocol = TorControlProtocol()
         self.state = TorState(self.protocol)
+        # avoid spew in trial logs; state prints this by default
+        self.state._attacher_error = lambda f: f
         self.protocol.connectionMade = lambda: None
         self.transport = proto_helpers.StringTransport()
         self.protocol.makeConnection(self.transport)
