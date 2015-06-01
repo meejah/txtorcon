@@ -29,6 +29,7 @@ setup(name = 'txtorcon',
           dev=[
               'mock',
               'GeoIP',
+              'coverage',
           ],
       ),
       classifiers = ['Framework :: Twisted',
