@@ -342,6 +342,7 @@ class TorControlProtocol(LineOnlyReceiver):
     # The following methods are the main TorController API and
     # probably the most interesting for users.
 
+    @defer.inlineCallbacks
     def get_info(self, *args):
         """
         Uses GETINFO to obtain informatoin from Tor.
@@ -356,11 +357,19 @@ class TorControlProtocol(LineOnlyReceiver):
 
         :return:
             a ``Deferred`` which will callback with a dict containing
-            the keys you asked for. This just inserts ``parse_keywords``
-            in the callback chain; if you want to avoid the parsing
+            the keys you asked for. If you want to avoid the parsing
             into a dict, you can use get_info_raw instead.
         """
-        return self.get_info_raw(*args).addCallback(parse_keywords)
+        lines = yield self.get_info_raw(*args)
+        rtn = {}
+        key = None
+        for line in lines.split('\n'):
+            if line.split('=', 1)[0] in args:
+                key = line.split('=', 1)[0]
+                rtn[key] = line.split('=', 1)[1]
+            else:
+                rtn[key] = rtn[key] + '\n' + line
+        defer.returnValue(rtn)
 
     def get_conf(self, *args):
         """
