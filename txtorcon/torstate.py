@@ -660,6 +660,8 @@ class TorState(object):
         handler errors :/ since we ultimately call this due to an
         async request from Tor. Mostly these errors will be logic or
         syntax errors in the caller's code anyway.
+
+        tests monkey-patch this to reduce spew
         """
         print "Failure while attaching stream:", fail
         return fail

@@ -2,11 +2,14 @@ from zope.interface import implements
 from zope.interface.verify import verifyClass
 from twisted.trial import unittest
 from twisted.test import proto_helpers
+from twisted.python.failure import Failure
 from twisted.internet import task, defer
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 
 import os
 import tempfile
+
+from mock import patch
 
 from txtorcon import TorControlProtocol
 from txtorcon import TorProtocolError
@@ -332,6 +335,11 @@ class StateTests(unittest.TestCase):
         attacher = MyAttacher()
         self.state.set_attacher(attacher, FakeReactor(self))
         self.state._stream_update("76 CLOSED 0 www.example.com:0 REASON=DONE")
+
+    def test_attacher_error_handler(self):
+        # make sure error-handling "does something" that isn't blowing up
+        with patch('sys.stdout') as fake_stdout:
+            TorState(self.protocol)._attacher_error(Failure(RuntimeError("quote")))
 
     def test_stream_update(self):
         # we use a circuit ID of 0 so it doesn't try to look anything
