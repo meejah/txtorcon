@@ -611,6 +611,8 @@ class TorClientEndpoint(object):
        This optional argument lets the user specify which Tor SOCKS
        port should be used.
     """
+    # XXX should get these via the control connection, i.e. ask Tor
+    # via GETINFO net/listeners/socks or whatever
     socks_ports_to_try = [9050, 9150]
 
     def __init__(self, host, port,
@@ -629,7 +631,7 @@ class TorClientEndpoint(object):
         self.socks_password = socks_password
 
         if self.socks_port is None:
-            self.socks_portIter = iter(self.socks_ports_to_try)
+            self.socks_port_iter = iter(self.socks_ports_to_try)
             self.socksGuessingEnabled = True
         else:
             self.socksGuessingEnabled = False
@@ -638,7 +640,7 @@ class TorClientEndpoint(object):
         self.protocolfactory = protocolfactory
 
         if self.socksGuessingEnabled:
-            self.socks_port = self.socks_portIter.next()
+            self.socks_port = self.socks_port_iter.next()
 
         d = self._try_connect()
         return d
@@ -672,7 +674,7 @@ class TorClientEndpoint(object):
     def _retry_socks_port(self, failure):
         failure.trap(error.ConnectError)
         try:
-            self.socks_port = self.socks_portIter.next()
+            self.socks_port = self.socks_port_iter.next()
         except StopIteration:
             return failure
         d = self._try_connect()
