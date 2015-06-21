@@ -605,7 +605,7 @@ class TorClientEndpoint(object):
 
     :param port: The tcp port or Tor Hidden Service port.
 
-    :param proxyEndpointGenerator: This is used for unit tests.
+    :param proxy_endpoint_generator: This is used for unit tests.
 
     :param socksPort:
        This optional argument lets the user specify which Tor SOCKS
@@ -618,63 +618,63 @@ class TorClientEndpoint(object):
     def __init__(self, host, port,
                  socks_hostname=None, socks_port=None,
                  socks_username=None, socks_password=None,
-                 proxyEndpointGenerator=default_tcp4_endpoint_generator):
+                 proxy_endpoint_generator=default_tcp4_endpoint_generator):
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
         self.host = host
         self.port = port
-        self.proxyEndpointGenerator = proxyEndpointGenerator
+        self.proxy_endpoint_generator = proxy_endpoint_generator
         self.socks_hostname = socks_hostname
         self.socks_port = socks_port
         self.socks_username = socks_username
         self.socks_password = socks_password
 
         if self.socks_port is None:
-            self.socks_port_iter = iter(self.socks_ports_to_try)
-            self.socksGuessingEnabled = True
+            self._socks_port_iter = iter(self.socks_ports_to_try)
+            self._socks_guessing_enabled = True
         else:
-            self.socksGuessingEnabled = False
+            self._socks_guessing_enabled = False
 
     def connect(self, protocolfactory):
         self.protocolfactory = protocolfactory
 
-        if self.socksGuessingEnabled:
-            self.socks_port = self.socks_port_iter.next()
+        if self._socks_guessing_enabled:
+            self.socks_port = self._socks_port_iter.next()
 
         d = self._try_connect()
         return d
 
     def _try_connect(self):
-        self.torSocksEndpoint = self.proxyEndpointGenerator(
+        self.tor_socks_endpoint = self.proxy_endpoint_generator(
             reactor,
             self.socks_hostname,
             self.socks_port
         )
 
         if self.socks_username is None or self.socks_password is None:
-            socks5ClientEndpoint = SOCKS5ClientEndpoint(
+            ep = SOCKS5ClientEndpoint(
                 self.host,
                 self.port,
-                self.torSocksEndpoint
+                self.tor_socks_endpoint
             )
         else:
-            socks5ClientEndpoint = SOCKS5ClientEndpoint(
+            ep = SOCKS5ClientEndpoint(
                 self.host,
                 self.port,
-                self.torSocksEndpoint,
+                self.tor_socks_endpoint,
                 methods=dict(login=(self.socks_username, self.socks_password))
             )
 
-        d = socks5ClientEndpoint.connect(self.protocolfactory)
-        if self.socksGuessingEnabled:
+        d = ep.connect(self.protocolfactory)
+        if self._socks_guessing_enabled:
             d.addErrback(self._retry_socks_port)
         return d
 
     def _retry_socks_port(self, failure):
         failure.trap(error.ConnectError)
         try:
-            self.socks_port = self.socks_port_iter.next()
+            self.socks_port = self._socks_port_iter.next()
         except StopIteration:
             return failure
         d = self._try_connect()
