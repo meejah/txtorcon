@@ -177,10 +177,11 @@ for logging things INFO, NOTICE, WARN, ERR.
 :file:`stem_relay_descriptor.py`
 --------------------------------
 
-:download: `Download the example <../examples/stem_relay_descriptor>`.
+:download:`Download the example <../examples/stem_relay_descriptor.py>`.
 
-Get information about a relay descriptor with the help of `Stem's
-Relay Descriptor class <https://stem.torproject.org/api/descriptor/server_descriptor.html#stem.descriptor.server_descriptor.RelayDescriptor>`. We need to specify the nickname or the fingerprint to get back
+Get information about a relay descriptor with the help of `Stem's Relay Descriptor class
+<https://stem.torproject.org/api/descriptor/server_descriptor.html#stem.descriptor.server_descriptor.RelayDescriptor>`_.
+We need to specify the nickname or the fingerprint to get back
 the details.
 
 .. literalinclude:: ../examples/stem_relay_descriptor.py
