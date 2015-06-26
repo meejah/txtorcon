@@ -219,6 +219,9 @@ class ProtocolTests(unittest.TestCase):
         self.protocol.makeConnection(self.transport)
 
     def answer_bootstrap_requests(self):
+        self.send("250-signal/names=")
+        self.send("250 OK")
+
         self.send("250-version=0.2.5.10 (git-42b42605f8d8eac2)")
         self.send("250 OK")
 
