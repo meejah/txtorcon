@@ -99,6 +99,13 @@ class ConfigMethod(object):
 
         d = self.proto.get_info_raw(req)
         d.addCallback(functools.partial(stripper, req))
+        descriptor_keys = ["desc/name", "desc/id"]
+        if self.info_key in descriptor_keys and self.proto.use_stem:
+            # Parse the descriptor information into Stem's RelayDescriptor class
+            # More about the class can be read at,
+            # https://stem.torproject.org/api/descriptor/server_descriptor.html#stem.descriptor.server_descriptor.RelayDescriptor
+            from stem.descriptor.server_descriptor import RelayDescriptor
+            d.addCallback(RelayDescriptor)
         return d
 
     def __str__(self):

@@ -94,6 +94,7 @@ class ProtocolIntegrationTests(unittest.TestCase):
         # do the TorInfo magic
         self.send('250-info/names=')
         self.send('250-multi/path/arg/* a documentation string')
+        self.send('250-desc/name/* -- Router descriptors by nickname.')
         self.send('250 OK')
 
         # we had to save this up above due to the "interesting" way
@@ -106,6 +107,8 @@ class ProtocolIntegrationTests(unittest.TestCase):
         self.assertTrue(
             hasattr(getattr(getattr(info, 'multi'), 'path'), 'arg')
         )
+        self.assertTrue(hasattr(info, 'desc'))
+        self.assertTrue(hasattr(getattr(info, 'desc'), 'name'))
 
         # Finally! The test! We see if we can get this multi-path
         # value with an argument...
@@ -117,6 +120,47 @@ class ProtocolIntegrationTests(unittest.TestCase):
         self.send("250-multi/path/arg/quux=foo")
         self.send("250 OK")
         yield d
+
+        # Now test that Stem's RelayDescriptor class is used
+        self.protocol.use_stem = True
+        d = info.desc.name('moria1')
+        self.send("""250-desc/name/moria1=
+router moria1 128.31.0.34 9101 0 9131
+platform Tor 0.2.5.0-alpha-dev on Linux
+protocols Link 1 2 Circuit 1
+published 2013-07-05 23:48:52
+fingerprint 9695 DFC3 5FFE B861 329B 9F1A B04C 4639 7020 CE31
+uptime 1818933
+bandwidth 512000 62914560 1307929
+extra-info-digest 17D0142F6EBCDF60160EB1794FA6C9717D581F8C
+caches-extra-info
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALzd4bhz1usB7wpoaAvP+BBOnNIk7mByAKV6zvyQ0p1M09oEmxPMc3qD
+AAm276oJNf0eq6KWC6YprzPWFsXEIdXSqA6RWXCII1JG/jOoy6nt478BkB8TS9I9
+1MJW27ppRaqnLiTmBmM+qzrsgJGwf+onAgUKKH2GxlVgahqz8x6xAgMBAAE=
+-----END RSA PUBLIC KEY-----
+signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALtJ9uD7cD7iHjqNA3AgsX9prES5QN+yFQyr2uOkxzhvunnaf6SNhzWW
+bkfylnMrRm/qCz/czcjZO6N6EKHcXmypehvP566B7gAQ9vDsb+l7VZVWgXvzNc2s
+tl3P7qpC08rgyJh1GqmtQTCesIDqkEyWxwToympCt09ZQRq+fIttAgMBAAE=
+-----END RSA PUBLIC KEY-----
+hidden-service-dir
+contact 1024D/28988BF5 arma mit edu
+ntor-onion-key 9ZVjNkf/iLEnD685SpC5kcDytQ7u5ViiI9JOftdbE0k=
+reject *:*
+router-signature
+-----BEGIN SIGNATURE-----
+Y8Tj2e7mPbFJbguulkPEBVYzyO57p4btpWEXvRMD6vxIh/eyn25pehg5dUVBtZlL
+iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
+01NZPuSqXM1b6hnl2espFzL7XL8XEGRU+aeg+f/ukw4=
+-----END SIGNATURE-----
+.""")
+        self.send("250 OK")
+        descriptor_info = yield d
+        from stem.descriptor.server_descriptor import RelayDescriptor
+        self.assertTrue(isinstance(descriptor_info, RelayDescriptor))
 
 
 class InfoTests(unittest.TestCase):
