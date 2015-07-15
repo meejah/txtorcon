@@ -102,9 +102,39 @@ class Event(object):
         self.callbacks.remove(cb)
 
     def got_update(self, data):
-        # print self.name,"got_update:",data
         for cb in self.callbacks:
             cb(data)
+
+class StemEvent(Event):
+    """
+    A class which parses the event information into
+    `stem.response.ControlMessage instance
+    <https://stem.torproject.org/api/response.html#stem.response.ControlMessage>`_
+
+    The information is then parsed into `stem.response.events.Event subclass instance
+    <https://stem.torproject.org/api/response.html#stem.response.events.Event>`_
+    """
+    def got_update(self, data):
+        import stem.response
+        # Add appropriate headers for parsing into stem.response.ControlMessage instance
+        lines = data.split('\n')
+        if len(lines) > 1:
+            response_data = "650-" + self.name + "\r\n"
+            for line in range(len(lines)-1):
+                response_data += "650-" + lines[line] + "\r\n"
+            response_data += "650 " + lines[-1] + "\r\n"
+        else:
+            response_data = "650 " + self.name + " "+ lines[0] + "\r\n"
+        try:
+            stem_response = stem.response.ControlMessage.from_str(response_data)
+            stem.response.convert('EVENT', stem_response)
+            for cb in self.callbacks:
+                cb(stem_response)
+        except (stem.ProtocolError, ValueError) as exc:
+            txtorlog.msg(exc.__class__.__name__, exc)
+            txtorlog.msg('Unable to convert into stem.response.ControlMessage instance: ' + data)
+            print exc.__class__.__name__, exc
+            print 'Unable to convert into stem.response.ControlMessage instance: ' + data
 
 
 def unquote(word):
@@ -224,7 +254,7 @@ class TorControlProtocol(LineOnlyReceiver):
         """events we've subscribed to (keyed by name like "GUARD", "STREAM")"""
 
         self.valid_events = {}
-        """all valid events (name -> Event instance)"""
+        """all valid events (name -> Event/StemEvent instance)"""
 
         self.valid_signals = []
         """A list of all valid signals we accept from Tor"""
@@ -719,7 +749,10 @@ class TorControlProtocol(LineOnlyReceiver):
         "used as a callback; see _bootstrap"
         self.valid_events = {}
         for x in events.split():
-            self.valid_events[x] = Event(x)
+            if self.use_stem:
+                self.valid_events[x] = StemEvent(x)
+            else:
+                self.valid_events[x] = Event(x)
 
     @defer.inlineCallbacks
     def _bootstrap(self, *args):

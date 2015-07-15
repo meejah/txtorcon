@@ -1,6 +1,8 @@
 from __future__ import with_statement
 
 from os.path import exists
+from mock import patch
+from StringIO import StringIO
 
 from twisted.python import log, failure
 from twisted.trial import unittest
@@ -897,6 +899,52 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         self.protocol.add_event_listener('NS', lambda _: None)
         self.protocol.lineReceived("650-NS\r\n")
         self.protocol.lineReceived("650 OK\r\n")
+
+    def test_single_line_stem_event(self):
+        self.protocol.use_stem = True
+        self.protocol._set_valid_events('STREAM')
+
+        class StemEventListener(object):
+            def __call__(self, data):
+                self.data = data
+
+        listener = StemEventListener()
+        self.protocol.add_event_listener('STREAM', listener)
+
+        self.send("650 STREAM 1234 NEW 4321 1.2.3.4:555 REASON=MISC")
+
+        self.assertEqual(str(listener.data), "STREAM 1234 NEW 4321 1.2.3.4:555 REASON=MISC")
+        from stem.response.events import StreamEvent
+        self.assertTrue(isinstance(listener.data, StreamEvent))
+
+    def test_multi_line_stem_event(self):
+        self.protocol.use_stem = True
+        self.protocol._set_valid_events('CIRC')
+
+        class StemEventListener(object):
+            def __call__(self, data):
+                self.data = data
+
+        listener = StemEventListener()
+        self.protocol.add_event_listener('CIRC', listener)
+
+        self.send("650-CIRC 1000 EXTENDED moria1,moria2")
+        self.send("650-EXTRAMAGIC=99")
+        self.send("650 ANONYMITY=high")
+
+        self.assertEqual(str(listener.data), "CIRC\n1000 EXTENDED moria1,moria2\nEXTRAMAGIC=99\nANONYMITY=high")
+        from stem.response.events import CircuitEvent
+        self.assertTrue(isinstance(listener.data, CircuitEvent))
+
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_invalid_stem_event_information(self, stdout):
+        self.protocol.use_stem = True
+        self.protocol._set_valid_events('STREAM')
+        self.protocol.add_event_listener('STREAM', CallbackChecker(""))
+        self.send("650 STREAM UNKNOWN_RESPONSE")
+
+        expected = "ProtocolError STREAM event didn't have a target: STREAM UNKNOWN_RESPONSE\nUnable to convert into stem.response.ControlMessage instance: UNKNOWN_RESPONSE\n"
+        self.assertEqual(stdout.getvalue(), expected)
 
 
 class ParseTests(unittest.TestCase):
