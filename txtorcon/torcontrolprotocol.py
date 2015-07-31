@@ -19,6 +19,16 @@ import types
 import base64
 
 DEFAULT_VALUE = 'DEFAULT'
+_HAVE_STEM = False
+
+try:
+    import stem  # tests rely on this import; see test_zzz_imports
+    import stem.response
+    import stem.version as stem_version
+    # Please put any additional Stem imports here
+    _HAVE_STEM = True
+except:
+    _HAVE_STEM = False
 
 
 class TorProtocolError(RuntimeError):
@@ -107,16 +117,20 @@ class Event(object):
 
 class StemEvent(Event):
     """
-    A class which parses the event information into
-    `stem.response.ControlMessage instance
-    <https://stem.torproject.org/api/response.html#stem.response.ControlMessage>`_
-
-    The information is then parsed into `stem.response.events.Event subclass instance
+    Produces Stem `stem.response.events.Event
     <https://stem.torproject.org/api/response.html#stem.response.events.Event>`_
+    instances for event-listener callbacks.
     """
     def got_update(self, data):
-        import stem.response
         # Add appropriate headers for parsing into stem.response.ControlMessage instance
+
+        # XXX FIXME better/different API into Stem so we don't have to
+        # re-constitute these things like this. NS events are probably
+        # all routers, so around 20000 lines.
+
+        # XXX at the very least, use StringIO or something to avoid
+        # all the string-concatenations
+
         lines = data.split('\n')
         if len(lines) > 1:
             response_data = "650-" + self.name + "\r\n"
@@ -125,16 +139,18 @@ class StemEvent(Event):
             response_data += "650 " + lines[-1] + "\r\n"
         else:
             response_data = "650 " + self.name + " "+ lines[0] + "\r\n"
+
         try:
             stem_response = stem.response.ControlMessage.from_str(response_data)
             stem.response.convert('EVENT', stem_response)
-            for cb in self.callbacks:
-                cb(stem_response)
-        except (stem.ProtocolError, ValueError) as exc:
-            txtorlog.msg(exc.__class__.__name__, exc)
-            txtorlog.msg('Unable to convert into stem.response.ControlMessage instance: ' + data)
-            print exc.__class__.__name__, exc
-            print 'Unable to convert into stem.response.ControlMessage instance: ' + data
+        except (stem.ProtocolError, ValueError) as e:
+            # Note: Stem really does raise its own ValueError
+            txtorlog.msg('Unparsable event ("%s"): %s' % (e.message, repr(data)))
+            print 'Error parsing event using Stem: ', e.message
+            return
+
+        for cb in self.callbacks:
+            cb(stem_response)
 
 
 def unquote(word):
@@ -226,6 +242,12 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def __init__(self, password_function=None, use_stem=False):
         """
+        :param use_stem:
+            When True, use Stem for: parsing version information; and
+            event-listener callbacks receive a `stem.response.events.Event
+            <https://stem.torproject.org/api/response.html#stem.response.events.Event>`_
+            instance intead of ``str``.
+
         :param password_function:
             A zero-argument callable which returns a password (or
             Deferred). It is only called if the Tor doesn't have
@@ -237,11 +259,10 @@ class TorControlProtocol(LineOnlyReceiver):
         authentication to Tor (default is to use COOKIE, however). May
         return Deferred."""
 
+        if use_stem and not _HAVE_STEM:
+            raise RuntimeError("use_stem is True, but stem can't be imported")
         self.use_stem = use_stem
-        """If set, make use of the classes and APIs defined in Stem.
-        If not, return the value as a string that is already being done
-        in txtorcon. For more information, see `Stem
-        <https://stem.torproject.org/api.html>`_"""
+        """If set, makes various use of Stem (event-listeners, version parsing, ...)."""
 
         self.version = None
         """Version of Tor we've connected to."""
@@ -482,7 +503,8 @@ class TorControlProtocol(LineOnlyReceiver):
         return self.queue_command('SIGNAL %s' % nm)
 
     def add_event_listener(self, evt, callback):
-        """:param evt: event name, see also
+        """
+        :param evt: event name, see also
         :var:`txtorcon.TorControlProtocol.events` .keys()
 
         Add a listener to an Event object. This may be called multiple
@@ -490,8 +512,14 @@ class TorControlProtocol(LineOnlyReceiver):
         SETEVENTS call will be initiated to Tor.
 
         Currently the callback is any callable that takes a single
-        argument, that is the text collected for the event from the
-        tor control protocol.
+        argument. This argument is either: the text collected for the
+        event from the tor control protocol (NOT including the "650
+        EVENT_NAME") **or** a Stem Event instance if ``.use_stem`` is
+        True and Stem is installed.
+
+        This is forward-compatible with any new events that get added
+        to Tor, but beware that with .use_stem you'll of course need
+        Stem support for any new event.
 
         For more information on the events supported, see
         `control-spec section 4.1
@@ -507,7 +535,6 @@ class TorControlProtocol(LineOnlyReceiver):
         .. todo::
             need an interface for the callback
             show how to tie in Stem parsing if you want
-
         """
 
         if evt not in self.valid_events.values():
@@ -771,14 +798,12 @@ class TorControlProtocol(LineOnlyReceiver):
             self.valid_signals = ["RELOAD", "DUMP", "DEBUG", "NEWNYM",
                                   "CLEARDNSCACHE"]
 
-        self.version = yield self.get_info('version')
-        self.version = self.version['version']
+        version = yield self.get_info('version')
+        version = version['version']
         if self.use_stem:
-            try:
-                import stem.version as stem_version
-                self.version = stem_version.Version(self.version)
-            except ImportError:
-                pass
+            self.version = stem_version.Version(version)
+        else:
+            self.version = version
         txtorlog.msg("Connected to a Tor with VERSION", self.version)
         eventnames = yield self.get_info('events/names')
         eventnames = eventnames['events/names']
