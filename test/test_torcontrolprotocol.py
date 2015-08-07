@@ -11,7 +11,7 @@ from twisted.internet import defer, error
 
 from txtorcon import TorControlProtocol, TorProtocolFactory, TorState
 from txtorcon import ITorControlProtocol
-from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
+from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE, _HAVE_STEM
 from txtorcon.util import hmac_sha256
 
 import types
@@ -19,7 +19,7 @@ import functools
 import tempfile
 import base64
 import sys
-from unittest import skipIf
+from unittest import skipIf, skipUnless
 
 
 class CallbackChecker:
@@ -404,11 +404,13 @@ OK''' % cookietmp.name)
 
         return d
 
+    @skipUnless(_HAVE_STEM, "only when we have Stem")
     def confirm_version_dont_use_stem(self, arg):
         # XXX six.string_type
         self.assertTrue(isinstance(self.protocol.version, str))
         self.assertEqual(self.protocol.version, '0.2.5.10 (git-42b42605f8d8eac2)')
 
+    @skipUnless(_HAVE_STEM, "only when we have Stem")
     def test_bootstrap_callback_version_dont_use_stem(self):
         """
         Test that the Tor version is a string when use_stem=False
@@ -846,6 +848,7 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         self.protocol.lineReceived("650-NS\r\n")
         self.protocol.lineReceived("650 OK\r\n")
 
+    @skipUnless(_HAVE_STEM, "only when we have Stem")
     def test_single_line_stem_event(self):
         self.protocol.use_stem = True
         self.protocol._set_valid_events('STREAM')
@@ -863,6 +866,7 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         from stem.response.events import StreamEvent
         self.assertTrue(isinstance(listener.data, StreamEvent))
 
+    @skipUnless(_HAVE_STEM, "only when we have Stem")
     def test_multi_line_stem_event(self):
         self.protocol.use_stem = True
         self.protocol._set_valid_events('CIRC')
@@ -883,6 +887,7 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         self.assertTrue(isinstance(listener.data, CircuitEvent))
 
     @patch('sys.stdout', new_callable=StringIO)
+    @skipUnless(_HAVE_STEM, "only when we have Stem")
     def test_invalid_stem_event_information(self, stdout):
         self.protocol.use_stem = True
         self.protocol._set_valid_events('STREAM')
@@ -1027,6 +1032,10 @@ p reject 1-65535""")
 class ProtocolTestsUsingStem(unittest.TestCase):
 
     def setUp(self):
+        # XXX why is this getting called if all the tests are
+        # skip-decorated?
+        if not _HAVE_STEM:
+            return
         self.protocol = TorControlProtocol(use_stem=True)
         self.protocol.connectionMade = lambda: None
         self.transport = proto_helpers.StringTransport()
@@ -1043,6 +1052,7 @@ class ProtocolTestsUsingStem(unittest.TestCase):
         self.assertEqual(self.protocol.version.extra, 'git-42b42605f8d8eac2')
         self.assertEqual(self.protocol.version.version_str, '0.2.5.10 (git-42b42605f8d8eac2)')
 
+    @skipUnless(_HAVE_STEM, "only when we have Stem")
     def test_bootstrap_callback_version(self):
         """
         Test that the Tor version makes use of
@@ -1059,6 +1069,7 @@ class ProtocolTestsUsingStem(unittest.TestCase):
 
         return d
 
+    @skipUnless(_HAVE_STEM, "only when we have Stem")
     def test_bootstrap_callback_version_no_stem(self):
         """
         Test that the Tor version is a string when there is no stem module
