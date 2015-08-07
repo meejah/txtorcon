@@ -110,20 +110,15 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_private_tor(self):
-        m = Mock()
-        from txtorcon import endpoints
-        endpoints.launch_tor = m
-        ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80,
-                                                        control_port=1234)
-        m.assert_called()
+        with patch('txtorcon.endpoints.launch_tor') as m:
+            ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80, control_port=1234)
+            self.assertTrue(m.called)
 
     @defer.inlineCallbacks
     def test_private_tor_no_control_port(self):
-        m = Mock()
-        from txtorcon import endpoints
-        endpoints.launch_tor = m
-        ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
-        m.assert_called()
+        with patch('txtorcon.endpoints.launch_tor') as m:
+            ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
+            self.assertTrue(m.called)
 
     @defer.inlineCallbacks
     def test_system_tor(self):
@@ -151,7 +146,7 @@ class EndpointTests(unittest.TestCase):
                 port.startListening()
                 str(port)
                 port.tor_config
-                m.assert_called()
+                self.assertFalse(m.called)
 
     @defer.inlineCallbacks
     def test_basic(self):
