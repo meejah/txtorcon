@@ -17,6 +17,7 @@ import os
 import re
 import types
 import base64
+from StringIO import StringIO
 
 DEFAULT_VALUE = 'DEFAULT'
 _HAVE_STEM = False
@@ -128,20 +129,28 @@ class StemEvent(Event):
         # re-constitute these things like this. NS events are probably
         # all routers, so around 20000 lines.
 
-        # XXX at the very least, use StringIO or something to avoid
-        # all the string-concatenations
-
+        response_data = StringIO()
         lines = data.split('\n')
         if len(lines) > 1:
-            response_data = "650-" + self.name + "\r\n"
-            for line in range(len(lines)-1):
-                response_data += "650-" + lines[line] + "\r\n"
-            response_data += "650 " + lines[-1] + "\r\n"
+            response_data.write("650-")
+            response_data.write(self.name)
+            response_data.write("\r\n")
+            for line in lines[:-1]:
+                response_data.write("650-")
+                response_data.write(line)
+                response_data.write("\r\n")
+            response_data.write("650 ")
+            response_data.write(lines[-1])
+            response_data.write("\r\n")
         else:
-            response_data = "650 " + self.name + " "+ lines[0] + "\r\n"
+            response_data.write("650 ")
+            response_data.write(self.name)
+            response_data.write(" ")
+            response_data.write(lines[0])
+            response_data.write("\r\n")
 
         try:
-            stem_response = stem.response.ControlMessage.from_str(response_data)
+            stem_response = stem.response.ControlMessage.from_str(response_data.getvalue())
             stem.response.convert('EVENT', stem_response)
         except (stem.ProtocolError, ValueError) as e:
             # Note: Stem really does raise its own ValueError
