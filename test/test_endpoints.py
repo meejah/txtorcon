@@ -115,7 +115,7 @@ class EndpointTests(unittest.TestCase):
         endpoints.launch_tor = m
         ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80,
                                                         control_port=1234)
-        m.assert_called()
+        self.assertTrue(m.called)
 
     @defer.inlineCallbacks
     def test_private_tor_no_control_port(self):
@@ -123,7 +123,7 @@ class EndpointTests(unittest.TestCase):
         from txtorcon import endpoints
         endpoints.launch_tor = m
         ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
-        m.assert_called()
+        self.assertTrue(m.called)
 
     @defer.inlineCallbacks
     def test_system_tor(self):
@@ -136,7 +136,7 @@ class EndpointTests(unittest.TestCase):
             def bam(*args, **kw):
                 return self.protocol
             return bam
-        with patch('txtorcon.endpoints.launch_tor') as m:
+        with patch('txtorcon.endpoints.launch_tor') as launch_mock:
             with patch('txtorcon.endpoints.build_tor_connection', new_callable=boom) as btc:
                 client = clientFromString(
                     self.reactor,
@@ -151,7 +151,9 @@ class EndpointTests(unittest.TestCase):
                 port.startListening()
                 str(port)
                 port.tor_config
-                m.assert_called()
+                # system_tor should be connecting to a running one,
+                # *not* launching a new one.
+                self.assertFalse(launch_mock.called)
 
     @defer.inlineCallbacks
     def test_basic(self):
@@ -185,7 +187,7 @@ class EndpointTests(unittest.TestCase):
         args = (50, "blarg", "Doing that thing we talked about.")
         # kind-of cheating, test-wise?
         ep._tor_progress_update(*args)
-        ding.assert_called_with(*args)
+        self.assertTrue(ding.called_with(*args))
 
     @patch('txtorcon.endpoints.launch_tor')
     def test_progress_updates_private_tor(self, tor):
