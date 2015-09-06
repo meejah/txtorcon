@@ -71,6 +71,8 @@ v0.11.0
 
 *August 16, 2014*
 
+ * September 6, 2015. bugfix release: `txtorcon-0.11.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.11.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.11.1>`_ (:download:`local-sig </../signatues/txtorcon-0.11.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.11.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.11.1.tar.gz>`_)
+ * fixed Debian bug `797261 <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=797261>`_ causing 3 tests to fail
  * `txtorcon-0.11.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.11.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.11.0>`_ (:download:`local-sig </../signatues/txtorcon-0.11.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.11.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.11.0.tar.gz>`_) 
  * More control for ``launch_tor``: access stdout, stderr in real-time
    and control whether we kill Tor on and stderr output. See issue #79.
