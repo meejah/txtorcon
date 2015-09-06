@@ -1,6 +1,6 @@
 .PHONY: test html counts coverage sdist clean install doc integration
 default: test
-VERSION = 0.11.0
+VERSION = 0.11.1
 
 test:
 	trial --reporter=text test
