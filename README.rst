@@ -96,6 +96,7 @@ txtorcon runs all tests cleanly on:
 If instead you want a synchronous (threaded) Python controller
 library, check out Stem at https://stem.torproject.org/
 
+
 quick implementation overview
 -----------------------------
 
@@ -108,22 +109,24 @@ txtorcon.Router, txtorcon.Circuit and txtorcon.Stream objects which
 implement a listener interface so client code may receive updates (in
 real time) including Tor events.
 
-txtorcon uses **trial for unit-tests** and has 96% test-coverage --
+txtorcon uses **trial for unit-tests** and has 100% test-coverage --
 which is not to say I've covered all the cases, but nearly all of the
 code is at least exercised somehow by the unit tests.
 
-Tor itself is not required to be running for any of the tests. There are
-no integration tests. ohcount claims around 2000 lines of code for the
-core bit; around 4000 including tests. About 37% comments in the
-not-test code.
+Tor itself is not required to be running for any of the tests. ohcount
+claims around 2000 lines of code for the core bit; around 4000
+including tests. About 37% comments in the not-test code.
+
+There are a few simple integration tests, based on Docker. More are
+always welcome!
+
 
 dependencies / requirements
 ---------------------------
 
 - `twisted <http://twistedmatrix.com>`_: txtorcon should work with any
-   Twisted 11.1.0 or newer. I am working against Twisted 13.2.0 on
-   Debian with Python 2.7.6. Twisted 12 works fine as well. Twisted
-   does not yet support Python 3.
+   Twisted 11.1.0 or newer. Twisted 15.4.0+ works with Python3, and so
+   does txtorcon (if you find something broken on Py3 please file a bug).
 
 -  `GeoIP <https://www.maxmind.com/app/python>`_: **optional** provides location
    information for ip addresses; you will want to download GeoLite City
@@ -141,7 +144,7 @@ dependencies / requirements
    the Interface-derived docs properly.
 
 -  development: `coverage <http://nedbatchelder.com/code/coverage/>`_ to
-   run the code-coverage metrics
+   run the code-coverage metrics, and Tox
 
 -  optional: GraphViz is used in the tests (and to generate state-machine
    diagrams, if you like) but those tests are skipped if "dot" isn't
@@ -171,6 +174,7 @@ or for the bare minimum::
 
     pip install Twisted  # will install zope.interface too
 
+
 documentation
 -------------
 
@@ -184,43 +188,7 @@ ReadTheDocs https://txtorcon.readthedocs.org which builds each tagged
 release and the latest master.
 
 There is also a directory of examples/ scripts, which have inline
-documentation explaining their use. You may also use pydoc::
-
-    pydoc txtorcon.TorControlProtocol
-    pydoc txtorcon.TorState
-    pydoc txtorcon.TorConfig
-
-...for the main classes. If you're using TorState, you will also be
-interested in the support classes for it::
-
-    pydoc txtorcon.Circuit
-    pydoc txtorcon.Stream
-    pydoc txtorcon.Router
-    pydoc txtorcon.AddrMap
-
-There are also Zope interfaces for some things, if you wish to listen
-for events for your own purposes (the best example of the use of these
-being TorState itself)::
-
-    txtorcon.ITorControlProtocol
-    txtorcon.IStreamAttacher
-    txtorcon.ICircuitListener
-    txtorcon.IStreamListener
-
-For launching Tor and Twisted integration, you will want to look at::
-
-    txtorcon.launch_tor (in torconfig.py)
-    txtorcon.TCPHiddenServiceEndpoint (in torconfig.py)
-    txtorcon.TorProtocolFactory (in torcontrolprotocol.py)
-    txtorcon.build_tor_connection (in torstate.py)
-    txtorcon.build_local_tor_connection (in torstate.py)
-
-IStreamAttacher affects Tor's behaviour, allowing one to customize how
-circuits for particular streams are selected. You can build your own
-circuits via ITorControlProtocol.build\_circuit(). There is an example
-of this called custom\_stream\_attacher.py which builds (or uses)
-circuits exiting in the same country as the address to which the
-stream is connecting.
+documentation explaining their use.
 
 
 contact information
