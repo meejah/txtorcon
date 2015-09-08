@@ -674,7 +674,7 @@ class TorState(object):
 
         tests monkey-patch this to reduce spew
         """
-        print "Failure while attaching stream:", fail
+        print("Failure while attaching stream:", fail)
         return fail
 
     def _circuit_status(self, data):
@@ -742,7 +742,7 @@ class TorState(object):
         from CIRC events.
         """
 
-        # print "circuit_update",line
+        # print("circuit_update", line)
         args = line.split()
         circ_id = int(args[0])
 
@@ -755,7 +755,7 @@ class TorState(object):
         from STREAM events.
         """
 
-        # print "stream_update",line
+        # print("stream_update", line)
         if line.strip() == 'stream-status=':
             # this happens if there are no active streams
             return

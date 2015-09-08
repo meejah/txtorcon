@@ -20,6 +20,7 @@ unreleased
    use Tor as a client. For example, to connect to txtorcon's Web site:
    ``ep = clientFromString("tor:timaq4ygg2iegci7.onion:80")``.
    (In the future, I'd like to automatically launch Tor if required, too).
+ * Python3 fixes from `isis <https://github.com/isislovecruft>`_ (note: needs Twisted 15.4.0+)
 
 
 v0.13.0
