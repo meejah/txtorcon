@@ -30,6 +30,7 @@ city = None
 country = None
 asn = None
 
+# XXX probably better to depend on and use "six" for py2/3 stuff?
 try:
     unicode
 except NameError:
