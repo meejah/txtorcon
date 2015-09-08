@@ -16,12 +16,7 @@ import struct
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
 
-# FIXME: Remove this try/except block when t.i.e.serverFromString is available
-# in py3k.  See also the related hack in :func:`available_tcp_port`.
-try:
-    from twisted.internet.endpoints import serverFromString
-except ImportError:
-    serverFromString = None
+from twisted.internet.endpoints import serverFromString
 
 from zope.interface import implementer
 
@@ -289,13 +284,7 @@ def available_tcp_port(reactor):
     assigned port number.
     """
 
-    # FIXME: Remove this if/else block when t.i.e.serverFromString is
-    # available in py3k.
-    if serverFromString:
-        endpoint = serverFromString(reactor, 'tcp:0:interface=127.0.0.1')
-    else:
-        endpoint = TCP4ServerEndpoint(reactor, 0, backlog=50, interface='127.0.0.1')
-
+    endpoint = serverFromString(reactor, 'tcp:0:interface=127.0.0.1')
     port = yield endpoint.listen(NoOpProtocolFactory())
     address = port.getHost()
     yield port.stopListening()
