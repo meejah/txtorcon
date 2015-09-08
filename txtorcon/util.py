@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import with_statement
+
 import glob
 import os
 import hmac
@@ -9,7 +15,13 @@ import struct
 
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
-from twisted.internet.endpoints import serverFromString
+
+# FIXME: Remove this try/except block when t.i.e.serverFromString is available
+# in py3k.  See also the related hack in :func:`available_tcp_port`.
+try:
+    from twisted.internet.endpoints import serverFromString
+except ImportError:
+    serverFromString = None
 
 from zope.interface import implementer
 
@@ -22,6 +34,15 @@ except ImportError:
 city = None
 country = None
 asn = None
+
+try:
+    unicode
+except NameError:
+    py3k = True
+    basestring = str
+else:
+    py3k = False
+    basestring = basestring
 
 
 def create_geoip(fname):
@@ -44,10 +65,10 @@ def maybe_create_db(path):
     except IOError:
         return None
 
-city, asn, country = map(maybe_create_db,
+city, asn, country = list(map(maybe_create_db,
                          ("/usr/share/GeoIP/GeoLiteCity.dat",
                           "/usr/share/GeoIP/GeoIPASNum.dat",
-                          "/usr/share/GeoIP/GeoIP.dat"))
+                          "/usr/share/GeoIP/GeoIP.dat")))
 
 try:
     import ipaddr as _ipaddr
@@ -132,7 +153,7 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
         a dict of key->value (both strings) of all name=value type
         keywords found in args.
     """
-    filtered = filter(lambda x: '=' in x and key_filter(x.split('=')[0]), args)
+    filtered = [x for x in args if '=' in x and key_filter(x.split('=')[0])]
     return dict(x.split('=', 1) for x in filtered)
 
 
@@ -268,7 +289,13 @@ def available_tcp_port(reactor):
     assigned port number.
     """
 
-    endpoint = serverFromString(reactor, 'tcp:0:interface=127.0.0.1')
+    # FIXME: Remove this if/else block when t.i.e.serverFromString is
+    # available in py3k.
+    if serverFromString:
+        endpoint = serverFromString(reactor, 'tcp:0:interface=127.0.0.1')
+    else:
+        endpoint = TCP4ServerEndpoint(reactor, 0, backlog=50, interface='127.0.0.1')
+
     port = yield endpoint.listen(NoOpProtocolFactory())
     address = port.getHost()
     yield port.stopListening()

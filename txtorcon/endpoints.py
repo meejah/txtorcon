@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import with_statement
+
 import os
 import shutil
 import weakref
@@ -26,8 +32,8 @@ from zope.interface import Interface, Attribute
 
 from txsocksx.client import SOCKS5ClientEndpoint
 
-from torconfig import TorConfig, launch_tor, HiddenService
-from torstate import build_tor_connection
+from .torconfig import TorConfig, launch_tor, HiddenService
+from .torstate import build_tor_connection
 
 
 _global_tor_config = None
@@ -406,7 +412,7 @@ class TCPHiddenServiceEndpoint(object):
                 info_callback.callback(None)
         self.config.protocol.add_event_listener('INFO', info_event)
 
-        if self.hidden_service_dir not in map(lambda hs: hs.dir, self.config.HiddenServices):
+        if self.hidden_service_dir not in [hs.dir for hs in self.config.HiddenServices]:
             self.hiddenservice = HiddenService(
                 self.config, self.hidden_service_dir,
                 ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],

@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
 import functools
 from twisted.internet import defer
 
@@ -32,13 +39,13 @@ class MagicContainer(object):
         return object.__getattribute__(self, '_txtorcon_name')
 
     def __getitem__(self, idx):
-        return object.__getattribute__(self, 'attrs').items()[idx][1]
+        return list(object.__getattribute__(self, 'attrs').items())[idx][1]
 
     def __len__(self):
         return len(object.__getattribute__(self, 'attrs'))
 
     def __dir__(self):
-        return object.__getattribute__(self, 'attrs').keys()
+        return list(object.__getattribute__(self, 'attrs').keys())
 
     def __getattribute__(self, name):
         sup = super(MagicContainer, self)
@@ -47,7 +54,7 @@ class MagicContainer(object):
 
         attrs = sup.__getattribute__('attrs')
         if name == '__members__':
-            return attrs.keys()
+            return list(attrs.keys())
 
         else:
             if name.startswith('__'):
@@ -62,7 +69,7 @@ class MagicContainer(object):
 
     def dump(self, prefix):
         prefix = prefix + '.' + object.__getattribute__(self, '_txtorcon_name')
-        for x in object.__getattribute__(self, 'attrs').values():
+        for x in list(object.__getattribute__(self, 'attrs').values()):
             x.dump(prefix)
 
 
@@ -169,7 +176,7 @@ class TorInfo(object):
     def __getitem__(self, idx):
         sup = super(TorInfo, self)
         if sup.__getattribute__('_setup') is True:
-            return object.__getattribute__(self, 'attrs').items()[idx][1]
+            return list(object.__getattribute__(self, 'attrs').items())[idx][1]
         raise TypeError("No __getitem__ until we've setup.")
 
     def __len__(self):
@@ -183,8 +190,8 @@ class TorInfo(object):
     def __dir__(self):
         sup = super(TorInfo, self)
         if sup.__getattribute__('_setup') is True:
-            return sup.__getattribute__('attrs').keys()
-        return sup.__getattribute__('__dict__').keys()
+            return list(sup.__getattribute__('attrs').keys())
+        return list(sup.__getattribute__('__dict__').keys())
 
     def __getattribute__(self, name):
         sup = super(TorInfo, self)
@@ -193,7 +200,7 @@ class TorInfo(object):
 
         attrs = sup.__getattribute__('attrs')
         if name == '__members__':
-            return attrs.keys()
+            return list(attrs.keys())
 
         else:
             try:

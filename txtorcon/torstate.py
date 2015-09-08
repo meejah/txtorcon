@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import with_statement
+
+import collections
 import datetime
 import os
 import stat
@@ -27,7 +34,8 @@ from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
 from txtorcon.interface import IStreamListener
 from txtorcon.interface import IStreamAttacher
-from spaghetti import FSM, State, Transition
+from .spaghetti import FSM, State, Transition
+from .util import basestring
 
 
 def _build_state(proto):
@@ -105,10 +113,13 @@ def build_tor_connection(connection, build_state=True, wait_for_proto=True,
         )
     )
     if build_state:
-        d.addCallback(build_state if callable(build_state) else _build_state)
+        d.addCallback(build_state
+                      if isinstance(build_state, collections.Callable)
+                      else _build_state)
     elif wait_for_proto:
-        d.addCallback(wait_for_proto if callable(wait_for_proto) else
-                      _wait_for_proto)
+        d.addCallback(wait_for_proto
+                      if isinstance(wait_for_proto, collections.Callable)
+                      else _wait_for_proto)
     return d
 
 
@@ -147,7 +158,7 @@ def flags_from_dict(kw):
         return ''
 
     flags = ''
-    for (k, v) in kw.iteritems():
+    for (k, v) in kw.items():
         if v:
             flags += ' ' + str(k)
     # note that we want the leading space if there's at least one
@@ -572,7 +583,7 @@ class TorState(object):
                     first = False
                 else:
                     cmd += ','
-                if isinstance(router, types.StringType) and len(router) == 40 \
+                if isinstance(router, basestring) and len(router) == 40 \
                    and hashFromHexId(router):
                     cmd += router
                 else:

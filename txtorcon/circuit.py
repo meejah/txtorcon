@@ -1,9 +1,16 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
 import time
 import datetime
 
 from twisted.python import log
 from twisted.internet import defer
-from interface import IRouterContainer
+from .interface import IRouterContainer
 
 from txtorcon.util import find_keywords
 
@@ -246,6 +253,6 @@ class Circuit(object):
                 oldpath = self.path
 
     def __str__(self):
-        path = ' '.join(map(lambda x: x.ip, self.path))
+        path = ' '.join([x.ip for x in self.path])
         return "<Circuit %d %s [%s] for %s>" % (self.id, self.state, path,
                                                 self.purpose)

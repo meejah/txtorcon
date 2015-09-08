@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
 # for now, this needs to be changed in setup.py also until I find a
 # better solution
 __version__ = '0.13.0'
@@ -34,8 +41,8 @@ from txtorcon.endpoints import TorClientEndpointStringParser
 from txtorcon.endpoints import IHiddenService
 from txtorcon.endpoints import IProgressProvider
 from txtorcon.endpoints import get_global_tor
-import util
-import interface
+from . import util
+from . import interface
 from txtorcon.interface import *
 
 __all__ = ["Router",
