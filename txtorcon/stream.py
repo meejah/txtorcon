@@ -152,7 +152,8 @@ class Stream(object):
         d.addCallback(close_command_is_queued)
         return self._closing_deferred
 
-    def _create_flags(self, kw):
+    @staticmethod
+    def _create_flags(kw):
         """
         this clones the kw dict, adding a lower-case version of every key
         (duplicated in circuit.py; consider putting in util?)

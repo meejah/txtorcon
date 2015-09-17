@@ -665,7 +665,8 @@ class TorState(object):
         circ_d.addErrback(self._attacher_error)
         return circ_d
 
-    def _attacher_error(self, fail):
+    @staticmethod
+    def _attacher_error(fail):
         """
         not ideal, but there's not really a good way to let the caller
         handler errors :/ since we ultimately call this due to an
@@ -837,15 +838,18 @@ class TorState(object):
 
     # implement IStreamListener
 
-    def stream_new(self, stream):
+    @staticmethod
+    def stream_new(stream):
         "IStreamListener: a new stream has been created"
         txtorlog.msg("stream_new", stream)
 
-    def stream_succeeded(self, stream):
+    @staticmethod
+    def stream_succeeded(stream):
         "IStreamListener: stream has succeeded"
         txtorlog.msg("stream_succeeded", stream)
 
-    def stream_attach(self, stream, circuit):
+    @staticmethod
+    def stream_attach(stream, circuit):
         """
         IStreamListener: the stream has been attached to a circuit. It
         seems you get an attach to None followed by an attach to real
@@ -854,7 +858,8 @@ class TorState(object):
         txtorlog.msg("stream_attach", stream.id,
                      stream.target_host, " -> ", circuit)
 
-    def stream_detach(self, stream, **kw):
+    @staticmethod
+    def stream_detach(stream, **kw):
         """
         IStreamListener
         """
@@ -885,11 +890,13 @@ class TorState(object):
         txtorlog.msg("circuit_launched", circuit)
         self.circuits[circuit.id] = circuit
 
-    def circuit_extend(self, circuit, router):
+    @staticmethod
+    def circuit_extend(circuit, router):
         "ICircuitListener API"
         txtorlog.msg("circuit_extend:", circuit.id, router)
 
-    def circuit_built(self, circuit):
+    @staticmethod
+    def circuit_built(circuit):
         "ICircuitListener API"
         txtorlog.msg(
             "circuit_built:", circuit.id,

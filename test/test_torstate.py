@@ -128,18 +128,20 @@ class FakeReactor:
     def removeSystemEventTrigger(self, id):
         self.test.assertEqual(id, 1)
 
-    def connectTCP(self, *args, **kw):
+    @staticmethod
+    def connectTCP(*args, **kw):
         """for testing build_tor_connection"""
         raise RuntimeError('connectTCP: ' + str(args))
 
-    def connectUNIX(self, *args, **kw):
+    @staticmethod
+    def connectUNIX(*args, **kw):
         """for testing build_tor_connection"""
         raise RuntimeError('connectUNIX: ' + str(args))
 
 
 class FakeCircuit(Circuit):
-
-    def __init__(self, id=-999):
+    def __init__(self, routercontainer, id=-999):
+        super(FakeCircuit, self).__init__(routercontainer)
         self.streams = []
         self.id = id
         self.state = 'BOGUS'
@@ -148,11 +150,13 @@ class FakeCircuit(Circuit):
 class FakeEndpoint:
     implements(IStreamClientEndpoint)
 
-    def get_info_raw(self, keys):
+    @staticmethod
+    def get_info_raw(keys):
         ans = '\r\n'.join(map(lambda k: '%s=' % k, keys.split()))
         return defer.succeed(ans)
 
-    def get_info_incremental(self, key, linecb):
+    @staticmethod
+    def get_info_incremental(key, linecb):
         linecb('%s=' % key)
         return defer.succeed('')
 
@@ -488,7 +492,8 @@ class StateTests(unittest.TestCase):
         class MyAttacher(object):
             implements(IStreamAttacher)
 
-            def attach_stream(self, stream, circuits):
+            @staticmethod
+            def attach_stream(stream, circuits):
                 return None
 
         fr = FakeReactor(self)

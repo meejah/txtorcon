@@ -72,10 +72,12 @@ class TorProtocolFactory(object):
         """
         self.password_function = password_function
 
-    def doStart(self):
+    @staticmethod
+    def doStart():
         ":api:`twisted.internet.interfaces.IProtocolFactory` API"
 
-    def doStop(self):
+    @staticmethod
+    def doStop():
         ":api:`twisted.internet.interfaces.IProtocolFactory` API"
 
     def buildProtocol(self, addr):
@@ -749,7 +751,8 @@ class TorControlProtocol(LineOnlyReceiver):
     # State Machine transitions and matchers. See the __init__ method
     # for a way to output a GraphViz dot diagram of the machine.
 
-    def _is_end_line(self, line):
+    @staticmethod
+    def _is_end_line(line):
         "for FSM"
         return line.strip() == '.'
 
@@ -818,7 +821,8 @@ class TorControlProtocol(LineOnlyReceiver):
             self.response += (line[4:] + '\n')
         return None
 
-    def _is_finish_line(self, line):
+    @staticmethod
+    def _is_finish_line(line):
         "for FSM"
         # print "isFinish",line
         if len(line) < 1:

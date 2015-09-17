@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
   <link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300,700' rel='stylesheet' type='text/css'>
   <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
-  <link href='{{ pathto('_static/pygments.css') }}' rel='stylesheet' type='text/css'>
+  <link href="{{ pathto('_static/pygments.css') }}" rel='stylesheet' type='text/css'>
 {% endblock %}
 {%- block relbar2 %}{% endblock %}
 {%- block header %}
@@ -35,7 +35,7 @@
       {%- if show_source and has_source and sourcename %}
       |
       <a href="{{ pathto('_sources/' + sourcename, true)|e }}"
-          rel="nofollow">{{ _('Page source') }}</a></li>
+          rel="nofollow">{{ _('Page source') }}</a>
       {%- endif %}
     </div>
 

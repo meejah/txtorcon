@@ -6,7 +6,8 @@ from txtorcon.router import Router, hexIdFromHash, hashFromHexId
 
 
 class FakeController(object):
-    def get_info_raw(self, i):
+    @staticmethod
+    def get_info_raw(i):
         return defer.succeed('250-ip-to-country/something=XX\r\n250 OK')
 
 
@@ -128,7 +129,8 @@ class RouterTests(unittest.TestCase):
 
     def test_countrycode(self):
         class CountryCodeController(object):
-            def get_info_raw(self, i):
+            @staticmethod
+            def get_info_raw(i):
                 return defer.succeed(
                     '250-ip-to-country/127.1.2.3=ZZ\r\n250 OK'
                 )

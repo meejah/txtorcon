@@ -14,22 +14,28 @@ def error(failure):
 
 class MyCircuitListener(object):
     implements(txtorcon.ICircuitListener)
-    def circuit_new(self, circuit):
+    @staticmethod
+    def circuit_new(circuit):
         print "new", circuit
 
-    def circuit_launched(self, circuit):
+    @staticmethod
+    def circuit_launched(circuit):
         print "launched", circuit
 
-    def circuit_extend(self, circuit, router):
+    @staticmethod
+    def circuit_extend(circuit, router):
         print "extend", circuit
 
-    def circuit_built(self, circuit):
+    @staticmethod
+    def circuit_built(circuit):
         print "built", circuit
 
-    def circuit_closed(self, circuit, **kw):
+    @staticmethod
+    def circuit_closed(circuit, **kw):
         print "closed", circuit, kw
 
-    def circuit_failed(self, circuit, **kw):
+    @staticmethod
+    def circuit_failed(circuit, **kw):
         print "failed", circuit, kw
 
 
