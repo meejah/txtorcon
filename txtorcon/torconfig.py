@@ -34,9 +34,10 @@ class TorNotFound(RuntimeError):
 
 
 class TorProcessProtocol(protocol.ProcessProtocol):
-    def __init__(self, connection_creator, progress_updates=None, config=None,
-                 ireactortime=None, timeout=None, kill_on_stderr=True,
-                 stdout=None, stderr=None):
+    def __init__(
+            self, connection_creator, progress_updates=None, config=None,
+            ireactortime=None, timeout=None, kill_on_stderr=True,
+            stdout=None, stderr=None):
         """
         This will read the output from a Tor process and attempt a
         connection to its control port when it sees any 'Bootstrapped'
@@ -140,8 +141,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         # tor_connection_failed)
 
         txtorlog.msg(data)
-        if not self.attempted_connect and self.connection_creator \
-                and 'Bootstrap' in data:
+        if (not self.attempted_connect and
+                self.connection_creator and 'Bootstrap' in data):
             self.attempted_connect = True
             d = self.connection_creator()
             d.addCallback(self.tor_connected)
@@ -414,8 +415,7 @@ def launch_tor(config, reactor,
         if connection_creator is None:
             connection_creator = functools.partial(
                 TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
-                TorProtocolFactory()
-            )
+                TorProtocolFactory())
     else:
         connection_creator = None
 
@@ -594,10 +594,10 @@ class LineList(TorConfigType):
             obj, functools.partial(instance.mark_unsaved, name))
 
 
-config_types = [Boolean, Boolean_Auto, LineList, Integer, SignedInteger, Port,
-                TimeInterval, TimeMsecInterval,
-                DataSize, Float, Time, CommaList, String, LineList, Filename,
-                RouterList, TimeIntervalCommaList]
+config_types = [
+    Boolean, Boolean_Auto, LineList, Integer, SignedInteger, Port,
+    TimeInterval, TimeMsecInterval, DataSize, Float, Time, CommaList,
+    String, LineList, Filename, RouterList, TimeIntervalCommaList]
 
 
 def is_list_config_type(klass):
@@ -683,8 +683,8 @@ class HiddenService(object):
     127.0.0.1:1234']))
     """
 
-    def __init__(self, config, thedir, ports, auth=None, ver=2,
-                 group_readable=0):
+    def __init__(
+            self, config, thedir, ports, auth=None, ver=2, group_readable=0):
         """
         config is the TorConfig to which this will belong, thedir
         corresponds to 'HiddenServiceDir' and will ultimately contain
@@ -766,9 +766,10 @@ class HiddenService(object):
         """
 
         rtn = [('HiddenServiceDir', str(self.dir))]
-        if self.conf._supports['HiddenServiceDirGroupReadable'] \
-                and self.group_readable:
+        if (self.conf._supports['HiddenServiceDirGroupReadable'] and
+                self.group_readable):
             rtn.append(('HiddenServiceDirGroupReadable', str(1)))
+
         for x in self.ports:
             rtn.append(('HiddenServicePort', str(x)))
         if self.version:
@@ -837,39 +838,43 @@ def parse_client_keys(stream):
 
     # initial state; we want "client-name" or it's an error
     init.add_transitions([
-        Transition(got_name, lambda _line: _line.startswith('client-name '),
-                   parser_state.set_name),
-        Transition(init, lambda _line: not _line.startswith('client-name '),
-                   parse_error),
+        Transition(
+            got_name, lambda _line: _line.startswith('client-name '),
+            parser_state.set_name),
+        Transition(
+            init, lambda _line: not _line.startswith('client-name '),
+            parse_error),
     ])
 
     # next up is "descriptor-cookie" or it's an error
     got_name.add_transitions([
-        Transition(got_cookie,
-                   lambda _line: _line.startswith('descriptor-cookie '),
-                   parser_state.set_cookie),
-        Transition(init,
-                   lambda _line: not _line.startswith('descriptor-cookie '),
-                   parse_error),
+        Transition(
+            got_cookie, lambda _line: _line.startswith('descriptor-cookie '),
+            parser_state.set_cookie),
+        Transition(
+            init, lambda _line: not _line.startswith('descriptor-cookie '),
+            parse_error),
     ])
 
     # the "interesting bit": there's either a client-name if we're a
     # "basic" file, or an RSA key (with "client-key" before it)
     got_cookie.add_transitions([
-        Transition(reading_key, lambda _line: _line.startswith('client-key'),
-                   None),
-        Transition(got_name, lambda _line: _line.startswith('client-name '),
-                   parser_state.set_name),
+        Transition(
+            reading_key, lambda _line: _line.startswith('client-key'), None),
+        Transition(
+            got_name, lambda _line: _line.startswith('client-name '),
+            parser_state.set_name),
     ])
 
     # if we're reading an RSA key, we accumulate it in current_key.key
     # until we hit a line starting with "client-name"
     reading_key.add_transitions([
-        Transition(reading_key,
-                   lambda _line: not _line.startswith('client-name'),
-                   parser_state.add_key_line),
-        Transition(got_name, lambda _line: _line.startswith('client-name '),
-                   parser_state.set_name),
+        Transition(
+            reading_key, lambda _line: not _line.startswith('client-name'),
+            parser_state.add_key_line),
+        Transition(
+            got_name, lambda _line: _line.startswith('client-name '),
+            parser_state.set_name),
     ])
 
     # create our FSM and parse the data
