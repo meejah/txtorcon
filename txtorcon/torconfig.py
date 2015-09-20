@@ -11,11 +11,8 @@ import tempfile
 import warnings
 from io import StringIO
 import shlex
-if sys.platform in ('linux2', 'darwin'):
-    import pwd
 
 from twisted.python import log
-from twisted.python.failure import Failure
 from twisted.internet import defer, error, protocol
 from twisted.internet.interfaces import IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -24,6 +21,9 @@ from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory
 from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
 from txtorcon.log import txtorlog
 from txtorcon.interface import ITorControlProtocol
+
+if sys.platform in ('linux2', 'darwin'):
+    import pwd
 
 
 class TorNotFound(RuntimeError):
@@ -34,10 +34,10 @@ class TorNotFound(RuntimeError):
 
 
 class TorProcessProtocol(protocol.ProcessProtocol):
-
-    def __init__(self, connection_creator, progress_updates=None, config=None,
-                 ireactortime=None, timeout=None, kill_on_stderr=True,
-                 stdout=None, stderr=None):
+    def __init__(
+            self, connection_creator, progress_updates=None, config=None,
+            ireactortime=None, timeout=None, kill_on_stderr=True,
+            stdout=None, stderr=None):
         """
         This will read the output from a Tor process and attempt a
         connection to its control port when it sees any 'Bootstrapped'
@@ -141,8 +141,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         # tor_connection_failed)
 
         txtorlog.msg(data)
-        if not self.attempted_connect and self.connection_creator \
-                and 'Bootstrap' in data:
+        if (not self.attempted_connect and
+                self.connection_creator and 'Bootstrap' in data):
             self.attempted_connect = True
             d = self.connection_creator()
             d.addCallback(self.tor_connected)
@@ -213,7 +213,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     # the below are all callbacks
 
-    def tor_connection_failed(self, failure):
+    def tor_connection_failed(self):
         # FIXME more robust error-handling please, like a timeout so
         # we don't just wait forever after 100% bootstrapped (that
         # is, we're ignoring these errors, but shouldn't do so after
@@ -244,13 +244,13 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
         self.tor_protocol = proto
         if self.config is not None:
-            self.config._update_proto(proto)
+            self.config.update_proto(proto)
         self.tor_protocol.is_owned = self.transport.pid
         self.tor_protocol.post_bootstrap.addCallback(
             self.protocol_bootstrapped).addErrback(
-                self.tor_connection_failed)
+            self.tor_connection_failed)
 
-    def protocol_bootstrapped(self, proto):
+    def protocol_bootstrapped(self):
         txtorlog.msg("Protocol is bootstrapped")
 
         self.tor_protocol.add_event_listener(
@@ -415,8 +415,7 @@ def launch_tor(config, reactor,
         if connection_creator is None:
             connection_creator = functools.partial(
                 TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
-                TorProtocolFactory()
-            )
+                TorProtocolFactory())
     else:
         connection_creator = None
 
@@ -594,10 +593,11 @@ class LineList(TorConfigType):
         return _ListWrapper(
             obj, functools.partial(instance.mark_unsaved, name))
 
-config_types = [Boolean, Boolean_Auto, LineList, Integer, SignedInteger, Port,
-                TimeInterval, TimeMsecInterval,
-                DataSize, Float, Time, CommaList, String, LineList, Filename,
-                RouterList, TimeIntervalCommaList]
+
+config_types = [
+    Boolean, Boolean_Auto, LineList, Integer, SignedInteger, Port,
+    TimeInterval, TimeMsecInterval, DataSize, Float, Time, CommaList,
+    String, LineList, Filename, RouterList, TimeIntervalCommaList]
 
 
 def is_list_config_type(klass):
@@ -612,11 +612,12 @@ def _wrapture(orig):
     the list.
     """
 
-#    @functools.wraps(orig)
+    #    @functools.wraps(orig)
     def foo(*args):
         obj = args[0]
         obj.on_modify()
         return orig(*args)
+
     return foo
 
 
@@ -630,6 +631,10 @@ class _ListWrapper(list):
     """
 
     def __init__(self, thelist, on_modify_cb):
+        """
+
+        :type self: list
+        """
         list.__init__(self, thelist)
         self.on_modify = on_modify_cb
 
@@ -678,8 +683,8 @@ class HiddenService(object):
     127.0.0.1:1234']))
     """
 
-    def __init__(self, config, thedir, ports,
-                 auth=[], ver=2, group_readable=0):
+    def __init__(
+            self, config, thedir, ports, auth=None, ver=2, group_readable=0):
         """
         config is the TorConfig to which this will belong, thedir
         corresponds to 'HiddenServiceDir' and will ultimately contain
@@ -696,6 +701,8 @@ class HiddenService(object):
         somehow? Like provide a factory-function on TorConfig for
         users instead?
         """
+        if not auth:
+            auth = []
 
         self.conf = config
         self.dir = thedir
@@ -759,9 +766,10 @@ class HiddenService(object):
         """
 
         rtn = [('HiddenServiceDir', str(self.dir))]
-        if self.conf._supports['HiddenServiceDirGroupReadable'] \
-           and self.group_readable:
+        if (self.conf._supports['HiddenServiceDirGroupReadable'] and
+                self.group_readable):
             rtn.append(('HiddenServiceDirGroupReadable', str(1)))
+
         for x in self.ports:
             rtn.append(('HiddenServicePort', str(x)))
         if self.version:
@@ -776,7 +784,7 @@ def parse_rsa_blob(lines):
 
 
 def parse_client_keys(stream):
-    '''
+    """
     This parses a hidden-service "client_keys" file, either stealth or
     basic (they're the same, except "stealth" includes a
     "client-key"). Returns a list of HiddenServiceClientAuth() instances.
@@ -784,13 +792,16 @@ def parse_client_keys(stream):
     Note that the key does NOT include the "----BEGIN ---" markers,
     nor *any* embedded whitespace. It is *just* the key blob.
 
-    '''
+    """
 
     def parse_error(data):
         raise RuntimeError("Parse error at: " + data)
 
     class ParserState(object):
         def __init__(self):
+            self.key = []
+            self.cookie = None
+            self.name = None
             self.keys = []
             self.reset()
 
@@ -801,7 +812,8 @@ def parse_client_keys(stream):
 
         def create_key(self):
             if self.name is not None:
-                self.keys.append(HiddenServiceClientAuth(self.name, self.cookie, self.key))
+                self.keys.append(
+                    HiddenServiceClientAuth(self.name, self.cookie, self.key))
             self.reset()
 
         def set_name(self, name):
@@ -813,8 +825,8 @@ def parse_client_keys(stream):
             if self.cookie.endswith('=='):
                 self.cookie = self.cookie[:-2]
 
-        def add_key_line(self, line):
-            self.key.append(line)
+        def add_key_line(self, _line):
+            self.key.append(_line)
 
     from txtorcon.spaghetti import FSM, State, Transition
     init = State('init')
@@ -826,28 +838,43 @@ def parse_client_keys(stream):
 
     # initial state; we want "client-name" or it's an error
     init.add_transitions([
-        Transition(got_name, lambda line: line.startswith('client-name '), parser_state.set_name),
-        Transition(init, lambda line: not line.startswith('client-name '), parse_error),
+        Transition(
+            got_name, lambda _line: _line.startswith('client-name '),
+            parser_state.set_name),
+        Transition(
+            init, lambda _line: not _line.startswith('client-name '),
+            parse_error),
     ])
 
     # next up is "descriptor-cookie" or it's an error
     got_name.add_transitions([
-        Transition(got_cookie, lambda line: line.startswith('descriptor-cookie '), parser_state.set_cookie),
-        Transition(init, lambda line: not line.startswith('descriptor-cookie '), parse_error),
+        Transition(
+            got_cookie, lambda _line: _line.startswith('descriptor-cookie '),
+            parser_state.set_cookie),
+        Transition(
+            init, lambda _line: not _line.startswith('descriptor-cookie '),
+            parse_error),
     ])
 
     # the "interesting bit": there's either a client-name if we're a
     # "basic" file, or an RSA key (with "client-key" before it)
     got_cookie.add_transitions([
-        Transition(reading_key, lambda line: line.startswith('client-key'), None),
-        Transition(got_name, lambda line: line.startswith('client-name '), parser_state.set_name),
+        Transition(
+            reading_key, lambda _line: _line.startswith('client-key'), None),
+        Transition(
+            got_name, lambda _line: _line.startswith('client-name '),
+            parser_state.set_name),
     ])
 
     # if we're reading an RSA key, we accumulate it in current_key.key
     # until we hit a line starting with "client-name"
     reading_key.add_transitions([
-        Transition(reading_key, lambda line: not line.startswith('client-name'), parser_state.add_key_line),
-        Transition(got_name, lambda line: line.startswith('client-name '), parser_state.set_name),
+        Transition(
+            reading_key, lambda _line: not _line.startswith('client-name'),
+            parser_state.add_key_line),
+        Transition(
+            got_name, lambda _line: _line.startswith('client-name '),
+            parser_state.set_name),
     ])
 
     # create our FSM and parse the data
@@ -925,7 +952,7 @@ class TorConfig(object):
         self.parsers = {}
         '''Instances of the parser classes, subclasses of TorConfigType'''
 
-        self.list_parsers = set(['hiddenservices'])
+        self.list_parsers = {'hiddenservices'}
         '''All the names (keys from .parsers) that are a List of something.'''
 
         # during bootstrapping we decide whether we support the
@@ -945,7 +972,7 @@ class TorConfig(object):
                 self.bootstrap()
 
         else:
-            self.do_post_bootstrap(self)
+            self.do_post_bootstrap()
 
         self.__dict__['_setup_'] = None
 
@@ -956,8 +983,10 @@ class TorConfig(object):
     set it, which can only be done if we don't already have a
     protocol.
     """
+
     def _get_protocol(self):
         return self.__dict__['_protocol']
+
     protocol = property(_get_protocol)
 
     def attach_protocol(self, proto):
@@ -978,7 +1007,7 @@ class TorConfig(object):
             proto.post_bootstrap.addCallback(self.bootstrap)
         return self.__dict__['post_bootstrap']
 
-    def _update_proto(self, proto):
+    def update_proto(self, proto):
         """
         internal method, used by launch_tor to update the protocol after we're
         set up.
@@ -994,9 +1023,15 @@ class TorConfig(object):
         attributes we need in the constructor without uusing __dict__
         all over the place.
         """
-        has_setup_attr = lambda o: '_setup_' in o.__dict__
-        has_slutty_attr = lambda o: '_slutty_' in o.__dict__
-        is_hidden_services = lambda s: s.lower() == "hiddenservices"
+
+        def has_setup_attr(o):
+            return '_setup_' in o.__dict__
+
+        def has_slutty_attr(o):
+            return '_slutty_' in o.__dict__
+
+        def is_hidden_services(s):
+            return s.lower() == "hiddenservices"
 
         if has_setup_attr(self):
             name = self._find_real_name(name)
@@ -1036,9 +1071,9 @@ class TorConfig(object):
         return item in self.config
 
     def __iter__(self):
-        '''
+        """
         FIXME needs proper iterator tests in test_torconfig too
-        '''
+        """
         for x in self.config.__iter__():
             yield x
         for x in self.__dict__['unsaved'].__iter__():
@@ -1083,11 +1118,11 @@ class TorConfig(object):
             # parse_keywords if it was unspecified
             self.config[self._find_real_name(k)] = v
 
-    def bootstrap(self, arg=None):
-        '''
+    def bootstrap(self):
+        """
         This only takes args so it can be used as a callback. Don't
         pass an arg, it is ignored.
-        '''
+        """
         try:
             self.protocol.add_event_listener(
                 'CONF_CHANGED', self._conf_changed)
@@ -1106,7 +1141,7 @@ class TorConfig(object):
         self.post_bootstrap.errback(f)
         return None
 
-    def do_post_bootstrap(self, arg):
+    def do_post_bootstrap(self):
         if not self.post_bootstrap.called:
             self.post_bootstrap.callback(self)
         return self
@@ -1142,7 +1177,9 @@ class TorConfig(object):
                                 args.append(k)
                                 args.append(v)
                             else:
-                                raise RuntimeError("Trying to add hidden service with same HiddenServiceDir: %s" % v)
+                                raise RuntimeError(
+                                    "Trying to add hidden service with \
+                                    same HiddenServiceDir: %s" % v)
                         else:
                             args.append(k)
                             args.append(v)
@@ -1173,13 +1210,14 @@ class TorConfig(object):
             self._save_completed()
             return defer.succeed(self)
 
-    def _save_completed(self, *args):
-        '''internal callback'''
+    def _save_completed(self):
+        """internal callback"""
         self.__dict__['unsaved'] = {}
         return self
 
     def _find_real_name(self, name):
-        keys = list(self.__dict__['parsers'].keys()) + list(self.__dict__['config'].keys())
+        keys = list(self.__dict__['parsers'].keys()) + list(
+            self.__dict__['config'].keys())
         for x in keys:
             if x.lower() == name.lower():
                 return x
@@ -1245,7 +1283,9 @@ class TorConfig(object):
                         )
                     )
                 else:
-                    raise RuntimeError("Trying to add hidden service with same HiddenServiceDir: %s" % directory)
+                    raise RuntimeError(
+                        "Trying to add hidden service with same \
+                        HiddenServiceDir: %s" % directory)
 
         hs = []
         directory = None
@@ -1268,9 +1308,9 @@ class TorConfig(object):
                 directory = os.path.abspath(directory)
                 if directory != _directory:
                     warnings.warn(
-                        "Directory path: %s changed to absolute path: %s" % (_directory, directory),
-                        RuntimeWarning
-                    )
+                        "Directory path: %s changed to absolute path: %s" %
+                        (_directory, directory), RuntimeWarning)
+
                 ports = []
                 ver = None
                 auth = []
@@ -1298,7 +1338,7 @@ class TorConfig(object):
             hs, functools.partial(self.mark_unsaved, name))
 
     def config_args(self):
-        '''
+        """
         Returns an iterator of 2-tuples (config_name, value), one for
         each configuration option in this config. This is more-or-less
         and internal method, but see, e.g., launch_tor()'s
@@ -1308,7 +1348,7 @@ class TorConfig(object):
         See :meth:`txtorcon.TorConfig.create_torrc` which returns a
         string which is also a valid ``torrc`` file
 
-        '''
+        """
 
         for (k, v) in list(self.config.items()) + list(self.unsaved.items()):
             if type(v) is _ListWrapper:

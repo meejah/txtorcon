@@ -18,7 +18,8 @@ def logCircuit(circuit):
 def logStream(stream, state):
     circ = ''
     if stream.circuit:
-        path = '->'.join(map(lambda x: x.location.countrycode, stream.circuit.path))
+        path = '->'.join(map(lambda x: x.location.countrycode,
+                             stream.circuit.path))
         circ = ' via circuit %d (%s)' % (stream.circuit.id, path)
     proc = txtorcon.util.process_from_address(
         stream.source_addr,

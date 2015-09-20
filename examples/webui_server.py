@@ -29,7 +29,10 @@ class TorPage(livepage.LivePage):
                 tags.h1["Tor Launching..."],
                 # obviously you might want a javascript library or
                 # something here instead of this hackery...
-                tags.div(id='progress', style='position:abso lute; left:20em; top:10px; width:300px; height:50px; border:2px solid black;background-color:#ffaaaa;')[
+                tags.div(id='progress',
+                         style='position:abso lute; left:20em; top:10px;'
+                                'width:300px; height:50px; border:2px solid'
+                                'black;background-color:#ffaaaa;')[
                     tags.div(id='progress_done', style='position:absolute; top:0px; left:0px; width:0%; height: 100%; background-color:#aaffaa;')],
 
                 # this is where the messages will go

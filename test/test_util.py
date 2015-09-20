@@ -23,13 +23,16 @@ class FakeState:
 class FakeProtocolFactory:
     implements(IProtocolFactory)
 
-    def doStart(self):
+    @staticmethod
+    def doStart():
         "IProtocolFactory API"
 
-    def doStop(self):
+    @staticmethod
+    def doStop():
         "IProtocolFactory API"
 
-    def buildProtocol(self, addr):
+    @staticmethod
+    def buildProtocol(addr):
         "IProtocolFactory API"
         return None
 
@@ -124,7 +127,8 @@ class TestNetLocation(unittest.TestCase):
         orig = util.city
         try:
             class Thrower(object):
-                def record_by_addr(*args, **kw):
+                @staticmethod
+                def record_by_addr(**kw):
                     raise RuntimeError("testing failure")
             util.city = Thrower()
             nl = util.NetLocation('127.0.0.1')
@@ -143,7 +147,8 @@ class TestNetLocation(unittest.TestCase):
             obj = object()
 
             class CountryCoder(object):
-                def country_code_by_addr(self, ipaddr):
+                @staticmethod
+                def country_code_by_addr(ipaddr):
                     return obj
             util.country = CountryCoder()
             nl = util.NetLocation('127.0.0.1')
@@ -164,7 +169,8 @@ class TestNetLocation(unittest.TestCase):
             util.country = None
 
             class Thrower:
-                def org_by_addr(*args, **kw):
+                @staticmethod
+                def org_by_addr(**kw):
                     raise RuntimeError("testing failure")
             util.asn = Thrower()
             nl = util.NetLocation('127.0.0.1')

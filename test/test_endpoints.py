@@ -430,17 +430,20 @@ class EndpointLaunchTests(unittest.TestCase):
 class FakeProtocol(object):
     implements(IProtocol)
 
-    def dataReceived(self, data):
+    @staticmethod
+    def dataReceived(data):
         print "DATA", data
 
-    def connectionLost(self, reason):
+    @staticmethod
+    def connectionLost(reason):
         print "LOST", reason
 
     def makeConnection(self, transport):
         print "MAKE", transport
         transport.protocol = self
 
-    def connectionMade(self):
+    @staticmethod
+    def connectionMade():
         print "MADE!"
 
 

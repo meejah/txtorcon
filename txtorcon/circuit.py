@@ -150,7 +150,8 @@ class Circuit(object):
             return None
         return (now - self.time_created).seconds
 
-    def _create_flags(self, kw):
+    @staticmethod
+    def _create_flags(kw):
         """
         this clones the kw dict, adding a lower-case version of every
         key (duplicated in stream.py; put in util?)

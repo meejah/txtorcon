@@ -18,7 +18,9 @@ import txtorcon
 
 res = static.Data("<html>Hello, hidden-service world!</html>", 'text/html')
 ep = endpoints.serverFromString(reactor, "onion:80")
-txtorcon.IProgressProvider(ep).add_progress_listener(lambda p, tag, msg: print(msg))
-ep.listen(server.Site(res)).addCallback(lambda port: print(str(port.getHost()))).addErrback(print)
+txtorcon.IProgressProvider(ep)\
+    .add_progress_listener(lambda p, tag, msg: print(msg))
+ep.listen(server.Site(res))\
+    .addCallback(lambda port: print(str(port.getHost()))).addErrback(print)
 
 reactor.run()
