@@ -8,5 +8,5 @@ install: "sudo apt-get install -y libgeoip-dev && pip install -r requirements.tx
 script:
     make coverage
 after_success:
-    coveralls
-    codecov
+  - coveralls
+  - codecov
