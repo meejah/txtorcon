@@ -6,14 +6,21 @@ in master your project depends upon, let me know and I'll do a
 release. Starting with v0.8.0 versions are following `semantic
 versioning <http://semver.org/>`_.
 
-
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.14.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.15.0*
 
+
+
+v0.14.0
+-------
+
+*September 26, 2015*
+
+ * `txtorcon-0.14.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.14.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.14.0>`_ (:download:`local-sig </../signatues/txtorcon-0.14.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.14.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.14.0.tar.gz>`_)
  * :class:`txtorcon.interface.IStreamAttacher` handling was missing ``None`` and ``DO_NOT_ATTACH`` cases if a Deferred was returned.
- * add ``.is_built`` Deferred to :class:`txtorcon.Circuit` that get `callback()`d when the circuit becomes BUILT
+ * add ``.is_built`` Deferred to :class:`txtorcon.Circuit` that gets `callback()`d when the circuit becomes BUILT
  * `david415 <https://github.com/david415>`_ ported his ``tor:``
    endpoint parser so now both client and server endpoints are
    supported. This means **any** Twisted program using endpoints can
