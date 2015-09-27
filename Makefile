@@ -36,12 +36,10 @@ doc: docs/*.rst
 
 coverage:
 	coverage run --source=txtorcon `which trial` test
-	coverage -a -d annotated_coverage
 	coverage report --show-missing
 
 htmlcoverage:
 	coverage run --source=txtorcon `which trial` test
-	coverage -a -d annotated_coverage
 	coverage report --show-missing
 	coverage html  # creates htmlcov/
 	sensible-browser htmlcov/index.html
