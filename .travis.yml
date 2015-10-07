@@ -5,8 +5,18 @@ python:
 # command to install dependencies
 install: "sudo apt-get install -y libgeoip-dev && pip install -r requirements.txt && pip install -r dev-requirements.txt"
 # command to run tests
+env:
+  - TOX_ENV=twisted-debian-squeeze
+  - TOX_ENV=twisted-debian-wheezy
+  - TOX_ENV=twisted-latest-12
+  - TOX_ENV=twisted-newest-13
+  - TOX_ENV=twisted-newest-14
+  - TOX_ENV=twisted-newest-15
+  - TOX_ENV=pypy
+
 script:
-    make coverage
+  - tox -c tox.ini -e $TOX_ENV
+
 after_success:
   - coveralls
   - codecov
