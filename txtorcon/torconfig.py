@@ -809,7 +809,9 @@ class EphemeralHiddenService(object):
     @defer.inlineCallbacks
     def add_to_tor(self, protocol):
         '''
-        Returns a Deferred which fires with None
+        Returns a Deferred which fires with 'self' after at least one
+        descriptor has been uploaded. Errback if no descriptor upload
+        succeeds.
         '''
         ports = ' '.join(map(lambda x: 'Port=' + x.strip(), self._ports))
         cmd = 'ADD_ONION %s %s' % (self._key_blob, ports)

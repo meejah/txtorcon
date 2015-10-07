@@ -11,6 +11,8 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.15.0*
 
+ * support the new ADD_ONION and DEL_ONION "ephemeral hidden services"
+   commands in TorConfig
 
 
 v0.14.0
