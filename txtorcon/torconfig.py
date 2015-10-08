@@ -1021,6 +1021,18 @@ class TorConfig(object):
 
     """
 
+    @classmethod
+    @defer.inlineCallbacks
+    def from_connection(cls, connection):
+        """
+        This creates and returns a ready-to-go TorConfig instance from the
+        given connection, which should be an instance of
+        TorControlProtocol.
+        """
+        cfg = TorConfig(control=connection)
+        yield cfg.post_bootstrap
+        defer.returnValue(cfg)
+
     def __init__(self, control=None):
         self.config = {}
         '''Current configuration, by keys.'''
