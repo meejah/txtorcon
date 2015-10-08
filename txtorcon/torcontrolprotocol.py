@@ -120,7 +120,7 @@ def unquote(word):
     return word
 
 
-def parse_keywords(lines, multiline_values=True):
+def parse_keywords(lines, multiline_values=True, key_hints=None):
     """
     Utility method to parse name=value pairs (GETINFO etc). Takes a
     string with newline-separated lines and expects at most one = sign
@@ -142,7 +142,11 @@ def parse_keywords(lines, multiline_values=True):
         if line.strip() == 'OK':
             continue
 
-        if '=' in line and ' ' not in line.split('=', 1)[0]:
+        sp = line.split('=', 1)
+        found_key = ('=' in line and ' ' not in sp[0])
+        if found_key and key_hints and sp[0] not in key_hints:
+            found_key = False
+        if found_key:
             if key:
                 if key in rtn:
                     if isinstance(rtn[key], list):
@@ -344,7 +348,6 @@ class TorControlProtocol(LineOnlyReceiver):
     # The following methods are the main TorController API and
     # probably the most interesting for users.
 
-    @defer.inlineCallbacks
     def get_info(self, *args):
         """
         Uses GETINFO to obtain informatoin from Tor.
@@ -362,16 +365,9 @@ class TorControlProtocol(LineOnlyReceiver):
             the keys you asked for. If you want to avoid the parsing
             into a dict, you can use get_info_raw instead.
         """
-        lines = yield self.get_info_raw(*args)
-        rtn = {}
-        key = None
-        for line in lines.split('\n'):
-            if line.split('=', 1)[0] in args:
-                key = line.split('=', 1)[0]
-                rtn[key] = line.split('=', 1)[1]
-            else:
-                rtn[key] = rtn[key] + '\n' + line
-        defer.returnValue(rtn)
+        d = self.get_info_raw(*args)
+        d.addCallback(parse_keywords, key_hints=args)
+        return d
 
     def get_conf(self, *args):
         """

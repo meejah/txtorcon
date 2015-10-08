@@ -441,6 +441,18 @@ OK''' % cookietmp.name)
         self.send("250 OK")
         return d
 
+    def test_multiline_plus_embedded_equals(self):
+        """
+        """
+
+        d = self.protocol.get_info("FOO")
+        d.addCallback(CallbackChecker({"FOO": "\na="}))
+        self.send("250+FOO=")
+        self.send("a=")
+        self.send(".")
+        self.send("250 OK")
+        return d
+
     def incremental_check(self, expected, actual):
         if '=' in actual:
             return
@@ -642,6 +654,21 @@ iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 250 OK"""
         d = self.protocol.get_info("desc/name/moria1")
         d.addCallback(CallbackChecker({'desc/name/moria1': '\n' + '\n'.join(descriptor_info.split('\n')[1:-2])}))
+        d.addErrback(self.fail)
+
+        for line in descriptor_info.split('\n'):
+            self.send(line)
+        return d
+
+    def test_getinfo_multiline(self):
+        descriptor_info = """250+desc/name/moria1=
+router moria1 128.31.0.34 9101 0 9131
+platform Tor 0.2.5.0-alpha-dev on Linux
+.
+250 OK"""
+        d = self.protocol.get_info("desc/name/moria1")
+        gold = "\nrouter moria1 128.31.0.34 9101 0 9131\nplatform Tor 0.2.5.0-alpha-dev on Linux"
+        d.addCallback(CallbackChecker({'desc/name/moria1': gold}))
         d.addErrback(self.fail)
 
         for line in descriptor_info.split('\n'):
