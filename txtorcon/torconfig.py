@@ -21,7 +21,7 @@ from twisted.internet import defer, error, protocol
 from twisted.internet.interfaces import IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
-from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory
+from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory, DEFAULT_VALUE
 from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
 from txtorcon.log import txtorlog
 from txtorcon.interface import ITorControlProtocol
@@ -742,9 +742,44 @@ class HiddenService(object):
         self.__dict__[name] = value
 
     def __getattr__(self, name):
-        if name in ('hostname', 'private_key'):
+        '''
+        FIXME can't we just move this to @property decorated methods
+        instead?
+        '''
+
+        # For stealth authentication, the .onion is per-client. So in
+        # that case, we really have no choice here -- we can't have
+        # "a" hostname. So we just barf; it's an error to access to
+        # hostname this way. Instead, use .clients.{hostname, cookie}
+
+        if name == 'private_key':
             with open(os.path.join(self.dir, name)) as f:
-                self.__dict__[name] = f.read().strip()
+                data = f.read().strip()
+            self.__dict__[name] = data
+
+        elif name == 'clients':
+            clients = []
+            with open(os.path.join(self.dir, 'hostname')) as f:
+                for line in f.readlines():
+                    args = line.split()
+                    clients.append((args[0], args[1]))
+            self.__dict__[name] = clients
+
+        elif name == 'hostname':
+            with open(os.path.join(self.dir, name)) as f:
+                data = f.read().strip()
+            host = None
+            for line in data.split('\n'):
+                h  = line.split(' ')[0]
+                if host is None:
+                    host = h
+                elif h != host:
+                    raise RuntimeError(
+                        ".hostname accessed on stealth-auth'd hidden-service "
+                        "with multiple onion addresses."
+                    )
+            self.__dict__[name] = h
+
         elif name == 'client_keys':
             fname = os.path.join(self.dir, name)
             keys = []
@@ -1275,8 +1310,10 @@ class TorConfig(object):
 
             if isinstance(value, list):
                 for x in value:
-                    args.append(key)
-                    args.append(str(x))
+                    # FIXME XXX
+                    if x is not DEFAULT_VALUE:
+                        args.append(key)
+                        args.append(str(x))
 
             else:
                 args.append(key)

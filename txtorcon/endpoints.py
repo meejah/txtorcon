@@ -204,7 +204,7 @@ class TCPHiddenServiceEndpoint(object):
 
     @classmethod
     def global_tor(cls, reactor, public_port, hidden_service_dir=None,
-                   local_port=None, control_port=None):
+                   local_port=None, control_port=None, stealth_auth=None):
         """
         This returns a TCPHiddenServiceEndpoint connected to a
         txtorcon global Tor instance. The first time you call this, a
@@ -223,17 +223,27 @@ class TCPHiddenServiceEndpoint(object):
 
         All keyword options have defaults (e.g. random ports, or
         tempdirs).
+
+        :param stealth_auth:
+            None, or a list of strings -- one for each stealth
+            authenticator you require.
         """
 
         def progress(*args):
             progress.target(*args)
-        config = get_global_tor(reactor,
-                                control_port=control_port,
-                                progress_updates=progress)
-        # config is a Deferred here, but endpoint resolves in listen()
-        r = TCPHiddenServiceEndpoint(reactor, config, public_port,
-                                     hidden_service_dir=hidden_service_dir,
-                                     local_port=local_port)
+        config = get_global_tor(
+            reactor,
+            control_port=control_port,
+            progress_updates=progress
+        )
+        # config is a Deferred here, but endpoint resolves it in
+        # the listen() call
+        r = TCPHiddenServiceEndpoint(
+            reactor, config, public_port,
+            hidden_service_dir=hidden_service_dir,
+            local_port=local_port,
+            stealth_auth=stealth_auth,
+        )
         progress.target = r._tor_progress_update
         return r
 
@@ -265,7 +275,8 @@ class TCPHiddenServiceEndpoint(object):
         return r
 
     def __init__(self, reactor, config, public_port,
-                 hidden_service_dir=None, local_port=None):
+                 hidden_service_dir=None, local_port=None,
+                 stealth_auth=None):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
@@ -291,6 +302,10 @@ class TCPHiddenServiceEndpoint(object):
             not provided, one is created with temp.mkstemp() AND
             DELETED when the reactor shuts down.
 
+        :param stealth_auth:
+            A list of strings, one name for each stealth authenticator
+            you want. Like: ``['alice', 'bob']``
+
         :param endpoint_generator:
             A callable that generates a new instance of something that
             implements IServerEndpoint (by default TCP4ServerEndpoint)
@@ -300,6 +315,7 @@ class TCPHiddenServiceEndpoint(object):
         self.config = defer.maybeDeferred(lambda: config)
         self.public_port = public_port
         self.local_port = local_port
+        self.stealth_auth = stealth_auth
 
         self.hidden_service_dir = hidden_service_dir
         self.tcp_listening_port = None
@@ -413,10 +429,15 @@ class TCPHiddenServiceEndpoint(object):
         self.config.protocol.add_event_listener('INFO', info_event)
 
         if self.hidden_service_dir not in [hs.dir for hs in self.config.HiddenServices]:
+            authlines = []
+            if self.stealth_auth:
+                # like "stealth name0,name1"
+                authlines = ['stealth ' + ','.join(self.stealth_auth)]
             self.hiddenservice = HiddenService(
                 self.config, self.hidden_service_dir,
                 ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
-                group_readable=1)
+                group_readable=1, auth=authlines,
+            )
             self.config.HiddenServices.append(self.hiddenservice)
         yield self.config.save()
 
@@ -427,15 +448,23 @@ class TCPHiddenServiceEndpoint(object):
         self._tor_progress_update(100.0, 'wait_descriptor',
                                   'At least one descriptor uploaded.')
 
-        log.msg(
-            'Started hidden service "%s" on port %d' %
-            (self.onion_uri, self.public_port))
+### FIXME XXX need to work out what happens here on stealth-auth'd
+### things. maybe we need a separate StealthHiddenService
+### vs. HiddenService ?!
+
+#        log.msg(
+#            'Started hidden service "%s" on port %d' %
+#            (self.onion_uri, self.public_port))
         log.msg('Keys are in "%s".' % (self.hidden_service_dir,))
-        defer.returnValue(TorOnionListeningPort(self.tcp_listening_port,
-                                                self.hidden_service_dir,
-                                                self.onion_uri,
-                                                self.public_port,
-                                                self.config))
+        defer.returnValue(
+            TorOnionListeningPort(
+                self.tcp_listening_port,
+                self.hidden_service_dir,
+                '', ##self.onion_uri,
+                self.public_port,
+                self.config,
+            )
+        )
 
 
 @implementer(IAddress)
@@ -629,10 +658,10 @@ class TorClientEndpoint(object):
             raise ValueError('host and port must be specified')
 
         self.host = host
-        self.port = port
+        self.port = int(port)
         self._proxy_endpoint_generator = _proxy_endpoint_generator
         self.socks_hostname = socks_hostname
-        self.socks_port = socks_port
+        self.socks_port = int(socks_port) if socks_port else None
         self.socks_username = socks_username
         self.socks_password = socks_password
 

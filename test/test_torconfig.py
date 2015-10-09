@@ -709,6 +709,29 @@ HiddenServiceAuthorizeClient Dependant''')
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_stealth_clients(self):
+        # FIXME test without crapping on filesystem
+        self.protocol.answers.append('HiddenServiceDir=/fake/path\n')
+        d = tempfile.mkdtemp()
+
+        try:
+            with open(os.path.join(d, 'hostname'), 'w') as f:
+                f.write('oniona cookiea\n')
+                f.write('onionb cookieb\n')
+
+            conf = TorConfig(self.protocol)
+            hs = HiddenService(conf, d, [])
+
+            self.assertEqual(2, len(hs.clients))
+            self.assertEqual('oniona', hs.clients[0][0])
+            self.assertEqual('cookiea', hs.clients[0][1])
+            self.assertEqual('onionb', hs.clients[1][0])
+            self.assertEqual('cookieb', hs.clients[1][1])
+            self.assertRaises(RuntimeError, getattr, hs, 'hostname')
+
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_modify_hidden_service(self):
         self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServicePort=80 127.0.0.1:1234\n')
 
