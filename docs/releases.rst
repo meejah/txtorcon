@@ -15,6 +15,9 @@ unreleased
    commands in TorConfig
  * a first stealth-authentication implementation (for "normal" hidden
    services, not ephemeral)
+ * bug-fix from `david415 <https://github.com/david415>`_ to raise
+   ConnectionRefusedError instead of StopIteration when running out of
+   SOCKS ports.
 
 
 v0.14.0

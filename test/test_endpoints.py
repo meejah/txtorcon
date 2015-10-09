@@ -615,6 +615,18 @@ class TestTorClientEndpoint(unittest.TestCase):
         # just ensuring the default generator doesn't blow up
         default_tcp4_endpoint_generator(None, 'foo.bar', 1234)
 
+    @defer.inlineCallbacks
+    def test_stop_iteration_becomes_refused(self):
+        fake_endpoint = Mock()
+        proto_factory = Mock()
+
+        TorClientEndpoint.socks_ports_to_try = []
+        ep = TorClientEndpoint('a host', 0)
+        try:
+            yield ep.connect(proto_factory)
+        except Exception as e:
+            self.assertTrue(isinstance(e, ConnectionRefusedError))
+
     def test_no_host(self):
         self.assertRaises(
             ValueError,
