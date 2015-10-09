@@ -617,12 +617,12 @@ class TestTorClientEndpoint(unittest.TestCase):
         fake_endpoint = Mock()
         proto_factory = Mock()
 
-        TorClientEndpoint.socks_ports_to_try = []
-        ep = TorClientEndpoint('a host', 0)
-        try:
-            yield ep.connect(proto_factory)
-        except Exception as e:
-            self.assertIsInstance(e, ConnectionRefusedError)
+        with patch.object(TorClientEndpoint, 'socks_ports_to_try', []):
+            ep = TorClientEndpoint('a host', 0)
+            try:
+                yield ep.connect(proto_factory)
+            except Exception as e:
+                self.assertIsInstance(e, ConnectionRefusedError)
 
     def test_no_host(self):
         self.assertRaises(
@@ -680,11 +680,11 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         fail_ports = [1984, 666]
         for port in fail_ports:
-            def TorSocksEndpointGenerator(*args, **kw):
+            def tor_socks_endpoint_generator(*args, **kw):
                 kw['accept_port'] = port
                 kw['failure'] = Failure(ConnectionRefusedError())
                 return FakeTorSocksEndpoint(*args, **kw)
-            endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=TorSocksEndpointGenerator)
+            endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=tor_socks_endpoint_generator)
             d = endpoint.connect(None)
             return self.assertFailure(d, ConnectionRefusedError)
 
@@ -693,11 +693,11 @@ class TestTorClientEndpoint(unittest.TestCase):
         This tests that if a SOCKS port is specified, we *only* attempt to
         connect to that SOCKS port.
         """
-        def TorSocksEndpointGenerator(*args, **kw):
+        def tor_socks_endpoint_generator(*args, **kw):
             kw['accept_port'] = 6669
             kw['failure'] = Failure(ConnectionRefusedError())
             return FakeTorSocksEndpoint(*args, **kw)
-        endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=TorSocksEndpointGenerator, socks_port=6669)
+        endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=tor_socks_endpoint_generator, socks_port=6669)
         endpoint.connect(None)
         self.assertEqual(endpoint.tor_socks_endpoint.transport.value(), '\x05\x01\x00')
 
@@ -707,10 +707,10 @@ class TestTorClientEndpoint(unittest.TestCase):
         specified SOCKS port... even if there is a valid SOCKS port listening on
         the socks_ports_to_try list.
         """
-        def TorSocksEndpointGenerator(*args, **kw):
+        def tor_socks_endpoint_generator(*args, **kw):
             kw['accept_port'] = 9050
             kw['failure'] = Failure(ConnectionRefusedError())
             return FakeTorSocksEndpoint(*args, **kw)
-        endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=TorSocksEndpointGenerator, socks_port=6669)
+        endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=tor_socks_endpoint_generator, socks_port=6669)
         d = endpoint.connect(None)
         self.assertFailure(d, ConnectionRefusedError)
