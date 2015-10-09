@@ -13,6 +13,8 @@ unreleased
 
  * support the new ADD_ONION and DEL_ONION "ephemeral hidden services"
    commands in TorConfig
+ * a first stealth-authentication implementation (for "normal" hidden
+   services, not ephemeral)
 
 
 v0.14.0
