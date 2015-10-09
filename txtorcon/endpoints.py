@@ -26,6 +26,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet import error
 from twisted.plugin import IPlugin
 from twisted.python.util import FancyEqMixin
+from twisted.internet.error import ConnectionRefusedError
 
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
@@ -711,7 +712,7 @@ class TorClientEndpoint(object):
         try:
             self.socks_port = self._socks_port_iter.next()
         except StopIteration:
-            return failure
+            return defer.fail(ConnectionRefusedError('tor socks port retry failed'))
         d = self._try_connect()
         d.addErrback(self._retry_socks_port)
         return d
