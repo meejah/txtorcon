@@ -612,7 +612,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         return self.assertFailure(d, ConnectionRefusedError)
 
     def test_default_generator(self):
-        # just ensuring the default generator doesn't blow updoesn't blow up
+        # just ensuring the default generator doesn't blow up
         default_tcp4_endpoint_generator(None, 'foo.bar', 1234)
 
     def test_no_host(self):
