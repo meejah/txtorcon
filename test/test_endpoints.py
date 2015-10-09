@@ -3,7 +3,7 @@ import shutil
 import tempfile
 
 from mock import patch
-from mock import Mock
+from mock import Mock, MagicMock
 
 from zope.interface import implements
 
@@ -656,6 +656,21 @@ class TestTorClientEndpoint(unittest.TestCase):
         endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=tor_socks_endpoint_generator)
         endpoint.connect(Mock)
         self.assertEqual(endpoint.tor_socks_endpoint.transport.value(), '\x05\x01\x00')
+
+    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @defer.inlineCallbacks
+    def test_success(self, socks5_factory):
+        ep = MagicMock()
+        gold_proto = object()
+        ep.connect = MagicMock(return_value=gold_proto)
+        socks5_factory.return_value = ep
+
+        def tor_socks_endpoint_generator(*args, **kw):
+            return FakeTorSocksEndpoint(*args, **kw)
+
+        endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=tor_socks_endpoint_generator)
+        other_proto = yield endpoint.connect(MagicMock())
+        self.assertEqual(other_proto, gold_proto)
 
     def test_good_port_retry(self):
         """
