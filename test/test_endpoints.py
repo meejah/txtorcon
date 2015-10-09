@@ -651,10 +651,10 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         This test is equivalent to txsocksx's TestSOCKS5ClientEndpoint.test_defaultFactory
         """
-        def TorSocksEndpointGenerator(*args, **kw):
+        def tor_socks_endpoint_generator(*args, **kw):
             return FakeTorSocksEndpoint(*args, **kw)
-        endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=TorSocksEndpointGenerator)
-        endpoint.connect(None)
+        endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=tor_socks_endpoint_generator)
+        endpoint.connect(Mock)
         self.assertEqual(endpoint.tor_socks_endpoint.transport.value(), '\x05\x01\x00')
 
     def test_good_port_retry(self):
