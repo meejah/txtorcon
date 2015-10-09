@@ -675,16 +675,34 @@ class TorClientEndpoint(object):
 
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
-        self.protocolfactory = protocolfactory
-
         # if this fails, not even a single port was configured, so we
         # let it bubble up
         if self._socks_guessing_enabled:
             self.socks_port = self._socks_port_iter.next()
 
         while True:
+            self.tor_socks_endpoint = self._proxy_endpoint_generator(
+                reactor,
+                self.socks_hostname,
+                self.socks_port,
+            )
+            if self.socks_username is None or self.socks_password is None:
+                ep = SOCKS5ClientEndpoint(
+                    self.host,
+                    self.port,
+                    self.tor_socks_endpoint
+                )
+            else:
+                ep = SOCKS5ClientEndpoint(
+                    self.host,
+                    self.port,
+                    self.tor_socks_endpoint,
+                    methods=dict(login=(self.socks_username, self.socks_password))
+                )
+
             try:
-                yield self._try_connect()
+                proto = yield ep.connect(protocolfactory)
+                defer.returnValue(proto)
 
             except error.ConnectError as e0:
                 if self._socks_guessing_enabled:
@@ -694,30 +712,6 @@ class TorClientEndpoint(object):
                     except StopIteration:
                         pass  # fall through and re-raise e0
                 raise e0
-
-    def _try_connect(self):
-        self.tor_socks_endpoint = self._proxy_endpoint_generator(
-            reactor,
-            self.socks_hostname,
-            self.socks_port
-        )
-
-        if self.socks_username is None or self.socks_password is None:
-            ep = SOCKS5ClientEndpoint(
-                self.host,
-                self.port,
-                self.tor_socks_endpoint
-            )
-        else:
-            ep = SOCKS5ClientEndpoint(
-                self.host,
-                self.port,
-                self.tor_socks_endpoint,
-                methods=dict(login=(self.socks_username, self.socks_password))
-            )
-
-        d = ep.connect(self.protocolfactory)
-        return d
 
 
 @implementer(IPlugin, IStreamClientEndpointStringParser)
