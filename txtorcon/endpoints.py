@@ -686,19 +686,18 @@ class TorClientEndpoint(object):
                 self.socks_hostname,
                 self.socks_port,
             )
-            if self.socks_username is None or self.socks_password is None:
-                ep = SOCKS5ClientEndpoint(
-                    self.host,
-                    self.port,
-                    self.tor_socks_endpoint
+            kw = dict()
+            if self.socks_username is not None and self.socks_password is not None:
+                kw['methods'] = dict(
+                    login=(self.socks_username, self.socks_password),
                 )
-            else:
-                ep = SOCKS5ClientEndpoint(
-                    self.host,
-                    self.port,
-                    self.tor_socks_endpoint,
-                    methods=dict(login=(self.socks_username, self.socks_password))
-                )
+
+            ep = SOCKS5ClientEndpoint(
+                self.host,
+                self.port,
+                self.tor_socks_endpoint,
+                **kw
+            )
 
             try:
                 proto = yield ep.connect(protocolfactory)
