@@ -663,7 +663,7 @@ class TorClientEndpoint(object):
         self.port = int(port)
         self._proxy_endpoint_generator = _proxy_endpoint_generator
         self.socks_hostname = socks_hostname
-        self.socks_port = int(socks_port) if socks_port else None
+        self.socks_port = int(socks_port) if socks_port is not None else None
         self.socks_username = socks_username
         self.socks_password = socks_password
 
