@@ -23,10 +23,11 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.error import ConnectionRefusedError
 from twisted.internet import error
 from twisted.plugin import IPlugin
 from twisted.python.util import FancyEqMixin
-from twisted.internet.error import ConnectionRefusedError
+from twisted.python.failure import Failure
 
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
