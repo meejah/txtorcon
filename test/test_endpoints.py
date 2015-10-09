@@ -587,10 +587,10 @@ class TestTorClientEndpoint(unittest.TestCase):
         This test is equivalent to txsocksx's
         TestSOCKS4ClientEndpoint.test_clientConnectionFailed
         """
-        def FailTorSocksEndpointGenerator(*args, **kw):
+        def fail_tor_socks_endpoint_generator(*args, **kw):
             kw['failure'] = Failure(ConnectionRefusedError())
             return FakeTorSocksEndpoint(*args, **kw)
-        endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=FailTorSocksEndpointGenerator)
+        endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=fail_tor_socks_endpoint_generator)
         d = endpoint.connect(None)
         return self.assertFailure(d, ConnectionRefusedError)
 
@@ -598,13 +598,13 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         Same as above, but with a username/password.
         """
-        def FailTorSocksEndpointGenerator(*args, **kw):
+        def fail_tor_socks_endpoint_generator(*args, **kw):
             kw['failure'] = Failure(ConnectionRefusedError())
             return FakeTorSocksEndpoint(*args, **kw)
         endpoint = TorClientEndpoint(
             'invalid host', 0,
             socks_username='billy', socks_password='s333cure',
-            _proxy_endpoint_generator=FailTorSocksEndpointGenerator)
+            _proxy_endpoint_generator=fail_tor_socks_endpoint_generator)
         d = endpoint.connect(None)
         return self.assertFailure(d, ConnectionRefusedError)
 
