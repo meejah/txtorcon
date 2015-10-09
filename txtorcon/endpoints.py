@@ -673,14 +673,27 @@ class TorClientEndpoint(object):
         else:
             self._socks_guessing_enabled = False
 
+    @defer.inlineCallbacks
     def connect(self, protocolfactory):
         self.protocolfactory = protocolfactory
 
+        # if this fails, not even a single port was configured, so we
+        # let it bubble up
         if self._socks_guessing_enabled:
             self.socks_port = self._socks_port_iter.next()
 
-        d = self._try_connect()
-        return d
+        while True:
+            try:
+                yield self._try_connect()
+
+            except error.ConnectError as e0:
+                if self._socks_guessing_enabled:
+                    try:
+                        self.socks_port = self._socks_port_iter.next()
+                        continue
+                    except StopIteration:
+                        pass  # fall through and re-raise e0
+                raise e0
 
     def _try_connect(self):
         self.tor_socks_endpoint = self._proxy_endpoint_generator(
@@ -704,18 +717,6 @@ class TorClientEndpoint(object):
             )
 
         d = ep.connect(self.protocolfactory)
-        if self._socks_guessing_enabled:
-            d.addErrback(self._retry_socks_port)
-        return d
-
-    def _retry_socks_port(self, failure):
-        failure.trap(error.ConnectError)
-        try:
-            self.socks_port = self._socks_port_iter.next()
-        except StopIteration:
-            return defer.fail(ConnectionRefusedError('tor socks port retry failed'))
-        d = self._try_connect()
-        d.addErrback(self._retry_socks_port)
         return d
 
 
