@@ -9,6 +9,9 @@ Documentation at https://txtorcon.readthedocs.org
 .. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
     :target: https://coveralls.io/r/meejah/txtorcon
 
+.. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
+    :target: http://codecov.io/github/meejah/txtorcon?branch=master
+
 .. image:: http://api.flattr.com/button/flattr-badge-large.png
     :target: http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub
 
