@@ -1,0 +1,6 @@
+[paths]
+source =
+    txtorcon
+
+[run]
+source = ./txtorcon
