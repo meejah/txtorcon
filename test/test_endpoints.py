@@ -651,11 +651,14 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         This test is equivalent to txsocksx's TestSOCKS5ClientEndpoint.test_defaultFactory
         """
+        endpoints = []
         def tor_socks_endpoint_generator(*args, **kw):
-            return FakeTorSocksEndpoint(*args, **kw)
+            endpoints.append(FakeTorSocksEndpoint(*args, **kw))
+            return endpoints[-1]
         endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=tor_socks_endpoint_generator)
         endpoint.connect(Mock)
-        self.assertEqual(endpoint.tor_socks_endpoint.transport.value(), '\x05\x01\x00')
+        self.assertEqual(1, len(endpoints))
+        self.assertEqual(endpoints[0].transport.value(), '\x05\x01\x00')
 
     @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
     @defer.inlineCallbacks
@@ -680,14 +683,16 @@ class TestTorClientEndpoint(unittest.TestCase):
         proxy endpoint for each port that the Tor client endpoint will try.
         """
         success_ports = TorClientEndpoint.socks_ports_to_try
+        endpoints = []
         for port in success_ports:
             def tor_socks_endpoint_generator(*args, **kw):
                 kw['accept_port'] = port
                 kw['failure'] = Failure(ConnectionRefusedError())
-                return FakeTorSocksEndpoint(*args, **kw)
+                endpoints.append(FakeTorSocksEndpoint(*args, **kw))
+                return endpoints[-1]
             endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=tor_socks_endpoint_generator)
-            endpoint.connect(Mock)
-            self.assertEqual(endpoint.tor_socks_endpoint.transport.value(), '\x05\x01\x00')
+            endpoint.connect(None)
+            self.assertEqual(endpoints[-1].transport.value(), '\x05\x01\x00')
 
     def test_bad_port_retry(self):
         """
@@ -708,13 +713,16 @@ class TestTorClientEndpoint(unittest.TestCase):
         This tests that if a SOCKS port is specified, we *only* attempt to
         connect to that SOCKS port.
         """
+        endpoints = []
         def tor_socks_endpoint_generator(*args, **kw):
             kw['accept_port'] = 6669
             kw['failure'] = Failure(ConnectionRefusedError())
-            return FakeTorSocksEndpoint(*args, **kw)
+            endpoints.append(FakeTorSocksEndpoint(*args, **kw))
+            return endpoints[-1]
         endpoint = TorClientEndpoint('', 0, _proxy_endpoint_generator=tor_socks_endpoint_generator, socks_port=6669)
         endpoint.connect(None)
-        self.assertEqual(endpoint.tor_socks_endpoint.transport.value(), '\x05\x01\x00')
+        self.assertEqual(1, len(endpoints))
+        self.assertEqual(endpoints[-1].transport.value(), '\x05\x01\x00')
 
     def test_bad_no_guess_socks_port(self):
         """
