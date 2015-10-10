@@ -671,46 +671,37 @@ class TorClientEndpoint(object):
             self._socks_port_iter = iter(self.socks_ports_to_try)
             self._socks_guessing_enabled = True
         else:
+            self._socks_port_iter = [socks_port]
             self._socks_guessing_enabled = False
 
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
-        # if this fails, not even a single port was configured, so we
-        # let it bubble up
-        if self._socks_guessing_enabled:
-            self.socks_port = self._socks_port_iter.next()
-
-        while True:
-            self.tor_socks_endpoint = self._proxy_endpoint_generator(
+        last_error = None
+        for socks_port in self._socks_port_iter:
+            self.socks_port = socks_port
+            tor_ep = self._proxy_endpoint_generator(
                 reactor,
                 self.socks_hostname,
                 self.socks_port,
             )
-            kw = dict()
+
+            args = (self.host, self.port, tor_ep)
+            kwargs = dict()
             if self.socks_username is not None and self.socks_password is not None:
-                kw['methods'] = dict(
+                kwargs['methods'] = dict(
                     login=(self.socks_username, self.socks_password),
                 )
 
-            ep = SOCKS5ClientEndpoint(
-                self.host,
-                self.port,
-                self.tor_socks_endpoint,
-                **kw
-            )
+            socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
 
             try:
-                proto = yield ep.connect(protocolfactory)
+                proto = yield socks_ep.connect(protocolfactory)
                 defer.returnValue(proto)
 
             except error.ConnectError as e0:
-                if self._socks_guessing_enabled:
-                    try:
-                        self.socks_port = self._socks_port_iter.next()
-                        continue
-                    except StopIteration:
-                        pass  # fall through and re-raise e0
-                raise e0
+                last_error = e0
+        if last_error is not None:
+            raise last_error
 
 
 @implementer(IPlugin, IStreamClientEndpointStringParser)
