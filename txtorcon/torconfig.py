@@ -759,10 +759,18 @@ class HiddenService(object):
 
         elif name == 'clients':
             clients = []
-            with open(os.path.join(self.dir, 'hostname')) as f:
-                for line in f.readlines():
-                    args = line.split()
-                    clients.append((args[0], args[1]))
+            try:
+                with open(os.path.join(self.dir, 'hostname')) as f:
+                    for line in f.readlines():
+                        args = line.split()
+                        # XXX should be a dict?
+                        if len(args) > 1:
+                            # tag, onion-uri?
+                            clients.append((args[0], args[1]))
+                        else:
+                            clients.append(('default', args[0]))
+            except IOError:
+                pass
             self.__dict__[name] = clients
 
         elif name == 'hostname':

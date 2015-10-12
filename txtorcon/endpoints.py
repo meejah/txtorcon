@@ -449,19 +449,25 @@ class TCPHiddenServiceEndpoint(object):
         self._tor_progress_update(100.0, 'wait_descriptor',
                                   'At least one descriptor uploaded.')
 
-### FIXME XXX need to work out what happens here on stealth-auth'd
-### things. maybe we need a separate StealthHiddenService
-### vs. HiddenService ?!
+        # FIXME XXX need to work out what happens here on stealth-auth'd
+        # things. maybe we need a separate StealthHiddenService
+        # vs. HiddenService ?!
+        # XXX that is, self.onion_uri isn't always avaialble :/
 
-#        log.msg(
-#            'Started hidden service "%s" on port %d' %
-#            (self.onion_uri, self.public_port))
-        log.msg('Keys are in "%s".' % (self.hidden_service_dir,))
+        uri = None
+        if self.hiddenservice is not None:
+            log.msg('Started hidden service port %d' % self.public_port)
+            for client in self.hiddenservice.clients:
+                # XXX FIXME just taking the first one on multi-client services
+                if uri is None:
+                    uri = client[1]
+                log.msg('  listening on %s.onion' % client[1])
+
         defer.returnValue(
             TorOnionListeningPort(
                 self.tcp_listening_port,
                 self.hidden_service_dir,
-                '', ##self.onion_uri,
+                uri,
                 self.public_port,
                 self.config,
             )
