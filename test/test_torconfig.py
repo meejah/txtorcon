@@ -709,6 +709,25 @@ HiddenServiceAuthorizeClient Dependant''')
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_single_client(self):
+        # FIXME test without crapping on filesystem
+        self.protocol.answers.append('HiddenServiceDir=/fake/path\n')
+        d = tempfile.mkdtemp()
+
+        try:
+            with open(os.path.join(d, 'hostname'), 'w') as f:
+                f.write('gobledegook\n')
+
+            conf = TorConfig(self.protocol)
+            hs = HiddenService(conf, d, [])
+
+            self.assertEqual(1, len(hs.clients))
+            self.assertEqual('default', hs.clients[0][0])
+            self.assertEqual('gobledegook', hs.clients[0][1])
+
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_stealth_clients(self):
         # FIXME test without crapping on filesystem
         self.protocol.answers.append('HiddenServiceDir=/fake/path\n')

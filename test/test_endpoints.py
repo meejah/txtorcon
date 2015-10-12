@@ -254,19 +254,24 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_explicit_data_dir(self):
-        config = TorConfig(self.protocol)
-        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, '/dev/null')
+        d = tempfile.mkdtemp()
+        try:
+            with open(os.path.join(d, 'hostname'), 'w') as f:
+                f.write('public')
 
-        # make sure listen() correctly configures our hidden-serivce
-        # with the explicit directory we passed in above
-        d = ep.listen(NoOpProtocolFactory())
+            config = TorConfig(self.protocol)
+            ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, d)
 
-        def foo(fail):
-            print "ERROR", fail
-        d.addErrback(foo)
-        port = yield d
-        self.assertEqual(1, len(config.HiddenServices))
-        self.assertEqual(config.HiddenServices[0].dir, '/dev/null')
+            # make sure listen() correctly configures our hidden-serivce
+            # with the explicit directory we passed in above
+            port = yield ep.listen(NoOpProtocolFactory())
+
+            self.assertEqual(1, len(config.HiddenServices))
+            self.assertEqual(config.HiddenServices[0].dir, d)
+            self.assertEqual(config.HiddenServices[0].hostname, 'public')
+
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
 
     def test_failure(self):
         self.reactor.failures = 1
