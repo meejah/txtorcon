@@ -441,6 +441,12 @@ class TCPHiddenServiceEndpoint(object):
                 group_readable=1, auth=authlines,
             )
             self.config.HiddenServices.append(self.hiddenservice)
+        else:
+            for hs in self.config.HiddenServices:
+                if hs.dir == self.hidden_service_dir:
+                    self.hiddenservice = hs
+
+        assert self.hiddenservice is not None, "internal error"
         yield self.config.save()
 
         self._tor_progress_update(100.0, 'wait_descriptor',
@@ -450,26 +456,16 @@ class TCPHiddenServiceEndpoint(object):
         self._tor_progress_update(100.0, 'wait_descriptor',
                                   'At least one descriptor uploaded.')
 
-        # FIXME XXX need to work out what happens here on stealth-auth'd
-        # things. maybe we need a separate StealthHiddenService
-        # vs. HiddenService ?!
-        # XXX that is, self.onion_uri isn't always avaialble :/
-
         uri = None
-        if self.hiddenservice is not None:
-            log.msg('Started hidden service port %d' % self.public_port)
-            for client in self.hiddenservice.clients:
-                # XXX FIXME just taking the first one on multi-client services
-                if uri is None:
-                    uri = client[1]
-                log.msg('  listening on %s.onion' % client[1])
+        log.msg('Started hidden service port %d' % self.public_port)
+        for client in self.hiddenservice.clients:
+            log.msg('  listening on %s' % client[1])
 
         defer.returnValue(
             TorOnionListeningPort(
                 self.tcp_listening_port,
-                self.hidden_service_dir,
-                uri,
                 self.public_port,
+                self.hiddenservice,
                 self.config,
             )
         )
@@ -483,37 +479,65 @@ class TorOnionAddress(FancyEqMixin, object):
 
     :ivar type: A string describing the type of transport, 'onion'.
 
-    :ivar onion_uri: The public-key onion address (e.g. timaq4ygg2iegci7.onion)
+    :ivar port: The public port we're advertising
 
-    :ivar onion_port: The port we're advertising inside the Tor network.
-
-    In otherwords, we should be reachable at (onion_uri, onion_port)
-    via Tor.
+    :ivar clients: A list of IHiddenServiceClient instances, at least 1.
     """
-    compareAttributes = ('type', 'onion_uri', 'onion_port')
+    compareAttributes = ('type', 'onion_port', 'clients')
     type = 'onion'
 
-    def __init__(self, uri, port):
-        self.onion_uri = uri
+    def __init__(self, port, clients):
         self.onion_port = port
+        self.clients = clients
 
     def __repr__(self):
-        return '%s(%r, %d)' % (
-            self.__class__.__name__, self.onion_uri, self.onion_port)
+        clients = ["{0}:{1}".format(c.onion_uri, self.onion_port) for c in self.clients]
+        return '%s(%s)' % (self.__class__.__name__, ' '.join(clients))
 
     def __hash__(self):
-        return hash((self.type, self.onion_uri, self.onion_port))
+        return hash((self.type, (hash(client) for client in self.clients)))
 
 
 class IHiddenService(Interface):
     local_address = Attribute(
-        'The actual machine address we are listening on.')
-    hidden_service_dir = Attribute(
-        'The hidden service directory, where "hostname" and "private_key" '
-        'files live.')
+        'The actual local machine address we are listening on.')
+    public_port = Attribute("The port our service can be contacted on")
     tor_config = Attribute(
         'The TorConfig object attached to the Tor hosting this hidden service '
         '(in turn has .protocol for TorControlProtocol).')
+    clients = Attribute(
+        'List of IHiddenServiceClient instances.'
+        'Unauthenticated services will have 0 clients.'
+        'Basic-auth services will have 1 client, called "default".'
+    )
+
+
+class IHiddenServiceClient(Interface):
+    name = Attribute('A descriptive name of this client; "default" for basic-auth services')
+    onion_uri = Attribute('Derived from the public key, e.g. "timaq4ygg2iegci7.onion"')
+    private_key = Attribute('Blob of bytes representing the private key for this service')
+
+
+# XXX this stuff moves to torconfig?
+# @implementer(IHiddenServiceClient)
+# class HiddenServiceClient(object):
+#     name = 'default'
+
+#     def __init__(self, hidden_service_dir):
+#         self.hidden_service_dir = hidden_service_dir
+#         with open(join(self.hidden_service_dir, 'hostname'), 'r') as f:
+#             self.onion_uri = f.read().strip()
+#         with open(join(self.hidden_service_dir, 'private_key'), 'r') as f:
+#             self.private_key = f.read().strip()
+
+
+@implementer(IHiddenServiceClient)
+class EphemeralHiddenServiceClient(object):
+    name = 'default'
+
+    def __init__(self, onion_uri, private_key):
+        self.onion_uri = onion_uri
+        self.private_key = private_key
 
 
 @implementer(IListeningPort, IHiddenService)
@@ -529,13 +553,17 @@ class TorOnionListeningPort(object):
     ListeningPort" object...
     which implements IListeningPort interface but has many more
     responsibilities we needn't worry about here.
+
     """
 
-    def __init__(self, listening_port, hs_dir, uri, port, tor_config):
+    def __init__(self, listening_port, public_port, hiddenservice, tor_config):
         self.local_address = listening_port
-        self.hidden_service_dir = hs_dir
+        self.public_port = public_port
+        # XXX should this be a weakref too? is there circ-ref here?
+        self._hiddenservice = hiddenservice
+        # XXX why is this a weakref? circ-ref?
         self._config_ref = weakref.ref(tor_config)
-        self.address = TorOnionAddress(uri, port)
+        self._address = TorOnionAddress(public_port, hiddenservice.clients)
 
     def startListening(self):
         """IListeningPort API"""
@@ -547,11 +575,14 @@ class TorOnionListeningPort(object):
 
     def getHost(self):
         """IListeningPort API"""
-        return self.address
+        return self._address
 
     def __str__(self):
-        return '<TorOnionListeningPort %s:%d>' % (self.address.onion_uri,
-                                                  self.address.onion_port)
+        clients = ' '.join(
+            ["{0}:{1}".format(c.onion_uri, self._address.onion_port)
+             for c in self._hiddenservice.clients]
+        )
+        return '<TorOnionListeningPort%s>' % (clients,)
 
     # local_address IHiddenService API fulfilled in ctor
     # hidden_service_dir IHiddenService API fulfilled in ctor
