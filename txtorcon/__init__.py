@@ -23,10 +23,14 @@ from txtorcon.torstate import build_tor_connection
 from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
 from txtorcon.torconfig import HiddenService
-from txtorcon.torconfig import EphemeralHiddenService
+from txtorcon.torconfig import AuthenticatedHiddenService
+from txtorcon.onion import create_onion_service
 from txtorcon.torconfig import TorProcessProtocol
 from txtorcon.torconfig import launch_tor
 from txtorcon.torconfig import TorNotFound
+from txtorcon.torconfig import IOnionService
+from txtorcon.torconfig import IAuthenticatedOnionService
+#from txtorcon.torconfig import OnionService, EphemeralOnionService
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress
@@ -56,7 +60,8 @@ __all__ = [
     "TorState", "DEFAULT_VALUE",
     "TorInfo",
     "build_tor_connection", "build_local_tor_connection", "launch_tor",
-    "TorNotFound", "TorConfig", "HiddenService", "EphemeralHiddenService",
+    "create_onion_service",
+    "TorNotFound", "TorConfig", "HiddenService", "AuthenticatedHiddenService",
     "TorProcessProtocol",
     "TorInfo",
     "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",
@@ -73,6 +78,11 @@ __all__ = [
     "IStreamListener", "IStreamAttacher", "StreamListenerMixin",
     "ICircuitContainer", "ICircuitListener", "CircuitListenerMixin",
     "IRouterContainer", "IAddrListener", "IProgressProvider",
+    "IHiddenService",
+
+    # new onion + ephemeral API
+    "IOnionService", "IAuthenticatedOnionService",
+    "EphemeralOnionService",
 
     "__version__", "__author__", "__contact__",
     "__license__", "__copyright__", "__url__",

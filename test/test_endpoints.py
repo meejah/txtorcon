@@ -35,8 +35,12 @@ from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import default_tcp4_endpoint_generator
+from txtorcon.endpoints import EphemeralHiddenServiceClient
 
 import util
+
+
+mock_add_onion_response = '''ServiceID=s3aoqcldyhju7dic\nPrivateKey=RSA1024:MIICXQIBAAKBgQDSb1NOcxPNV2GyVLaikkYIcvTIi4ZBaoF4pGAr67WiQP1kzobRthW9IKPmzru45rXUSQHjg3mGvRxE6s0tBqU6OfPCxEzRgCm/KGyxcipVtDbwpImYZfmOFu+tn4NmqXkB0J5n9/YnbcJCkV3gDOeQ2BPPe+kTuVrc24rUHgoX/QIDAQABAoGAFyXJyyJbdkX7aCtrX5ypeXpztK+sV/vIPCYQsiQeebeeZ/1T1TOrVn+Fp/jrq14teCmDvKwUrR6WQnp1kVNez0LFsCUohuiG0+Qj26Ach5GZR8K1nkqfOBEbH+3A3dCcDYETL9XnKCIaLrmVKlrFvB5dLbZv0MiCw+K6X2W6iKECQQDukfCUR7/GLmc5oyra61D0ROwhti9DBEVPsOvOFI0q07A+bGqXB7kOog0dPj6xO2V/6MPYvc59vWk5XwoVG+nJAkEA4c8psUrGefbs3iQxr0ge6r3f3SccSCfc/YjwTnmf8yCJ0PRYdirVl+WfG5AGfwDCwrDrelkScLhj/bWssvXWlQJAGs6DPeYiAl7McomHEzpFymzEK7WQ8fLU5vN2S527jwhiUWFVSMsxXBeRaavI15lY+lppRz1sqmxSGoQ3Wc/dIQJBAKbWz7FE1FytCtoe1+7wVJeQbuURzp2phmh1U0hIKNwUQH946ht1DpfKesJ8qbAQudXrrjCZuzw5oPeF0fHwHfkCQQC8GhO4mLGD+aLvmhPHD9owUsKhL7HHVHkEvPm2sNdQBvOR9iKNGsC91LT2h3AQ7Zse95Rn00HLNKFCu1nn8hEf\n'''
 
 
 class EndpointTests(unittest.TestCase):
@@ -141,10 +145,17 @@ class EndpointTests(unittest.TestCase):
                 )
                 ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
                                                                client, 80)
-                port = yield ep.listen(NoOpProtocolFactory())
+                d = ep.listen(NoOpProtocolFactory())
+                self.assertEqual(1, len(self.protocol.commands))
+                self.protocol.commands[0][1].callback(mock_add_onion_response)
+                self.protocol.event_happened('HS_DESC', 'UPLOAD s3aoqcldyhju7dic x random_hs_dir')
+                self.protocol.event_happened('HS_DESC', 'UPLOADED s3aoqcldyhju7dic x random_hs_dir')
+                port = yield d
+
                 toa = port.getHost()
-                self.assertTrue(hasattr(toa, 'onion_uri'))
-                self.assertTrue(hasattr(toa, 'onion_port'))
+                print("XXXX", toa)
+#                self.assertTrue(hasattr(toa, 'clients'))
+#                self.assertTrue(hasattr(toa, 'onion_port'))
                 port.startListening()
                 str(port)
                 port.tor_config
@@ -221,13 +232,16 @@ class EndpointTests(unittest.TestCase):
         return ep
 
     def test_multiple_listen(self):
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, ephemeral=False)
         d0 = ep.listen(NoOpProtocolFactory())
 
         @defer.inlineCallbacks
         def more_listen(arg):
             yield arg.stopListening()
             d1 = ep.listen(NoOpProtocolFactory())
+            print("ZINGA", self.protocol.commands)
+            self.assertEqual(2, len(self.protocol.commands))
+            self.protocol.commands[1][1].callback(mock_add_onion_response)
 
             def foo(arg):
                 return arg
@@ -237,38 +251,113 @@ class EndpointTests(unittest.TestCase):
         d0.addBoth(more_listen)
         self.config.bootstrap()
 
+        print("dingus", self.protocol.sets)
+        self.assertEqual(1, len(self.protocol.sets))
+        self.protocol.commands[0][1].callback(mock_add_onion_response)
+        self.protocol.events['HS_DESC']('UPLOAD s3aoqcldyhju7dic X X X')
+        self.protocol.events['HS_DESC']('UPLOADED s3aoqcldyhju7dic X X X')
+
         def check(arg):
             self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
             self.assertEqual(len(self.config.HiddenServices), 1)
         d0.addCallback(check).addErrback(self.fail)
         return d0
 
+    def test_multiple_listen(self):
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, ephemeral=False)
+        d0 = ep.listen(NoOpProtocolFactory())
+
+        @defer.inlineCallbacks
+        def more_listen(arg):
+            yield arg.stopListening()
+            d1 = ep.listen(NoOpProtocolFactory())
+            self.assertEqual(3, len(self.protocol.sets))
+
+            def foo(arg):
+                return arg
+            d1.addBoth(foo)
+            defer.returnValue(arg)
+            return
+        d0.addBoth(more_listen)
+        self.config.bootstrap()
+
+        print("dingus", self.protocol.sets)
+        self.assertEqual(3, len(self.protocol.sets))
+
+        def check(arg):
+            self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
+            self.assertEqual(len(self.config.HiddenServices), 1)
+        d0.addCallback(check).addErrback(self.fail)
+        return d0
+
+    def test_multiple_listen_ephemeral(self):
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, ephemeral=True)
+        d0 = ep.listen(NoOpProtocolFactory())
+
+        @defer.inlineCallbacks
+        def more_listen(arg):
+            yield arg.stopListening()
+            d1 = ep.listen(NoOpProtocolFactory())
+            print("ZINGA", self.protocol.commands)
+            self.assertEqual(2, len(self.protocol.commands))
+            self.protocol.commands[1][1].callback(mock_add_onion_response)
+
+            def foo(arg):
+                return arg
+            d1.addBoth(foo)
+            defer.returnValue(arg)
+            return
+        d0.addBoth(more_listen)
+        self.config.bootstrap()
+
+        self.protocol.commands[0][1].callback(mock_add_onion_response)
+        self.protocol.events['HS_DESC']('UPLOAD s3aoqcldyhju7dic X X X')
+        self.protocol.events['HS_DESC']('UPLOADED s3aoqcldyhju7dic X X X')
+
+        def check(arg):
+            self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
+            print("XXX", self.config.EphemeralOnionServices)
+            self.assertEqual(len(self.config.EphemeralOnionServices), 2)
+        d0.addCallback(check).addErrback(self.fail)
+        return d0
+
     def test_already_bootstrapped(self):
         self.config.bootstrap()
+
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d = ep.listen(NoOpProtocolFactory())
+        self.assertEqual(1, len(self.protocol.commands))
+        self.protocol.commands[0][1].callback(mock_add_onion_response)
+        self.protocol.event_happened('HS_DESC', 'UPLOAD s3aoqcldyhju7dic x random_hs_dir')
+        self.protocol.event_happened('HS_DESC', 'UPLOADED s3aoqcldyhju7dic x random_hs_dir')
         return d
 
     @defer.inlineCallbacks
     def test_explicit_data_dir(self):
-        d = tempfile.mkdtemp()
+        tmpdir = tempfile.mkdtemp()
         try:
-            with open(os.path.join(d, 'hostname'), 'w') as f:
+            with open(os.path.join(tmpdir, 'hostname'), 'w') as f:
                 f.write('public')
 
             config = TorConfig(self.protocol)
-            ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, d)
+            ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, tmpdir)
 
             # make sure listen() correctly configures our hidden-serivce
             # with the explicit directory we passed in above
-            port = yield ep.listen(NoOpProtocolFactory())
+            d = ep.listen(NoOpProtocolFactory())
+#            self.assertEqual(1, len(self.protocol.commands))
+#            self.protocol.commands[0][1].callback(mock_add_onion_response)
+#            self.protocol.event_happened('HS_DESC', 'UPLOAD s3aoqcldyhju7dic x random_hs_dir')
+#            self.protocol.event_happened('HS_DESC', 'UPLOADED s3aoqcldyhju7dic x random_hs_dir')
+            port = yield d
 
             self.assertEqual(1, len(config.HiddenServices))
-            self.assertEqual(config.HiddenServices[0].dir, d)
+            print("ASDF", dir(config.HiddenServices[0]))
+            self.assertEqual(config.HiddenServices[0].dir, tmpdir)
             self.assertEqual(config.HiddenServices[0].hostname, 'public')
 
         finally:
-            shutil.rmtree(d, ignore_errors=True)
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
     def test_failure(self):
         self.reactor.failures = 1
@@ -371,8 +460,11 @@ class EndpointTests(unittest.TestCase):
         '''
 
         config = TorConfig(self.protocol)
-        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, '/dev/null',
-                                      stealth_auth=['alice', 'bob'])
+        ep = TCPHiddenServiceEndpoint(
+            self.reactor, config, 123, '/dev/null',
+            stealth_auth=['alice', 'bob'],
+            ephemeral=False,
+        )
 
         # make sure listen() correctly configures our hidden-serivce
         # with the explicit directory we passed in above
@@ -386,7 +478,8 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(config.HiddenServices[0].dir, '/dev/null')
         self.assertEqual(config.HiddenServices[0].authorize_client[0], 'stealth alice,bob')
         self.assertEqual(None, ep.onion_uri)
-        config.HiddenServices[0].hostname = 'oh my'
+        # XXX cheating; private API
+        config.HiddenServices[0]._hostname = 'oh my'
         self.assertEqual('oh my', ep.onion_uri)
 
 
@@ -397,7 +490,7 @@ class EndpointLaunchTests(unittest.TestCase):
         self.protocol = FakeControlProtocol([])
 
     def test_onion_address(self):
-        addr = TorOnionAddress("foo.onion", 80)
+        addr = TorOnionAddress(80, EphemeralHiddenServiceClient("foo.onion", "privatekey"))
         # just want to run these and assure they don't throw
         # exceptions.
         repr(addr)

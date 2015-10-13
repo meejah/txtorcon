@@ -136,8 +136,8 @@ class ICircuitContainer(Interface):
     them up by id.
     """
 
-    def find_circuit(id):
-        ":return: a circuit for the id, or exception."
+    def find_circuit(circ_id):
+        ":return: a circuit for the cird_id, or exception."
 
     def close_circuit(circuit, **kwargs):
         """

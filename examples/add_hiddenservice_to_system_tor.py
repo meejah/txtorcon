@@ -3,11 +3,7 @@
 # This connects to the system Tor (by default on control port 9151)
 # and adds a new hidden service configuration to it.
 
-import os
-import functools
-import shutil
-
-from twisted.internet import reactor, defer
+from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 from twisted.web import server, resource
 from twisted.internet.task import react
@@ -27,15 +23,26 @@ def main(reactor):
     ep = TCP4ClientEndpoint(reactor, "localhost", 9251)
     tor_protocol = yield txtorcon.build_tor_connection(ep, build_state=False)
     print "Connected to Tor"
+    tor_config = yield txtorcon.TorConfig.from_protocol(tor_protocol)
 
+    print("existing services")
+    for hs in tor_config.HiddenServices:
+        print "HS", hs.hostname, hs.ports
     hs_public_port = 80
     hs_port = yield txtorcon.util.available_tcp_port(reactor)
     hs_string = '%s 127.0.0.1:%d' % (hs_public_port, hs_port)
-    print "Adding ephemeral service", hs_string
-    print "(this can take some time; please be patient)"
-    hs = txtorcon.EphemeralHiddenService([hs_string])
-    yield hs.add_to_tor(tor_protocol)
-    print "Added ephemeral HS to Tor:", hs.hostname
+
+    print("adding one", hs_port)
+    onion = yield txtorcon.create_onion_service(
+        reactor, tor_config, [hs_string],
+        ephemeral=True,
+        detach=False,
+        discard_key=False,
+    )
+
+    print "Added ephemeral HS to Tor:", onion.hostname
+    print "private key:"
+    print onion.private_key
 
     print "Starting site"
     site = server.Site(Simple())
@@ -57,6 +64,24 @@ def main(reactor):
         print "waiting 5 seconds"
     else:
         print "waiting forever"
+        try:
+            x = yield tor_protocol.get_info('onions/current')
+            print "DING", x
+        except Exception as e:
+            print "error", e
+
+        try:
+            x = yield tor_protocol.get_info('onions/detached')
+            print "DING", x
+        except Exception as e:
+            print "error", e
+
+        print "our config says:"
+        for hs in tor_config.EphemeralOnionServices:
+            print "  ->", hs.hostname, hs.private_key
+        for hs in tor_config.DetachedOnionServices:
+            print "  ->", hs.hostname, hs.private_key
+
     yield d
 
 
