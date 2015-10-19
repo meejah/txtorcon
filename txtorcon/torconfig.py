@@ -690,7 +690,6 @@ class _ListWrapper(list):
         self.on_modify = on_modify_cb
 
     __setitem__ = _wrapture(list.__setitem__)
-    __setslice__ = _wrapture(list.__setslice__)
     append = _wrapture(list.append)
     extend = _wrapture(list.extend)
     insert = _wrapture(list.insert)
@@ -699,6 +698,10 @@ class _ListWrapper(list):
 
     def __repr__(self):
         return '_ListWrapper' + super(_ListWrapper, self).__repr__()
+
+if not py3k:
+    setattr(_ListWrapper, '__setslice__', _wrapture(list.__setslice__))
+
 
 
 class HiddenServiceClientAuth(object):

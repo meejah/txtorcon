@@ -1,4 +1,4 @@
-from zope.interface import implements
+from zope.interface import implementer
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer
@@ -6,11 +6,8 @@ from twisted.internet import defer
 from txtorcon import ITorControlProtocol, TorInfo, TorControlProtocol
 
 
+@implementer(ITorControlProtocol)
 class FakeControlProtocol:
-    """
-    """
-
-    implements(ITorControlProtocol)
 
     def __init__(self, answers):
         self.answers = answers

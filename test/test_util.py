@@ -3,7 +3,7 @@ from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.internet.interfaces import IProtocolFactory
-from zope.interface import implements
+from zope.interface import implementer
 
 from txtorcon.util import process_from_address
 from txtorcon.util import delete_file_or_tree
@@ -22,8 +22,8 @@ class FakeState:
     tor_pid = 0
 
 
+@implementer(IProtocolFactory)
 class FakeProtocolFactory:
-    implements(IProtocolFactory)
 
     def doStart(self):
         "IProtocolFactory API"
@@ -225,7 +225,7 @@ class TestDelete(unittest.TestCase):
 
     def test_delete_file(self):
         (fd, f) = tempfile.mkstemp()
-        os.write(fd, 'some\ndata\n')
+        os.write(fd, b'some\ndata\n')
         os.close(fd)
         self.assertTrue(os.path.exists(f))
         delete_file_or_tree(f)
@@ -233,8 +233,8 @@ class TestDelete(unittest.TestCase):
 
     def test_delete_tree(self):
         d = tempfile.mkdtemp()
-        f = open(os.path.join(d, 'foo'), 'w')
-        f.write('foo\n')
+        f = open(os.path.join(d, 'foo'), 'wb')
+        f.write(b'foo\n')
         f.close()
 
         self.assertTrue(os.path.exists(d))

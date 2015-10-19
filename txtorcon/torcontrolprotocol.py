@@ -139,7 +139,7 @@ class Event(object):
         self.callbacks.remove(cb)
 
     def got_update(self, data):
-        # print self.name,"got_update:",data
+        print(self.name, "got_update:", data)
         for cb in self.callbacks:
             cb(data)
 
@@ -172,11 +172,11 @@ def parse_keywords(lines, multiline_values=True, key_hints=None):
     key = None
     value = ''
     # FIXME could use some refactoring to reduce code duplication!
-    for line in lines.split('\n'):
-        if line.strip() == 'OK':
+    for line in lines.split(b'\n'):
+        if line.strip() == b'OK':
             continue
 
-        sp = line.split('=', 1)
+        sp = line.split(b'=', 1)
         found_key = ('=' in line and ' ' not in sp[0])
         if found_key and key_hints and sp[0] not in key_hints:
             found_key = False
@@ -189,7 +189,7 @@ def parse_keywords(lines, multiline_values=True, key_hints=None):
                         rtn[key] = [rtn[key], unquote(value)]
                 else:
                     rtn[key] = unquote(value)
-            (key, value) = line.split('=', 1)
+            (key, value) = line.split(b'=', 1)
 
         else:
             if key is None:
@@ -294,7 +294,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
         # variables related to the state machine
         self.defer = None        # Deferred we returned for the current command
-        self.response = ''
+        self.response = b''
         self.code = None
         self.command = None      # currently processing this command
         self.commands = []       # queued commands
@@ -367,8 +367,8 @@ class TorControlProtocol(LineOnlyReceiver):
         GETINFO command. See :meth:`getinfo
         <txtorcon.TorControlProtocol.get_info>`
         """
-        info = ' '.join([str(x) for x in list(args)])
-        return self.queue_command('GETINFO %s' % info)
+        info = b' '.join([x.encode() if isinstance(x, str) else x for x in args])
+        return self.queue_command(b'GETINFO %s' % info)
 
     def get_info_incremental(self, key, line_cb):
         """
@@ -379,9 +379,9 @@ class TorControlProtocol(LineOnlyReceiver):
         """
 
         def strip_ok_and_call(line):
-            if line.strip() != 'OK':
+            if line.strip() != b'OK':
                 line_cb(line)
-        return self.queue_command('GETINFO %s' % key, strip_ok_and_call)
+        return self.queue_command(b'GETINFO %s' % key.encode(), strip_ok_and_call)
 
     # The following methods are the main TorController API and
     # probably the most interesting for users.
@@ -430,7 +430,7 @@ class TorControlProtocol(LineOnlyReceiver):
         otherwise.
         """
 
-        d = self.queue_command('GETCONF %s' % ' '.join(args))
+        d = self.queue_command(b'GETCONF %s' % ' '.join(args))
         d.addCallback(parse_keywords).addErrback(log.err)
         return d
 
@@ -439,7 +439,7 @@ class TorControlProtocol(LineOnlyReceiver):
         Same as get_conf, except that the results are not parsed into a dict
         """
 
-        return self.queue_command('GETCONF %s' % ' '.join(args))
+        return self.queue_command(b'GETCONF %s' % ' '.join(args))
 
     def set_conf(self, *args):
         """
@@ -466,7 +466,7 @@ class TorControlProtocol(LineOnlyReceiver):
             return s
         values = [maybe_quote(v) for v in values]
         args = ' '.join(map(lambda x, y: '%s=%s' % (x, y), keys, values))
-        return self.queue_command('SETCONF ' + args)
+        return self.queue_command(b'SETCONF ' + args.encode('utf8'))
 
     def signal(self, nm):
         """
@@ -479,7 +479,7 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         if nm not in self.valid_signals:
             raise RuntimeError("Invalid signal " + nm)
-        return self.queue_command('SIGNAL %s' % nm)
+        return self.queue_command(b'SIGNAL %s' % nm)
 
     def add_event_listener(self, evt, callback):
         """:param evt: event name, see also
@@ -518,7 +518,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
         if evt.name not in self.events:
             self.events[evt.name] = evt
-            self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+            self.queue_command(b'SETEVENTS %s' % b' '.join([k.encode() for k in self.events.keys()]))
         evt.listen(callback)
         return None
 
@@ -536,18 +536,18 @@ class TorControlProtocol(LineOnlyReceiver):
             # type to come in before the SETEVENTS succeeds; see
             # _handle_notify which explicitly ignore this case.
             del self.events[evt.name]
-            self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+            self.queue_command(b'SETEVENTS %s' % ' '.join(self.events.keys()))
 
     def protocolinfo(self):
         """
         :return: a Deferred which will give you PROTOCOLINFO; see control-spec
         """
 
-        return self.queue_command("PROTOCOLINFO 1")
+        return self.queue_command(b"PROTOCOLINFO 1")
 
     def authenticate(self, passphrase):
         """Call the AUTHENTICATE command."""
-        return self.queue_command('AUTHENTICATE ' + passphrase.encode("hex"))
+        return self.queue_command(b'AUTHENTICATE ' + passphrase.encode("hex"))
 
     def quit(self):
         """
@@ -558,7 +558,7 @@ class TorControlProtocol(LineOnlyReceiver):
         connected, this should also cause it to exit. Otherwise, it
         won't.
         """
-        return self.queue_command('QUIT')
+        return self.queue_command(b'QUIT')
 
     def queue_command(self, cmd, arg=None):
         """
@@ -583,7 +583,7 @@ class TorControlProtocol(LineOnlyReceiver):
         :api:`twisted.protocols.basic.LineOnlyReceiver` API
         """
 
-        self.debuglog.write(line + '\n')
+        self.debuglog.write(line + b'\n')
         self.debuglog.flush()
         self.fsm.process(line)
 
@@ -610,10 +610,11 @@ class TorControlProtocol(LineOnlyReceiver):
         Internal method to deal with 600-level responses.
         """
 
-        firstline = rest[:rest.find('\n')]
+        firstline = rest[:rest.find(b'\n')]
         args = firstline.split()
-        if args[0] in self.events:
-            self.events[args[0]].got_update(rest[len(args[0]) + 1:])
+        name = args[0].decode()
+        if name in self.events:
+            self.events[name].got_update(rest[len(name) + 1:])
             return
         # not considering this an error, as there's a slight window
         # after remove_event_listener is called (so the handler is
@@ -633,10 +634,10 @@ class TorControlProtocol(LineOnlyReceiver):
             (d, cmd, cmd_arg) = self.command
             self.defer = d
 
-            self.debuglog.write(cmd + '\n')
+            self.debuglog.write(cmd + b'\n')
             self.debuglog.flush()
 
-            data = cmd + '\r\n'
+            data = cmd + b'\r\n'
             txtorlog.msg("cmd: {}".format(data.strip()))
             self.transport.write(data.encode('utf8'))
 
@@ -676,7 +677,7 @@ class TorControlProtocol(LineOnlyReceiver):
             self._cookie_data + self.client_nonce + server_nonce
         )
         client_hash_hex = base64.b16encode(client_hash)
-        return self.queue_command('AUTHENTICATE %s' % client_hash_hex)
+        return self.queue_command(b'AUTHENTICATE %s' % client_hash_hex)
 
     def _read_cookie(self, cookiefile):
         """
@@ -697,16 +698,17 @@ class TorControlProtocol(LineOnlyReceiver):
         what's supported.
         """
         methods = None
-        for line in protoinfo.split('\n'):
-            if line[:5] == 'AUTH ':
+        cookie_auth = False
+        for line in protoinfo.split(b'\n'):
+            if line[:5] == b'AUTH ':
                 kw = parse_keywords(line[5:].replace(' ', '\n'))
-                methods = kw['METHODS'].split(',')
+                methods = kw['METHODS'].split(b',')
         if not methods:
             raise RuntimeError(
                 "Didn't find AUTH line in PROTOCOLINFO response."
             )
 
-        if 'SAFECOOKIE' in methods or 'COOKIE' in methods:
+        if b'SAFECOOKIE' in methods or b'COOKIE' in methods:
             cookiefile_match = re.search(r'COOKIEFILE=("(?:[^"\\]|\\.)*")',
                                          protoinfo)
             if cookiefile_match:
@@ -732,28 +734,29 @@ class TorControlProtocol(LineOnlyReceiver):
                     "Got 'COOKIE' or 'SAFECOOKIE' method, but no 'COOKIEFILE'"
                 )
 
-        if 'SAFECOOKIE' in methods and self._cookie_data is not None:
-            txtorlog.msg("Using SAFECOOKIE authentication", cookiefile,
-                         len(self._cookie_data), "bytes")
-            self.client_nonce = os.urandom(32)
+        if cookie_auth:
+            if b'SAFECOOKIE' in methods:
+                txtorlog.msg("Using SAFECOOKIE authentication", cookiefile,
+                             len(self._cookie_data), "bytes")
+                self.client_nonce = os.urandom(32)
 
-            cmd = 'AUTHCHALLENGE SAFECOOKIE ' + \
-                  base64.b16encode(self.client_nonce)
-            d = self.queue_command(cmd)
-            d.addCallback(self._safecookie_authchallenge)
-            d.addCallback(self._bootstrap)
-            d.addErrback(self._auth_failed)
-            return
+                cmd = b'AUTHCHALLENGE SAFECOOKIE ' + \
+                      base64.b16encode(self.client_nonce)
+                d = self.queue_command(cmd)
+                d.addCallback(self._safecookie_authchallenge)
+                d.addCallback(self._bootstrap)
+                d.addErrback(self._auth_failed)
+                return
 
-        elif 'COOKIE' in methods and self._cookie_data is not None:
-            txtorlog.msg("Using COOKIE authentication",
-                         cookiefile, len(self._cookie_data), "bytes")
-            d = self.authenticate(self._cookie_data)
-            d.addCallback(self._bootstrap)
-            d.addErrback(self._auth_failed)
-            return
+            elif b'COOKIE' in methods:
+                txtorlog.msg("Using COOKIE authentication",
+                             cookiefile, len(self._cookie_data), "bytes")
+                d = self.authenticate(self._cookie_data)
+                d.addCallback(self._bootstrap)
+                d.addErrback(self._auth_failed)
+                return
 
-        if self.password_function and 'HASHEDPASSWORD' in methods:
+        if self.password_function and b'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
             d.addCallback(self._do_password_authentication)
             d.addErrback(self._auth_failed)
@@ -808,7 +811,7 @@ class TorControlProtocol(LineOnlyReceiver):
         eventnames = eventnames['events/names']
         self._set_valid_events(eventnames)
 
-        yield self.queue_command('USEFEATURE EXTENDED_EVENTS')
+        yield self.queue_command(b'USEFEATURE EXTENDED_EVENTS')
 
         self.post_bootstrap.callback(self)
         defer.returnValue(self)
@@ -818,7 +821,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def _is_end_line(self, line):
         "for FSM"
-        return line.strip() == '.'
+        return line.strip() == b'.'
 
     def _is_not_end_line(self, line):
         "for FSM"
@@ -831,7 +834,7 @@ class TorControlProtocol(LineOnlyReceiver):
         except:
             return False
 
-        sl = len(line) > 3 and line[3] == ' '
+        sl = len(line) > 3 and line[3] == b' '
         # print "single line?",line,sl
         if sl:
             self.code = code
@@ -846,26 +849,26 @@ class TorControlProtocol(LineOnlyReceiver):
         if self.command and self.command[2] is not None:
             self.command[2](line[4:])
         else:
-            self.response = line[4:] + '\n'
+            self.response = line[4:] + b'\n'
         return None
 
     def _is_continuation_line(self, line):
         "for FSM"
-        # print "isContinuationLine",self.code,line
+        print("isContinuationLine",self.code,line,line[3],b'-')
         code = int(line[:3])
         if self.code and self.code != code:
             raise RuntimeError("Unexpected code %d, wanted %d" % (code,
                                                                   self.code))
-        return line[3] == '-'
+        return line[3] == b'-'
 
     def _is_multi_line(self, line):
         "for FSM"
-        # print "isMultiLine",self.code,line,line[3] == '+'
         code = int(line[:3])
+        print("isMultiLine",code,line,line[3])
         if self.code and self.code != code:
             raise RuntimeError("Unexpected code %d, wanted %d" % (code,
                                                                   self.code))
-        return line[3] == '+'
+        return line[3] == b'+'
 
     def _accumulate_multi_response(self, line):
         "for FSM"
@@ -873,7 +876,7 @@ class TorControlProtocol(LineOnlyReceiver):
             self.command[2](line)
 
         else:
-            self.response += (line + '\n')
+            self.response += (line + b'\n')
         return None
 
     def _accumulate_response(self, line):
@@ -882,7 +885,7 @@ class TorControlProtocol(LineOnlyReceiver):
             self.command[2](line[4:])
 
         else:
-            self.response += (line[4:] + '\n')
+            self.response += (line[4:] + b'\n')
         return None
 
     def _is_finish_line(self, line):
@@ -890,32 +893,31 @@ class TorControlProtocol(LineOnlyReceiver):
         # print "isFinish",line
         if len(line) < 1:
             return False
-        if line[0] == '.':
+        if line[0] == b'.':
             return True
-        if len(line) > 3 and line[3] == ' ':
+        if len(line) > 3 and line[3] == b' ':
             return True
         return False
 
     def _broadcast_response(self, line):
         "for FSM"
-        # print "BCAST",line
         if len(line) > 3:
             if self.code >= 200 and self.code < 300 and \
                self.command and self.command[2] is not None:
                 self.command[2](line[4:])
-                resp = ''
+                resp = b''
 
             else:
                 resp = self.response + line[4:]
         else:
             resp = self.response
-        self.response = ''
+        self.response = b''
         if self.code >= 200 and self.code < 300:
             if self.defer is None:
                 raise RuntimeError(
                     'Got a response, but didn\'t issue a command: "%s"' % resp
                 )
-            if resp.endswith('\nOK'):
+            if resp.endswith(b'\nOK'):
                 resp = resp[:-3]
             self.defer.callback(resp)
         elif self.code >= 500 and self.code < 600:

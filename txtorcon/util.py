@@ -139,7 +139,7 @@ def maybe_ip_addr(addr):
     return str(addr)
 
 
-def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
+def find_keywords(args, key_filter=lambda x: not x.startswith(b"$")):
     """
     This splits up strings like name=value, foo=bar into a dict. Does NOT deal
     with quotes in value (e.g. key="value with space" will not work
@@ -156,9 +156,9 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
         keywords found in args.
     """
     if type(args) is bytes:
-        args = args.decode('ascii')
-    filtered = [x for x in args if '=' in x and key_filter(x.split('=')[0])]
-    return dict(x.split('=', 1) for x in filtered)
+        args = args.encode()
+    filtered = [x for x in args if b'=' in x and key_filter(x.split(b'=')[0])]
+    return dict(x.split(b'=', 1) for x in filtered)
 
 
 def delete_file_or_tree(*args):

@@ -1,4 +1,4 @@
-from zope.interface import implements
+from zope.interface import implementer
 from zope.interface.verify import verifyClass
 from twisted.trial import unittest
 from twisted.test import proto_helpers
@@ -28,8 +28,8 @@ from txtorcon.interface import StreamListenerMixin
 from txtorcon.interface import CircuitListenerMixin
 
 
+@implementer(ICircuitListener)
 class CircuitListener(object):
-    implements(ICircuitListener)
 
     def __init__(self, expected):
         "expect is a list of tuples: (event, {key:value, key1:value1, ..})"
@@ -73,8 +73,8 @@ class CircuitListener(object):
         self.checker('failed', circuit, **kw)
 
 
+@implementer(IStreamListener)
 class StreamListener(object):
-    implements(IStreamListener)
 
     def __init__(self, expected):
         "expect is a list of tuples: (event, {key:value, key1:value1, ..})"
@@ -115,8 +115,8 @@ class StreamListener(object):
         self.checker('failed', stream, reason)
 
 
+@implementer(IReactorCore)
 class FakeReactor:
-    implements(IReactorCore)
 
     def __init__(self, test):
         self.test = test
@@ -146,9 +146,8 @@ class FakeCircuit(Circuit):
         self.id = id
         self.state = 'BOGUS'
 
-
+@implementer(IStreamClientEndpoint)
 class FakeEndpoint:
-    implements(IStreamClientEndpoint)
 
     def get_info_raw(self, keys):
         ans = '\r\n'.join(map(lambda k: '%s=' % k, keys.split()))
@@ -170,8 +169,8 @@ class FakeEndpoint:
         return defer.succeed(self.proto)
 
 
+@implementer(IStreamClientEndpoint)
 class FakeEndpointAnswers:
-    implements(IStreamClientEndpoint)
 
     def __init__(self, answers):
         self.answers = answers
@@ -324,8 +323,8 @@ class StateTests(unittest.TestCase):
         self.protocol.makeConnection(self.transport)
 
     def test_close_stream_with_attacher(self):
+        @implementer(IStreamAttacher)
         class MyAttacher(object):
-            implements(IStreamAttacher)
 
             def __init__(self):
                 self.streams = []
@@ -369,7 +368,7 @@ class StateTests(unittest.TestCase):
         self.assertEqual(len(self.state.streams), 2)
 
     def send(self, line):
-        self.protocol.dataReceived(line.strip() + "\r\n")
+        self.protocol.dataReceived(line.strip() + b"\r\n")
 
     @defer.inlineCallbacks
     def test_bootstrap_callback(self):
@@ -413,30 +412,30 @@ class StateTests(unittest.TestCase):
         self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
         self.state._bootstrap()
 
-        self.send("250+ns/all=")
-        self.send(".")
-        self.send("250 OK")
+        self.send(b"250+ns/all=")
+        self.send(b".")
+        self.send(b"250 OK")
 
-        self.send("250+circuit-status=")
-        self.send(".")
-        self.send("250 OK")
+        self.send(b"250+circuit-status=")
+        self.send(b".")
+        self.send(b"250 OK")
 
-        self.send("250-stream-status=")
-        self.send("250 OK")
+        self.send(b"250-stream-status=")
+        self.send(b"250 OK")
 
-        self.send("250+address-mappings/all=")
+        self.send(b"250+address-mappings/all=")
         self.send('www.example.com 127.0.0.1 "2012-01-01 00:00:00"')
         self.send('subdomain.example.com 10.0.0.0 "2012-01-01 00:01:02"')
         self.send('.')
         self.send('250 OK')
 
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
-        self.send("250-entry-guards=")
-        self.send("250 OK")
+        self.send(b"250-entry-guards=")
+        self.send(b"250 OK")
 
-        self.send("250 OK")
+        self.send(b"250 OK")
 
         self.assertEqual(len(self.state.addrmap.addr), 4)
         self.assertTrue('www.example.com' in self.state.addrmap.addr)
@@ -464,27 +463,27 @@ class StateTests(unittest.TestCase):
         self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
         self.state._bootstrap()
 
-        self.send("250+ns/all=")
-        self.send(".")
-        self.send("250 OK")
+        self.send(b"250+ns/all=")
+        self.send(b".")
+        self.send(b"250 OK")
 
-        self.send("250-circuit-status=123 BUILT PURPOSE=GENERAL")
-        self.send("250 OK")
+        self.send(b"250-circuit-status=123 BUILT PURPOSE=GENERAL")
+        self.send(b"250 OK")
 
-        self.send("250-stream-status=")
-        self.send("250 OK")
+        self.send(b"250-stream-status=")
+        self.send(b"250 OK")
 
-        self.send("250+address-mappings/all=")
+        self.send(b"250+address-mappings/all=")
         self.send('.')
         self.send('250 OK')
 
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
-        self.send("250-entry-guards=")
-        self.send("250 OK")
+        self.send(b"250-entry-guards=")
+        self.send(b"250 OK")
 
-        self.send("250 OK")
+        self.send(b"250 OK")
 
         self.assertTrue(self.state.find_circuit(123))
         self.assertEquals(len(self.state.circuits), 1)
@@ -493,17 +492,18 @@ class StateTests(unittest.TestCase):
 
     def test_unset_attacher(self):
 
+        @implementer(IStreamAttacher)
         class MyAttacher(object):
-            implements(IStreamAttacher)
 
             def attach_stream(self, stream, circuits):
                 return None
 
         fr = FakeReactor(self)
-        self.state.set_attacher(MyAttacher(), fr)
-        self.send("250 OK")
-        self.state.set_attacher(None, fr)
-        self.send("250 OK")
+        attacher = MyAttacher()
+        self.state.add_attacher(attacher, fr)
+        self.send(b"250 OK")
+        self.state.remove_attacher(attacher, fr)
+        self.send(b"250 OK")
         self.assertEqual(
             self.transport.value(),
             'SETCONF __LeaveStreamsUnattached=1\r\nSETCONF'
@@ -511,8 +511,8 @@ class StateTests(unittest.TestCase):
         )
 
     def test_attacher(self):
+        @implementer(IStreamAttacher)
         class MyAttacher(object):
-            implements(IStreamAttacher)
 
             def __init__(self):
                 self.streams = []
@@ -528,10 +528,10 @@ class StateTests(unittest.TestCase):
         self.protocol._set_valid_events(events)
         self.state._add_events()
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
-        self.send("650 STREAM 1 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
-        self.send("650 STREAM 1 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
+        self.send(b"650 STREAM 1 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
+        self.send(b"650 STREAM 1 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
         self.assertEqual(len(attacher.streams), 1)
         self.assertEqual(attacher.streams[0].id, 1)
         self.assertEqual(len(self.protocol.commands), 1)
@@ -539,13 +539,13 @@ class StateTests(unittest.TestCase):
 
         # we should totally ignore .exit URIs
         attacher.streams = []
-        self.send("650 STREAM 2 NEW 0 10.0.0.0.$E11D2B2269CC25E67CA6C9FB5843497539A74FD0.exit:80 SOURCE_ADDR=127.0.0.1:12345 PURPOSE=TIME")
+        self.send(b"650 STREAM 2 NEW 0 10.0.0.0.$E11D2B2269CC25E67CA6C9FB5843497539A74FD0.exit:80 SOURCE_ADDR=127.0.0.1:12345 PURPOSE=TIME")
         self.assertEqual(len(attacher.streams), 0)
         self.assertEqual(len(self.protocol.commands), 1)
 
         # we should NOT ignore .onion URIs
         attacher.streams = []
-        self.send("650 STREAM 3 NEW 0 xxxxxxxxxxxxxxxx.onion:80 SOURCE_ADDR=127.0.0.1:12345 PURPOSE=TIME")
+        self.send(b"650 STREAM 3 NEW 0 xxxxxxxxxxxxxxxx.onion:80 SOURCE_ADDR=127.0.0.1:12345 PURPOSE=TIME")
         self.assertEqual(len(attacher.streams), 1)
         self.assertEqual(len(self.protocol.commands), 2)
         self.assertEqual(self.protocol.commands[1][1], 'ATTACHSTREAM 3 0')
@@ -555,14 +555,14 @@ class StateTests(unittest.TestCase):
         circ.state = 'BUILT'
         self.state.circuits[1] = circ
         attacher.answer = circ
-        self.send("650 STREAM 4 NEW 0 xxxxxxxxxxxxxxxx.onion:80 SOURCE_ADDR=127.0.0.1:12345 PURPOSE=TIME")
+        self.send(b"650 STREAM 4 NEW 0 xxxxxxxxxxxxxxxx.onion:80 SOURCE_ADDR=127.0.0.1:12345 PURPOSE=TIME")
         self.assertEqual(len(attacher.streams), 2)
         self.assertEqual(len(self.protocol.commands), 3)
         self.assertEqual(self.protocol.commands[2][1], 'ATTACHSTREAM 4 1')
 
     def test_attacher_defer(self):
+        @implementer(IStreamAttacher)
         class MyAttacher(object):
-            implements(IStreamAttacher)
 
             def __init__(self, answer):
                 self.streams = []
@@ -583,10 +583,10 @@ class StateTests(unittest.TestCase):
         self.protocol._set_valid_events(events)
         self.state._add_events()
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
-        self.send("650 STREAM 1 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
-        self.send("650 STREAM 1 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
+        self.send(b"650 STREAM 1 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
+        self.send(b"650 STREAM 1 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
         self.assertEqual(len(attacher.streams), 1)
         self.assertEqual(attacher.streams[0].id, 1)
         self.assertEqual(len(self.protocol.commands), 1)
@@ -594,8 +594,8 @@ class StateTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_attacher_errors(self):
+        @implementer(IStreamAttacher)
         class MyAttacher(object):
-            implements(IStreamAttacher)
 
             def __init__(self, answer):
                 self.streams = []
@@ -613,7 +613,7 @@ class StateTests(unittest.TestCase):
         msg = ''
         try:
             yield self.state._maybe_attach(stream)
-        except Exception, e:
+        except Exception as e:
             msg = str(e)
         self.assertTrue('circuit unknown' in msg)
 
@@ -621,7 +621,7 @@ class StateTests(unittest.TestCase):
         msg = ''
         try:
             yield self.state._maybe_attach(stream)
-        except Exception, e:
+        except Exception as e:
             msg = str(e)
         self.assertTrue('only attach to BUILT' in msg)
 
@@ -629,13 +629,13 @@ class StateTests(unittest.TestCase):
         msg = ''
         try:
             yield self.state._maybe_attach(stream)
-        except Exception, e:
+        except Exception as e:
             msg = str(e)
         self.assertTrue('Circuit instance' in msg)
 
     def test_attacher_no_attach(self):
+        @implementer(IStreamAttacher)
         class MyAttacher(object):
-            implements(IStreamAttacher)
 
             def __init__(self):
                 self.streams = []
@@ -650,14 +650,13 @@ class StateTests(unittest.TestCase):
         self.protocol._set_valid_events(events)
         self.state._add_events()
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
         self.transport.clear()
-        self.send("650 STREAM 1 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
-        self.send("650 STREAM 1 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
+        self.send(b"650 STREAM 1 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
+        self.send(b"650 STREAM 1 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
         self.assertEqual(len(attacher.streams), 1)
         self.assertEqual(attacher.streams[0].id, 1)
-        print self.transport.value()
         self.assertEqual(self.transport.value(), '')
 
     def test_close_stream_with_id(self):
@@ -666,7 +665,7 @@ class StateTests(unittest.TestCase):
 
         self.state.streams[1] = stream
         self.state.close_stream(stream)
-        self.assertEqual(self.transport.value(), 'CLOSESTREAM 1 1\r\n')
+        self.assertEqual(self.transport.value(), b'CLOSESTREAM 1 1\r\n')
 
     def test_close_stream_with_stream(self):
         stream = Stream(self.state)
@@ -674,7 +673,7 @@ class StateTests(unittest.TestCase):
 
         self.state.streams[1] = stream
         self.state.close_stream(stream.id)
-        self.assertEqual(self.transport.value(), 'CLOSESTREAM 1 1\r\n')
+        self.assertEqual(self.transport.value(), b'CLOSESTREAM 1 1\r\n')
 
     def test_close_stream_invalid_reason(self):
         stream = Stream(self.state)
@@ -735,7 +734,7 @@ class StateTests(unittest.TestCase):
         self.protocol._set_valid_events(events)
         self.state._add_events()
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
         # we use this router later on in an EXTEND
         self.state._update_network_status("""ns/all=
@@ -750,7 +749,7 @@ p reject 1-65535""")
                     ]
         listen = CircuitListener(expected)
         # first add a Circuit before we listen
-        self.protocol.dataReceived("650 CIRC 123 LAUNCHED PURPOSE=GENERAL\r\n")
+        self.protocol.dataReceived(b"650 CIRC 123 LAUNCHED PURPOSE=GENERAL\r\n")
         self.assertEqual(len(self.state.circuits), 1)
 
         # make sure we get added to existing circuits
@@ -758,14 +757,14 @@ p reject 1-65535""")
         self.assertTrue(listen in self.state.circuits.values()[0].listeners)
 
         # now add a Circuit after we started listening
-        self.protocol.dataReceived("650 CIRC 456 LAUNCHED PURPOSE=GENERAL\r\n")
+        self.protocol.dataReceived(b"650 CIRC 456 LAUNCHED PURPOSE=GENERAL\r\n")
         self.assertEqual(len(self.state.circuits), 2)
         self.assertTrue(listen in self.state.circuits.values()[0].listeners)
         self.assertTrue(listen in self.state.circuits.values()[1].listeners)
 
         # now update the first Circuit to ensure we're really, really
         # listening
-        self.protocol.dataReceived("650 CIRC 123 EXTENDED $D82183B1C09E1D7795FF2D7116BAB5106AA3E60E~PPrivCom012 PURPOSE=GENERAL\r\n")
+        self.protocol.dataReceived(b"650 CIRC 123 EXTENDED $D82183B1C09E1D7795FF2D7116BAB5106AA3E60E~PPrivCom012 PURPOSE=GENERAL\r\n")
         self.assertEqual(len(listen.expected), 0)
 
     def test_router_from_id_invalid_key(self):
@@ -819,7 +818,7 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
 .''')
             self.fail()
 
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('"s "' in str(e))
 
     def test_routers_no_policy(self):
@@ -899,27 +898,27 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
         self.state._bootstrap()
 
-        self.send("250+ns/all=")
-        self.send(".")
-        self.send("250 OK")
+        self.send(b"250+ns/all=")
+        self.send(b".")
+        self.send(b"250 OK")
 
-        self.send("250+circuit-status=")
-        self.send(".")
-        self.send("250 OK")
+        self.send(b"250+circuit-status=")
+        self.send(b".")
+        self.send(b"250 OK")
 
-        self.send("250-stream-status=")
-        self.send("250 OK")
+        self.send(b"250-stream-status=")
+        self.send(b"250 OK")
 
-        self.send("250-address-mappings/all=")
-        self.send('250 OK')
+        self.send(b"250-address-mappings/all=")
+        self.send(b'250 OK')
 
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
-        self.send("250-entry-guards=")
-        self.send("250 OK")
+        self.send(b"250-entry-guards=")
+        self.send(b"250 OK")
 
-        self.send("250 OK")
+        self.send(b"250 OK")
 
         # state is now bootstrapped, we can send our NEWCONSENSUS update
 
@@ -956,27 +955,27 @@ p reject 1-65535
         self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
         self.state._bootstrap()
 
-        self.send("250+ns/all=")
-        self.send(".")
-        self.send("250 OK")
+        self.send(b"250+ns/all=")
+        self.send(b".")
+        self.send(b"250 OK")
 
-        self.send("250+circuit-status=")
-        self.send(".")
-        self.send("250 OK")
+        self.send(b"250+circuit-status=")
+        self.send(b".")
+        self.send(b"250 OK")
 
-        self.send("250-stream-status=")
-        self.send("250 OK")
+        self.send(b"250-stream-status=")
+        self.send(b"250 OK")
 
-        self.send("250-address-mappings/all=")
+        self.send(b"250-address-mappings/all=")
         self.send('250 OK')
 
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
-        self.send("250-entry-guards=")
-        self.send("250 OK")
+        self.send(b"250-entry-guards=")
+        self.send(b"250 OK")
 
-        self.send("250 OK")
+        self.send(b"250 OK")
 
         # state is now bootstrapped, we can send our NEWCONSENSUS update
 
@@ -1003,27 +1002,27 @@ w Bandwidth=166
         self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
         self.state._bootstrap()
 
-        self.send("250+ns/all=")
-        self.send(".")
-        self.send("250 OK")
+        self.send(b"250+ns/all=")
+        self.send(b".")
+        self.send(b"250 OK")
 
-        self.send("250+circuit-status=")
-        self.send(".")
-        self.send("250 OK")
+        self.send(b"250+circuit-status=")
+        self.send(b".")
+        self.send(b"250 OK")
 
-        self.send("250-stream-status=")
-        self.send("250 OK")
+        self.send(b"250-stream-status=")
+        self.send(b"250 OK")
 
-        self.send("250-address-mappings/all=")
+        self.send(b"250-address-mappings/all=")
         self.send('250 OK')
 
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
-        self.send("250-entry-guards=")
-        self.send("250 OK")
+        self.send(b"250-entry-guards=")
+        self.send(b"250 OK")
 
-        self.send("250 OK")
+        self.send(b"250 OK")
 
         # state is now bootstrapped, we can send our NEWCONSENSUS update
 
@@ -1064,19 +1063,20 @@ s Fast Guard Running Stable Valid
         self.protocol._set_valid_events('CIRC STREAM ORCONN BW DEBUG INFO NOTICE WARN ERR NEWDESC ADDRMAP AUTHDIR_NEWDESCS DESCCHANGED NS STATUS_GENERAL STATUS_CLIENT STATUS_SERVER GUARD STREAM_BW CLIENTS_SEEN NEWCONSENSUS BUILDTIMEOUT_SET')
         self.state._add_events()
         for ignored in self.state.event_map.items():
-            self.send("250 OK")
+            self.send(b"250 OK")
 
         expected = [('new', {}),
                     ]
         listen = StreamListener(expected)
-        self.send("650 STREAM 77 NEW 0 www.yahoo.cn:80 SOURCE_ADDR=127.0.0.1:54315 PURPOSE=USER")
+        self.send(b"650 STREAM 77 NEW 0 www.yahoo.cn:80 SOURCE_ADDR=127.0.0.1:54315 PURPOSE=USER")
         self.state.add_stream_listener(listen)
 
-        self.assertTrue(listen in self.state.streams.values()[0].listeners)
+        self.assertEqual(1, len(self.state.streams.values()))
+        self.assertTrue(listen in list(self.state.streams.values())[0].listeners)
         self.assertEqual(len(self.state.streams), 1)
         self.assertEqual(len(listen.expected), 1)
 
-        self.send("650 STREAM 78 NEW 0 www.yahoo.cn:80 SOURCE_ADDR=127.0.0.1:54315 PURPOSE=USER")
+        self.send(b"650 STREAM 78 NEW 0 www.yahoo.cn:80 SOURCE_ADDR=127.0.0.1:54315 PURPOSE=USER")
         self.assertEqual(len(self.state.streams), 2)
         self.assertEqual(len(listen.expected), 0)
 
@@ -1144,7 +1144,7 @@ s Fast Guard Running Stable Valid
         try:
             self.state._find_circuit_after_extend("FOO 1234")
             self.assertTrue(False)
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('Expected EXTENDED' in str(e))
 
     def test_listener_mixins(self):

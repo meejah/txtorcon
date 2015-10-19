@@ -1,7 +1,7 @@
 from txtorcon.util import maybe_ip_addr
 from twisted.trial import unittest
 from twisted.internet import defer
-from zope.interface import implements
+from zope.interface import implementer
 
 from txtorcon import Stream
 from txtorcon import IStreamListener
@@ -16,8 +16,8 @@ class FakeCircuit:
         self.id = id
 
 
+@implementer(IStreamListener)
 class Listener(object):
-    implements(IStreamListener)
 
     def __init__(self, expected):
         "expect is a list of tuples: (event, {key:value, key1:value1, ..})"
@@ -78,9 +78,8 @@ class Listener(object):
         self.checker('failed', stream, **kw)
 
 
+@implementer(ICircuitContainer)
 class StreamTests(unittest.TestCase):
-
-    implements(ICircuitContainer)
 
     def find_circuit(self, id):
         return self.circuits[id]

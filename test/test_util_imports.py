@@ -40,7 +40,7 @@ class TestImports(unittest.TestCase):
             # import w/o the GeoIP thing available.
             import txtorcon.util
             ipa = txtorcon.util.maybe_ip_addr('127.0.0.1')
-            self.assertTrue(isinstance(ipa, types.StringType))
+            self.assertTrue(isinstance(ipa, str))
 
         finally:
             __import__ = orig

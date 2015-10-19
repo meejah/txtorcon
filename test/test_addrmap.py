@@ -2,14 +2,14 @@ import datetime
 from twisted.trial import unittest
 from twisted.internet import task
 from twisted.internet.interfaces import IReactorTime
-from zope.interface import implements
+from zope.interface import implementer
 
 from txtorcon.addrmap import AddrMap
 from txtorcon.interface import IAddrListener
 
 
+@implementer(IAddrListener)
 class AddrMapTests(unittest.TestCase):
-    implements(IAddrListener)
 
     fmt = '%Y-%m-%d %H:%M:%S'
 
