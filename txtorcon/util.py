@@ -130,7 +130,7 @@ def maybe_ip_addr(addr):
     return str(addr)
 
 
-def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
+def find_keywords(args, key_filter=lambda x: not x.startswith(b"$")):
     """
     This splits up strings like name=value, foo=bar into a dict. Does NOT deal
     with quotes in value (e.g. key="value with space" will not work
@@ -146,8 +146,11 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
         a dict of key->value (both strings) of all name=value type
         keywords found in args.
     """
-    filtered = [x for x in args if '=' in x and key_filter(x.split('=')[0])]
-    return dict(x.split('=', 1) for x in filtered)
+    if type(args) is bytes:
+        args = args.encode()
+##    print("XXX", type(args), args)
+    filtered = [x for x in args if b'=' in x and key_filter(x.split(b'=')[0])]
+    return dict(x.split(b'=', 1) for x in filtered)
 
 
 def delete_file_or_tree(*args):
@@ -190,7 +193,7 @@ def process_from_address(addr, port, torstate=None):
     proc = subprocess.Popen(['lsof', '-i', '4tcp@%s:%s' % (addr, port)],
                             stdout=subprocess.PIPE)
     (stdout, stderr) = proc.communicate()
-    lines = stdout.split('\n')
+    lines = stdout.split(b'\n')
     if len(lines) > 1:
         return int(lines[1].split()[1])
 

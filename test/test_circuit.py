@@ -3,7 +3,7 @@ import time
 from twisted.trial import unittest
 from twisted.internet import defer, task
 from twisted.python.failure import Failure
-from zope.interface import implements
+from zope.interface import implementer
 
 from txtorcon import Circuit
 from txtorcon import build_timeout_circuit
@@ -22,8 +22,8 @@ from txtorcon.interface import ITorControlProtocol
 from mock import Mock
 
 
+@implementer(IRouterContainer, ICircuitListener, ICircuitContainer, ITorControlProtocol)
 class FakeTorController(object):
-    implements(IRouterContainer, ICircuitListener, ICircuitContainer, ITorControlProtocol)
 
     post_bootstrap = defer.Deferred()
     queue_command = Mock()

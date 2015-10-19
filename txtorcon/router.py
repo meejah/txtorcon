@@ -8,14 +8,21 @@ from __future__ import with_statement
 from datetime import datetime
 from .util import NetLocation
 from .util import basestring
+from base64 import b64encode, b64decode
+from binascii import b2a_hex, a2b_hex
 
 
 def hexIdFromHash(thehash):
     """
     From the base-64 encoded hashes Tor uses, this produces the longer
     hex-encoded hashes.
+
+    :param thehash: base64-encoded str
+    :return: hex-encoded hash
     """
-    return "$" + (thehash + "=").decode("base64").encode("hex").upper()
+    if isinstance(thehash, bytes):
+        thehash = thehash.decode()
+    return b2a_hex(b64decode(thehash + '='))
 
 
 def hashFromHexId(hexid):
@@ -24,7 +31,7 @@ def hashFromHexId(hexid):
     """
     if hexid[0] == '$':
         hexid = hexid[1:]
-    return hexid.decode("hex").encode("base64")[:-2]
+    return b64encode(a2b_hex(hexid))[:-1]
 
 
 class PortRange(object):
