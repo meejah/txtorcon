@@ -602,7 +602,9 @@ class TorControlProtocol(LineOnlyReceiver):
             self.debuglog.write(cmd + '\n')
             self.debuglog.flush()
 
-            self.transport.write(cmd + '\r\n')
+            data = cmd + '\r\n'
+            txtorlog.msg("cmd: {}".format(data.strip()))
+            self.transport.write(data.encode('utf8'))
 
     def _auth_failed(self, fail):
         """
