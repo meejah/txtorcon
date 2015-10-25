@@ -632,6 +632,7 @@ class TorState(object):
         #    2. DO_NOT_ATTACH: don't attach the stream at all
         #    3. Circuit instance: attach to the provided circuit
         def issue_stream_attach(circ):
+            txtorlog.msg("circuit:", circ)
             if circ is None:
                 # tell Tor to do what it likes
                 return self.protocol.queue_command("ATTACHSTREAM %d 0" % stream.id)
@@ -905,6 +906,8 @@ class TorState(object):
     def circuit_destroy(self, circuit):
         "Used by circuit_closed and circuit_failed (below)"
         txtorlog.msg("circuit_destroy:", circuit.id)
+        for d in circuit._when_built:
+            d.errback(Exception("Destroying circuit; will never hit BUILT"))
         del self.circuits[circuit.id]
 
     def circuit_closed(self, circuit, **kw):

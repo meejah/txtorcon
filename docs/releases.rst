@@ -16,6 +16,14 @@ unreleased
  * a first stealth-authentication implementation (for "normal" hidden
    services, not ephemeral)
 
+v0.14.1
+-------
+
+*October 25, 2015*
+
+ * subtle bug with ``.is_built`` on Circuit; changing the API (but
+   with backwards-compatibility until 0.15.0 at least)
+
 
 v0.14.0
 -------
