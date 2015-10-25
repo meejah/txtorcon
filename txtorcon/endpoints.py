@@ -429,7 +429,8 @@ class TCPHiddenServiceEndpoint(object):
                 info_callback.callback(None)
         self.config.protocol.add_event_listener('INFO', info_event)
 
-        if self.hidden_service_dir not in [hs.dir for hs in self.config.HiddenServices]:
+        hs_dirs = [hs.dir for hs in self.config.HiddenServices]
+        if self.hidden_service_dir not in hs_dirs:
             authlines = []
             if self.stealth_auth:
                 # like "stealth name0,name1"
@@ -718,7 +719,9 @@ class TorClientEndpoint(object):
         try:
             self.socks_port = self._socks_port_iter.next()
         except StopIteration:
-            return defer.fail(ConnectionRefusedError('tor socks port retry failed'))
+            return defer.fail(
+                ConnectionRefusedError('tor socks port retry failed')
+            )
         d = self._try_connect()
         d.addErrback(self._retry_socks_port)
         return d

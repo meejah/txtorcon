@@ -778,7 +778,7 @@ class HiddenService(object):
                 data = f.read().strip()
             host = None
             for line in data.split('\n'):
-                h  = line.split(' ')[0]
+                h = line.split(' ')[0]
                 if host is None:
                     host = h
                 elif h != host:
@@ -834,7 +834,7 @@ class EphemeralHiddenService(object):
     # XXX "auth" is unused (also, no Tor support I don't think?)
 
     def __init__(self, ports, key_blob_or_type='NEW:BEST', auth=[], ver=2):
-        if type(ports) is not types.ListType:
+        if not isinstance(ports, types.ListType):
             ports = [ports]
         # for "normal" HSes the port-config bit looks like "80
         # 127.0.0.1:1234" whereas this one wants a comma, so we leave
@@ -845,7 +845,7 @@ class EphemeralHiddenService(object):
         self.auth = auth  # FIXME ununsed
         # FIXME nicer than assert, plz
         assert ' ' not in self._key_blob
-        assert type(ports) is types.ListType
+        assert isinstance(ports, types.ListType)
         if not key_blob_or_type.startswith('NEW:') and len(key_blob_or_type) != (812 + 8):
             raise RuntimeError('Wrong size key-blob')
 

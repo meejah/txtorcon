@@ -45,6 +45,7 @@ def main(reactor):
     # in 5 seconds, remove the hidden service -- obviously this is
     # where you'd do your "real work" or whatever.
     d = defer.Deferred()
+
     @defer.inlineCallbacks
     def remove():
         print "Removing the hiddenservice. Private key was"

@@ -5,13 +5,11 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import collections
-import datetime
 import os
 import stat
 import types
 import warnings
 
-from twisted.python import log
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.endpoints import UNIXClientEndpoint
@@ -227,19 +225,40 @@ class TorState(object):
         self.stream_listeners = []
 
         self.addrmap = AddrMap()
-        self.circuits = {}               # keys on id (integer)
-        self.streams = {}                # keys on id (integer)
+        #: keys on id (integer)
+        self.circuits = {}
 
-        self.all_routers = set()         # list of unique routers
-        self.routers = {}                # keys by hexid (string) and by unique names
-        self.routers_by_name = {}        # keys on name, value always list (many duplicate "Unnamed" routers, for example)
-        self.routers_by_hash = {}        # keys by hexid (string)
-        self.guards = {}                 # potentially-usable as entry guards, I think? (any router with 'Guard' flag)
-        self.entry_guards = {}           # from GETINFO entry-guards, our current entry guards
-        self.unusable_entry_guards = []  # list of entry guards we didn't parse out
-        self.authorities = {}            # keys by name
+        #: keys on id (integer)
+        self.streams = {}
 
-        self.cleanup = None              # see set_attacher
+        #: list of unique routers
+        self.all_routers = set()
+
+        #: keys by hexid (string) and by unique names
+        self.routers = {}
+
+        #: keys on name, value always list (many duplicate "Unnamed"
+        #: routers, for example)
+        self.routers_by_name = {}
+
+        #: keys by hexid (string)
+        self.routers_by_hash = {}
+
+        #: potentially-usable as entry guards, I think? (any router
+        #: with 'Guard' flag)
+        self.guards = {}
+
+        #: from GETINFO entry-guards, our current entry guards
+        self.entry_guards = {}
+
+        #: list of entry guards we didn't parse out
+        self.unusable_entry_guards = []
+
+        #: keys by name
+        self.authorities = {}
+
+        #: see set_attacher
+        self.cleanup = None
 
         class die(object):
             __name__ = 'die'  # FIXME? just to ease spagetti.py:82's pain
@@ -458,6 +477,7 @@ class TorState(object):
                                                        self.undo_attacher)
         return d
 
+    # noqa
     stream_close_reasons = {
         'REASON_MISC': 1,               # (catch-all for unlisted reasons)
         'REASON_RESOLVEFAILED': 2,      # (couldn't look up hostname)

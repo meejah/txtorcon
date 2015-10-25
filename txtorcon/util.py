@@ -61,10 +61,10 @@ def maybe_create_db(path):
     except IOError:
         return None
 
-city, asn, country = list(map(maybe_create_db,
-                         ("/usr/share/GeoIP/GeoLiteCity.dat",
-                          "/usr/share/GeoIP/GeoIPASNum.dat",
-                          "/usr/share/GeoIP/GeoIP.dat")))
+
+city = maybe_create_db("/usr/share/GeoIP/GeoLiteCity.dat")
+asn = maybe_create_db("/usr/share/GeoIP/GeoIPASNum.dat")
+country = maybe_create_db("/usr/share/GeoIP/GeoIP.dat")
 
 try:
     import ipaddr as _ipaddr

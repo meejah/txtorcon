@@ -1646,7 +1646,6 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("blam", eph.private_key)
         self.assertEqual("ohai.onion", eph.hostname)
 
-
     def test_remove(self):
         eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
         eph.hostname = 'foo.onion'
