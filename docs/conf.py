@@ -66,7 +66,7 @@ copyright = u'2012, meejah@meejah.ca'
 # built documents.
 #
 # The short X.Y version.
-from txtorcon import __version__
+from txtorcon._metadata import __version__
 version = __version__
 # The full version, including alpha/beta/rc tags.
 release = __version__
