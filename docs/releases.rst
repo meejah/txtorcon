@@ -12,6 +12,14 @@ unreleased
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.15.0*
 
 
+v0.14.1
+-------
+
+*October 25, 2015*
+
+ * subtle bug with ``.is_built`` on Circuit; changing the API (but
+   with backwards-compatibility until 0.15.0 at least)
+
 
 v0.14.0
 -------

@@ -66,9 +66,6 @@ class Circuit(object):
 
     :ivar id:
         The ID of this circuit, a number (or None if unset).
-
-    :ivar is_built:
-        A Deferred that will callback() when this Circuit hits BUILT state.
     """
 
     def __init__(self, routercontainer):
@@ -87,15 +84,36 @@ class Circuit(object):
         self.build_flags = []
         self.flags = {}
 
-        #: callback()d when this circuit hits BUILT
-        self.is_built = defer.Deferred()
-
         # this is used to hold a Deferred that will callback() when
         # this circuit is being CLOSED or FAILED.
         self._closing_deferred = None
 
         # caches parsed value for time_created()
         self._time_created = None
+
+        # all notifications for when_built
+        self._when_built = []
+
+    # XXX backwards-compat for old .is_built for now
+    @property
+    def is_built(self):
+        return self.when_built()
+
+    def when_built(self):
+        """
+        Returns a Deferred that is callback()'d (with this Circuit
+        instance) when this circuit hits BUILT.
+
+        If it's already BUILT when this is called, you get an
+        already-successful Deferred; otherwise, the state must change
+        to BUILT.
+        """
+        d = defer.Deferred()
+        if self.state == 'BUILT':
+            d.callback(self)
+        else:
+            self._when_built.append(d)
+        return d
 
     @property
     def time_created(self):
@@ -190,8 +208,9 @@ class Circuit(object):
 
         if self.state == 'BUILT':
             [x.circuit_built(self) for x in self.listeners]
-            if not self.is_built.called:
-                self.is_built.callback(self)
+            for d in self._when_built:
+                d.callback(self)
+            self._when_built = []
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:

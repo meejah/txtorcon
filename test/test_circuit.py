@@ -2,6 +2,7 @@ import datetime
 import time
 from twisted.trial import unittest
 from twisted.internet import defer
+from twisted.python.failure import Failure
 from zope.interface import implements
 
 from txtorcon import Circuit
@@ -13,10 +14,13 @@ from txtorcon.interface import IRouterContainer
 from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
 from txtorcon.interface import CircuitListenerMixin
+from txtorcon.interface import ITorControlProtocol
 
 
 class FakeTorController(object):
-    implements(IRouterContainer, ICircuitListener, ICircuitContainer)
+    implements(IRouterContainer, ICircuitListener, ICircuitContainer, ITorControlProtocol)
+
+    post_bootstrap = defer.Deferred()
 
     def __init__(self):
         self.routers = {}
@@ -305,3 +309,56 @@ class CircuitTests(unittest.TestCase):
             "should have been called already"
         )
         return d
+
+    def test_is_built(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        b = FakeRouter('$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5', 'b')
+        c = FakeRouter('$253DFF1838A2B7782BE7735F74E50090D46CA1BC', 'c')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+        tor.routers['$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5'] = b
+        tor.routers['$253DFF1838A2B7782BE7735F74E50090D46CA1BC'] = c
+
+        circuit = Circuit(tor)
+        circuit.listen(tor)
+
+        circuit.update('123 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL'.split())
+        built0 = circuit.is_built
+        built1 = circuit.when_built()
+
+        self.assertTrue(built0 is not built1)
+        self.assertFalse(built0.called)
+        self.assertFalse(built1.called)
+
+        circuit.update('123 BUILT $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL'.split())
+
+        # create callback when we're alread in BUILT; should be
+        # callback'd already
+        built2 = circuit.when_built()
+
+        self.assertTrue(built2 is not built1)
+        self.assertTrue(built2 is not built0)
+        self.assertTrue(built0.called)
+        self.assertTrue(built1.called)
+        self.assertTrue(built2.called)
+        self.assertTrue(built0.result == circuit)
+        self.assertTrue(built1.result == circuit)
+        self.assertTrue(built2.result == circuit)
+
+    def test_is_built_errback(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+
+        state = TorState(tor)
+        circuit = Circuit(tor)
+        circuit.listen(tor)
+
+        circuit.update('123 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL'.split())
+        state.circuit_new(circuit)
+        d = circuit.when_built()
+
+        state.circuit_closed(circuit)
+
+        self.assertTrue(d.called)
+        self.assertTrue(isinstance(d.result, Failure))
