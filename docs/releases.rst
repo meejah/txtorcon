@@ -17,6 +17,7 @@ v0.14.1
 
 *October 25, 2015*
 
+ * `txtorcon-0.14.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.14.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.14.1>`_ (:download:`local-sig </../signatues/txtorcon-0.14.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.14.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.14.1.tar.gz>`_)
  * subtle bug with ``.is_built`` on Circuit; changing the API (but
    with backwards-compatibility until 0.15.0 at least)
 

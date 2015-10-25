@@ -36,7 +36,6 @@ doc: docs/*.rst
 
 coverage:
 	coverage run --source=txtorcon `which trial` test
-	coverage -a -d annotated_coverage
 	coverage report --show-missing
 
 htmlcoverage:
