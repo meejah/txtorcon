@@ -15,7 +15,7 @@ from setuptools import setup
 
 # can't just naively import these from txtorcon, as that will only
 # work if you already installed the dependencies :(
-__version__ = '0.14.0'
+__version__ = '0.14.1'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/txtorcon'
