@@ -26,6 +26,8 @@ from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
 from txtorcon.log import txtorlog
 from txtorcon.interface import ITorControlProtocol
 
+from zope.interface import Interface, Attribute, implementer
+
 
 class TorNotFound(RuntimeError):
     """
@@ -662,6 +664,264 @@ class HiddenServiceClientAuth(object):
         self.cookie = cookie
         self.key = parse_rsa_blob(key) if key else None
 
+## XXX FIXME
+#
+# okay, how about this:
+#
+# IOnionService provides:
+#   - hostname, private_key
+# IAuthenticatedService (additionally) provides:
+#   - auth_token
+# maybe easier to just have one interface; auth_token == None means no auth
+# (but then IAuthenticatedService.providedBy(hs) ... Mmmmmph :/)
+# Normal HSes produce one thing that provides ^
+# StealthOnionService produces list-of ^^
+# TorConfig yields/produces a list of IOnionService
+# ...but knows to ask StealthHiddenService for it's list
+
+class IOnionService(Interface):
+    hostname = Attribute("The public hostname, like timaq4ygg2iegci7.onion (str)")
+    private_key = Attribute("Private key blob (bytes)")
+
+    def auth_token(self):
+        """
+        If this service is authenticated, this returns an authentication
+        token (bytes). Otherwise, it should return None.
+        """
+
+class IAuthenticatedOnionService(Interface):
+    clients = Attribute("An iterable of IOnionService instances, one for each key")
+
+    def add_client(self):
+        """
+        ??? do we need this?
+
+        Adds an additional client and returns an instance providing an
+        authenticated IOnionService encapsulating it
+        """
+
+
+@implementer(IOnionService)
+class OnionService(object):
+    """
+    Rougly corresponds to:
+
+    """
+    def __init__(self, config, thedir, ports,
+                 auth=None, ver=2, group_readable=0):
+        self._config = config
+        self._dir = thedir
+        self._ports = _ListWrapper(
+            ports,
+            functools.partial(config.mark_unsaved, 'HiddenService'),
+        )
+        self._auth = auth
+        self._version = ver
+        self._group_readable = group_readable
+
+
+    @property
+    def hostname(self):
+        if self._hostname is None:
+            with open(join(self._dir, 'hostname'), 'r') as f:
+                self._hostname = f.read().strip()
+        return self._hostname
+
+    @property
+    def ports(self):
+        return self._ports
+
+    @property
+    def dir(self):  # XXX propbably should be 'directory'?
+        return self._dir
+
+    @property
+    def group_readable(self):
+        return self._group_readable
+
+    @property
+    def version(self):
+        return self._version
+
+    @version.setter
+    def version(self, v):
+        self._version = v
+        self._config.mark_unsaved('HiddenServices')
+
+    @property
+    def authorize_client(self):
+        return self._auth
+
+    # etcetc, basically the old "HiddenService" object
+
+    def config_attributes(self):
+        # XXX probably have to switch to "get_config_commands" or similar?
+        # -> how to do ADD_ONION stuff, anyway?
+        # -> hmm, could do helper methods, NOT member func
+
+        rtn = [('HiddenServiceDir', str(self.dir))]
+        if self._config._supports['HiddenServiceDirGroupReadable'] \
+           and self.group_readable:
+            rtn.append(('HiddenServiceDirGroupReadable', str(1)))
+        for x in self.ports:
+            rtn.append(('HiddenServicePort', str(x)))
+        if self.version:
+            rtn.append(('HiddenServiceVersion', str(self.version)))
+        for authline in self.authorize_client:
+            rtn.append(('HiddenServiceAuthorizeClient', str(authline)))
+        return rtn
+
+    def config_commands(self):
+        pass # XXX FIXME
+
+
+@implementer(IOnionService)
+class EphemeralOnionService(object):
+    @classmethod
+    @defer.inlineCallbacks
+    def from_ports(cls, config, ports):
+        """
+        returns a new EphemeralOnionService after adding it to the provided config
+        """
+        onion = EphemeralOnionService(config, ports)
+
+        # we need to wait for confirmation that we've published the
+        # descriptor to at least one Directory Authority. This means
+        # watching the 'HS_DESC' event, but we do that right *before*
+        # issuing the ADD_ONION command(s) so we can't miss one.
+        uploaded = defer.Deferred()
+        attempted_uploads = set()
+        confirmed_uploads = set()
+        failed_uploads = set()
+
+        def hs_desc(evt):
+            """
+            From control-spec:
+            "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
+            [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
+            """
+
+            args = evt.split()
+            subtype = args[0]
+            if subtype == 'UPLOAD':
+                if args[1] == onion.hostname[:-6]:
+                    attempted_uploads.add(args[3])
+
+            elif subtype == 'UPLOADED':
+                # we only need ONE successful upload to happen for the
+                # HS to be reachable.
+                addr = args[1]
+                if args[3] in attempted_uploads:
+                    confirmed_uploads.add(args[3])
+                    log.msg("Uploaded '{}' to '{}'".format(onion.hostname, args[3]))
+                    uploaded.callback(onion)
+
+            elif subtype == 'FAILED':
+                if args[1] == onion.hostname[:-6]:
+                    failed_uploads.add(args[3])
+                    if failed_uploads == attempted_uploads:
+                        msg = "Failed to upload '{}' to: {}".format(
+                            onion.hostname,
+                            ', '.join(failed_uploads),
+                        )
+                        uploaded.errback(RuntimeError(msg))
+
+        yield config.tor_protocol.add_event_listener('HS_DESC', hs_desc)
+
+        # okay, we're set up to listen, and now we issue the ADD_ONION
+        # command. this will set ._hostname and ._private_key properly
+        yield onion.do_config_commands()
+
+        log.msg("Created '{}', waiting for descriptor uploads.".format(onion.hostname))
+        yield uploaded
+        yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
+
+        defer.returnValue(onion)
+
+    def __init__(self, config, ports, hostname=None, private_key=None, auth=[], ver=2):
+        # XXX do we need version?
+        self._config = config
+        self._ports = ports
+        self._hostname = hostname
+        self._private_key = private_key
+        if auth != []:
+            raise RuntimeError(
+                "Tor doesn't yet support authentication on ephemeral onion "
+                "services."
+            )
+        self._version = ver
+
+    @property
+    def hostname(self):
+        return self._hostname
+
+    @property
+    def private_key(self):
+        return self._private_key
+
+    # Note: auth not yet supported by Tor, for ADD_ONION
+    def config_attributes(self):
+        # no config attributes; only config_commands
+        return []
+
+    @defer.inlineCallbacks
+    def do_config_commands(self):
+        if self._hostname is None:
+            cmd = 'ADD_ONION NEW:BEST'
+            for port in self._ports:
+                cmd += ' Port={},{}'.format(*port.split(' ', 1))
+
+            res = yield self._config.tor_protocol.queue_command(cmd)
+            res = find_keywords(res.split('\n'))
+            try:
+                self._hostname = res['ServiceID'] + '.onion'
+                self._private_key = res['PrivateKey']
+            except KeyError:
+                raise RuntimeError(
+                    "Expected ADD_ONION to return ServiceID= and PrivateKey= args"
+                )
+
+            defer.returnValue(self)
+        raise RuntimeError("Unimplemented")
+
+
+@implementer(IAuthenticatedOnionService)
+class AuthenticatedOnionService(object):
+    """
+    Corresponds to::
+
+      HiddenServiceDir /home/mike/src/tor/hidserv-stealth
+      HiddenServiceDirGroupReadable 1
+      HiddenServicePort 80 127.0.0.1:99
+      HiddenServiceAuthorizeClient stealth quux,flummox,zinga
+
+    or::
+
+      HiddenServiceDir /home/mike/src/tor/hidserv-basic
+      HiddenServiceDirGroupReadable 1
+      HiddenServicePort 80 127.0.0.1:99
+      HiddenServiceAuthorizeClient basic foo,bar,baz
+    """
+    def __init__(self, config, thedir, ports, clients=[], ver=2, group_readable=0):
+        # XXX do we need version here? probably...
+        self._config = config
+        self._dir = thedir
+        self._ports = ports
+        self._clients = clients
+        self._version = ver
+        self._group_readable = group_readable
+
+    # basically everything in OnionService, except the only API we
+    # provide is "clients" because there's a separate .onion hostname
+    # and authentication token per client.
+
+    def clients(self):
+        for x in self._clients:
+            yield OnionService(
+                self._config, self._dir, self._ports, x,  # XXX FIXME is this all we do? what's in _clients?
+                ver=self._version, group_readable=self._group_readable,
+            )
+
 
 class HiddenService(object):
     """
@@ -771,6 +1031,7 @@ class HiddenService(object):
                             clients.append(('default', args[0]))
             except IOError:
                 pass
+            # XXX should be listwrapper!
             self.__dict__[name] = clients
 
         elif name == 'hostname':
@@ -1127,6 +1388,7 @@ class TorConfig(object):
     def _get_protocol(self):
         return self.__dict__['_protocol']
     protocol = property(_get_protocol)
+    tor_protocol = property(_get_protocol)
 
     def attach_protocol(self, proto):
         """
@@ -1409,11 +1671,17 @@ class TorConfig(object):
             if directory is not None:
                 if directory not in directories:
                     directories.append(directory)
-                    hs.append(
-                        HiddenService(
+                    if not auth:
+                        service = OnionService(
                             self, directory, ports, auth, ver, group_read
                         )
-                    )
+                        hs.append(service)
+                    else:
+                        parent_service = AuthenticatedOnionService(
+                            self, directory, ports, auth, ver, group_read
+                        )
+                        for service in parent_service.clients():
+                            hs.append(service)
                 else:
                     raise RuntimeError("Trying to add hidden service with same HiddenServiceDir: %s" % directory)
 

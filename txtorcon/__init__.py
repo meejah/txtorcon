@@ -24,6 +24,9 @@ from txtorcon.torconfig import EphemeralHiddenService
 from txtorcon.torconfig import TorProcessProtocol
 from txtorcon.torconfig import launch_tor
 from txtorcon.torconfig import TorNotFound
+from txtorcon.torconfig import IOnionService
+from txtorcon.torconfig import IAuthenticatedOnionService
+from txtorcon.torconfig import OnionService, EphemeralOnionService
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress
@@ -63,4 +66,8 @@ __all__ = [
     "ICircuitContainer", "ICircuitListener", "CircuitListenerMixin",
     "IRouterContainer", "IAddrListener", "IProgressProvider",
     "IHiddenService",
+
+    # new onion + ephemeral API
+    "IOnionService", "IAuthenticatedOnionService",
+    "EphemeralOnionService",
 ]
