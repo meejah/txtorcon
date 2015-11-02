@@ -794,8 +794,8 @@ HiddenServicePort=90 127.0.0.1:2345''')
 
         self.assertEqual(conf.hiddenservices[0].dir, '/fake/path')
         self.assertEqual(conf.hiddenservices[0].version, 2)
-        self.assertEqual(len(conf.hiddenservices[0].authorize_client), 1)
-        self.assertEqual(conf.hiddenservices[0].authorize_client[0], 'basic')
+#        self.assertEqual(len(conf.hiddenservices[0].authorize_client), 1)
+        self.assertEqual(conf.hiddenservices[0].authorize_client, 'basic')
         self.assertEqual(len(conf.hiddenservices[0].ports), 1)
         self.assertEqual(conf.hiddenservices[0].ports[0], '80 127.0.0.1:1234')
 
@@ -845,7 +845,8 @@ HiddenServiceDir=/fake/path'''
         self.assertTrue(self.protocol.post_bootstrap.called)
         self.assertTrue(conf.post_bootstrap is None or conf.post_bootstrap.called)
         self.assertEqual(len(conf.hiddenservices), 1)
-        self.assertTrue(conf.hiddenservices[0].conf)
+        self.assertTrue(conf.hiddenservices[0]._config)
+        print("XXX", type(conf.hiddenservices[0]))
         conf.hiddenservices[0].version = 3
         self.assertTrue(conf.needs_save())
         conf.hiddenservices[0].version = 4
