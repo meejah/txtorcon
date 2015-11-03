@@ -25,13 +25,14 @@ from txtorcon import TorControlProtocol
 from txtorcon import ITorControlProtocol
 from txtorcon import TorConfig
 from txtorcon import DEFAULT_VALUE
-from txtorcon import HiddenService
 from txtorcon import launch_tor
 from txtorcon import TCPHiddenServiceEndpoint
 from txtorcon import TorNotFound
 from txtorcon import TCPHiddenServiceEndpointParser
 from txtorcon import IProgressProvider
 from txtorcon import torconfig
+from txtorcon import OnionService, AuthenticatedOnionService
+from txtorcon import EphemeralOnionService
 from txtorcon.torconfig import TorProcessProtocol
 
 from txtorcon.util import delete_file_or_tree
@@ -302,14 +303,14 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append({'SomethingExciting': 'a,b'})
         conf = TorConfig(self.protocol)
 
-        from txtorcon.torconfig import CommaList, HiddenService
+        from txtorcon.torconfig import CommaList, OnionService
         self.assertEqual(conf.get_type('SomethingExciting'), CommaList)
-        self.assertEqual(conf.get_type('HiddenServices'), HiddenService)
+        self.assertEqual(conf.get_type('HiddenServices'), OnionService)
 
     def test_immediate_hiddenservice_append(self):
         '''issue #88. we check that a .append(hs) works on a blank TorConfig'''
         conf = TorConfig()
-        hs = HiddenService(conf, '/dev/null', ['80 127.0.0.1:1234'])
+        hs = OnionService(conf, '/dev/null', ['80 127.0.0.1:1234'])
         conf.HiddenServices.append(hs)
         self.assertEqual(len(conf.HiddenServices), 1)
         self.assertEqual(conf.HiddenServices[0], hs)
@@ -610,7 +611,7 @@ class CreateTorrcTests(unittest.TestCase):
         config = TorConfig()
         config.SocksPort = 1234
         config.hiddenservices = [
-            HiddenService(config, '/some/dir', '80 127.0.0.1:1234',
+            OnionService(config, '/some/dir', '80 127.0.0.1:1234',
                           'auth', 2, True)
         ]
         config.Log = ['80 127.0.0.1:80', '90 127.0.0.1:90']
@@ -628,7 +629,7 @@ Log 90 127.0.0.1:90
 SocksPort 1234''')
 
 
-class HiddenServiceTests(unittest.TestCase):
+class OnionServiceTests(unittest.TestCase):
 
     def setUp(self):
         self.protocol = FakeControlProtocol([])
@@ -654,7 +655,7 @@ HiddenServiceAuthorizeClient Dependant''')
 
         self.assertTrue(not conf.needs_save())
         conf.hiddenservices.append(
-            HiddenService(conf, '/some/dir', '80 127.0.0.1:2345', 'auth', 2, True)
+            OnionService(conf, '/some/dir', '80 127.0.0.1:2345', 'auth', 2, True)
         )
         conf.hiddenservices[0].ports.append('443 127.0.0.1:443')
         self.assertTrue(conf.needs_save())
@@ -673,13 +674,13 @@ HiddenServiceAuthorizeClient Dependant''')
 
     def test_save_no_protocol(self):
         conf = TorConfig()
-        conf.HiddenServices = [HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
+        conf.HiddenServices = [OnionService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
         conf.save()
 
     def test_two_hidden_services_before_save(self):
         conf = TorConfig()
-        conf.HiddenServices = [HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
-        conf.HiddenServices.append(HiddenService(conf, '/fake/path/two', ['1234 127.0.0.1:1234']))
+        conf.HiddenServices = [OnionService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
+        conf.HiddenServices.append(OnionService(conf, '/fake/path/two', ['1234 127.0.0.1:1234']))
         conf.save()
         self.assertEqual(2, len(conf.HiddenServices))
 
@@ -697,14 +698,17 @@ HiddenServiceAuthorizeClient Dependant''')
                 f.write('client-name hungry\ndescriptor-cookie omnomnom\n')
 
             conf = TorConfig(self.protocol)
-            hs = HiddenService(conf, d, [])
+            hs = AuthenticatedOnionService(conf, d, [])
 
-            self.assertEqual(hs.hostname, 'public')
-            self.assertEqual(hs.private_key, 'private')
-            self.assertEqual(len(hs.client_keys), 1)
-            self.assertEqual(hs.client_keys[0].name, 'hungry')
-            self.assertEqual(hs.client_keys[0].cookie, 'omnomnom')
-            self.assertEqual(hs.client_keys[0].key, None)
+            clients = list(hs.clients())
+            self.assertEqual(1, len(clients))
+            onion = clients[0]
+            self.assertEqual(onion.hostname, 'public')
+            self.assertEqual(onion.private_key, 'private')
+            self.assertEqual(len(onion.client_keys), 1)
+            self.assertEqual(onion.client_keys[0].name, 'hungry')
+            self.assertEqual(onion.client_keys[0].cookie, 'omnomnom')
+            self.assertEqual(onion.client_keys[0].key, None)
 
         finally:
             shutil.rmtree(d, ignore_errors=True)
@@ -719,11 +723,12 @@ HiddenServiceAuthorizeClient Dependant''')
                 f.write('gobledegook\n')
 
             conf = TorConfig(self.protocol)
-            hs = HiddenService(conf, d, [])
+            hs = AuthenticatedOnionService(conf, d, [])
 
-            self.assertEqual(1, len(hs.clients))
-            self.assertEqual('default', hs.clients[0][0])
-            self.assertEqual('gobledegook', hs.clients[0][1])
+            clients = list(hs.clients())
+            self.assertEqual(1, len(clients))
+            self.assertEqual('default', clients[0][0])
+            self.assertEqual('gobledegook', clients[0][1])
 
         finally:
             shutil.rmtree(d, ignore_errors=True)
@@ -739,13 +744,14 @@ HiddenServiceAuthorizeClient Dependant''')
                 f.write('onionb cookieb\n')
 
             conf = TorConfig(self.protocol)
-            hs = HiddenService(conf, d, [])
+            hs = AuthenticatedOnionService(conf, d, [])
 
-            self.assertEqual(2, len(hs.clients))
-            self.assertEqual('oniona', hs.clients[0][0])
-            self.assertEqual('cookiea', hs.clients[0][1])
-            self.assertEqual('onionb', hs.clients[1][0])
-            self.assertEqual('cookieb', hs.clients[1][1])
+            clients = list(hs.clients())
+            self.assertEqual(2, len(clients))
+            self.assertEqual('oniona', clients[0][0])
+            self.assertEqual('cookiea', clients[0][1])
+            self.assertEqual('onionb', clients[1][0])
+            self.assertEqual('cookieb', clients[1][1])
             self.assertRaises(RuntimeError, getattr, hs, 'hostname')
 
         finally:
@@ -760,7 +766,7 @@ HiddenServiceAuthorizeClient Dependant''')
 
     def test_add_hidden_service_to_empty_config(self):
         conf = TorConfig()
-        h = HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)
+        h = OnionService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)
         conf.HiddenServices.append(h)
         self.assertEqual(len(conf.hiddenservices), 1)
         self.assertEqual(h, conf.hiddenservices[0])
@@ -768,9 +774,9 @@ HiddenServiceAuthorizeClient Dependant''')
 
     def test_multiple_append(self):
         conf = TorConfig()
-        h0 = HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)
-        h1 = HiddenService(conf, '/fake/path', ['90 127.0.0.1:4321'], '', 3)
-        h2 = HiddenService(conf, '/fake/path', ['90 127.0.0.1:5432'], '', 3, True)
+        h0 = OnionService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)
+        h1 = OnionService(conf, '/fake/path', ['90 127.0.0.1:4321'], '', 3)
+        h2 = OnionService(conf, '/fake/path', ['90 127.0.0.1:5432'], '', 3, True)
         conf.hiddenservices = [h0]
         conf.hiddenservices.append(h1)
         conf.hiddenservices.append(h2)
@@ -794,8 +800,8 @@ HiddenServicePort=90 127.0.0.1:2345''')
 
         self.assertEqual(conf.hiddenservices[0].dir, '/fake/path')
         self.assertEqual(conf.hiddenservices[0].version, 2)
-        self.assertEqual(len(conf.hiddenservices[0].authorize_client), 1)
-        self.assertEqual(conf.hiddenservices[0].authorize_client[0], 'basic')
+#        self.assertEqual(len(conf.hiddenservices[0].authorize_client), 1)
+        self.assertEqual(conf.hiddenservices[0].authorize_client, 'basic')
         self.assertEqual(len(conf.hiddenservices[0].ports), 1)
         self.assertEqual(conf.hiddenservices[0].ports[0], '80 127.0.0.1:1234')
 
@@ -824,17 +830,17 @@ HiddenServiceDir=/fake/path'''
         self.assertRaises(RuntimeError, conf._setup_hidden_services, servicelines)
 
         conf = TorConfig()
-        conf.HiddenServices = [HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
-        conf.HiddenServices.append(HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234']))
+        conf.HiddenServices = [OnionService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
+        conf.HiddenServices.append(OnionService(conf, '/fake/path', ['80 127.0.0.1:1234']))
         self.assertTrue(conf.needs_save())
         self.assertRaises(RuntimeError, conf.save)
 
         conf = TorConfig()
-        conf.HiddenServices = [HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
-        conf.HiddenServices.append(HiddenService(conf, '/fake/path/two', ['80 127.0.0.1:1234']))
+        conf.HiddenServices = [OnionService(conf, '/fake/path', ['80 127.0.0.1:1234'])]
+        conf.HiddenServices.append(OnionService(conf, '/fake/path/two', ['80 127.0.0.1:1234']))
         self.assertTrue(conf.needs_save())
         conf.save()
-        conf.hiddenservices[1].dir = '/fake/path'
+        conf.hiddenservices[1].ports.append('80 127.0.0.1:80')
         self.assertTrue(conf.needs_save())
         self.assertRaises(RuntimeError, conf.save)
 
@@ -845,7 +851,8 @@ HiddenServiceDir=/fake/path'''
         self.assertTrue(self.protocol.post_bootstrap.called)
         self.assertTrue(conf.post_bootstrap is None or conf.post_bootstrap.called)
         self.assertEqual(len(conf.hiddenservices), 1)
-        self.assertTrue(conf.hiddenservices[0].conf)
+        self.assertTrue(conf.hiddenservices[0]._config)
+        print("XXX", type(conf.hiddenservices[0]))
         conf.hiddenservices[0].version = 3
         self.assertTrue(conf.needs_save())
         conf.hiddenservices[0].version = 4
@@ -863,7 +870,7 @@ HiddenServiceDir=/fake/path'''
 
         conf = TorConfig(self.protocol)
 
-        conf.hiddenservices = [HiddenService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)]
+        conf.hiddenservices = [OnionService(conf, '/fake/path', ['80 127.0.0.1:1234'], '', 3)]
         self.assertTrue(conf.needs_save())
         conf.save()
 
@@ -1577,7 +1584,7 @@ descriptor-cookie asdlkjasdlfkjalsdkfffj==
 '''
 
 
-class HiddenServiceAuthTests(unittest.TestCase):
+class OnionServiceAuthTests(unittest.TestCase):
 
     def test_parse_client_keys(self):
         data = StringIO(keydata)
@@ -1606,20 +1613,20 @@ class HiddenServiceAuthTests(unittest.TestCase):
         )
 
 
-class EphemeralHiddenServiceTest(unittest.TestCase):
+class EphemeralOnionServiceTest(unittest.TestCase):
     def test_defaults(self):
-        eph = torconfig.EphemeralHiddenService("80 localhost:80")
+        eph = torconfig.EphemeralOnionService("80 localhost:80")
         self.assertEqual(eph._ports, ["80,localhost:80"])
 
     def test_wrong_blob(self):
         try:
-            eph = torconfig.EphemeralHiddenService("80 localhost:80", "foo")
+            eph = torconfig.EphemeralOnionService("80 localhost:80", "foo")
             self.fail("should get exception")
         except RuntimeError as e:
             pass
 
     def test_add(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralOnionService("80 127.0.0.1:80")
         proto = Mock()
         proto.queue_command = Mock(return_value="PrivateKey=blam\nServiceID=ohai")
         eph.add_to_tor(proto)
@@ -1628,7 +1635,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("ohai.onion", eph.hostname)
 
     def test_descriptor_wait(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralOnionService("80 127.0.0.1:80")
         proto = Mock()
         proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=blam\nServiceID=ohai\n"))
 
@@ -1646,9 +1653,8 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("blam", eph.private_key)
         self.assertEqual("ohai.onion", eph.hostname)
 
-
     def test_remove(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralOnionService("80 127.0.0.1:80")
         eph.hostname = 'foo.onion'
         proto = Mock()
         proto.queue_command = Mock(return_value="OK")
@@ -1657,7 +1663,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_remove_error(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralOnionService("80 127.0.0.1:80")
         eph.hostname = 'foo.onion'
         proto = Mock()
         proto.queue_command = Mock(return_value="it's not ok")
@@ -1669,7 +1675,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
             pass
 
     def test_failed_upload(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralOnionService("80 127.0.0.1:80")
         proto = Mock()
         proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=seekrit\nServiceID=42\n"))
 
@@ -1694,12 +1700,14 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertTrue(d.called)
         d.addErrback(lambda e: self.assertTrue('Failed to upload' in str(e)))
 
+    @defer.inlineCallbacks
     def test_single_failed_upload(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        cfg = Mock()
         proto = Mock()
         proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=seekrit\nServiceID=42\n"))
+        cfg.tor_protocol = proto
 
-        d = eph.add_to_tor(proto)
+        d = torconfig.EphemeralOnionService.from_ports(cfg, ["80 127.0.0.1:80"])
 
         # get the event-listener callback that torconfig code added;
         # the last call [-1] was to add_event_listener; we want the

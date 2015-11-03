@@ -5,8 +5,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-# for now, this needs to be changed in setup.py also until I find a
-# better solution
+# noqa
 from ._metadata import *
 
 from txtorcon.router import Router
@@ -20,11 +19,14 @@ from txtorcon.torstate import TorState
 from txtorcon.torstate import build_tor_connection
 from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
-from txtorcon.torconfig import HiddenService
-from txtorcon.torconfig import EphemeralHiddenService
 from txtorcon.torconfig import TorProcessProtocol
 from txtorcon.torconfig import launch_tor
 from txtorcon.torconfig import TorNotFound
+from txtorcon.torconfig import IOnionService
+from txtorcon.torconfig import IAuthenticatedOnionService
+from txtorcon.torconfig import OnionService
+from txtorcon.torconfig import AuthenticatedOnionService
+from txtorcon.torconfig import EphemeralOnionService
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress
@@ -40,27 +42,32 @@ from . import util
 from . import interface
 from txtorcon.interface import *
 
-__all__ = ["Router",
-           "Circuit",
-           "Stream",
-           "TorControlProtocol", "TorProtocolError", "TorProtocolFactory",
-           "TorState", "DEFAULT_VALUE",
-           "TorInfo",
-           "build_tor_connection", "build_local_tor_connection", "launch_tor",
-           "TorNotFound", "TorConfig", "HiddenService", "EphemeralHiddenService",
-           "TorProcessProtocol",
-           "TorInfo",
-           "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",
-           "TorClientEndpoint", "TorClientEndpointStringParser",
-           "IHiddenService", "IProgressProvider",
-           "TorOnionAddress", "TorOnionListeningPort",
-           "get_global_tor",
+__all__ = [
+    "Router",
+    "Circuit",
+    "Stream",
+    "TorControlProtocol", "TorProtocolError", "TorProtocolFactory",
+    "TorState", "DEFAULT_VALUE",
+    "TorInfo",
+    "build_tor_connection", "build_local_tor_connection", "launch_tor",
+    "TorNotFound", "TorConfig",
+    "TorProcessProtocol",
+    "TorInfo",
+    "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",
+    "TorClientEndpoint", "TorClientEndpointStringParser",
+    "IHiddenService", "IProgressProvider",
+    "TorOnionAddress", "TorOnionListeningPort",
+    "get_global_tor",
 
-           "AddrMap",
-           "util", "interface",
-           "ITorControlProtocol",
-           "IStreamListener", "IStreamAttacher", "StreamListenerMixin",
-           "ICircuitContainer", "ICircuitListener", "CircuitListenerMixin",
-           "IRouterContainer", "IAddrListener", "IProgressProvider",
-           "IHiddenService",
-           ]
+    "AddrMap",
+    "util", "interface",
+    "ITorControlProtocol",
+    "IStreamListener", "IStreamAttacher", "StreamListenerMixin",
+    "ICircuitContainer", "ICircuitListener", "CircuitListenerMixin",
+    "IRouterContainer", "IAddrListener", "IProgressProvider",
+    "IHiddenService",
+
+    # new onion + ephemeral API
+    "IOnionService", "IAuthenticatedOnionService",
+    "EphemeralOnionService",
+]

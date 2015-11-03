@@ -35,6 +35,7 @@ from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import default_tcp4_endpoint_generator
+from txtorcon.endpoints import EphemeralHiddenServiceClient
 
 import util
 
@@ -146,7 +147,7 @@ class EndpointTests(unittest.TestCase):
                                                                client, 80)
                 port = yield ep.listen(NoOpProtocolFactory())
                 toa = port.getHost()
-                self.assertTrue(hasattr(toa, 'onion_uri'))
+                self.assertTrue(hasattr(toa, 'clients'))
                 self.assertTrue(hasattr(toa, 'onion_port'))
                 port.startListening()
                 str(port)
@@ -400,7 +401,7 @@ class EndpointLaunchTests(unittest.TestCase):
         self.protocol = FakeControlProtocol([])
 
     def test_onion_address(self):
-        addr = TorOnionAddress("foo.onion", 80)
+        addr = TorOnionAddress(80, [EphemeralHiddenServiceClient("foo.onion", "privatekey")])
         # just want to run these and assure they don't throw
         # exceptions.
         repr(addr)

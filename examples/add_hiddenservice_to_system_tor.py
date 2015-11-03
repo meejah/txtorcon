@@ -27,15 +27,17 @@ def main(reactor):
     ep = TCP4ClientEndpoint(reactor, "localhost", 9251)
     tor_protocol = yield txtorcon.build_tor_connection(ep, build_state=False)
     print "Connected to Tor"
+    tor_config = yield txtorcon.TorConfig.from_connection(tor_protocol)
 
     hs_public_port = 80
     hs_port = yield txtorcon.util.available_tcp_port(reactor)
     hs_string = '%s 127.0.0.1:%d' % (hs_public_port, hs_port)
-    print "Adding ephemeral service", hs_string
-    print "(this can take some time; please be patient)"
-    hs = txtorcon.EphemeralHiddenService([hs_string])
-    yield hs.add_to_tor(tor_protocol)
-    print "Added ephemeral HS to Tor:", hs.hostname
+
+    onion = yield txtorcon.EphemeralOnionService.from_ports(tor_config, [hs_string])
+
+    print "Added ephemeral HS to Tor:", onion.hostname
+    print "private key:"
+    print onion.private_key
 
     print "Starting site"
     site = server.Site(Simple())
@@ -45,6 +47,7 @@ def main(reactor):
     # in 5 seconds, remove the hidden service -- obviously this is
     # where you'd do your "real work" or whatever.
     d = defer.Deferred()
+
     @defer.inlineCallbacks
     def remove():
         print "Removing the hiddenservice. Private key was"

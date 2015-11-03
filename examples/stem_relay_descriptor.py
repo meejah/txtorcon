@@ -27,7 +27,7 @@ def main(reactor):
     descriptor_info = descriptor_info['desc/name/' + or_nickname]
     try:
         from stem.descriptor.server_descriptor import RelayDescriptor
-        relay_info = RelayDescriptor(descriptor_info) 
+        relay_info = RelayDescriptor(descriptor_info)
         print "The relay's fingerprint is:", relay_info.fingerprint
         print "Time in UTC when the descriptor was made:", relay_info.published
     except ImportError as e:

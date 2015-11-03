@@ -58,8 +58,9 @@ class TorProtocolFactory(object):
         Builds protocols to talk to a Tor client on the specified
         address. For example::
 
-        TCP4ClientEndpoint(reactor, "localhost", 9051).connect(TorProtocolFactory())
-        reactor.run()
+            ep = TCP4ClientEndpoint(reactor, "localhost", 9051)
+            ep.connect(TorProtocolFactory())
+            reactor.run()
 
         By default, COOKIE authentication is used if
         available.
@@ -248,7 +249,8 @@ class TorControlProtocol(LineOnlyReceiver):
             def setup(proto):
                 proto.post_bootstrap.addCallback(setup_complete)
 
-            TCP4ClientEndpoint(reactor, "localhost", 9051).connect(TorProtocolFactory())
+            ep = TCP4ClientEndpoint(reactor, "localhost", 9051)
+            ep.connect(TorProtocolFactory())
             d.addCallback(setup)
 
         See the helper method :func:`txtorcon.build_tor_connection`.
