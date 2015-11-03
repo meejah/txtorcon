@@ -19,14 +19,14 @@ from txtorcon.torstate import TorState
 from txtorcon.torstate import build_tor_connection
 from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
-from txtorcon.torconfig import HiddenService
-from txtorcon.torconfig import EphemeralHiddenService
 from txtorcon.torconfig import TorProcessProtocol
 from txtorcon.torconfig import launch_tor
 from txtorcon.torconfig import TorNotFound
 from txtorcon.torconfig import IOnionService
 from txtorcon.torconfig import IAuthenticatedOnionService
-from txtorcon.torconfig import OnionService, EphemeralOnionService
+from txtorcon.torconfig import OnionService
+from txtorcon.torconfig import AuthenticatedOnionService
+from txtorcon.torconfig import EphemeralOnionService
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress
@@ -50,7 +50,7 @@ __all__ = [
     "TorState", "DEFAULT_VALUE",
     "TorInfo",
     "build_tor_connection", "build_local_tor_connection", "launch_tor",
-    "TorNotFound", "TorConfig", "HiddenService", "EphemeralHiddenService",
+    "TorNotFound", "TorConfig",
     "TorProcessProtocol",
     "TorInfo",
     "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",

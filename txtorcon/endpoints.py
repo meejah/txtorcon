@@ -33,7 +33,7 @@ from zope.interface import Interface, Attribute
 
 from txsocksx.client import SOCKS5ClientEndpoint
 
-from .torconfig import TorConfig, launch_tor, HiddenService
+from .torconfig import TorConfig, launch_tor, OnionService
 from .torstate import build_tor_connection
 
 
