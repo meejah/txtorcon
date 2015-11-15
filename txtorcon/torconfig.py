@@ -846,7 +846,7 @@ class EphemeralHiddenService(object):
         # FIXME nicer than assert, plz
         assert ' ' not in self._key_blob
         assert type(ports) is types.ListType
-        if not key_blob_or_type.startswith('NEW:') and len(key_blob_or_type) > (825):
+        if not key_blob_or_type.startswith('NEW:') and (len(key_blob_or_type) > (825) or len(key_blob_or_type) < (820)):
             raise RuntimeError('Wrong key-blob size too big')
 
     @defer.inlineCallbacks
