@@ -23,10 +23,11 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.error import ConnectionRefusedError
 from twisted.internet import error
 from twisted.plugin import IPlugin
 from twisted.python.util import FancyEqMixin
-from twisted.internet.error import ConnectionRefusedError
+from twisted.python.failure import Failure
 
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
@@ -668,7 +669,7 @@ class TorClientEndpoint(object):
         self.port = int(port)
         self._proxy_endpoint_generator = _proxy_endpoint_generator
         self.socks_hostname = socks_hostname
-        self.socks_port = int(socks_port) if socks_port else None
+        self.socks_port = int(socks_port) if socks_port is not None else None
         self.socks_username = socks_username
         self.socks_password = socks_password
 
@@ -676,52 +677,37 @@ class TorClientEndpoint(object):
             self._socks_port_iter = iter(self.socks_ports_to_try)
             self._socks_guessing_enabled = True
         else:
+            self._socks_port_iter = [socks_port]
             self._socks_guessing_enabled = False
 
+    @defer.inlineCallbacks
     def connect(self, protocolfactory):
-        self.protocolfactory = protocolfactory
-
-        if self._socks_guessing_enabled:
-            self.socks_port = self._socks_port_iter.next()
-
-        d = self._try_connect()
-        return d
-
-    def _try_connect(self):
-        self.tor_socks_endpoint = self._proxy_endpoint_generator(
-            reactor,
-            self.socks_hostname,
-            self.socks_port
-        )
-
-        if self.socks_username is None or self.socks_password is None:
-            ep = SOCKS5ClientEndpoint(
-                self.host,
-                self.port,
-                self.tor_socks_endpoint
-            )
-        else:
-            ep = SOCKS5ClientEndpoint(
-                self.host,
-                self.port,
-                self.tor_socks_endpoint,
-                methods=dict(login=(self.socks_username, self.socks_password))
+        last_error = None
+        for socks_port in self._socks_port_iter:
+            self.socks_port = socks_port
+            tor_ep = self._proxy_endpoint_generator(
+                reactor,
+                self.socks_hostname,
+                self.socks_port,
             )
 
-        d = ep.connect(self.protocolfactory)
-        if self._socks_guessing_enabled:
-            d.addErrback(self._retry_socks_port)
-        return d
+            args = (self.host, self.port, tor_ep)
+            kwargs = dict()
+            if self.socks_username is not None and self.socks_password is not None:
+                kwargs['methods'] = dict(
+                    login=(self.socks_username, self.socks_password),
+                )
 
-    def _retry_socks_port(self, failure):
-        failure.trap(error.ConnectError)
-        try:
-            self.socks_port = self._socks_port_iter.next()
-        except StopIteration:
-            return defer.fail(ConnectionRefusedError('tor socks port retry failed'))
-        d = self._try_connect()
-        d.addErrback(self._retry_socks_port)
-        return d
+            socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
+
+            try:
+                proto = yield socks_ep.connect(protocolfactory)
+                defer.returnValue(proto)
+
+            except error.ConnectError as e0:
+                last_error = e0
+        if last_error is not None:
+            raise last_error
 
 
 @implementer(IPlugin, IStreamClientEndpointStringParser)
