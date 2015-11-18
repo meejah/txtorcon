@@ -846,7 +846,8 @@ class EphemeralHiddenService(object):
         # FIXME nicer than assert, plz
         assert ' ' not in self._key_blob
         assert isinstance(ports, types.ListType)
-        if not key_blob_or_type.startswith('NEW:') and len(key_blob_or_type) != (812 + 8):
+        if not key_blob_or_type.startswith('NEW:') \
+           and (len(key_blob_or_type) > 825 or len(key_blob_or_type) < 820):
             raise RuntimeError('Wrong size key-blob')
 
     @defer.inlineCallbacks
@@ -861,7 +862,8 @@ class EphemeralHiddenService(object):
         ans = yield protocol.queue_command(cmd)
         ans = find_keywords(ans.split('\n'))
         self.hostname = ans['ServiceID'] + '.onion'
-        self.private_key = ans['PrivateKey']
+        if self._key_blob == 'NEW:BEST':
+            self.private_key = ans['PrivateKey']
 
         log.msg('Created hidden-service at', self.hostname)
 
