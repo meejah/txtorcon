@@ -6,7 +6,8 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 # noqa
-from ._metadata import *
+from ._metadata import __version__, __author__, __contact__
+from ._metadata import __license__, __copyright__, __url__
 
 from txtorcon.router import Router
 from txtorcon.circuit import Circuit
