@@ -12,10 +12,19 @@ import functools
 
 from txtorcon.util import available_tcp_port
 
+# backwards-compatibility dance: we "should" be using the
+# ...WithReactor class, but in Twisted prior to 14, there is no such
+# class (and the parse() doesn't provide a 'reactor' argument).
+try:
+    from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
+    _HAVE_TX_14 = True
+except ImportError:
+    from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor
+    _HAVE_TX_14 = False
+
 from twisted.internet import defer, reactor
 from twisted.python import log
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
-from twisted.internet.interfaces import IStreamClientEndpointStringParser
 from twisted.internet.interfaces import IStreamServerEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.interfaces import IListeningPort
@@ -688,7 +697,7 @@ class TorClientEndpoint(object):
         return d
 
 
-@implementer(IPlugin, IStreamClientEndpointStringParser)
+@implementer(IPlugin, IStreamClientEndpointStringParserWithReactor)
 class TorClientEndpointStringParser(object):
     """
     This provides a twisted IPlugin and
@@ -739,4 +748,8 @@ class TorClientEndpointStringParser(object):
         )
 
     def parseStreamClient(self, *args, **kwargs):
+        # for Twisted 14 and 15 (and more) the first argument is
+        # 'reactor', for older Twisteds it's not
+        if _HAVE_TX_14:
+            return self._parseClient(*args[1:], **kwargs)
         return self._parseClient(*args, **kwargs)
