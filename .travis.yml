@@ -4,9 +4,9 @@ env:
   - TOX_ENV=twisted-debian-squeeze
   - TOX_ENV=twisted-debian-wheezy
   - TOX_ENV=twisted-latest-12
-  - TOX_ENV=twisted-newest-13
-  - TOX_ENV=twisted-newest-14
-  - TOX_ENV=twisted-newest-15
+  - TOX_ENV=twisted-latest-13
+  - TOX_ENV=twisted-latest-14
+  - TOX_ENV=twisted-latest-15
   - TOX_ENV=pypy
 
 script:
