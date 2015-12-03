@@ -645,6 +645,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         This test is equivalent to txsocksx's TestSOCKS5ClientEndpoint.test_defaultFactory
         """
         endpoints = []
+
         def tor_socks_endpoint_generator(*args, **kw):
             endpoints.append(FakeTorSocksEndpoint(*args, **kw))
             return endpoints[-1]
@@ -707,6 +708,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         connect to that SOCKS port.
         """
         endpoints = []
+
         def tor_socks_endpoint_generator(*args, **kw):
             kw['accept_port'] = 6669
             kw['failure'] = Failure(ConnectionRefusedError())
