@@ -5,9 +5,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-# noqa
-from ._metadata import __version__, __author__, __contact__
-from ._metadata import __license__, __copyright__, __url__
+from txtorcon._metadata import __version__, __author__, __contact__
+from txtorcon._metadata import __license__, __copyright__, __url__
 
 from txtorcon.router import Router
 from txtorcon.circuit import Circuit
@@ -33,12 +32,17 @@ from txtorcon.endpoints import TCPHiddenServiceEndpoint
 from txtorcon.endpoints import TCPHiddenServiceEndpointParser
 from txtorcon.endpoints import TorClientEndpoint
 from txtorcon.endpoints import TorClientEndpointStringParser
-from txtorcon.endpoints import IHiddenService
-from txtorcon.endpoints import IProgressProvider
+from txtorcon.endpoints import IHiddenService, IProgressProvider
+
 from txtorcon.endpoints import get_global_tor
 from . import util
 from . import interface
-from txtorcon.interface import *
+from txtorcon.interface import (
+    ITorControlProtocol,
+    IStreamListener, IStreamAttacher, StreamListenerMixin,
+    ICircuitContainer, ICircuitListener,
+    IRouterContainer, IAddrListener,
+)
 
 __all__ = [
     "Router",
@@ -63,5 +67,7 @@ __all__ = [
     "IStreamListener", "IStreamAttacher", "StreamListenerMixin",
     "ICircuitContainer", "ICircuitListener", "CircuitListenerMixin",
     "IRouterContainer", "IAddrListener", "IProgressProvider",
-    "IHiddenService",
+
+    "__version__", "__author__", "__contact__",
+    "__license__", "__copyright__", "__url__",
 ]

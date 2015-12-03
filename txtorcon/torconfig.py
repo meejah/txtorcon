@@ -16,7 +16,6 @@ if sys.platform in ('linux2', 'darwin'):
     import pwd
 
 from twisted.python import log
-from twisted.python.failure import Failure
 from twisted.internet import defer, error, protocol
 from twisted.internet.interfaces import IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -897,8 +896,7 @@ class EphemeralHiddenService(object):
 
             elif subtype == 'UPLOADED':
                 # we only need ONE successful upload to happen for the
-                # HS to be reachable.
-                addr = args[1]
+                # HS to be reachable. (addr is args[1])
                 if args[3] in attempted_uploads:
                     confirmed_uploads.add(args[3])
                     log.msg("Uploaded '{}' to '{}'".format(self.hostname, args[3]))
