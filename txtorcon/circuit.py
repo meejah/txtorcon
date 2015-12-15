@@ -275,3 +275,25 @@ class Circuit(object):
         path = ' '.join([x.ip for x in self.path])
         return "<Circuit %d %s [%s] for %s>" % (self.id, self.state, path,
                                                 self.purpose)
+
+class CircuitBuildTimedOutError(Exception):
+    """
+    This exception is thrown when using `timed_circuit_build`
+    and the circuit build times-out.
+    """
+
+def build_timeout_circuit(tor_state, clock, path, timeout):
+    """
+    returns a deferred which fires when the
+    circuit build succeeds or fails to build.
+    CircuitBuildTimedOutError will be raised unless we
+    receive a circuit build result within the `timeout` duration.
+    """
+    d = tor_state.build_circuit(path, using_guards=False)
+    clock.callLater(timeout, d.cancel)
+    def trap_cancel(f):
+        f.trap(CancelledError)
+        raise CircuitBuildTimedOutError()
+    d.addErrback(trap_cancel)
+    d.addCallback(lambda circuit: circuit.when_built())
+    return d
