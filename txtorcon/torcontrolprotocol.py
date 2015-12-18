@@ -641,6 +641,7 @@ class TorControlProtocol(LineOnlyReceiver):
         client_hash_hex = base64.b16encode(client_hash)
         return self.queue_command('AUTHENTICATE %s' % client_hash_hex)
 
+    
     def _read_cookie(self, cookiefile):
         """
         Open and read a cookie file
@@ -687,7 +688,7 @@ class TorControlProtocol(LineOnlyReceiver):
         if cookie_auth:
             if 'SAFECOOKIE' in methods:
                 txtorlog.msg("Using SAFECOOKIE authentication", cookiefile,
-                     len(self.cookie_data), "bytes")
+                             len(self.cookie_data), "bytes")
                 self.client_nonce = os.urandom(32)
 
                 cmd = 'AUTHCHALLENGE SAFECOOKIE ' + \
