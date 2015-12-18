@@ -674,11 +674,15 @@ class TorControlProtocol(LineOnlyReceiver):
             cookiefile_match = re.search('COOKIEFILE="(.*)"', protoinfo)
             if cookiefile_match:
                 cookiefile = cookiefile_match.group(1)
-            try:
-                self._read_cookie(cookiefile)
-            except IOError as why:
-                txtorlog.msg("Reading COOKIEFILE failed: " + str(why))
-                cookie_auth = False
+                try:
+                    self._read_cookie(cookiefile)
+                except IOError as why:
+                    txtorlog.msg("Reading COOKIEFILE failed: " + str(why))
+                    cookie_auth = False
+                else:
+                    cookie_auth = True
+            else:
+                txtorlog.msg("Didn't get COOKIEFILE")
 
         if cookie_auth:
             if 'SAFECOOKIE' in methods:
@@ -696,12 +700,12 @@ class TorControlProtocol(LineOnlyReceiver):
 
             elif 'COOKIE' in methods:
                 txtorlog.msg("Using COOKIE authentication",
-                             cookiefile, len(data), "bytes")
-                d = self.authenticate(data)
+                             cookiefile, len(self.cookie_data), "bytes")
+                d = self.authenticate(self.cookie_data)
                 d.addCallback(self._bootstrap)
                 d.addErrback(self._auth_failed)
                 return
-        print methods
+
         if self.password_function and 'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
             d.addCallback(self._do_password_authentication)
