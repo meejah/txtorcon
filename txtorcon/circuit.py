@@ -294,6 +294,6 @@ def build_timeout_circuit(tor_state, clock, path, timeout):
     def trap_cancel(f):
         f.trap(CancelledError)
         raise CircuitBuildTimedOutError()
-    d.addErrback(trap_cancel)
     d.addCallback(lambda circuit: circuit.when_built())
+    d.addErrback(trap_cancel)
     return d
