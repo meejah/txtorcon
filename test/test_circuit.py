@@ -1,11 +1,13 @@
 import datetime
 import time
 from twisted.trial import unittest
-from twisted.internet import defer
+from twisted.internet import defer, task
 from twisted.python.failure import Failure
 from zope.interface import implements
 
 from txtorcon import Circuit
+from txtorcon import build_timeout_circuit
+
 from txtorcon import Stream
 from txtorcon import TorControlProtocol
 from txtorcon import TorState
@@ -362,3 +364,23 @@ class CircuitTests(unittest.TestCase):
 
         self.assertTrue(d.called)
         self.assertTrue(isinstance(d.result, Failure))
+
+
+class TimeOutCircuitTests(unittest.TestCase):
+
+    def test_basics(self):
+        tor = FakeTorController()
+        tor_state = TorState(tor)
+        clock = task.Clock()
+
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        b = FakeRouter('$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5', 'b')
+        c = FakeRouter('$253DFF1838A2B7782BE7735F74E50090D46CA1BC', 'c')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+        tor.routers['$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5'] = b
+        tor.routers['$253DFF1838A2B7782BE7735F74E50090D46CA1BC'] = c
+
+        path = [a, b, c]
+        timeout = 10
+        d = build_timeout_circuit(tor_state, clock, path, timeout, using_guards=False)
+        return d
