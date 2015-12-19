@@ -11,6 +11,7 @@ from txtorcon._metadata import __license__, __copyright__, __url__
 from txtorcon.router import Router
 from txtorcon.circuit import Circuit
 from txtorcon.circuit import build_timeout_circuit
+from txtorcon.circuit import CircuitBuildTimedOutError
 from txtorcon.stream import Stream
 from txtorcon.torcontrolprotocol import TorControlProtocol
 from txtorcon.torcontrolprotocol import TorProtocolError
@@ -62,6 +63,7 @@ __all__ = [
     "TorOnionAddress", "TorOnionListeningPort",
     "get_global_tor",
     "build_timeout_circuit",
+    "CircuitBuildTimedOutError",
 
     "AddrMap",
     "util", "interface",

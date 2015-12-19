@@ -8,10 +8,10 @@ from __future__ import with_statement
 import time
 import datetime
 
+from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
 from .interface import IRouterContainer
-
 from txtorcon.util import find_keywords
 
 # look like "2014-01-25T02:12:14.593772"
@@ -292,8 +292,8 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     d = tor_state.build_circuit(path, using_guards)
     reactor.callLater(timeout, d.cancel)
     def trap_cancel(f):
-        f.trap(CancelledError)
-        raise CircuitBuildTimedOutError()
+        f.trap(defer.CancelledError)
+        return Failure(CircuitBuildTimedOutError("circuit build timed out"))
     d.addCallback(lambda circuit: circuit.when_built())
     d.addErrback(trap_cancel)
     return d
