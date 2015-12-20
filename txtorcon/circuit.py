@@ -276,11 +276,13 @@ class Circuit(object):
         return "<Circuit %d %s [%s] for %s>" % (self.id, self.state, path,
                                                 self.purpose)
 
+
 class CircuitBuildTimedOutError(Exception):
     """
     This exception is thrown when using `timed_circuit_build`
     and the circuit build times-out.
     """
+
 
 def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False):
     """
@@ -291,6 +293,7 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     """
     d = tor_state.build_circuit(path, using_guards)
     reactor.callLater(timeout, d.cancel)
+
     def trap_cancel(f):
         f.trap(defer.CancelledError)
         return Failure(CircuitBuildTimedOutError("circuit build timed out"))

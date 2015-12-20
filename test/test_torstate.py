@@ -1189,10 +1189,15 @@ s Fast Guard Running Stable Valid
         timeout = 10
         clock = task.Clock()
         d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=True)
+        d.addCallback(self.circuit_callback)
 
         self.assertEqual(self.transport.value(), 'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002\r\n')
         self.send('250 EXTENDED 1234')
+        # we can't just .send('650 CIRC 1234 BUILT') this because we
+        # didn't fully hook up the protocol to the state, e.g. via
+        # post_bootstrap etc.
+        self.state.circuits[1234].update(['1234', 'BUILT'])
         # should have gotten a warning about this not being an entry
         # guard
         self.assertEqual(len(self.flushWarnings()), 1)
-        return defer.succeed(None)
+        return d
