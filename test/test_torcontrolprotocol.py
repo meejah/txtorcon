@@ -335,6 +335,18 @@ OK''' % cookietmp.name)
             )
             self.assertTrue('AUTHENTICATE ' in self.transport.value())
 
+    def test_authenticate_cookie_without_reading(self):
+        server_nonce = str(bytearray([0] * 32))
+        server_hash = str(bytearray([0] * 32))
+        try:
+            self.protocol._safecookie_authchallenge(
+                '250 AUTHCHALLENGE SERVERHASH=%s SERVERNONCE=%s' %
+                (base64.b16encode(server_hash), base64.b16encode(server_nonce))
+            )
+            self.assertTrue(False)
+        except RuntimeError, e:
+            self.assertTrue('not read' in str(e))
+
     def test_authenticate_unexisting_cookie_file(self):
         unexisting_file = __file__ + "-unexisting"
         try:
