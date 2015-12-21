@@ -8,10 +8,10 @@ from __future__ import with_statement
 import time
 import datetime
 
+from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
 from .interface import IRouterContainer
-
 from txtorcon.util import find_keywords
 
 # look like "2014-01-25T02:12:14.593772"
@@ -275,3 +275,28 @@ class Circuit(object):
         path = ' '.join([x.ip for x in self.path])
         return "<Circuit %d %s [%s] for %s>" % (self.id, self.state, path,
                                                 self.purpose)
+
+
+class CircuitBuildTimedOutError(Exception):
+    """
+    This exception is thrown when using `timed_circuit_build`
+    and the circuit build times-out.
+    """
+
+
+def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False):
+    """
+    returns a deferred which fires when the
+    circuit build succeeds or fails to build.
+    CircuitBuildTimedOutError will be raised unless we
+    receive a circuit build result within the `timeout` duration.
+    """
+    d = tor_state.build_circuit(path, using_guards)
+    reactor.callLater(timeout, d.cancel)
+
+    def trap_cancel(f):
+        f.trap(defer.CancelledError)
+        return Failure(CircuitBuildTimedOutError("circuit build timed out"))
+    d.addCallback(lambda circuit: circuit.when_built())
+    d.addErrback(trap_cancel)
+    return d

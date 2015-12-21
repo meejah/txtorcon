@@ -18,6 +18,8 @@ from txtorcon import Stream
 from txtorcon import Circuit
 from txtorcon import build_tor_connection
 from txtorcon import build_local_tor_connection
+from txtorcon import build_timeout_circuit
+from txtorcon import CircuitBuildTimedOutError
 from txtorcon.interface import ITorControlProtocol
 from txtorcon.interface import IStreamAttacher
 from txtorcon.interface import ICircuitListener
@@ -1142,3 +1144,47 @@ s Fast Guard Running Stable Valid
     def test_listener_mixins(self):
         self.assertTrue(verifyClass(IStreamListener, StreamListenerMixin))
         self.assertTrue(verifyClass(ICircuitListener, CircuitListenerMixin))
+
+    def test_build_circuit_timedout(self):
+        class FakeRouter:
+            def __init__(self, i):
+                self.id_hex = i
+                self.flags = []
+
+        path = []
+        for x in range(3):
+            path.append(FakeRouter("$%040d" % x))
+        # can't just check flags for guard status, need to know if
+        # it's in the running Tor's notion of Entry Guards
+        path[0].flags = ['guard']
+
+        # FIXME TODO we should verify we get a circuit_new event for
+        # this circuit
+        timeout = 10
+        clock = task.Clock()
+
+        d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=True)
+        clock.advance(10)
+        def check_for_timeout_error(f):
+            self.assertTrue(isinstance(f.type(), CircuitBuildTimedOutError))
+        d.addErrback(check_for_timeout_error)
+        return d
+
+    def test_build_circuit_not_timedout(self):
+        class FakeCircuit:
+            def when_built(self):
+                return defer.succeed(self)
+        class FakeTorState:
+            def build_circuit(self, path, using_guards=False):
+                self.d = defer.Deferred()
+                circuit = FakeCircuit()
+                self.d.callback(circuit)
+                return self.d
+
+        timeout = 10
+        clock = task.Clock()
+        fake_state = FakeTorState()
+        path = [1,2,3]
+        d = build_timeout_circuit(fake_state, clock, path, timeout, using_guards=True)
+        d.addCallback(lambda circuit: self.failUnless(isinstance(circuit, FakeCircuit)))
+        return d

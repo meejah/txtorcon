@@ -1,11 +1,13 @@
 import datetime
 import time
 from twisted.trial import unittest
-from twisted.internet import defer
+from twisted.internet import defer, task
 from twisted.python.failure import Failure
 from zope.interface import implements
 
 from txtorcon import Circuit
+from txtorcon import build_timeout_circuit
+
 from txtorcon import Stream
 from txtorcon import TorControlProtocol
 from txtorcon import TorState
