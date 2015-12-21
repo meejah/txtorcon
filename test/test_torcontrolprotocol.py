@@ -369,6 +369,16 @@ OK''' % unexisting_file)
         except RuntimeError:
             pass
 
+    def test_authenticate_dont_send_cookiefile(self):
+        try:
+            self.protocol._do_authenticate('''PROTOCOLINFO 1
+AUTH METHODS=SAFECOOKIE
+VERSION Tor="0.2.2.35"
+OK''')
+            self.assertTrue(False)
+        except RuntimeError:
+            pass
+
     def test_authenticate_password_when_cookie_unavailable(self):
         unexisting_file = __file__ + "-unexisting"
         self.protocol.password_function = lambda: 'foo'
