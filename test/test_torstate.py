@@ -1170,29 +1170,21 @@ s Fast Guard Running Stable Valid
         d.addErrback(check_for_timeout_error)
         return d
 
-    def test_build_circuit_nottimedout(self):
-        class FakeRouter:
-            def __init__(self, i):
-                self.id_hex = i
-                self.flags = []
-
-        path = []
-        for x in range(3):
-            path.append(FakeRouter("$%040d" % x))
-        # can't just check flags for guard status, need to know if
-        # it's in the running Tor's notion of Entry Guards
-        path[0].flags = ['guard']
-
-        # FIXME TODO we should verify we get a circuit_new event for
-        # this circuit
+    def test_build_circuit_not_timedout(self):
+        class FakeCircuit:
+            def when_built(self):
+                return defer.succeed(self)
+        class FakeTorState:
+            def build_circuit(self, path, using_guards=False):
+                self.d = defer.Deferred()
+                circuit = FakeCircuit()
+                self.d.callback(circuit)
+                return self.d
 
         timeout = 10
         clock = task.Clock()
-        d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=True)
-
-        self.assertEqual(self.transport.value(), 'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002\r\n')
-        self.send('250 EXTENDED 1234')
-        # should have gotten a warning about this not being an entry
-        # guard
-        self.assertEqual(len(self.flushWarnings()), 1)
-        return defer.succeed(None)
+        fake_state = FakeTorState()
+        path = [1,2,3]
+        d = build_timeout_circuit(fake_state, clock, path, timeout, using_guards=True)
+        d.addCallback(lambda circuit: self.failUnless(isinstance(circuit, FakeCircuit)))
+        return d
