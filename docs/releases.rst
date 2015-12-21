@@ -18,6 +18,14 @@ unreleased
  * bug-fix from `david415 <https://github.com/david415>`_ to raise
    ConnectionRefusedError instead of StopIteration when running out of
    SOCKS ports.
+ * new feature from `david415 <https://github.com/david415>`_ adding a
+   ``build_timeout_circuit`` method which provides a Deferred that
+   callbacks only when the circuit is completely built and errbacks if
+   the provided timeout expires. This is useful because
+   :doc:`TorState.build_circuit` callbacks as soon as a Circuit
+   instance can be provided (and then you'd use
+   :doc:`Circuit.when_built` to find out when it's done building).
+
 
 v0.14.1
 -------
