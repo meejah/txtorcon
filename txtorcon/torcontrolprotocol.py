@@ -713,7 +713,7 @@ class TorControlProtocol(LineOnlyReceiver):
                 d.addErrback(self._auth_failed)
                 return
 
-        if self.password_function and 'HASHEDPASSWORD' in methods:
+        if self.password_function and 'HASHEDPASSWORD' in methods or 'PASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
             d.addCallback(self._do_password_authentication)
             d.addErrback(self._auth_failed)
