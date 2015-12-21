@@ -335,6 +335,47 @@ OK''' % cookietmp.name)
             )
             self.assertTrue('AUTHENTICATE ' in self.transport.value())
 
+    def test_authenticate_unexisting_cookie_file(self):
+        unexisting_file = __file__ + "-unexisting"
+        try:
+            self.protocol._do_authenticate('''PROTOCOLINFO 1
+AUTH METHODS=COOKIE COOKIEFILE="%s"
+VERSION Tor="0.2.2.35"
+OK''' % unexisting_file)
+            self.assertTrue(False)
+        except RuntimeError:
+            pass
+
+    def test_authenticate_unexisting_safecookie_file(self):
+        unexisting_file = __file__ + "-unexisting"
+        try:
+            self.protocol._do_authenticate('''PROTOCOLINFO 1
+AUTH METHODS=SAFECOOKIE COOKIEFILE="%s"
+VERSION Tor="0.2.2.35"
+OK''' % unexisting_file)
+            self.assertTrue(False)
+        except RuntimeError:
+            pass
+
+    def test_authenticate_password_when_cookie_unavailable(self):
+        unexisting_file = __file__ + "-unexisting"
+        self.protocol.password_function = lambda: 'foo'
+        self.protocol._do_authenticate('''PROTOCOLINFO 1
+AUTH METHODS=COOKIE,HASHEDPASSWORD COOKIEFILE="%s"
+VERSION Tor="0.2.2.35"
+OK''' % unexisting_file)
+        self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
+
+
+    def test_authenticate_password_when_safecookie_unavailable(self):
+        unexisting_file = __file__ + "-unexisting"
+        self.protocol.password_function = lambda: 'foo'
+        self.protocol._do_authenticate('''PROTOCOLINFO 1
+AUTH METHODS=SAFECOOKIE,HASHEDPASSWORD COOKIEFILE="%s"
+VERSION Tor="0.2.2.35"
+OK''' % unexisting_file)
+        self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
+
     def test_authenticate_safecookie_wrong_hash(self):
         cookiedata = str(bytearray([0] * 32))
         server_nonce = str(bytearray([0] * 32))
