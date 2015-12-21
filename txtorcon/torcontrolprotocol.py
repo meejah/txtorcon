@@ -619,7 +619,7 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Callback on AUTHCHALLENGE SAFECOOKIE
         """
-        if(self._cookie_data is None):
+        if self._cookie_data is None:
             raise RuntimeError("Cookie data not read.")
         kw = parse_keywords(reply.replace(' ', '\n'))
 
@@ -713,7 +713,7 @@ class TorControlProtocol(LineOnlyReceiver):
                 d.addErrback(self._auth_failed)
                 return
 
-        if self.password_function and 'HASHEDPASSWORD' in methods or 'PASSWORD' in methods:
+        if self.password_function and 'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
             d.addCallback(self._do_password_authentication)
             d.addErrback(self._auth_failed)
