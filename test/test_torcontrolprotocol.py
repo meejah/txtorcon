@@ -342,7 +342,7 @@ OK''' % cookietmp.name)
 
         # pretend we already did PROTOCOLINFO and read the cookie
         # file
-        self.protocol.cookie_data = cookiedata
+        self.protocol._cookie_data = cookiedata
         self.protocol.client_nonce = server_nonce  # all 0's anyway
         try:
             self.protocol._safecookie_authchallenge(
