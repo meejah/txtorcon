@@ -19,8 +19,8 @@ small program. We will:
 
  * connect to a running Tor;
  * launch our own Tor;
- * change the configuration; 
- * get some information from Tor; 
+ * change the configuration;
+ * get some information from Tor;
  * listen for events;
  * and send a NEWNYM_ signal.
 
@@ -32,20 +32,14 @@ Install txtorcon in a virtualenv
 First we need to be able to ``import txtorcon`` in a Python shell. We
 will accomplish that in a virtualenv_.
 
-.. note:: If you're using Debian or Ubuntu, ``pip install txtorcon`` may just work. 
+.. note:: If you're using Debian or Ubuntu, ``pip install python-txtorcon`` may just work.
 
-For the virtualenv, first get the code::
+To try the latest released version of txtorcon in a virtualenv_ is
+similar to other Python packages::
 
-   git clone https://github.com/meejah/txtorcon
-   cd txtorcon
-
-Now, we can use the Makefile there to create ourselves a virtualenv,
-activate it and install all the pre-requisites::
-
-   make venv
-   . venv/bin/activate
-   pip install -r requirements.txt
-   pip install -r dev-requirements.txt  # optional
+   virtualenv /tmp/txtorcon-venv
+   /tmp/txtorcon-venv/bin/pip install txtorcon
+   source /tmp/txtorcon-venv/bin/activate
 
 You should now be able to run "import txtorcon" in a python shell, for
 example::
@@ -53,8 +47,9 @@ example::
    python -c "import txtorcon"
 
 The above should produce no output. If you got an exception, or
-something else went wrong, read up on virtualenv or try a global
-install with ``python setup.py install``
+something else went wrong, read up on virtualenv or ask "meejah" in
+#tor-dev for help.
+
 
 Connect to a Running Tor
 ------------------------
