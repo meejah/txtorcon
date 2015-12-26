@@ -129,11 +129,11 @@ uses some Tor commands to link the controller to the Tor instance, so
 that if the connection is lost Tor will shut itself down.
 
 The main difference between connecting and launching is that you have
-to provide a configuration to launch a Tor with. This is provided via
-a :class:`TorConfig<txtorcon.TorConfig>` instance. This class is a
+to provide a configuration to launch Tor with. This is provided via a
+:class:`TorConfig<txtorcon.TorConfig>` instance. This class is a
 little "magic" in order to provide a nice API, and so you simply set
-configuration options as members. A minimal configuration to launch a Tor might
-be::
+configuration options as members. A minimal configuration to launch a
+Tor might be::
 
    config = txtorcon.TorConfig()
    config.ORPort = 0
@@ -155,55 +155,63 @@ Check out the :meth:`txtorcon.launch_tor` documentation. You'll likely want
 to provide a ``progress_updates`` listener to provide interesting
 information to your user. Here's a full example::
 
-   import os
-   from twisted.internet import reactor, defer
-   from twisted.internet.endpoints import TCP4ClientEndpoint
-   import txtorcon
+#!/usr/bin/env python
 
-   @defer.inlineCallbacks
-   def launched(process_proto):
-       """
-       This callback gets called after Tor considers itself fully
-       bootstrapped -- it has created a circuit. We get the
-       TorProcessProtocol object, which has the TorControlProtocol
-       instance as .tor_protocol
-       """
+    from __future__ import print_function
+    import os
+    from twisted.internet.defer import inlineCallbacks
+    from twisted.internet.task import react
+    from twisted.internet.endpoints import TCP4ClientEndpoint
+    import txtorcon
 
-       protocol = process_proto.tor_protocol
-       print "Tor has launched.\nProtocol:", protocol
-       info = yield protocol.get_info('traffic/read', 'traffic/written')
-       print info
-       reactor.stop()
+    def progress(percent, tag, summary):
+        """
+        Progress update from tor; we print a cheezy progress bar and the
+        message.
+        """
+        ticks = int((percent/100.0) * 10.0)
+        prog = (ticks * '#') + ((10 - ticks) * '.')
+        print('{} {}'.format(prog, summary))
 
-   def error(failure):
-       print "There was an error", failure.getErrorMessage()
-       reactor.stop()
+    @inlineCallbacks
+    def main(reactor):
+        config = txtorcon.TorConfig()
+        config.ORPort = 0
+        config.SocksPort = 9998
+        try:
+            os.mkdir('tor-data')
+        except OSError:
+            pass
+        config.DataDirectory = './tor-data'
 
-   def progress(percent, tag, summary):
-       ticks = int((percent/100.0) * 10.0)
-       prog = (ticks * '#') + ((10 - ticks) * '.')
-       print '%s %s' % (prog, summary)
+        try:
+            process = yield txtorcon.launch_tor(
+                config, reactor, progress_updates=progress
+            )
+        except Exception as e:
+            print("Error launching tor:", e)
+            return
 
-   config = txtorcon.TorConfig()
-   config.ORPort = 0
-   config.SocksPort = 9999
-   try:
-       os.mkdir('tor-data')
-   except OSError:
-       pass
-   config.DataDirectory = './tor-data'
+        protocol = process.tor_protocol
+        print("Tor has launched.")
+        print("Protocol:", protocol)
+        info = yield protocol.get_info('traffic/read', 'traffic/written')
+        print(info)
 
-   d = txtorcon.launch_tor(config, reactor, progress_updates=progress)
-   d.addCallback(launched).addErrback(error)
+        # explicitly stop tor by either disconnecting our protocol or the
+        # Twisted IProcessProtocol (or just exit our program)
+        print("Killing our tor, PID={pid}".format(pid=process.transport.pid))
+        yield process.transport.signalProcess('TERM')
 
-   ## this will only return after reactor.stop() is called
-   reactor.run()
+    react(main)
 
-If you've never seen the ``defer.inlineCallbacks`` decorator, then you
+If you've never seen the ``inlineCallbacks`` decorator, then you
 should `read up on it
 <https://twistedmatrix.com/documents/current/api/twisted.internet.defer.html#inlineCallbacks>`_.
 Once we get the Tor instance launched, we just make two GETINFO_ calls
-and then exit (which will cause the underlying Tor to also exit).
+and then explicitly kill it. You can also simply exit, which will
+cause the underlying Tor to also exit.
+
 
 Putting It All Together
 -----------------------
