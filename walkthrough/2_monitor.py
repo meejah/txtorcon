@@ -1,68 +1,64 @@
 #!/usr/bin/env python
 
-from twisted.internet import reactor, defer
+from __future__ import print_function
+from twisted.internet.task import react
+from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from zope.interface import implements
+from zope.interface import implementer
 import txtorcon
 
-## change the port to 9151 for Tor Browser Bundle
-connection = TCP4ClientEndpoint(reactor, "localhost", 9051)
 
-def error(failure):
-    print "Error:", failure.getErrorMessage()
-    reactor.stop()
-
+@implementer(txtorcon.ICircuitListener)
 class MyCircuitListener(object):
-    implements(txtorcon.ICircuitListener)
+
     def circuit_new(self, circuit):
-        print "new", circuit
+        print("\n\n>> new", circuit)
 
     def circuit_launched(self, circuit):
-        print "launched", circuit
+        print("\n\n>> launched", circuit)
 
     def circuit_extend(self, circuit, router):
-        print "extend", circuit
+        print("\n\n>> extend", circuit)
 
     def circuit_built(self, circuit):
-        print "built", circuit
+        print("\n\n>> built", circuit)
 
     def circuit_closed(self, circuit, **kw):
-        print "closed", circuit, kw
+        print("\n\n>> closed", circuit, kw)
 
     def circuit_failed(self, circuit, **kw):
-        print "failed", circuit, kw
+        print("\n\n>> failed", circuit, kw)
 
 
-@defer.inlineCallbacks
-def main(connection):
+@inlineCallbacks
+def main(reactor):
+    # change the port to 9151 for Tor Browser Bundle
+    tor_ep = TCP4ClientEndpoint(reactor, "localhost", 9051)
+    connection = yield txtorcon.build_tor_connection(tor_ep, build_state=False)
     version = yield connection.get_info('version', 'events/names')
-    print "Connected to Tor.", version['version']
-    print version['events/names']
+    print("Connected to Tor {version}".format(**version))
+    print("Events:", version['events/names'])
 
-    print "Issuing NEWNYM."
-    yield connection.signal('NEWNYM')
-    print "OK."
+    print("Building state.")
+    state = yield txtorcon.TorState.from_protocol(connection)
 
-    print "Building state."
-    state = txtorcon.TorState(connection)
-    yield state.post_bootstrap
-    print "State initialized."
-    print "Existing circuits:"
-    for c in state.circuits.values():
-        print ' ', c
-
-    print "listening for circuit events"
+    print("listening for circuit events")
     state.add_circuit_listener(MyCircuitListener())
 
-    print "listening for INFO events"
+    print("Issuing NEWNYM.")
+    yield connection.signal('NEWNYM')
+    print("OK.")
+
+    print("Existing circuits:")
+    for c in state.circuits.values():
+        print(' ', c)
+
+    print("listening for INFO events")
     def print_info(i):
-        print "INFO:", i
+        print("INFO:", i)
     connection.add_event_listener('INFO', print_info)
 
-    ## since we don't call reactor.stop(), we keep running
+    done = Deferred()
+    yield done  # never callback()s so infinite loop
 
-d = txtorcon.build_tor_connection(connection, build_state=False)
-d.addCallback(main).addErrback(error)
-
-## this will only return after reactor.stop() is called
-reactor.run()
+react(main)
