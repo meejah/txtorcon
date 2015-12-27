@@ -214,6 +214,9 @@ class TorControlProtocol(LineOnlyReceiver):
         authentication to Tor (default is to use COOKIE, however). May
         return Deferred."""
 
+        self._cookie_data = None
+        """Data read from cookie file used to authenticate."""
+
         self.version = None
         """Version of Tor we've connected to."""
 
@@ -616,7 +619,8 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Callback on AUTHCHALLENGE SAFECOOKIE
         """
-
+        if self._cookie_data is None:
+            raise RuntimeError("Cookie data not read.")
         kw = parse_keywords(reply.replace(' ', '\n'))
 
         server_hash = base64.b16decode(kw['SERVERHASH'])
@@ -624,7 +628,7 @@ class TorControlProtocol(LineOnlyReceiver):
         # FIXME put string in global. or something.
         expected_server_hash = hmac_sha256(
             "Tor safe cookie authentication server-to-controller hash",
-            self.cookie_data + self.client_nonce + server_nonce
+            self._cookie_data + self.client_nonce + server_nonce
         )
 
         if not compare_via_hash(expected_server_hash, server_hash):
@@ -636,10 +640,23 @@ class TorControlProtocol(LineOnlyReceiver):
 
         client_hash = hmac_sha256(
             "Tor safe cookie authentication controller-to-server hash",
-            self.cookie_data + self.client_nonce + server_nonce
+            self._cookie_data + self.client_nonce + server_nonce
         )
         client_hash_hex = base64.b16encode(client_hash)
         return self.queue_command('AUTHENTICATE %s' % client_hash_hex)
+
+    def _read_cookie(self, cookiefile):
+        """
+        Open and read a cookie file
+        :param cookie: Path to the cookie file
+        """
+        self._cookie_data = None
+        self._cookie_data = open(cookiefile, 'rb').read()
+        if len(self._cookie_data) != 32:
+            raise RuntimeError(
+                "Expected authentication cookie to be 32 bytes, got %d" %
+                len(self._cookie_data)
+            )
 
     def _do_authenticate(self, protoinfo):
         """
@@ -648,6 +665,7 @@ class TorControlProtocol(LineOnlyReceiver):
         """
 
         methods = None
+        cookie_auth = False
         for line in protoinfo.split('\n'):
             if line[:5] == 'AUTH ':
                 kw = parse_keywords(line[5:].replace(' ', '\n'))
@@ -657,43 +675,45 @@ class TorControlProtocol(LineOnlyReceiver):
                 "Didn't find AUTH line in PROTOCOLINFO response."
             )
 
-        if 'SAFECOOKIE' in methods:
-            cookie = re.search('COOKIEFILE="(.*)"', protoinfo).group(1)
-            self.cookie_data = open(cookie, 'r').read()
-            if len(self.cookie_data) != 32:
-                raise RuntimeError(
-                    "Expected authentication cookie to be 32 bytes, got %d" %
-                    len(self.cookie_data)
-                )
-            txtorlog.msg("Using SAFECOOKIE authentication", cookie,
-                         len(self.cookie_data), "bytes")
-            self.client_nonce = os.urandom(32)
+        if 'SAFECOOKIE' in methods or 'COOKIE' in methods:
+            cookiefile_match = re.search(r'COOKIEFILE="((?:[^"\\]|\\.)*)"', protoinfo)
+            if cookiefile_match:
+                cookiefile = cookiefile_match.group(1)
+                cookiefile = cookiefile.replace('\\\\', '\\')
+                cookiefile = cookiefile.replace('\\"', '"')
+                try:
+                    self._read_cookie(cookiefile)
+                except IOError as why:
+                    txtorlog.msg("Reading COOKIEFILE failed: " + str(why))
+                    cookie_auth = False
+                else:
+                    cookie_auth = True
+            else:
+                txtorlog.msg("Didn't get COOKIEFILE")
 
-            cmd = 'AUTHCHALLENGE SAFECOOKIE ' + \
-                  base64.b16encode(self.client_nonce)
-            d = self.queue_command(cmd)
-            d.addCallback(self._safecookie_authchallenge)
-            d.addCallback(self._bootstrap)
-            d.addErrback(self._auth_failed)
-            return
+        if cookie_auth:
+            if 'SAFECOOKIE' in methods:
+                txtorlog.msg("Using SAFECOOKIE authentication", cookiefile,
+                             len(self._cookie_data), "bytes")
+                self.client_nonce = os.urandom(32)
 
-        elif 'COOKIE' in methods:
-            cookie = re.search('COOKIEFILE="(.*)"', protoinfo).group(1)
-            with open(cookie, 'r') as cookiefile:
-                data = cookiefile.read()
-            if len(data) != 32:
-                raise RuntimeError(
-                    "Expected authentication cookie to be 32 "
-                    "bytes, got %d instead." % len(data)
-                )
-            txtorlog.msg("Using COOKIE authentication",
-                         cookie, len(data), "bytes")
-            d = self.authenticate(data)
-            d.addCallback(self._bootstrap)
-            d.addErrback(self._auth_failed)
-            return
+                cmd = 'AUTHCHALLENGE SAFECOOKIE ' + \
+                      base64.b16encode(self.client_nonce)
+                d = self.queue_command(cmd)
+                d.addCallback(self._safecookie_authchallenge)
+                d.addCallback(self._bootstrap)
+                d.addErrback(self._auth_failed)
+                return
 
-        if self.password_function:
+            elif 'COOKIE' in methods:
+                txtorlog.msg("Using COOKIE authentication",
+                             cookiefile, len(self._cookie_data), "bytes")
+                d = self.authenticate(self._cookie_data)
+                d.addCallback(self._bootstrap)
+                d.addErrback(self._auth_failed)
+                return
+
+        if self.password_function and 'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
             d.addCallback(self._do_password_authentication)
             d.addErrback(self._auth_failed)
