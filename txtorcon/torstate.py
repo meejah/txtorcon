@@ -751,7 +751,8 @@ class TorState(object):
         if circ_id not in self.circuits:
             c = self.circuit_factory(self)
             c.listen(self)
-            [c.listen(x) for x in self.circuit_listeners]
+            for listener in self.circuit_listeners:
+                c.listen(listener)
 
         else:
             c = self.circuits[circ_id]
