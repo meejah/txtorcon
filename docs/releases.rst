@@ -25,6 +25,9 @@ unreleased
    :doc:`TorState.build_circuit` callbacks as soon as a Circuit
    instance can be provided (and then you'd use
    :doc:`Circuit.when_built` to find out when it's done building).
+ * new feature from `coffeemakr <https://github.com/coffeemakr>`_
+   falling back to password authentication if cookie authentication
+   isn't available (or fails, e.g. because the file isn't readable).
 
 
 v0.14.1
