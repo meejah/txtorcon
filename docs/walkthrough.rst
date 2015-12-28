@@ -19,8 +19,8 @@ small program. We will:
 
  * connect to a running Tor;
  * launch our own Tor;
- * change the configuration; 
- * get some information from Tor; 
+ * change the configuration;
+ * get some information from Tor;
  * listen for events;
  * and send a NEWNYM_ signal.
 
@@ -32,20 +32,14 @@ Install txtorcon in a virtualenv
 First we need to be able to ``import txtorcon`` in a Python shell. We
 will accomplish that in a virtualenv_.
 
-.. note:: If you're using Debian or Ubuntu, ``pip install txtorcon`` may just work. 
+.. note:: If you're using Debian or Ubuntu, ``pip install python-txtorcon`` may just work.
 
-For the virtualenv, first get the code::
+To try the latest released version of txtorcon in a virtualenv_ is
+similar to other Python packages::
 
-   git clone https://github.com/meejah/txtorcon
-   cd txtorcon
-
-Now, we can use the Makefile there to create ourselves a virtualenv,
-activate it and install all the pre-requisites::
-
-   make venv
-   . venv/bin/activate
-   pip install -r requirements.txt
-   pip install -r dev-requirements.txt  # optional
+   virtualenv /tmp/txtorcon-venv
+   /tmp/txtorcon-venv/bin/pip install txtorcon
+   source /tmp/txtorcon-venv/bin/activate
 
 You should now be able to run "import txtorcon" in a python shell, for
 example::
@@ -53,8 +47,9 @@ example::
    python -c "import txtorcon"
 
 The above should produce no output. If you got an exception, or
-something else went wrong, read up on virtualenv or try a global
-install with ``python setup.py install``
+something else went wrong, read up on virtualenv or ask "meejah" in
+#tor-dev for help.
+
 
 Connect to a Running Tor
 ------------------------
@@ -87,34 +82,40 @@ The code to do this would look something like:
 
 .. sourcecode:: python
 
-   from twisted.internet import reactor
-   from twisted.internet.endpoints import TCP4ClientEndpoint
-   import txtorcon
+    from __future__ import print_function
+    from twisted.internet.task import react
+    from twisted.internet.defer import inlineCallbacks
+    from twisted.internet.endpoints import TCP4ClientEndpoint
+    import txtorcon
 
-      def example(state):
-	  """
-	  This callback gets called after we've connected and loaded all the
-	  current Tor state. state is a TorState instance.
-	  """
-	  print "Fully bootstrapped state:", state
-	  print "   with bootstrapped protocol:", state.protocol
-	  reactor.stop()
+    @inlineCallbacks
+    def main(reactor):
+        # change the port to 9151 for Tor Browser Bundle
+        connection = TCP4ClientEndpoint(reactor, "localhost", 9051)
 
-      ## change the port to 9151 for Tor Browser Bundle
-      connection = TCP4ClientEndpoint(reactor, "localhost", 9051)
+        state = yield txtorcon.build_tor_connection(connection)
+        print("Connected to tor {state.protocol.version}".format(state=state))
+        print("Current circuits:")
+        for circ in state.circuits.values():
+            path = '->'.join([r.name for r in circ.path])
+            print("  {circ.id}: {circ.state}, {path}".format(circ=circ, path=path))
 
-      d = txtorcon.build_tor_connection(connection)
-      d.addCallback(example)
+        # can also do "low level" things with the protocol
+        proto = state.protocol
+        answer = yield proto.queue_command("GETINFO version")
+        print("GETINFO version: {answer}".format(answer=answer))
 
-      ## this will only return after reactor.stop() is called
-      reactor.run()
+    react(main)
 
-If all is well, you should see two lines get printed out and then the
-script will exit::
+If all is well, you should see some output like this::
 
-   python 0_connection.py 
-   Fully bootstrapped state: <txtorcon.torstate.TorState object at 0x21cf710>
-      with bootstrapped protocol: <txtorcon.torcontrolprotocol.TorControlProtocol instance at 0x21c81b8>
+    python walkthrough/0_connection.py
+    Connected to tor 0.2.5.12 (git-3731dd5c3071dcba)
+    Current circuits:
+      16929: BUILT, someguard->ecrehd->aTomicRelayFR1
+      16930: BUILT, someguard->Ferguson->NLNode1EddaiSu
+    GETINFO version: version=0.2.5.12 (git-3731dd5c3071dcba)
+
 
 Launch Our Own Tor
 ------------------
@@ -128,11 +129,11 @@ uses some Tor commands to link the controller to the Tor instance, so
 that if the connection is lost Tor will shut itself down.
 
 The main difference between connecting and launching is that you have
-to provide a configuration to launch a Tor with. This is provided via
-a :class:`TorConfig<txtorcon.TorConfig>` instance. This class is a
+to provide a configuration to launch Tor with. This is provided via a
+:class:`TorConfig<txtorcon.TorConfig>` instance. This class is a
 little "magic" in order to provide a nice API, and so you simply set
-configuration options as members. A minimal configuration to launch a Tor might
-be::
+configuration options as members. A minimal configuration to launch a
+Tor might be::
 
    config = txtorcon.TorConfig()
    config.ORPort = 0
@@ -154,55 +155,63 @@ Check out the :meth:`txtorcon.launch_tor` documentation. You'll likely want
 to provide a ``progress_updates`` listener to provide interesting
 information to your user. Here's a full example::
 
-   import os
-   from twisted.internet import reactor, defer
-   from twisted.internet.endpoints import TCP4ClientEndpoint
-   import txtorcon
+#!/usr/bin/env python
 
-   @defer.inlineCallbacks
-   def launched(process_proto):
-       """
-       This callback gets called after Tor considers itself fully
-       bootstrapped -- it has created a circuit. We get the
-       TorProcessProtocol object, which has the TorControlProtocol
-       instance as .tor_protocol
-       """
+    from __future__ import print_function
+    import os
+    from twisted.internet.defer import inlineCallbacks
+    from twisted.internet.task import react
+    from twisted.internet.endpoints import TCP4ClientEndpoint
+    import txtorcon
 
-       protocol = process_proto.tor_protocol
-       print "Tor has launched.\nProtocol:", protocol
-       info = yield protocol.get_info('traffic/read', 'traffic/written')
-       print info
-       reactor.stop()
+    def progress(percent, tag, summary):
+        """
+        Progress update from tor; we print a cheezy progress bar and the
+        message.
+        """
+        ticks = int((percent/100.0) * 10.0)
+        prog = (ticks * '#') + ((10 - ticks) * '.')
+        print('{} {}'.format(prog, summary))
 
-   def error(failure):
-       print "There was an error", failure.getErrorMessage()
-       reactor.stop()
+    @inlineCallbacks
+    def main(reactor):
+        config = txtorcon.TorConfig()
+        config.ORPort = 0
+        config.SocksPort = 9998
+        try:
+            os.mkdir('tor-data')
+        except OSError:
+            pass
+        config.DataDirectory = './tor-data'
 
-   def progress(percent, tag, summary):
-       ticks = int((percent/100.0) * 10.0)
-       prog = (ticks * '#') + ((10 - ticks) * '.')
-       print '%s %s' % (prog, summary)
+        try:
+            process = yield txtorcon.launch_tor(
+                config, reactor, progress_updates=progress
+            )
+        except Exception as e:
+            print("Error launching tor:", e)
+            return
 
-   config = txtorcon.TorConfig()
-   config.ORPort = 0
-   config.SocksPort = 9999
-   try:
-       os.mkdir('tor-data')
-   except OSError:
-       pass
-   config.DataDirectory = './tor-data'
+        protocol = process.tor_protocol
+        print("Tor has launched.")
+        print("Protocol:", protocol)
+        info = yield protocol.get_info('traffic/read', 'traffic/written')
+        print(info)
 
-   d = txtorcon.launch_tor(config, reactor, progress_updates=progress)
-   d.addCallback(launched).addErrback(error)
+        # explicitly stop tor by either disconnecting our protocol or the
+        # Twisted IProcessProtocol (or just exit our program)
+        print("Killing our tor, PID={pid}".format(pid=process.transport.pid))
+        yield process.transport.signalProcess('TERM')
 
-   ## this will only return after reactor.stop() is called
-   reactor.run()
+    react(main)
 
-If you've never seen the ``defer.inlineCallbacks`` decorator, then you
+If you've never seen the ``inlineCallbacks`` decorator, then you
 should `read up on it
 <https://twistedmatrix.com/documents/current/api/twisted.internet.defer.html#inlineCallbacks>`_.
 Once we get the Tor instance launched, we just make two GETINFO_ calls
-and then exit (which will cause the underlying Tor to also exit).
+and then explicitly kill it. You can also simply exit, which will
+cause the underlying Tor to also exit.
+
 
 Putting It All Together
 -----------------------
@@ -220,100 +229,106 @@ and then continuously monitor two events: circuit events via
 
 First, we add a simple implementation of :class:`txtorcon.ICircuitListener`::
 
-   class MyCircuitListener(object):
-       implements(txtorcon.ICircuitListener)
-       def circuit_new(self, circuit):
-	   print "new", circuit
+    @implementer(txtorcon.ICircuitListener)
+    class MyCircuitListener(object):
 
-       def circuit_launched(self, circuit):
-	   print "launched", circuit
+        def circuit_new(self, circuit):
+            print("\n\nnew", circuit)
 
-       def circuit_extend(self, circuit, router):
-	   print "extend", circuit
+        def circuit_launched(self, circuit):
+            print("\n\nlaunched", circuit)
 
-       def circuit_built(self, circuit):
-	   print "built", circuit
+        def circuit_extend(self, circuit, router):
+            print("\n\nextend", circuit)
 
-       def circuit_closed(self, circuit, **kw):
-	   print "closed", circuit, kw
+        def circuit_built(self, circuit):
+            print("\n\nbuilt", circuit)
 
-       def circuit_failed(self, circuit, **kw):
-	   print "failed", circuit, kw
+        def circuit_closed(self, circuit, **kw):
+            print("\n\nclosed", circuit, kw)
+
+        def circuit_failed(self, circuit, **kw):
+            print("\n\nfailed", circuit, kw)
 
 Next, to illustrate setting up TorState from a TorControlProtocol
-directly, we add a ``main()`` method that uses ``inlineCallbacks`` to do a
-few things sequentially after startup. First we use
-``TorControlProtocol.signal`` to send a NEWNYM_ request. After that we
-create a ``TorState`` instance, print out all existing circuits and set
-up listeners for circuit events (an instance of ``MyCircuitListener``)
-and INFO messages (via our own method).
+directly we first make a "bare" protocol connection, and then use a
+TorState classmethod (with the protocol instance) to query Tor's state
+(this instance also adds listeners to stay updated).
+
+Then we use ``TorControlProtocol.signal`` to send a NEWNYM_
+request. After that we create a ``TorState`` instance, print out all
+existing circuits and set up listeners for circuit events (an instance
+of ``MyCircuitListener``) and INFO messages (via our own method).
+
+Note there is a :class:`txtorcon.CircuitListenerMixin`_ class -- and
+similar interfaces for :class:`txtorcon.Stream`_ as well -- which
+makes it easier to write a listener subclass.
 
 Here is the full listing::
 
-   from twisted.internet import reactor, defer
-   from twisted.internet.endpoints import TCP4ClientEndpoint
-   from zope.interface import implements
-   import txtorcon
-
-   ## change the port to 9151 for Tor Browser Bundle
-   connection = TCP4ClientEndpoint(reactor, "localhost", 9051)
-
-   def error(failure):
-       print "Error:", failure.getErrorMessage()
-       reactor.stop()
-
-   class MyCircuitListener(object):
-       implements(txtorcon.ICircuitListener)
-       def circuit_new(self, circuit):
-	   print "new", circuit
-
-       def circuit_launched(self, circuit):
-	   print "launched", circuit
-
-       def circuit_extend(self, circuit, router):
-	   print "extend", circuit
-
-       def circuit_built(self, circuit):
-	   print "built", circuit
-
-       def circuit_closed(self, circuit, **kw):
-	   print "closed", circuit, kw
-
-       def circuit_failed(self, circuit, **kw):
-	   print "failed", circuit, kw
+    from __future__ import print_function
+    from twisted.internet.task import react
+    from twisted.internet.defer import inlineCallbacks, Deferred
+    from twisted.internet.endpoints import TCP4ClientEndpoint
+    from zope.interface import implementer
+    import txtorcon
 
 
-   @defer.inlineCallbacks
-   def main(connection):
-       version = yield connection.get_info('version', 'events/names')
-       print "Connected to Tor.", version['version']
-       print version['events/names']
+    @implementer(txtorcon.ICircuitListener)
+    class MyCircuitListener(object):
 
-       print "Issuing NEWNYM."
-       yield connection.signal('NEWNYM')
-       print "OK."
+        def circuit_new(self, circuit):
+            print("new", circuit)
 
-       print "Building state."
-       state = txtorcon.TorState(connection)
-       yield state.post_bootstrap
-       print "State initialized."
-       print "Existing circuits:"
-       for c in state.circuits.values():
-	   print ' ', c
+        def circuit_launched(self, circuit):
+            print("launched", circuit)
 
-       print "listening for circuit events"
-       state.add_circuit_listener(MyCircuitListener())
+        def circuit_extend(self, circuit, router):
+            print("extend", circuit)
 
-       print "listening for INFO events"
-       def print_info(i):
-	   print "INFO:", i
-       connection.add_event_listener('INFO', print_info)
+        def circuit_built(self, circuit):
+            print("built", circuit)
 
-       ## since we don't call reactor.stop(), we keep running
+        def circuit_closed(self, circuit, **kw):
+            print("closed", circuit, kw)
 
-   d = txtorcon.build_tor_connection(connection, build_state=False)
-   d.addCallback(main).addErrback(error)
+        def circuit_failed(self, circuit, **kw):
+            print("failed", circuit, kw)
 
-   ## this will only return after reactor.stop() is called
-   reactor.run()
 
+    @inlineCallbacks
+    def main(reactor):
+        # change the port to 9151 for Tor Browser Bundle
+        tor_ep = TCP4ClientEndpoint(reactor, "localhost", 9051)
+        connection = yield txtorcon.build_tor_connection(tor_ep, build_state=False)
+        version = yield connection.get_info('version', 'events/names')
+        print("Connected to Tor {version}".format(**version))
+        print("Events:", version['events/names'])
+
+        print("Building state.")
+        state = yield txtorcon.TorState.from_protocol(connection)
+
+        print("listening for circuit events")
+        state.add_circuit_listener(MyCircuitListener())
+
+        print("Issuing NEWNYM.")
+        yield connection.signal('NEWNYM')
+        print("OK.")
+
+        print("Existing circuits:")
+        for c in state.circuits.values():
+            print(' ', c)
+
+        print("listening for INFO events")
+        def print_info(i):
+            print("INFO:", i)
+        connection.add_event_listener('INFO', print_info)
+
+        done = Deferred()
+        yield done  # never callback()s so infinite loop
+
+    react(main)
+
+If your Tor instance has been dormant for a while, try something like
+``torsocks curl https://www.torprojec.org`` in another termainl so you
+can see some more logging and circuit events.

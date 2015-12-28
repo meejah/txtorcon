@@ -1,45 +1,49 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import os
-from twisted.internet import reactor, defer
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.task import react
 from twisted.internet.endpoints import TCP4ClientEndpoint
 import txtorcon
 
-@defer.inlineCallbacks
-def launched(process_proto):
-    """
-    This callback gets called after Tor considers itself fully
-    bootstrapped -- it has created a circuit. We get the
-    TorProcessProtocol object, which has the TorControlProtocol
-    instance as .tor_protocol
-    """
-    
-    protocol = process_proto.tor_protocol
-    print "Tor has launched.\nProtocol:", protocol
-    info = yield protocol.get_info('traffic/read', 'traffic/written')
-    print info
-    reactor.stop()
-
-def error(failure):
-    print "There was an error", failure.getErrorMessage()
-    reactor.stop()
-
 def progress(percent, tag, summary):
+    """
+    Progress update from tor; we print a cheezy progress bar and the
+    message.
+    """
     ticks = int((percent/100.0) * 10.0)
     prog = (ticks * '#') + ((10 - ticks) * '.')
-    print '%s %s' % (prog, summary)
+    print('{} {}'.format(prog, summary))
 
-config = txtorcon.TorConfig()
-config.ORPort = 0
-config.SocksPort = 9999
-try:
-    os.mkdir('tor-data')
-except OSError:
-    pass
-config.DataDirectory = './tor-data'
+@inlineCallbacks
+def main(reactor):
+    config = txtorcon.TorConfig()
+    config.ORPort = 0
+    config.SocksPort = 9998
+    try:
+        os.mkdir('tor-data')
+    except OSError:
+        pass
+    config.DataDirectory = './tor-data'
 
-d = txtorcon.launch_tor(config, reactor, progress_updates=progress)
-d.addCallback(launched).addErrback(error)
+    try:
+        process = yield txtorcon.launch_tor(
+            config, reactor, progress_updates=progress
+        )
+    except Exception as e:
+        print("Error launching tor:", e)
+        return
 
-## this will only return after reactor.stop() is called
-reactor.run()
+    protocol = process.tor_protocol
+    print("Tor has launched.")
+    print("Protocol:", protocol)
+    info = yield protocol.get_info('traffic/read', 'traffic/written')
+    print(info)
+
+    # explicitly stop tor by either disconnecting our protocol or the
+    # Twisted IProcessProtocol (or just exit our program)
+    print("Killing our tor, PID={pid}".format(pid=process.transport.pid))
+    yield process.transport.signalProcess('TERM')
+
+react(main)
