@@ -1066,13 +1066,13 @@ class TorConfig(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def from_connection(cls, connection):
+    def from_protocol(cls, proto):
         """
         This creates and returns a ready-to-go TorConfig instance from the
-        given connection, which should be an instance of
+        given protocol, which should be an instance of
         TorControlProtocol.
         """
-        cfg = TorConfig(control=connection)
+        cfg = TorConfig(control=proto)
         yield cfg.post_bootstrap
         defer.returnValue(cfg)
 
