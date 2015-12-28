@@ -28,6 +28,7 @@ unreleased
  * new feature from `coffeemakr <https://github.com/coffeemakr>`_
    falling back to password authentication if cookie authentication
    isn't available (or fails, e.g. because the file isn't readable).
+ * both TorState and TorConfig now have a ``.from_protocol`` class-method.
 
 
 v0.14.1
