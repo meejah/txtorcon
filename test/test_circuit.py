@@ -12,17 +12,21 @@ from txtorcon import Stream
 from txtorcon import TorControlProtocol
 from txtorcon import TorState
 from txtorcon import Router
+from txtorcon.router import hexIdFromHash
 from txtorcon.interface import IRouterContainer
 from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
 from txtorcon.interface import CircuitListenerMixin
 from txtorcon.interface import ITorControlProtocol
 
+from mock import Mock
+
 
 class FakeTorController(object):
     implements(IRouterContainer, ICircuitListener, ICircuitContainer, ITorControlProtocol)
 
     post_bootstrap = defer.Deferred()
+    queue_command = Mock()
 
     def __init__(self):
         self.routers = {}
@@ -72,7 +76,8 @@ class FakeRouter:
 
     def __init__(self, hsh, nm):
         self.name = nm
-        self.hash = hsh
+        self.id_hash = hsh
+        self.id_hex = hexIdFromHash(self.id_hash)
         self.location = FakeLocation()
 
 examples = ['CIRC 365 LAUNCHED PURPOSE=GENERAL',
@@ -207,7 +212,7 @@ class CircuitTests(unittest.TestCase):
                 )
                 for (r, p) in zip(ex.split()[3].split(','), circuit.path):
                     d = r.split('=')[0]
-                    self.assertEqual(d, p.hash)
+                    self.assertEqual(d, p.id_hash)
 
     def test_extend_messages(self):
         tor = FakeTorController()

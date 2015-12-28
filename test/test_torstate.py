@@ -1171,20 +1171,28 @@ s Fast Guard Running Stable Valid
         return d
 
     def test_build_circuit_not_timedout(self):
-        class FakeCircuit:
-            def when_built(self):
-                return defer.succeed(self)
-        class FakeTorState:
-            def build_circuit(self, path, using_guards=False):
-                self.d = defer.Deferred()
-                circuit = FakeCircuit()
-                self.d.callback(circuit)
-                return self.d
+        class FakeRouter:
+            def __init__(self, i):
+                self.id_hex = i
+                self.flags = []
+
+        path = []
+        for x in range(3):
+            path.append(FakeRouter("$%040d" % x))
+        path[0].flags = ['guard']
 
         timeout = 10
         clock = task.Clock()
-        fake_state = FakeTorState()
-        path = [1,2,3]
-        d = build_timeout_circuit(fake_state, clock, path, timeout, using_guards=True)
-        d.addCallback(lambda circuit: self.failUnless(isinstance(circuit, FakeCircuit)))
+        d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=True)
+        d.addCallback(self.circuit_callback)
+
+        self.assertEqual(self.transport.value(), 'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002\r\n')
+        self.send('250 EXTENDED 1234')
+        # we can't just .send('650 CIRC 1234 BUILT') this because we
+        # didn't fully hook up the protocol to the state, e.g. via
+        # post_bootstrap etc.
+        self.state.circuits[1234].update(['1234', 'BUILT'])
+        # should have gotten a warning about this not being an entry
+        # guard
+        self.assertEqual(len(self.flushWarnings()), 1)
         return d
