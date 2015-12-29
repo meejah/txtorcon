@@ -26,31 +26,33 @@ Install txtorcon On Debian
 Thanks to work by `Lunar
 <http://qa.debian.org/developer.php?login=lunar@debian.org>`_,
 txtorcon is usually rapidly packaged into Debian. This means that it
-gets into `jessie
-<https://packages.debian.org/jessie/python-txtorcon>`_ fairly quickly,
-and then arrives in `wheezy-backports
-<https://packages.debian.org/wheezy-backports/python-txtorcon>`_ a
+gets into `stretch
+<https://packages.debian.org/stretch/python-txtorcon>`_ fairly quickly,
+and then arrives in `jessie-backports
+<https://packages.debian.org/jessie-backports/python-txtorcon>`_ a
 couple weeks after that. You can see the current status on the `Debian
 QA Page for txtorcon <http://packages.qa.debian.org/t/txtorcon.html>`_
 
-If you're using ``jessie`` (testing), simply:
+If you're using ``stretch`` (testing), simply:
 
 .. code-block:: shell-session
 
    $ apt-get install python-txtorcon
 
-For wheezy users, you'll need to enabled the ``wheezy-backports``
-repository to Apt. There are `instructions on the Debian wiki
+If you're using wheezy, it should "just work".  For jessie users,
+you'll probably want to enabled the ``jessie-backports`` repository to
+Apt. There are `instructions on the Debian wiki
 <https://wiki.debian.org/Backports#Adding_the_repository>`_ If you're
 in a hurry, you could try this:
 
 .. code-block:: shell-session
 
-   # echo "deb http://ftp.debian.org/debian wheezy-backports main contrib non-free" >> /etc/apt/sources.list
+   # echo "deb http://ftp.debian.org/debian jessie-backports main contrib non-free" >> /etc/apt/sources.list
    # apt-get update
-   # apt-get install -t wheezy-backports python-txtorcon
+   # apt-get install -t jessie-backports python-txtorcon
 
 .. _howto-endpoint:
+
 
 Endpoints Enable Tor With Any Twisted Service
 ---------------------------------------------
