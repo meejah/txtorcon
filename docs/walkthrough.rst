@@ -155,7 +155,7 @@ Check out the :meth:`txtorcon.launch_tor` documentation. You'll likely want
 to provide a ``progress_updates`` listener to provide interesting
 information to your user. Here's a full example::
 
-#!/usr/bin/env python
+    #!/usr/bin/env python
 
     from __future__ import print_function
     import os
