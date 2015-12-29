@@ -1,6 +1,6 @@
 .PHONY: test html counts coverage sdist clean install doc integration
 default: test
-VERSION = 0.14.0
+VERSION = 0.15.0
 
 test:
 	trial --reporter=text test
@@ -80,7 +80,7 @@ counts:
 	ohcount -s txtorcon/*.py
 
 test-release: dist
-	./test-release.sh $(shell pwd) ${VERSION}
+	./scripts/test-release.sh $(shell pwd) ${VERSION}
 
 dist: dist/txtorcon-${VERSION}-py2-none-any.whl dist/txtorcon-${VERSION}.tar.gz
 

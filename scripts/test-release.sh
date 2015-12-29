@@ -5,8 +5,7 @@ tar zxvf ${1}/dist/txtorcon-${2}.tar.gz
 cd txtorcon-${2}
 make venv
 . venv/bin/activate
-pip install -r requirements.txt
-pip install -r dev-requirements.txt
+pip install --editable .
 
 ## the actual "testing" part here
 echo "testing doc build"
