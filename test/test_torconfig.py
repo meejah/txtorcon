@@ -177,7 +177,8 @@ class ConfigTests(unittest.TestCase):
         conf.foo = True
         conf.bar = False
         conf.save()
-        self.assertEqual(self.protocol.sets, [('foo', 1), ('bar', 0)])
+        self.assertEqual(set(self.protocol.sets),
+                         set([('foo', 1), ('bar', 0)]))
 
     def test_read_boolean_after_save(self):
         self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
@@ -203,7 +204,8 @@ class ConfigTests(unittest.TestCase):
         conf.foo = "Something True"
         conf.bar = 0
         conf.save()
-        self.assertEqual(self.protocol.sets, [('foo', 1), ('bar', 0)])
+        self.assertEqual(set(self.protocol.sets),
+                         set([('foo', 1), ('bar', 0)]))
 
     def test_boolean_auto_parser(self):
         self.protocol.answers.append(
@@ -233,10 +235,11 @@ class ConfigTests(unittest.TestCase):
         conf.baz = True
         conf.qux = -1
         conf.save()
-        self.assertEqual(self.protocol.sets, [('baz', 1),
-                                              ('foo', 1),
-                                              ('bar', 0),
-                                              ('qux', 'auto')])
+        self.assertEqual(set(self.protocol.sets),
+                         set([('foo', 1),
+                              ('bar', 0),
+                              ('baz', 1),
+                              ('qux', 'auto')]))
         self.assertTrue(conf.foo is 1)
         self.assertTrue(conf.bar is 0)
         self.assertTrue(conf.baz is 1)
