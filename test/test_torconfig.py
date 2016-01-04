@@ -237,6 +237,10 @@ class ConfigTests(unittest.TestCase):
                                               ('foo', 1),
                                               ('bar', 0),
                                               ('qux', 'auto')])
+        self.assertTrue(conf.foo is 1)
+        self.assertTrue(conf.bar is 0)
+        self.assertTrue(conf.baz is 1)
+        self.assertTrue(conf.qux is -1)
 
     def test_save_invalid_boolean_auto(self):
         self.protocol.answers.append(
