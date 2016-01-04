@@ -541,6 +541,9 @@ class Integer(TorConfigType):
     def parse(self, s):
         return int(s)
 
+    def validate(self, s, instance, name):
+        return int(s)
+
 
 class SignedInteger(Integer):
     pass
@@ -1345,7 +1348,10 @@ class TorConfig(object):
 
             # FIXME in future we should wait for CONF_CHANGED and
             # update then, right?
-            self.config[self._find_real_name(key)] = value
+            real_name = self._find_real_name(key)
+            if not isinstance(value, list) and real_name in self.parsers:
+                value = self.parsers[real_name].parse(value)
+            self.config[real_name] = value
 
         # FIXME might want to re-think this, but currently there's no
         # way to put things into a config and get them out again
