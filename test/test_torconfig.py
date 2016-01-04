@@ -713,6 +713,36 @@ class EventTests(unittest.TestCase):
         self.assertEqual(config.Foo, 'bar')
         self.assertEqual(config.Bar, DEFAULT_VALUE)
 
+    def test_conf_changed_parsed(self):
+        '''
+        Create a configuration which holds boolean types. These types
+        have to be parsed as booleans.
+        '''
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nFoo Boolean\nBar Boolean')
+        protocol.answers.append({'Foo': '0'})
+        protocol.answers.append({'Bar': '1'})
+
+        config = TorConfig(protocol)
+        # Initial value is not tested here
+        protocol.events['CONF_CHANGED']('Foo=1\nBar=0')
+
+        msg = "Foo is not True: %r" % config.Foo
+        self.assertTrue(config.Foo is True, msg=msg)
+
+        msg = "Foo is not False: %r" % config.Bar
+        self.assertTrue(config.Bar is False, msg=msg)
+
+    def test_conf_changed_invalid_values(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nFoo Integer\nBar Integer')
+        protocol.answers.append({'Foo': '0'})
+        protocol.answers.append({'Bar': '1'})
+
+        config = TorConfig(protocol)
+        # Initial value is not tested here
+        with self.assertRaises((ValueError, TypeError)):
+            protocol.events['CONF_CHANGED']('Foo=INVALID\nBar=VALUES')
 
 class CreateTorrcTests(unittest.TestCase):
 

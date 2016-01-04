@@ -1268,7 +1268,10 @@ class TorConfig(object):
         for (k, v) in conf.items():
             # v will be txtorcon.DEFAULT_VALUE already from
             # parse_keywords if it was unspecified
-            self.config[self._find_real_name(k)] = v
+            real_name = self._find_real_name(k)
+            if real_name in self.parsers:
+                v = self.parsers[real_name].parse(v)
+            self.config[real_name] = v
 
     def bootstrap(self, arg=None):
         '''
