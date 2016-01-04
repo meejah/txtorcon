@@ -300,9 +300,12 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(conf.foo, 0)
 
         for value in ('no', 'Not a value', None):
-            with self.assertRaises((ValueError, TypeError)):
+            try:
                 conf.foo = value
-
+            except (ValueError, TypeError):
+                pass
+            else:
+                self.fail("No excpetion thrown")
 
     def test_int_parser_error(self):
         self.protocol.answers.append('config/names=\nfoo Integer')
@@ -744,8 +747,12 @@ class EventTests(unittest.TestCase):
 
         config = TorConfig(protocol)
         # Initial value is not tested here
-        with self.assertRaises((ValueError, TypeError)):
+        try:
             protocol.events['CONF_CHANGED']('Foo=INVALID\nBar=VALUES')
+        except (ValueError, TypeError):
+            pass
+        else:
+            self.fail("No excpetion thrown")
 
 class CreateTorrcTests(unittest.TestCase):
 
