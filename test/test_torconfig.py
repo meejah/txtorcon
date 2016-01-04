@@ -179,6 +179,20 @@ class ConfigTests(unittest.TestCase):
         conf.save()
         self.assertEqual(self.protocol.sets, [('foo', 1), ('bar', 0)])
 
+    def test_read_boolean_after_save(self):
+        self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append({'foo': '0'})
+        self.protocol.answers.append({'bar': '1'})
+
+        conf = TorConfig(self.protocol)
+
+        # save some boolean value
+        conf.foo = True
+        conf.bar = False
+        conf.save()
+        self.assertTrue(conf.foo is True, msg="foo not True: %s" % conf.foo)
+        self.assertTrue(conf.bar is False, msg="bar not False: %s" % conf.bar)
+
     def test_save_boolean_with_strange_values(self):
         self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
         self.protocol.answers.append({'foo': '0'})
@@ -252,6 +266,36 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append({'foo': '123'})
         conf = TorConfig(self.protocol)
         self.assertEqual(conf.foo, 123)
+
+    def test_int_validator(self):
+        self.protocol.answers.append('config/names=\nfoo Integer')
+        self.protocol.answers.append({'foo': '123'})
+        conf = TorConfig(self.protocol)
+
+        conf.foo = 2.33
+        conf.save()
+        self.assertEqual(conf.foo, 2)
+
+        conf.foo = '1'
+        conf.save()
+        self.assertEqual(conf.foo, 1)
+
+        conf.foo = '-100'
+        conf.save()
+        self.assertEqual(conf.foo, -100)
+
+        conf.foo = 0
+        conf.save()
+        self.assertEqual(conf.foo, 0)
+
+        conf.foo = '0'
+        conf.save()
+        self.assertEqual(conf.foo, 0)
+
+        for value in ('no', 'Not a value', None):
+            with self.assertRaises((ValueError, TypeError)):
+                conf.foo = value
+
 
     def test_int_parser_error(self):
         self.protocol.answers.append('config/names=\nfoo Integer')
