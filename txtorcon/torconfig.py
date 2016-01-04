@@ -500,10 +500,16 @@ class TorConfigType(object):
 
 
 class Boolean(TorConfigType):
+    "Boolean values are stored as 0 or 1."
     def parse(self, s):
         if int(s):
             return True
         return False
+
+    def validate(self, s, instance, name):
+        if s:
+            return 1
+        return 0
 
 
 class Boolean_Auto(TorConfigType):
@@ -519,6 +525,16 @@ class Boolean_Auto(TorConfigType):
         if int(s):
             return 1
         return 0
+
+    def validate(self, s, instance, name):
+        # FIXME: Is 'auto' an allowed value? (currently not)
+        s = int(s)
+        if s < 0:
+            return 'auto'
+        elif s:
+            return 1
+        else:
+            return 0
 
 
 class Integer(TorConfigType):
@@ -805,8 +821,8 @@ class HiddenService(object):
         if self.conf._supports['HiddenServiceDirGroupReadable'] \
            and self.group_readable:
             rtn.append(('HiddenServiceDirGroupReadable', str(1)))
-        for x in self.ports:
-            rtn.append(('HiddenServicePort', str(x)))
+        for port in self.ports:
+            rtn.append(('HiddenServicePort', str(port)))
         if self.version:
             rtn.append(('HiddenServiceVersion', str(self.version)))
         for authline in self.authorize_client:
