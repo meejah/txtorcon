@@ -166,6 +166,31 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(conf.foo is False)
         self.assertTrue(conf.bar is True)
 
+    def test_save_boolean(self):
+        self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append({'foo': '0'})
+        self.protocol.answers.append({'bar': '1'})
+
+        conf = TorConfig(self.protocol)
+
+        # save some boolean value
+        conf.foo = True
+        conf.bar = False
+        conf.save()
+        self.assertEqual(self.protocol.sets, [('foo', 1), ('bar', 0)])
+
+    def test_save_boolean_with_strange_values(self):
+        self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append({'foo': '0'})
+        self.protocol.answers.append({'bar': '1'})
+
+        conf = TorConfig(self.protocol)
+        # save some non-boolean value
+        conf.foo = "Something True"
+        conf.bar = 0
+        conf.save()
+        self.assertEqual(self.protocol.sets, [('foo', 1), ('bar', 0)])
+
     def test_boolean_auto_parser(self):
         self.protocol.answers.append(
             'config/names=\nfoo Boolean+Auto\nbar Boolean+Auto\nbaz Boolean+Auto'
@@ -178,6 +203,43 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(conf.foo is 0)
         self.assertTrue(conf.bar is 1)
         self.assertTrue(conf.baz is -1)
+
+    def test_save_boolean_auto(self):
+        self.protocol.answers.append(
+            'config/names=\nfoo Boolean+Auto\nbar Boolean+Auto\nbaz Boolean+Auto\nqux Boolean+Auto'
+        )
+        self.protocol.answers.append({'foo': '1'})
+        self.protocol.answers.append({'bar': '1'})
+        self.protocol.answers.append({'baz': '1'})
+        self.protocol.answers.append({'qux': '1'})
+
+        conf = TorConfig(self.protocol)
+        conf.foo = 1
+        conf.bar = 0
+        conf.baz = True
+        conf.qux = -1
+        conf.save()
+        self.assertEqual(self.protocol.sets, [('baz', 1),
+                                              ('foo', 1),
+                                              ('bar', 0),
+                                              ('qux', 'auto')])
+
+    def test_save_invalid_boolean_auto(self):
+        self.protocol.answers.append(
+            'config/names=\nfoo Boolean+Auto'
+        )
+        self.protocol.answers.append({'foo': '1'})
+
+        conf = TorConfig(self.protocol)
+        for value in ('auto', 'True', 'False', None):
+            try:
+                conf.foo = value
+            except (ValueError, TypeError):
+                pass
+            else:
+                self.fail("Invalid value '%s' allowed" % value)
+            conf.save()
+            self.assertEqual(self.protocol.sets, [])
 
     def test_string_parser(self):
         self.protocol.answers.append('config/names=\nfoo String')
