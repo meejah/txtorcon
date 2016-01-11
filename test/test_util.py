@@ -11,6 +11,7 @@ from txtorcon.util import find_keywords
 from txtorcon.util import ip_from_int
 from txtorcon.util import find_tor_binary
 from txtorcon.util import maybe_ip_addr
+from txtorcon.util import unescape_path
 
 import os
 import tempfile
@@ -277,3 +278,22 @@ class TestIpAddr(unittest.TestCase):
             raise ValueError('testing')
         ipaddr.IPAddress.side_effect = foo
         ip = maybe_ip_addr('1.2.3.4')
+
+
+class TestFilenameEscaping(unittest.TestCase):
+
+    def test_valid_path_unescaping(self):
+        unescapeable = [
+            ('\\\\', '\\'),         # \\     -> \
+            (r'\"', r'"'),          # \"     -> "
+            (r'\\\"', r'\"'),       # \\\"   -> \"
+            (r'\\\\\"', r'\\"'),    # \\\\\" -> \\"
+            ('\\"\\\\', '"\\')      # \"\\   -> "\
+        ]
+
+        for escaped, correct_unescaped in unescapeable:
+            unescaped = unescape_path(escaped)
+            msg = "Wrong unescape: {escaped} -> {unescaped} instead of {correct}"
+            msg = msg.format(unescaped=unescaped, escaped=escaped,
+                             correct=correct_unescaped)
+            self.assertEqual(unescaped, correct_unescaped, msg=msg)

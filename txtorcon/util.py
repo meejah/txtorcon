@@ -292,3 +292,9 @@ def available_tcp_port(reactor):
     address = port.getHost()
     yield port.stopListening()
     defer.returnValue(address.port)
+
+
+def unescape_path(path):
+    path = path.replace('\\\\', '\\')
+    path = path.replace('\\"', '"')
+    return path

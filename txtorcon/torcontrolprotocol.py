@@ -12,7 +12,7 @@ from twisted.protocols.basic import LineOnlyReceiver
 
 from zope.interface import implementer
 
-from txtorcon.util import hmac_sha256, compare_via_hash
+from txtorcon.util import hmac_sha256, compare_via_hash, unescape_path
 from txtorcon.log import txtorlog
 
 from txtorcon.interface import ITorControlProtocol
@@ -679,8 +679,7 @@ class TorControlProtocol(LineOnlyReceiver):
             cookiefile_match = re.search(r'COOKIEFILE="((?:[^"\\]|\\.)*)"', protoinfo)
             if cookiefile_match:
                 cookiefile = cookiefile_match.group(1)
-                cookiefile = cookiefile.replace('\\\\', '\\')
-                cookiefile = cookiefile.replace('\\"', '"')
+                cookiefile = unescape_path(cookiefile)
                 try:
                     self._read_cookie(cookiefile)
                 except IOError as why:
