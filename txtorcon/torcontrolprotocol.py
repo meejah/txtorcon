@@ -12,7 +12,7 @@ from twisted.protocols.basic import LineOnlyReceiver
 
 from zope.interface import implementer
 
-from txtorcon.util import hmac_sha256, compare_via_hash, unescape_path
+from txtorcon.util import hmac_sha256, compare_via_hash, unescape_quoted_string
 from txtorcon.log import txtorlog
 
 from txtorcon.interface import ITorControlProtocol
@@ -663,7 +663,6 @@ class TorControlProtocol(LineOnlyReceiver):
         Callback on PROTOCOLINFO to actually authenticate once we know
         what's supported.
         """
-
         methods = None
         cookie_auth = False
         for line in protoinfo.split('\n'):
@@ -676,10 +675,11 @@ class TorControlProtocol(LineOnlyReceiver):
             )
 
         if 'SAFECOOKIE' in methods or 'COOKIE' in methods:
-            cookiefile_match = re.search(r'COOKIEFILE="((?:[^"\\]|\\.)*)"', protoinfo)
+            cookiefile_match = re.search(r'COOKIEFILE=("(?:[^"\\]|\\.)*")',
+                                         protoinfo)
             if cookiefile_match:
                 cookiefile = cookiefile_match.group(1)
-                cookiefile = unescape_path(cookiefile)
+                cookiefile = unescape_quoted_string(cookiefile)
                 try:
                     self._read_cookie(cookiefile)
                 except IOError as why:
