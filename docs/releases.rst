@@ -11,6 +11,12 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.15.0*
 
+ * switched to `ipaddress
+   <https://docs.python.org/3/library/ipaddress.html>`_ instead of
+   Google's ``ipaddr``; the API should be the same from a user
+   perspective but **packagers and tutorials** will want to change
+   their instructions slightly (``pip install ipaddress`` or ``apt-get
+   install python-ipaddress`` are the new ways).
  * support the new ADD_ONION and DEL_ONION "ephemeral hidden services"
    commands in TorConfig
  * a first stealth-authentication implementation (for "normal" hidden

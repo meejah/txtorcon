@@ -2,6 +2,6 @@
 ## hmm, travis-ci doesn't like this since we need a GeoIP-dev package
 ##GeoIP>=1.2.9
 Twisted>=11.1.0
-ipaddr>=2.1.10
+ipaddress>=1.0.16
 zope.interface>=3.6.1
 txsocksx>=1.13.0

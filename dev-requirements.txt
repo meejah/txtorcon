@@ -10,5 +10,5 @@ twine
 pyflakes
 pep8
 mock
-ipaddr
+ipaddress>=1.0.16
 GeoIP

@@ -138,9 +138,6 @@ dependencies / requirements
    optional, in that we'll query Tor for the IP if the GeoIP database
    doesn't have an answer. It also does ASN lookups if you installed that MaxMind database.
 
--  `python-ipaddr <http://code.google.com/p/ipaddr-py/>`_: **optional**.
-   Google's IP address manipulation code.
-
 -  development: `Sphinx <http://sphinx.pocoo.org/>`_ if you want to build the
    documentation. In that case you'll also need something called
    ``python-repoze.sphinx.autointerface`` (at least in Debian) to build
