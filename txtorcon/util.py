@@ -297,25 +297,23 @@ def available_tcp_port(reactor):
 
 def unescape_quoted_string(string):
     r'''
-    Unescape a double quoted string.
-    An escaped string may contain only escaped backslashes `\\` or backslashes
-    in front of double quotes to escape the quote: `\"`.
+    This function implementes the recommended functionality described in the
+    tor control-spec to be compatible with older tor versions:
 
-    From the Tor control specifications::
+      * Read \\n \\t \\r and \\0 ... \\377 as C escapes.
+      * Treat a backslash followed by any other character as that character.
 
-      For future-proofing, controller implementors MAY use the following
-      rules to be compatible with buggy Tor implementations and with
-      future ones that implement the spec as intended:
+    Except the legacy support for the escape sequences above this function
+    implements parsing of QuotedString using qcontent from
 
-        Read \n \t \r and \0 ... \377 as C escapes.
-        Treat a backslash followed by any other character as that character.
+    QuotedString = DQUOTE *qcontent DQUOTE
 
-    :param string: The escaped string.
+    :param string: The escaped quoted string.
     :returns: The unescaped string.
     :raises ValueError: If the string is in a invalid form
                         (e.g. a single backslash)
     '''
-    match = re.match(r'''^"((?:[^"'\\]|\\.)*)"$''', string)
+    match = re.match(r'''^"((?:[^"\\]|\\.)*)"$''', string)
     if not match:
         raise ValueError("Invalid quoted string", string)
     string = match.group(1)

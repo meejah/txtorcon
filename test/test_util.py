@@ -292,6 +292,9 @@ class TestFilenameEscaping(unittest.TestCase):
             ("\\'", "'"),           # \'     -> '
             ("\\\\\\'", "\\'"),     # \\\'   -> \'
             (r'some\"text', 'some"text'),
+            ('some\\word', 'someword'),
+            ('\\delete\\ al\\l un\\used \\backslashes',
+             'delete all unused backslashes'),
             ('\\n\\r\\t', '\n\r\t'),
             ('\\x00 \\x0123', 'x00 x0123'),
             ('\\\\x00 \\\\x00', '\\x00 \\x00'),
@@ -330,7 +333,6 @@ class TestFilenameEscaping(unittest.TestCase):
             '"\\"',     # \     - unescaped backslash
             '"\\\\\\"', # \\\   - uneven backslashes
             '"\\\\""',  # \\"   - quotes not escaped
-            '"\'"'      # '     - unescaped single quote
         ]
 
         for invalid_string in invalid_escaped:
