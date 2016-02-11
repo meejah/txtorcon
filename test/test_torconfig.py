@@ -166,6 +166,47 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(conf.foo is False)
         self.assertTrue(conf.bar is True)
 
+    def test_save_boolean(self):
+        self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append({'foo': '0'})
+        self.protocol.answers.append({'bar': '1'})
+
+        conf = TorConfig(self.protocol)
+
+        # save some boolean value
+        conf.foo = True
+        conf.bar = False
+        conf.save()
+        self.assertEqual(set(self.protocol.sets),
+                         set([('foo', 1), ('bar', 0)]))
+
+    def test_read_boolean_after_save(self):
+        self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append({'foo': '0'})
+        self.protocol.answers.append({'bar': '1'})
+
+        conf = TorConfig(self.protocol)
+
+        # save some boolean value
+        conf.foo = True
+        conf.bar = False
+        conf.save()
+        self.assertTrue(conf.foo is True, msg="foo not True: %s" % conf.foo)
+        self.assertTrue(conf.bar is False, msg="bar not False: %s" % conf.bar)
+
+    def test_save_boolean_with_strange_values(self):
+        self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append({'foo': '0'})
+        self.protocol.answers.append({'bar': '1'})
+
+        conf = TorConfig(self.protocol)
+        # save some non-boolean value
+        conf.foo = "Something True"
+        conf.bar = 0
+        conf.save()
+        self.assertEqual(set(self.protocol.sets),
+                         set([('foo', 1), ('bar', 0)]))
+
     def test_boolean_auto_parser(self):
         self.protocol.answers.append(
             'config/names=\nfoo Boolean+Auto\nbar Boolean+Auto\nbaz Boolean+Auto'
@@ -179,6 +220,48 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(conf.bar is 1)
         self.assertTrue(conf.baz is -1)
 
+    def test_save_boolean_auto(self):
+        self.protocol.answers.append(
+            'config/names=\nfoo Boolean+Auto\nbar Boolean+Auto\nbaz Boolean+Auto\nqux Boolean+Auto'
+        )
+        self.protocol.answers.append({'foo': '1'})
+        self.protocol.answers.append({'bar': '1'})
+        self.protocol.answers.append({'baz': '1'})
+        self.protocol.answers.append({'qux': '1'})
+
+        conf = TorConfig(self.protocol)
+        conf.foo = 1
+        conf.bar = 0
+        conf.baz = True
+        conf.qux = -1
+        conf.save()
+        self.assertEqual(set(self.protocol.sets),
+                         set([('foo', 1),
+                              ('bar', 0),
+                              ('baz', 1),
+                              ('qux', 'auto')]))
+        self.assertTrue(conf.foo is 1)
+        self.assertTrue(conf.bar is 0)
+        self.assertTrue(conf.baz is 1)
+        self.assertTrue(conf.qux is -1)
+
+    def test_save_invalid_boolean_auto(self):
+        self.protocol.answers.append(
+            'config/names=\nfoo Boolean+Auto'
+        )
+        self.protocol.answers.append({'foo': '1'})
+
+        conf = TorConfig(self.protocol)
+        for value in ('auto', 'True', 'False', None):
+            try:
+                conf.foo = value
+            except (ValueError, TypeError):
+                pass
+            else:
+                self.fail("Invalid value '%s' allowed" % value)
+            conf.save()
+            self.assertEqual(self.protocol.sets, [])
+
     def test_string_parser(self):
         self.protocol.answers.append('config/names=\nfoo String')
         self.protocol.answers.append({'foo': 'bar'})
@@ -190,6 +273,39 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append({'foo': '123'})
         conf = TorConfig(self.protocol)
         self.assertEqual(conf.foo, 123)
+
+    def test_int_validator(self):
+        self.protocol.answers.append('config/names=\nfoo Integer')
+        self.protocol.answers.append({'foo': '123'})
+        conf = TorConfig(self.protocol)
+
+        conf.foo = 2.33
+        conf.save()
+        self.assertEqual(conf.foo, 2)
+
+        conf.foo = '1'
+        conf.save()
+        self.assertEqual(conf.foo, 1)
+
+        conf.foo = '-100'
+        conf.save()
+        self.assertEqual(conf.foo, -100)
+
+        conf.foo = 0
+        conf.save()
+        self.assertEqual(conf.foo, 0)
+
+        conf.foo = '0'
+        conf.save()
+        self.assertEqual(conf.foo, 0)
+
+        for value in ('no', 'Not a value', None):
+            try:
+                conf.foo = value
+            except (ValueError, TypeError):
+                pass
+            else:
+                self.fail("No excpetion thrown")
 
     def test_int_parser_error(self):
         self.protocol.answers.append('config/names=\nfoo Integer')
@@ -603,6 +719,40 @@ class EventTests(unittest.TestCase):
         self.assertEqual(config.Foo, 'bar')
         self.assertEqual(config.Bar, DEFAULT_VALUE)
 
+    def test_conf_changed_parsed(self):
+        '''
+        Create a configuration which holds boolean types. These types
+        have to be parsed as booleans.
+        '''
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nFoo Boolean\nBar Boolean')
+        protocol.answers.append({'Foo': '0'})
+        protocol.answers.append({'Bar': '1'})
+
+        config = TorConfig(protocol)
+        # Initial value is not tested here
+        protocol.events['CONF_CHANGED']('Foo=1\nBar=0')
+
+        msg = "Foo is not True: %r" % config.Foo
+        self.assertTrue(config.Foo is True, msg=msg)
+
+        msg = "Foo is not False: %r" % config.Bar
+        self.assertTrue(config.Bar is False, msg=msg)
+
+    def test_conf_changed_invalid_values(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nFoo Integer\nBar Integer')
+        protocol.answers.append({'Foo': '0'})
+        protocol.answers.append({'Bar': '1'})
+
+        config = TorConfig(protocol)
+        # Initial value is not tested here
+        try:
+            protocol.events['CONF_CHANGED']('Foo=INVALID\nBar=VALUES')
+        except (ValueError, TypeError):
+            pass
+        else:
+            self.fail("No excpetion thrown")
 
 class CreateTorrcTests(unittest.TestCase):
 
