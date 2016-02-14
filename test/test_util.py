@@ -280,28 +280,29 @@ class TestIpAddr(unittest.TestCase):
         ip = maybe_ip_addr('1.2.3.4')
 
 
-class TestFilenameEscaping(unittest.TestCase):
-
+class TestUnescapeQuotedString(unittest.TestCase):
+    '''
+    Test cases for the function unescape_quoted_string.
+    '''
     def test_valid_string_unescaping(self):
-        unescapeable = [
-            ('\\\\', '\\'),         # \\     -> \
-            (r'\"', r'"'),          # \"     -> "
-            (r'\\\"', r'\"'),       # \\\"   -> \"
-            (r'\\\\\"', r'\\"'),    # \\\\\" -> \\"
-            ('\\"\\\\', '"\\'),     # \"\\   -> "\
-            ("\\'", "'"),           # \'     -> '
-            ("\\\\\\'", "\\'"),     # \\\'   -> \'
-            (r'some\"text', 'some"text'),
-            ('some\\word', 'someword'),
-            ('\\delete\\ al\\l un\\used \\backslashes',
-             'delete all unused backslashes'),
-            ('\\n\\r\\t', '\n\r\t'),
-            ('\\x00 \\x0123', 'x00 x0123'),
-            ('\\\\x00 \\\\x00', '\\x00 \\x00'),
-            ('\\\\\\x00  \\\\\\x00', '\\x00  \\x00')
-        ]
+        unescapeable = {
+            '\\\\': '\\',         # \\     -> \
+            r'\"': r'"',          # \"     -> "
+            r'\\\"': r'\"',       # \\\"   -> \"
+            r'\\\\\"': r'\\"',    # \\\\\" -> \\"
+            '\\"\\\\': '"\\',     # \"\\   -> "\
+            "\\'": "'",           # \'     -> '
+            "\\\\\\'": "\\'",     # \\\'   -> \
+            r'some\"text': 'some"text',
+            'some\\word': 'someword',
+            '\\delete\\ al\\l un\\used \\backslashes': 'delete all unused backslashes',
+            '\\n\\r\\t': '\n\r\t',
+            '\\x00 \\x0123': 'x00 x0123',
+            '\\\\x00 \\\\x00': '\\x00 \\x00',
+            '\\\\\\x00  \\\\\\x00': '\\x00  \\x00'
+        }
 
-        for escaped, correct_unescaped in unescapeable:
+        for escaped, correct_unescaped in unescapeable.items():
             escaped = '"{}"'.format(escaped)
             unescaped = unescape_quoted_string(escaped)
             msg = "Wrong unescape: {escaped} -> {unescaped} instead of {correct}"
