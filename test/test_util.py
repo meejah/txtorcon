@@ -11,6 +11,7 @@ from txtorcon.util import find_keywords
 from txtorcon.util import ip_from_int
 from txtorcon.util import find_tor_binary
 from txtorcon.util import maybe_ip_addr
+from txtorcon.util import unescape_quoted_string
 
 import os
 import tempfile
@@ -277,3 +278,63 @@ class TestIpAddr(unittest.TestCase):
             raise ValueError('testing')
         ipaddr.IPAddress.side_effect = foo
         ip = maybe_ip_addr('1.2.3.4')
+
+
+class TestUnescapeQuotedString(unittest.TestCase):
+    '''
+    Test cases for the function unescape_quoted_string.
+    '''
+    def test_valid_string_unescaping(self):
+        unescapeable = {
+            '\\\\': '\\',         # \\     -> \
+            r'\"': r'"',          # \"     -> "
+            r'\\\"': r'\"',       # \\\"   -> \"
+            r'\\\\\"': r'\\"',    # \\\\\" -> \\"
+            '\\"\\\\': '"\\',     # \"\\   -> "\
+            "\\'": "'",           # \'     -> '
+            "\\\\\\'": "\\'",     # \\\'   -> \
+            r'some\"text': 'some"text',
+            'some\\word': 'someword',
+            '\\delete\\ al\\l un\\used \\backslashes': 'delete all unused backslashes',
+            '\\n\\r\\t': '\n\r\t',
+            '\\x00 \\x0123': 'x00 x0123',
+            '\\\\x00 \\\\x00': '\\x00 \\x00',
+            '\\\\\\x00  \\\\\\x00': '\\x00  \\x00'
+        }
+
+        for escaped, correct_unescaped in unescapeable.items():
+            escaped = '"{}"'.format(escaped)
+            unescaped = unescape_quoted_string(escaped)
+            msg = "Wrong unescape: {escaped} -> {unescaped} instead of {correct}"
+            msg = msg.format(unescaped=unescaped, escaped=escaped,
+                             correct=correct_unescaped)
+            self.assertEqual(unescaped, correct_unescaped, msg=msg)
+
+    def test_string_unescape_octals(self):
+        '''
+        Octal numbers can be escaped by a backslash:
+        \0 is interpreted as a byte with the value 0
+        '''
+        for number in range(1000):
+            escaped = '\\{}'.format(number)
+            result = unescape_quoted_string('"{}"'.format(escaped))
+
+            expected = escaped.decode('string-escape')
+            if expected[0] == '\\' and len(expected) > 1:
+                expected = expected[1:]
+
+            msg = "Number not decoded correctly: {escaped} -> {result} instead of {expected}"
+            msg = msg.format(escaped=escaped, result=repr(result), expected=repr(expected))
+            self.assertEquals(result, expected, msg=msg)
+
+
+    def test_invalid_string_unescaping(self):
+        invalid_escaped = [
+            '"""',      # "     - unescaped quote
+            '"\\"',     # \     - unescaped backslash
+            '"\\\\\\"', # \\\   - uneven backslashes
+            '"\\\\""',  # \\"   - quotes not escaped
+        ]
+
+        for invalid_string in invalid_escaped:
+            self.assertRaises(ValueError, unescape_quoted_string, invalid_string)

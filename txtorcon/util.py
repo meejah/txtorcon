@@ -12,6 +12,7 @@ import shutil
 import socket
 import subprocess
 import struct
+import re
 
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
@@ -292,3 +293,32 @@ def available_tcp_port(reactor):
     address = port.getHost()
     yield port.stopListening()
     defer.returnValue(address.port)
+
+
+def unescape_quoted_string(string):
+    r'''
+    This function implementes the recommended functionality described in the
+    tor control-spec to be compatible with older tor versions:
+
+      * Read \\n \\t \\r and \\0 ... \\377 as C escapes.
+      * Treat a backslash followed by any other character as that character.
+
+    Except the legacy support for the escape sequences above this function
+    implements parsing of QuotedString using qcontent from
+
+    QuotedString = DQUOTE *qcontent DQUOTE
+
+    :param string: The escaped quoted string.
+    :returns: The unescaped string.
+    :raises ValueError: If the string is in a invalid form
+                        (e.g. a single backslash)
+    '''
+    match = re.match(r'''^"((?:[^"\\]|\\.)*)"$''', string)
+    if not match:
+        raise ValueError("Invalid quoted string", string)
+    string = match.group(1)
+    # remove backslash before all characters which should not be
+    # handeled as escape codes by string.decode('string-escape').
+    # This is needed so e.g. '\x00' is not unescaped as '\0'
+    string = re.sub(r'((?:^|[^\\])(?:\\\\)*)\\([^ntr0-7\\])', r'\1\2', string)
+    return string.decode('string-escape')
