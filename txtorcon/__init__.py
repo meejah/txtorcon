@@ -13,6 +13,7 @@ from txtorcon.circuit import Circuit
 from txtorcon.circuit import build_timeout_circuit
 from txtorcon.circuit import CircuitBuildTimedOutError
 from txtorcon.stream import Stream
+from txtorcon.torcontrolprotocol import connect
 from txtorcon.torcontrolprotocol import TorControlProtocol
 from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.torcontrolprotocol import TorProtocolFactory
@@ -50,6 +51,7 @@ __all__ = [
     "Router",
     "Circuit",
     "Stream",
+    "connect",
     "TorControlProtocol", "TorProtocolError", "TorProtocolFactory",
     "TorState", "DEFAULT_VALUE",
     "TorInfo",

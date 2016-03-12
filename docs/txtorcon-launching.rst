@@ -1,3 +1,5 @@
+.. _launching_tor:
+
 Launching Tor
 =============
 
@@ -8,14 +10,17 @@ Launching Tor
   need configuration control, you can do that too and you're in the
   right spot.
 
+
 get_global_tor
 --------------
 
 .. autofunction:: txtorcon.get_global_tor
 
+
 TorProcessProtocol
 ------------------
 .. autoclass:: txtorcon.TorProcessProtocol
+
 
 launch_tor
 ----------
