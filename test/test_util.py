@@ -268,15 +268,15 @@ class TestFindTor(unittest.TestCase):
 
 class TestIpAddr(unittest.TestCase):
 
-    @patch('txtorcon.util.ipaddr')
+    @patch('txtorcon.util.ipaddress')
     def test_create_ipaddr(self, ipaddr):
         ip = maybe_ip_addr('1.2.3.4')
 
-    @patch('txtorcon.util.ipaddr')
+    @patch('txtorcon.util.ipaddress')
     def test_create_ipaddr(self, ipaddr):
         def foo(blam):
             raise ValueError('testing')
-        ipaddr.IPAddress.side_effect = foo
+        ipaddr.ip_address.side_effect = foo
         ip = maybe_ip_addr('1.2.3.4')
 
 

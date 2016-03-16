@@ -4,7 +4,7 @@ See README for more information.
 To just install this as quickly as possible, using a Debian or Ubuntu
 system, run the following as root:
 
-   apt-get install python-setuptools python-twisted python-ipaddr python-geoip python-psutil graphviz
+   apt-get install python-setuptools python-twisted python-ipaddress python-geoip python-psutil graphviz
 
    python setup.py install
 
@@ -23,7 +23,7 @@ use virtualenv:
    virtualenv --never-download --extra-search-dir=/usr/lib/python2.7/dist-packages/ tmp/txtorcon_env
    cd tmp/txtorcon_env
    source bin/activate
-   pip install Twisted ipaddr pygeoip     # this will download from internets:
+   pip install Twisted ipaddress pygeoip     # this will download from internets:
    export PYTHONPATH=../../build/lib.linux-x86_64-2.7/
 
 (Or you can type "make virtualenv" which creates tmp/txtorcon_env, up
