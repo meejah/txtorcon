@@ -8,36 +8,39 @@ from StringIO import StringIO
 
 from mock import Mock, patch
 
-from zope.interface import implements
+from zope.interface import implementer
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error, task, tcp
 from twisted.internet.endpoints import TCP4ServerEndpoint, serverFromString
 from twisted.python.failure import Failure
 from twisted.internet.interfaces import IReactorCore
+from twisted.internet.interfaces import IReactorTime
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.interfaces import IProtocol
 from twisted.internet.interfaces import IReactorTCP
 from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IAddress
+from twisted.internet.address import IPv4Address
 
 from txtorcon import TorControlProtocol
 from txtorcon import ITorControlProtocol
 from txtorcon import TorConfig
 from txtorcon import DEFAULT_VALUE
 from txtorcon import HiddenService
-from txtorcon import launch_tor
+from txtorcon import launch
 from txtorcon import TCPHiddenServiceEndpoint
 from txtorcon import TorNotFound
 from txtorcon import TCPHiddenServiceEndpointParser
 from txtorcon import IProgressProvider
 from txtorcon import torconfig
-from txtorcon.torconfig import TorProcessProtocol
+from txtorcon import TorProcessProtocol
 
 from txtorcon.util import delete_file_or_tree
 from txtorcon.torconfig import parse_client_keys
 
 
+@implementer(ITorControlProtocol)     # actually, just get_info_raw
 class FakeControlProtocol:
     """
     This is a little weird, but in most tests the answer at the top of
@@ -52,8 +55,6 @@ class FakeControlProtocol:
     Deferred is already-fired when get_conf runs, there's a Very Good
     Chance (always?) that the callback just runs right away.
     """
-
-    implements(ITorControlProtocol)     # actually, just get_info_raw
 
     def __init__(self, answers):
         self.answers = answers
@@ -1028,15 +1029,30 @@ HiddenServiceDir=/fake/path'''
         conf.hiddenservices[0].ports.append('90 127.0.0.1:2345')
         self.assertTrue(conf.needs_save())
 
+@implementer(IListeningPort)
+class FakePort(object):
+    def __init__(self, port):
+        self._port = port
 
+    def startListening(self):
+        pass
+
+    def stopListening(self):
+        pass
+
+    def getHost(self):
+        return IPv4Address('TCP', "127.0.0.1", self._port)
+
+
+@implementer(IReactorCore)
 class FakeReactor(task.Clock):
-    implements(IReactorCore)
 
-    def __init__(self, test, trans, on_protocol):
+    def __init__(self, test, trans, on_protocol, listen_ports=[]):
         super(FakeReactor, self).__init__()
         self.test = test
         self.transport = trans
         self.on_protocol = on_protocol
+        self.listen_ports = listen_ports
 
     def spawnProcess(self, processprotocol, bin, args, env, path,
                      uid=None, gid=None, usePTY=None, childFDs=None):
@@ -1056,6 +1072,10 @@ class FakeReactor(task.Clock):
 
     def removeSystemEventTrigger(self, id):
         pass
+
+    def listenTCP(self, *args, **kw):
+        port = self.listen_ports.pop()
+        return FakePort(port)
 
 
 class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
@@ -1112,9 +1132,10 @@ class LaunchTorTests(unittest.TestCase):
         proto._check_timeout.stop()
         proto.checkTimeout()
 
-    def setup_complete_no_errors(self, proto, config, stdout, stderr):
+    def setup_complete_no_errors(self, tor, config, stdout, stderr):
         self.assertEqual("Bootstrapped 100%\n", stdout.getvalue())
         self.assertEqual("", stderr.getvalue())
+        proto = tor._process_protocol
         todel = proto.to_delete
         self.assertTrue(len(todel) > 0)
         # ...because we know it's a TorProcessProtocol :/
@@ -1128,9 +1149,10 @@ class LaunchTorTests(unittest.TestCase):
         # protocol connection
         self.assertEquals(config.protocol, proto.tor_protocol)
 
-    def setup_complete_fails(self, proto, stdout, stderr):
+    def setup_complete_fails(self, tor, stdout, stderr):
         self.assertEqual("Bootstrapped 90%\n", stdout.getvalue())
         self.assertEqual("", stderr.getvalue())
+        proto = tor._process_protocol
         todel = proto.to_delete
         self.assertTrue(len(todel) > 0)
         # the "12" is just arbitrary, we check it later in the error-message
@@ -1143,7 +1165,7 @@ class LaunchTorTests(unittest.TestCase):
             self.assertTrue(not os.path.exists(f))
         return None
 
-    @patch('txtorcon.torconfig.os.geteuid')
+    @patch('txtorcon.controller.os.geteuid')
     def test_basic_launch(self, geteuid):
         # pretend we're root to exercise the "maybe chown data dir" codepath
         geteuid.return_value = 0
@@ -1186,9 +1208,9 @@ class LaunchTorTests(unittest.TestCase):
         fakeout = StringIO()
         fakeerr = StringIO()
         creator = functools.partial(connector, self.protocol, self.transport)
-        d = launch_tor(
+        d = launch(
             config,
-            FakeReactor(self, trans, on_protocol),
+            FakeReactor(self, trans, on_protocol, [9052]),
             connection_creator=creator,
             tor_binary='/bin/echo',
             stdout=fakeout,
@@ -1202,7 +1224,7 @@ class LaunchTorTests(unittest.TestCase):
         # cancel the errback chain, we wanted this
         return None
 
-    def test_launch_tor_fails(self):
+    def test_launch_fails(self):
         config = TorConfig()
         config.OrPort = 1234
         config.SocksPort = 9999
@@ -1221,9 +1243,9 @@ class LaunchTorTests(unittest.TestCase):
         fakeout = StringIO()
         fakeerr = StringIO()
         creator = functools.partial(connector, self.protocol, self.transport)
-        d = launch_tor(
+        d = launch(
             config,
-            FakeReactor(self, trans, on_protocol),
+            FakeReactor(self, trans, on_protocol, [9052]),
             connection_creator=creator,
             tor_binary='/bin/echo',
             stdout=fakeout,
@@ -1233,24 +1255,28 @@ class LaunchTorTests(unittest.TestCase):
         self.flushLoggedErrors(RuntimeError)
         return d
 
+    @defer.inlineCallbacks
     def test_launch_with_timeout_no_ireactortime(self):
         config = TorConfig()
-        return self.assertRaises(
-            RuntimeError,
-            launch_tor, config, None, timeout=5, tor_binary='/bin/echo'
-        )
+        config.ControlPort = 1234
+        try:
+            yield launch(config, None, timeout=5, tor_binary='/bin/echo')
+            self.fail("should get exception")
+        except RuntimeError:
+            pass
 
-    @patch('txtorcon.torconfig.sys')
-    @patch('txtorcon.torconfig.pwd')
-    @patch('txtorcon.torconfig.os.geteuid')
-    @patch('txtorcon.torconfig.os.chown')
+
+    @patch('txtorcon.controller.sys')
+    @patch('txtorcon.controller.pwd')
+    @patch('txtorcon.controller.os.geteuid')
+    @patch('txtorcon.controller.os.chown')
     def test_launch_root_changes_tmp_ownership(self, chown, euid, _pwd, _sys):
         _pwd.return_value = 1000
         _sys.platform = 'linux2'
         euid.return_value = 0
         config = TorConfig()
         config.User = 'chuffington'
-        d = launch_tor(config, Mock(), tor_binary='/bin/echo')
+        d = launch(config, Mock(), tor_binary='/bin/echo')
         self.assertEqual(1, chown.call_count)
 
     @defer.inlineCallbacks
@@ -1266,12 +1292,13 @@ ControlPort Port''')
         config.DataDirectory = '/dev/null'
 
         trans = Mock()
-        d = launch_tor(
+        d = launch(
             config,
             FakeReactor(self, trans, Mock()),
             tor_binary='/bin/echo'
         )
-        tpp = yield d
+        tor = yield d
+        tpp = tor._process_protocol
         tpp.transport = trans
         trans.signalProcess = Mock(side_effect=error.ProcessExitedAlready)
         trans.loseConnection = Mock()
@@ -1295,12 +1322,13 @@ ControlPort Port''')
         config.DataDirectory = '/dev/null'
 
         trans = Mock()
-        d = launch_tor(
+        d = launch(
             config,
             FakeReactor(self, trans, Mock()),
             tor_binary='/bin/echo'
         )
-        tpp = yield d
+        tor = yield d
+        tpp = tor._process_protocol
         tpp.timeout_expired()
         tpp.transport = trans
         trans.signalProcess = Mock()
@@ -1313,10 +1341,11 @@ ControlPort Port''')
         errs = self.flushLoggedErrors(RuntimeError)
         self.assertEqual(1, len(errs))
 
+    @defer.inlineCallbacks
     def test_launch_wrong_stdout(self):
         config = TorConfig()
         try:
-            launch_tor(config, None, stdout=object(), tor_binary='/bin/echo')
+            yield launch(config, None, stdout=object(), tor_binary='/bin/echo')
             self.fail("Should have thrown an error")
         except RuntimeError:
             pass
@@ -1353,9 +1382,9 @@ ControlPort Port''')
         trans = FakeProcessTransportNeverBootstraps()
         trans.protocol = self.protocol
         creator = functools.partial(connector, self.protocol, self.transport)
-        react = FakeReactor(self, trans, on_protocol)
-        d = launch_tor(config, react, connection_creator=creator,
-                       timeout=timeout, tor_binary='/bin/echo')
+        react = FakeReactor(self, trans, on_protocol, [9052])
+        d = launch(config, react, connection_creator=creator,
+                   timeout=timeout, tor_binary='/bin/echo')
         # FakeReactor is a task.Clock subclass and +1 just to be sure
         react.advance(timeout + 1)
 
@@ -1398,14 +1427,14 @@ ControlPort Port''')
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         creator = functools.partial(connector, self.protocol, self.transport)
-        react = FakeReactor(self, trans, on_protocol)
-        d = launch_tor(config, react, connection_creator=creator,
+        react = FakeReactor(self, trans, on_protocol, [9052])
+        d = launch(config, react, connection_creator=creator,
                        timeout=timeout, tor_binary='/bin/echo')
         # FakeReactor is a task.Clock subclass and +1 just to be sure
         react.advance(timeout + 1)
 
         self.assertTrue(d.called)
-        self.assertTrue(d.result.tor_protocol == self.protocol)
+        self.assertTrue(d.result.protocol == self.protocol)
 
     def setup_fails_stderr(self, fail, stdout, stderr):
         self.assertEqual('', stdout.getvalue())
@@ -1435,7 +1464,7 @@ ControlPort Port''')
         fakeout = StringIO()
         fakeerr = StringIO()
         creator = functools.partial(connector, self.protocol, self.transport)
-        d = launch_tor(config, FakeReactor(self, trans, on_protocol),
+        d = launch(config, FakeReactor(self, trans, on_protocol, [9052]),
                        connection_creator=creator, tor_binary='/bin/echo',
                        stdout=fakeout, stderr=fakeerr)
         d.addCallback(self.fail)        # should't get callback
@@ -1475,9 +1504,9 @@ ControlPort Port''')
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch_tor(
+        d = launch(
             config,
-            FakeReactor(self, trans, on_protocol),
+            FakeReactor(self, trans, on_protocol, [9052]),
             connection_creator=creator,
             tor_binary='/bin/echo'
         )
@@ -1507,15 +1536,15 @@ ControlPort Port''')
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch_tor(
+        d = launch(
             config,
-            FakeReactor(self, trans, on_protocol),
+            FakeReactor(self, trans, on_protocol, [9051]),
             connection_creator=creator,
             tor_binary='/bin/echo'
         )
 
-        def still_have_data_dir(proto, tester):
-            proto.cleanup()  # FIXME? not really unit-testy as this is sort of internal function
+        def still_have_data_dir(tor, tester):
+            tor._process_protocol.cleanup()  # FIXME? not really unit-testy as this is sort of internal function
             tester.assertTrue(os.path.exists(my_dir))
             delete_file_or_tree(my_dir)
 
@@ -1546,15 +1575,15 @@ ControlPort Port''')
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch_tor(
+        d = launch(
             config,
-            FakeReactor(self, trans, on_protocol),
+            FakeReactor(self, trans, on_protocol, [9052]),
             connection_creator=creator,
             tor_binary='/bin/echo'
         )
 
         def check_control_port(proto, tester):
-            # we just want to ensure launch_tor() didn't mess with
+            # we just want to ensure launch() didn't mess with
             # the controlport we set
             tester.assertEquals(config.ControlPort, 4321)
 
@@ -1583,9 +1612,9 @@ ControlPort Port''')
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch_tor(
+        d = launch(
             config,
-            FakeReactor(self, trans, on_protocol),
+            FakeReactor(self, trans, on_protocol, [9052]),
             connection_creator=creator,
             tor_binary='/bin/echo'
         )
@@ -1633,7 +1662,7 @@ ControlPort Port''')
         process.processEnded(Status())
         self.assertEquals(len(self.flushLoggedErrors(RuntimeError)), 1)
 
-    def test_launch_tor_no_control_port(self):
+    def test_launch_no_control_port(self):
         '''
         See Issue #80. This allows you to launch tor with a TorConfig
         with ControlPort=0 in case you don't want a control connection
@@ -1652,12 +1681,12 @@ ControlPort Port''')
 
         def on_protocol(proto):
             self.process_proto = proto
-        pp = launch_tor(config,
-                        FakeReactor(self, trans, on_protocol),
-                        connection_creator=creator, tor_binary='/bin/echo')
-        self.assertTrue(pp.called)
-        self.assertEqual(pp.result, self.process_proto)
-        return pp
+        tor_d = launch(config,
+                     FakeReactor(self, trans, on_protocol, [9052]),
+                     connection_creator=creator, tor_binary='/bin/echo')
+        self.assertTrue(tor_d.called)
+        self.assertEqual(tor_d.result._process_protocol, self.process_proto)
+        return tor_d
 
 
 class IteratorTests(unittest.TestCase):
@@ -1673,9 +1702,9 @@ class IteratorTests(unittest.TestCase):
 
 
 class ErrorTests(unittest.TestCase):
-    @patch('txtorcon.torconfig.find_tor_binary')
+    @patch('txtorcon.controller.find_tor_binary', return_value=None)
+    @defer.inlineCallbacks
     def test_no_tor_binary(self, ftb):
-        """FIXME: do I really need all this crap in here?"""
         self.transport = proto_helpers.StringTransport()
         config = TorConfig()
         d = None
@@ -1688,12 +1717,11 @@ class ErrorTests(unittest.TestCase):
                 return proto.post_bootstrap
 
         self.protocol = FakeControlProtocol([])
-        torconfig.find_tor_binary = lambda: None
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         creator = functools.partial(Connector(), self.protocol, self.transport)
         try:
-            d = launch_tor(
+            yield launch(
                 config,
                 FakeReactor(self, trans, lambda x: None),
                 connection_creator=creator
@@ -1702,8 +1730,6 @@ class ErrorTests(unittest.TestCase):
 
         except TorNotFound:
             pass  # success!
-
-        return d
 
 
 # the RSA keys have been shortened below for readability

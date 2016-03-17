@@ -25,7 +25,7 @@ from twisted.internet.interfaces import IAddress
 from txtorcon import TorControlProtocol
 from txtorcon import ITorControlProtocol
 from txtorcon import TorConfig
-from txtorcon import launch_tor
+from txtorcon import launch
 from txtorcon import TCPHiddenServiceEndpoint
 from txtorcon import TorClientEndpoint
 from txtorcon import TorNotFound
@@ -105,20 +105,18 @@ class EndpointTests(unittest.TestCase):
         ep.hiddenservice.private_key = 'mumble'
         self.assertEqual('mumble', ep.onion_private_key)
 
+    @patch('txtorcon.endpoints.launch')
     @defer.inlineCallbacks
-    def test_private_tor(self):
-        m = Mock()
-        from txtorcon import endpoints
-        endpoints.launch_tor = m
+    def test_private_tor(self, launch):
         ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80,
                                                         control_port=1234)
-        self.assertTrue(m.called)
+        self.assertTrue(launch.called)
 
     @defer.inlineCallbacks
     def test_private_tor_no_control_port(self):
         m = Mock()
         from txtorcon import endpoints
-        endpoints.launch_tor = m
+        endpoints.launch = m
         ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
         self.assertTrue(m.called)
 
@@ -133,7 +131,7 @@ class EndpointTests(unittest.TestCase):
             def bam(*args, **kw):
                 return self.protocol
             return bam
-        with patch('txtorcon.endpoints.launch_tor') as launch_mock:
+        with patch('txtorcon.endpoints.launch') as launch_mock:
             with patch('txtorcon.endpoints.build_tor_connection', new_callable=boom) as btc:
                 client = clientFromString(
                     self.reactor,
@@ -186,7 +184,7 @@ class EndpointTests(unittest.TestCase):
         ep._tor_progress_update(*args)
         self.assertTrue(ding.called_with(*args))
 
-    @patch('txtorcon.endpoints.launch_tor')
+    @patch('txtorcon.endpoints.launch')
     def test_progress_updates_private_tor(self, tor):
         ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
         tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')

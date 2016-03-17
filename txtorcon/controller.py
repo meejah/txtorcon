@@ -4,17 +4,35 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+import os
+import sys
+import pwd
+import shlex
+import tempfile
+import functools
+from io import StringIO
+
+from twisted.python import log
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet import protocol, error
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.interfaces import IReactorTime
+
+from txtorcon.util import delete_file_or_tree, find_keywords
+from txtorcon.util import find_tor_binary, available_tcp_port
+from txtorcon.log import txtorlog
+from txtorcon.torcontrolprotocol import TorProtocolFactory
 
 
 @inlineCallbacks
-def launch_tor(config, reactor,
-               tor_binary=None,
-               progress_updates=None,
-               connection_creator=None,
-               timeout=None,
-               kill_on_stderr=True,
-               stdout=None, stderr=None):
+def launch(
+        config, reactor,
+        tor_binary=None,
+        progress_updates=None,
+        connection_creator=None,
+        timeout=None,
+        kill_on_stderr=True,
+        stdout=None, stderr=None):
     """
     launches a new Tor process with the given config.
 
@@ -152,7 +170,7 @@ def launch_tor(config, reactor,
     try:
         control_port = config.ControlPort
     except KeyError:
-        control_port = yield available_tcp_port()
+        control_port = yield available_tcp_port(reactor)
         config.ControlPort = control_port
 
     # so, we support passing in ControlPort=0 -- not really sure if
@@ -336,7 +354,7 @@ class Tor(object):
         """
         raise NotImplemented(__name__)
 
-    def create_client_endpoint(self, host, port, ...):
+    def create_client_endpoint(self, host, port):
         """
         returns an IStreamClientEndpoint instance that will connect via
         SOCKS over this Tor instance. Error if this Tor has no SOCKS
@@ -381,3 +399,240 @@ class Tor(object):
         return self
     def __exit__(self, a, b, c):
         self.shutdown()
+
+
+class TorNotFound(RuntimeError):
+    """
+    Raised by launch_tor() in case the tor binary was unspecified and could
+    not be found by consulting the shell.
+    """
+
+
+class TorProcessProtocol(protocol.ProcessProtocol):
+
+    def __init__(self, connection_creator, progress_updates=None, config=None,
+                 ireactortime=None, timeout=None, kill_on_stderr=True,
+                 stdout=None, stderr=None):
+        """
+        This will read the output from a Tor process and attempt a
+        connection to its control port when it sees any 'Bootstrapped'
+        message on stdout. You probably don't need to use this
+        directly except as the return value from the
+        :func:`txtorcon.launch_tor` method. tor_protocol contains a
+        valid :class:`txtorcon.TorControlProtocol` instance by that
+        point.
+
+        connection_creator is a callable that should return a Deferred
+        that callbacks with a :class:`txtorcon.TorControlProtocol`;
+        see :func:`txtorcon.launch_tor` for the default one which is a
+        functools.partial that will call
+        ``connect(TorProtocolFactory())`` on an appropriate
+        :api:`twisted.internet.endpoints.TCP4ClientEndpoint`
+
+        :param connection_creator: A no-parameter callable which
+            returns a Deferred which promises a
+            :api:`twisted.internet.interfaces.IStreamClientEndpoint
+            <IStreamClientEndpoint>`. If this is None, we do NOT
+            attempt to connect to the underlying Tor process.
+
+        :param progress_updates: A callback which received progress
+            updates with three args: percent, tag, summary
+
+        :param config: a TorConfig object to connect to the
+            TorControlProtocl from the launched tor (should it succeed)
+
+        :param ireactortime:
+            An object implementing IReactorTime (i.e. a reactor) which
+            needs to be supplied if you pass a timeout.
+
+        :param timeout:
+            An int representing the timeout in seconds. If we are
+            unable to reach 100% by this time we will consider the
+            setting up of Tor to have failed. Must supply ireactortime
+            if you supply this.
+
+        :param kill_on_stderr:
+            When True, kill subprocess if we receive anything on stderr
+
+        :param stdout:
+            Anything subprocess writes to stdout is sent to .write() on this
+
+        :param stderr:
+            Anything subprocess writes to stderr is sent to .write() on this
+
+        :ivar tor_protocol: The TorControlProtocol instance connected
+            to the Tor this :api:`twisted.internet.protocol.ProcessProtocol
+            <ProcessProtocol>`` is speaking to. Will be valid
+            when the `connected_cb` callback runs.
+
+        :ivar connected_cb: Triggered when the Tor process we
+            represent is fully bootstrapped
+
+        """
+
+        self.config = config
+        self.tor_protocol = None
+        self.progress_updates = progress_updates
+
+        if connection_creator:
+            self.connection_creator = connection_creator
+            self.connected_cb = Deferred()
+        else:
+            self.connection_creator = None
+            self.connected_cb = None
+
+        self.attempted_connect = False
+        self.to_delete = []
+        self.kill_on_stderr = kill_on_stderr
+        self.stderr = stderr
+        self.stdout = stdout
+        self.collected_stdout = StringIO()
+
+        self._setup_complete = False
+        self._did_timeout = False
+        self._timeout_delayed_call = None
+        if timeout:
+            if not ireactortime:
+                raise RuntimeError(
+                    'Must supply an IReactorTime object when supplying a '
+                    'timeout')
+            ireactortime = IReactorTime(ireactortime)
+            self._timeout_delayed_call = ireactortime.callLater(
+                timeout, self.timeout_expired)
+
+    def outReceived(self, data):
+        """
+        :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
+        """
+
+        if self.stdout:
+            self.stdout.write(data)
+
+        # minor hack: we can't try this in connectionMade because
+        # that's when the process first starts up so Tor hasn't
+        # opened any ports properly yet. So, we presume that after
+        # its first output we're good-to-go. If this fails, we'll
+        # reset and try again at the next output (see this class'
+        # tor_connection_failed)
+
+        txtorlog.msg(data)
+        if not self.attempted_connect and self.connection_creator \
+                and 'Bootstrap' in data:
+            self.attempted_connect = True
+            d = self.connection_creator()
+            d.addCallback(self.tor_connected)
+            d.addErrback(self.tor_connection_failed)
+
+    def timeout_expired(self):
+        """
+        A timeout was supplied during setup, and the time has run out.
+        """
+
+        try:
+            self.transport.signalProcess('TERM')
+        except error.ProcessExitedAlready:
+            self.transport.loseConnection()
+        self._did_timeout = True
+
+    def errReceived(self, data):
+        """
+        :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
+        """
+
+        if self.stderr:
+            self.stderr.write(data)
+
+        if self.kill_on_stderr:
+            self.transport.loseConnection()
+            raise RuntimeError(
+                "Received stderr output from slave Tor process: " + data)
+
+    def cleanup(self):
+        """
+        Clean up my temporary files.
+        """
+
+        all([delete_file_or_tree(f) for f in self.to_delete])
+        self.to_delete = []
+
+    def processEnded(self, status):
+        """
+        :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
+        """
+
+        self.cleanup()
+
+        if status.value.exitCode is None:
+            if self._did_timeout:
+                err = RuntimeError("Timeout waiting for Tor launch..")
+            else:
+                err = RuntimeError(
+                    "Tor was killed (%s)." % status.value.signal)
+        else:
+            err = RuntimeError(
+                "Tor exited with error-code %d" % status.value.exitCode)
+
+        log.err(err)
+        if self.connected_cb:
+            self.connected_cb.errback(err)
+            self.connected_cb = None
+
+    def progress(self, percent, tag, summary):
+        """
+        Can be overridden or monkey-patched if you want to get
+        progress updates yourself.
+        """
+
+        if self.progress_updates:
+            self.progress_updates(percent, tag, summary)
+
+    # the below are all callbacks
+
+    def tor_connection_failed(self, failure):
+        # FIXME more robust error-handling please, like a timeout so
+        # we don't just wait forever after 100% bootstrapped (that
+        # is, we're ignoring these errors, but shouldn't do so after
+        # we'll stop trying)
+        self.attempted_connect = False
+
+    def status_client(self, arg):
+        args = shlex.split(arg)
+        if args[1] != 'BOOTSTRAP':
+            return
+
+        kw = find_keywords(args)
+        prog = int(kw['PROGRESS'])
+        tag = kw['TAG']
+        summary = kw['SUMMARY']
+        self.progress(prog, tag, summary)
+
+        if prog == 100:
+            if self._timeout_delayed_call:
+                self._timeout_delayed_call.cancel()
+                self._timeout_delayed_call = None
+            if self.connected_cb:
+                self.connected_cb.callback(self)
+                self.connected_cb = None
+
+    def tor_connected(self, proto):
+        txtorlog.msg("tor_connected %s" % proto)
+
+        self.tor_protocol = proto
+        if self.config is not None:
+            self.config._update_proto(proto)
+        self.tor_protocol.is_owned = self.transport.pid
+        self.tor_protocol.post_bootstrap.addCallback(
+            self.protocol_bootstrapped).addErrback(
+                self.tor_connection_failed)
+
+    @inlineCallbacks
+    def protocol_bootstrapped(self, proto):
+        txtorlog.msg("Protocol is bootstrapped")
+
+        self.tor_protocol.add_event_listener(
+            'STATUS_CLIENT', self.status_client)
+
+        # FIXME: should really listen for these to complete as well
+        # as bootstrap etc. For now, we'll be optimistic.
+        yield self.tor_protocol.queue_command('TAKEOWNERSHIP')
+        yield self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')

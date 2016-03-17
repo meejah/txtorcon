@@ -41,7 +41,8 @@ from zope.interface import Interface, Attribute
 
 from txsocksx.client import SOCKS5ClientEndpoint
 
-from .torconfig import TorConfig, launch_tor, HiddenService
+from .torconfig import TorConfig, HiddenService
+from .controller import launch
 from .torstate import build_tor_connection
 
 
@@ -54,7 +55,7 @@ _global_tor_lock = defer.DeferredLock()
 @defer.inlineCallbacks
 def get_global_tor(reactor, control_port=None,
                    progress_updates=None,
-                   _tor_launcher=lambda r, c, p: launch_tor(
+                   _tor_launcher=lambda r, c, p: launch(
                        c, r, progress_updates=p)):
     """
     See description of :class:`txtorcon.TCPHiddenServiceEndpoint`'s
@@ -273,7 +274,7 @@ class TCPHiddenServiceEndpoint(object):
         @defer.inlineCallbacks
         def _launch(control_port):
             config = yield _create_default_config(reactor, control_port)
-            yield launch_tor(config, reactor, progress_updates=progress)
+            yield launch(config, reactor, progress_updates=progress)
             yield config.post_bootstrap
             defer.returnValue(config)
         r = TCPHiddenServiceEndpoint(reactor, _launch(control_port),
