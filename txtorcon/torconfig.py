@@ -250,6 +250,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             self.protocol_bootstrapped).addErrback(
                 self.tor_connection_failed)
 
+    @inlineCallbacks
     def protocol_bootstrapped(self, proto):
         txtorlog.msg("Protocol is bootstrapped")
 
@@ -258,8 +259,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
         # FIXME: should really listen for these to complete as well
         # as bootstrap etc. For now, we'll be optimistic.
-        self.tor_protocol.queue_command('TAKEOWNERSHIP')
-        self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
+        yield self.tor_protocol.queue_command('TAKEOWNERSHIP')
+        yield self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
 
 
 class TorConfigType(object):

@@ -7,6 +7,7 @@ from __future__ import with_statement
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 
+@inlineCallbacks
 def launch_tor(config, reactor,
                tor_binary=None,
                progress_updates=None,
@@ -127,7 +128,8 @@ def launch_tor(config, reactor,
     for arg in [stderr, stdout]:
         if arg and not getattr(arg, "write", None):
             raise RuntimeError(
-                'File-like object needed for stdout or stderr args.')
+                'File-like object needed for stdout or stderr args.'
+            )
 
     try:
         data_directory = config.DataDirectory
@@ -150,12 +152,12 @@ def launch_tor(config, reactor,
     try:
         control_port = config.ControlPort
     except KeyError:
-        control_port = 9052  # FIXME choose a random, unoccupied one?
+        control_port = yield available_tcp_port()
         config.ControlPort = control_port
 
     # so, we support passing in ControlPort=0 -- not really sure if
     # this is a good idea (since then the caller has to kill the tor
-    # off, etc), but at least one person has requested it :/
+    # off, etc), but at least one person has requested its :/
     if control_port != 0:
         config.CookieAuthentication = 1
         config.__OwningControllerProcess = os.getpid()
@@ -168,7 +170,7 @@ def launch_tor(config, reactor,
         connection_creator = None
 
     # NOTE well, that if we don't pass "-f" then Tor will merrily load
-    # it's default torrc, and apply our options over top... :/
+    # its default torrc, and apply our options over top... :/
     config_args = ['-f', '/non-existant', '--ignore-missing-torrc']
 
     # ...now add all our config options on the command-line. This
@@ -217,19 +219,24 @@ def launch_tor(config, reactor,
         # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
         transport.closeStdin()
 
-    except RuntimeError as e:
-        return defer.fail(e)
+    except RuntimeError:
+        # XXX if we can indeed just let this out, take out the
+        # try/except
+        raise
 
     if process_protocol.connected_cb:
-        return process_protocol.connected_cb
-    return defer.succeed(process_protocol)
+        yield process_protocol.connected_cb
+
+    tor = Tor(reactor, process_protocol.tor_protocol, _process)
 
 
-def connect(control_endpoint=None, password_function=None):
+def connect(control_endpoint, password_function=None):
     """
+    XXX THINK: do we want/need a reactor arg?
     The creates a :class:`txtorcon.Tor` instance by connecting to an
-    already-running tor's control port. By default, this is
-    UnixClientEndpoint('/var/run/tor/control').
+    already-running tor's control port. For example, a common default
+    for tor is UNIXClientEndpoint(reactor, '/var/run/tor/control') or
+    TCP4ClientEndpoint(reactor, 'localhost', 9051)
 
     If only password authentication is available in the client, the
     ``password_function`` is called (if supplied) to retrieve a valid
@@ -257,55 +264,26 @@ def connect(control_endpoint=None, password_function=None):
         a Deferred that fires with a :class:`txtorcon.Tor` instance
     """
 
-    if IStreamClientEndpoint.providedBy(connection):
-        endpoint = connection
+    if not IStreamClientEndpoint.providedBy(control_endpoint):
+        raise ValueError("control_endpoint must provide IStreamClientEndpoint")
 
-    elif isinstance(connection, tuple):
-        if len(connection) == 2:
-            reactor, socket = connection
-            if (os.path.exists(socket) and
-                os.stat(socket).st_mode & (stat.S_IRGRP | stat.S_IRUSR |
-                                           stat.S_IROTH)):
-                endpoint = UNIXClientEndpoint(reactor, socket)
-            else:
-                raise ValueError('Can\'t use "%s" as a socket' % (socket, ))
-        elif len(connection) == 3:
-            endpoint = TCP4ClientEndpoint(*connection)
-        else:
-            raise TypeError('Expected either a (reactor, socket)- or a '
-                            '(reactor, host, port)-tuple for argument '
-                            '"connection", got %s' % (connection, ))
-    else:
-        raise TypeError('Expected a (reactor, socket)- or a (reactor, host, '
-                        'port)-tuple or an object implementing IStreamClient'
-                        'Endpoint for argument "connection", got %s' %
-                        (connection, ))
-
-    d = endpoint.connect(
+    proto = yield control_endpoint.connect(
         TorProtocolFactory(
             password_function=password_function
         )
     )
-    if build_state:
-        d.addCallback(build_state
-                      if isinstance(build_state, collections.Callable)
-                      else _build_state)
-    elif wait_for_proto:
-        d.addCallback(wait_for_proto
-                      if isinstance(wait_for_proto, collections.Callable)
-                      else _wait_for_proto)
-    return d
+    yield proto.post_bootstrap
+    returnValue(proto)
 
 
 class Tor(object):
     """
-    Represents a single instance of Tor and acts as a Builder/Factory
+    I represent a single instance of Tor and act as a Builder/Factory
     for several useful objects you will probably want. There are two
-    ways to create one of these objects:
+    ways to create a Tor instance:
 
        - :func:`txtorcon.connect`` to connect to a tor that is already
-         running (e.g. Tor Browser Bundle, a system Tor, or some other
-         method).
+         running (e.g. Tor Browser Bundle, a system Tor, ...).
        - :func:`txtorcon.launch`` to launch a fresh tor instance
 
     If you desire more control, there are "lower level" APIs which are
@@ -316,20 +294,23 @@ class Tor(object):
 
         @inlineCallbacks
         def main(reactor):
-            tor = yield txtorcon.launch()  # or txtorcon.connect()
-            # one of:
-            onion_ep = tor.create_onion(port=80)
+            # tor = yield txtorcon.connect(UNIXClientEndpoint(reactor, "/var/run/tor/control"))
+            tor = yield txtorcon.launch(reactor)
+
+            onion_ep = tor.create_onion_endpoint(port=80)
             port = yield onion_ep.listen(Site())
             print(port.getHost())
     """
 
-    def __init__(self, reactor, tor_control_protocol):
+    def __init__(self, reactor, tor_control_protocol, _process_proto=None):
         """
-        (mostly) don't call yourself, use the factory methods. launch()
-        will launch a tor, then pass the control connection.
+        (mostly) don't instantiate this class yourself -- instead use the
+        factory methods :func:`txtorcon.launch` or :func:`txtorcon.connect`
         """
         self._protocol = tor_control_protocol
         self._reactor = reactor
+        # this only passed/set when we launch()
+        self._process_protocol = _process_proto
 
     @property
     def protocol(self):
@@ -346,7 +327,7 @@ class Tor(object):
         """
         for "real" args, see onion.py in the hidden-services API branch
         """
-        return Deferred()
+        raise NotImplemented(__name__)
 
     def create_client_endpoint(self, host, port, ...):
         """
