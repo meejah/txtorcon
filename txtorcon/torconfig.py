@@ -5,24 +5,16 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import os
-import sys
 import types
 import functools
-import tempfile
 import warnings
 from io import StringIO
-import shlex
-if sys.platform in ('linux2', 'darwin'):
-    import pwd
 
 from twisted.python import log
-from twisted.internet import defer, error, protocol
-from twisted.internet.interfaces import IReactorTime
-from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet import defer
 
-from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory, DEFAULT_VALUE
-from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
-from txtorcon.log import txtorlog
+from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
+from txtorcon.util import find_keywords
 from txtorcon.interface import ITorControlProtocol
 
 

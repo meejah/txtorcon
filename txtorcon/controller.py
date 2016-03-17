@@ -6,22 +6,25 @@ from __future__ import with_statement
 
 import os
 import sys
-import pwd
 import shlex
 import tempfile
 import functools
 from io import StringIO
+if sys.platform in ('linux2', 'darwin'):
+    import pwd
 
 from twisted.python import log
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet import protocol, error
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.interfaces import IReactorTime
+from twisted.internet.interfaces import IReactorTime, IStreamClientEndpoint
 
 from txtorcon.util import delete_file_or_tree, find_keywords
 from txtorcon.util import find_tor_binary, available_tcp_port
 from txtorcon.log import txtorlog
 from txtorcon.torcontrolprotocol import TorProtocolFactory
+from txtorcon.torstate import TorState
+from txtorcon.torconfig import TorConfig
 
 
 @inlineCallbacks
@@ -385,20 +388,6 @@ class Tor(object):
     def shutdown(self):
         # shuts down the Tor instance; nothing else will work after this
         pass
-
-    # XXX idea-time, could make this a context-manager so that you can
-    # do something like:
-    #    with Tor.launch(...) as tor:
-    #        tor.client_endpoint('torproject.org', 443)
-    #    # Tor instance now shutdown etc.
-    # hmm, actually that's maybe a bad idea as launch() is async so you'd need:
-    # tor = yield Tor.launch()
-    # with tor:
-    #    tor.client_endpoint('torproject.org', 443)
-    def __enter__(self):
-        return self
-    def __exit__(self, a, b, c):
-        self.shutdown()
 
 
 class TorNotFound(RuntimeError):

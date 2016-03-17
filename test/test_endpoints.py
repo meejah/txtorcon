@@ -60,7 +60,7 @@ class EndpointTests(unittest.TestCase):
         )
         self.protocol.answers.append('HiddenServiceOptions')
         self.patcher = patch(
-            'txtorcon.torconfig.find_tor_binary',
+            'txtorcon.controller.find_tor_binary',
             return_value='/not/tor'
         )
         self.patcher.start()
