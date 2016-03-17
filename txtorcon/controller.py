@@ -227,20 +227,27 @@ def launch_tor(config, reactor,
     if process_protocol.connected_cb:
         yield process_protocol.connected_cb
 
-    tor = Tor(reactor, process_protocol.tor_protocol, _process)
+    returnValue(
+        Tor(
+            reactor,
+            process_protocol.tor_protocol,
+            _process_proto=process_protocol,
+        )
+    )
 
 
 def connect(control_endpoint, password_function=None):
     """
     XXX THINK: do we want/need a reactor arg?
-    The creates a :class:`txtorcon.Tor` instance by connecting to an
+
+    Creates a :class:`txtorcon.Tor` instance by connecting to an
     already-running tor's control port. For example, a common default
-    for tor is UNIXClientEndpoint(reactor, '/var/run/tor/control') or
+    tor uses is UNIXClientEndpoint(reactor, '/var/run/tor/control') or
     TCP4ClientEndpoint(reactor, 'localhost', 9051)
 
-    If only password authentication is available in the client, the
-    ``password_function`` is called (if supplied) to retrieve a valid
-    password. This function can return a Deferred.
+    If only password authentication is available in the tor we connect
+    to, the ``password_function`` is called (if supplied) to retrieve
+    a valid password. This function can return a Deferred.
 
     For example::
 
@@ -336,21 +343,30 @@ class Tor(object):
         ports.
         """
         # probably takes args similar to TorClientEndpoint on master
-        return IEndpoint()
+        raise NotImplemented(__name__)
 
     @inlineCallbacks
     def create_state(self):
-        # fires with TorState instance
+        """
+        returns a Deferred that fires with a ready-to-go
+        :class:`txtorcon.TorState` instance.
+        """
         state = TorState(self.protocol)
-        yield state._post_bootstrap
+        yield state.post_bootstrap
         returnValue(state)
 
     def create_config(self):
-        # fires with TorConfig instance
-        return Deferred()
+        """
+        returns a Deferred that fires with a ready-to-go
+        :class:`txtorcon.TorConfig` instance.
+        """
+        config = TorConfig(self.protocol)
+        yield config.post_bootstrap
+        returnValue(config)
 
     def shutdown(self):
         # shuts down the Tor instance; nothing else will work after this
+        pass
 
     # XXX idea-time, could make this a context-manager so that you can
     # do something like:
