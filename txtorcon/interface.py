@@ -299,22 +299,6 @@ class ITorControlProtocol(Interface):
         ICircuitListener and wait for circuit_closed()
         """
 
-    def add_circuit_listener(icircuitlistener):
-        """
-        Add an implementor of :class:`txtorcon.interface.ICircuitListener`
-        which will be added to all new circuits as well as all
-        existing ones (you won't, however, get circuit_new calls for
-        the existing ones)
-        """
-
-    def add_stream_listener(istreamlistener):
-        """
-        Add an implementor of :class:`txtorcon.interface.IStreamListener`
-        which will be added to all new circuits as well as all
-        existing ones (you won't, however, get stream_new calls for
-        the existing ones)
-        """
-
     def add_event_listener(evt, callback):
         """
         Add a listener to an Event object. This may be called multiple
