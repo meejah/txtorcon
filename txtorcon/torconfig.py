@@ -111,7 +111,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.kill_on_stderr = kill_on_stderr
         self.stderr = stderr
         self.stdout = stdout
-        self.collected_stdout = StringIO()
 
         self._setup_complete = False
         self._did_timeout = False
@@ -195,7 +194,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
                     "Tor was killed (%s)." % status.value.signal)
         else:
             err = RuntimeError(
-                "Tor exited with error-code %d" % status.value.exitCode)
+                "Tor exited with error-code %d" % status.value.exitCode
+            )
 
         log.err(err)
         if self.connected_cb:
