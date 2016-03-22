@@ -28,72 +28,78 @@ from txtorcon.torconfig import TorConfig
 
 
 @inlineCallbacks
-def launch(
-        config, reactor,
-        tor_binary=None,
-        progress_updates=None,
-        connection_creator=None,
-        timeout=None,
-        kill_on_stderr=True,
-        stdout=None, stderr=None):
+def launch(reactor,
+           progress_updates=None,
+           data_directory=None,
+           socks_port=None,
+           stdout=None,
+           stderr=None,
+           timeout=None,
+           tor_binary=None,
+           # 'users' probably never need these:
+           connection_creator=None,
+           kill_on_stderr=True,
+           ):
     """
-    launches a new Tor process with the given config.
+    launches a new Tor process, and returns a Deferred that fires with
+    a new :class:`txtorcon.Tor` instance. From this instance, you can
+    create or get any "interesting" instances you need: the
+    :class:`txtorcon.TorConfig` instance, create endpoints, create
+    :class:`txtorcon.TorState` instance(s), etc.
 
-    There may seem to be a ton of options, but don't panic: this
-    method should be easy to use and most options can be ignored
-    except for advanced use-cases. Calling with a completely empty
-    TorConfig should Just Work::
+    Note that there is NO way to pass in a config; we only expost a
+    couple of basic Tor options. If you need anything beyond these,
+    you can access the ``TorConfig`` instance (via ``.get_config()``)
+    and make any changes there, reflecting them in tor with
+    ``.save()``.
 
-        config = TorConfig()
-        d = launch_tor(config, reactor)
-        d.addCallback(...)
+    You can igore all the options and safe defaults will be
+    provided. However, **it is recommended to pass data_directory**
+    especially if you will be starting up Tor frequently, as it saves
+    a bunch of time (and bandwidth for the directory
+    authorities). "Safe defaults" means:
 
-    Note that the incoming TorConfig instance is examined and several
-    config options are acted upon appropriately:
-
-    ``DataDirectory``: if supplied, a tempdir is not created, and the
-    one supplied is not deleted.
-
-    ``ControlPort``: if 0 (zero), a control connection is NOT
-    established (and ``connection_creator`` is ignored). In this case
-    we can't wait for Tor to bootstrap, and **you must kill the tor**
-    yourself.
-
-    ``User``: if this exists, we attempt to set ownership of the tempdir
-    to this user (but only if our effective UID is 0).
-
-    This method may set the following options on the supplied
-    TorConfig object: ``DataDirectory, ControlPort,
-    CookieAuthentication, __OwningControllerProcess`` and WILL call
-    :meth:`txtorcon.TorConfig.save`
-
-    :param config:
-        an instance of :class:`txtorcon.TorConfig` with any
-        configuration values you want.  If ``ControlPort`` isn't set,
-        9052 is used; if ``DataDirectory`` isn't set, tempdir is used
-        to create one (in this case, it will be deleted upon exit).
+      - a tempdir for a ``DataDirectory`` is used (respecting ``TMP``)
+        and is deleted when this tor is shut down (you therefore
+        *probably* want to supply the ``data_directory=`` kwarg);
+      - a random, currently-unused local TCP port is used as the
+        ``SocksPort`` (specify ``socks_port=`` if you want your
+        own). If you want no SOCKS listener at all, pass
+        ``socks_port=0``
+      - we set ``__OwningControllerProcess`` and call
+        ``TAKEOWNERSHIP`` so that if our control connection goes away,
+        tor shuts down (see `control-spec
+        <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
+        3.23).
+      - the launched Tor will use ``COOKIE`` authentication.
 
     :param reactor: a Twisted IReactorCore implementation (usually
         twisted.internet.reactor)
 
-    :param tor_binary: path to the Tor binary to run. Tries to find the tor
-        binary if unset.
-
-    :param progress_updates: a callback which gets progress updates; gets as
+    :param progress_updates: a callback which gets progress updates; gets 3
          args: percent, tag, summary (FIXME make an interface for this).
 
-    :param kill_on_stderr:
-        When True (the default), if Tor prints anything on stderr we
-        kill off the process, close the TorControlProtocol and raise
-        an exception.
+    :param data_directory: set as the ``DataDirectory`` option to Tor,
+        this is where tor keeps its state information (cached relays,
+        etc); starting with an already-populated state directory is a lot
+        faster. If ``None`` (the default), we create a tempdir for this
+        **and delete it on exit**. It is recommended you pass something here.
 
     :param stdout: a file-like object to which we write anything that
         Tor prints on stdout (just needs to support write()).
 
     :param stderr: a file-like object to which we write anything that
-        Tor prints on stderr (just needs .write()). Note that we kill Tor
-        off by default if anything appears on stderr; pass "no_kill=True"
-        if you don't like the behavior.
+        Tor prints on stderr (just needs .write()). Note that we kill
+        Tor off by default if anything appears on stderr; pass
+        "kill_on_stderr=False" if you don't want this behavior.
+
+    :param tor_binary: path to the Tor binary to run. If None (the
+        default), we try to find the tor binary.
+
+    :param kill_on_stderr:
+        When True (the default), if Tor prints anything on stderr we
+        kill off the process, close the TorControlProtocol and raise
+        an exception.
 
     :param connection_creator: is mostly available to ease testing, so
         you probably don't want to supply this. If supplied, it is a
@@ -107,14 +113,6 @@ def launch(
         instance, from which you can retrieve the TorControlProtocol
         instance via the ``.protocol`` property.
 
-        In the launched Tor, ``__OwningControllerProcess`` will be set
-        and TAKEOWNERSHIP will have been called, so if you close the
-        TorControlProtocol the Tor should exit also (see `control-spec
-        <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
-        3.23). Note that if ControlPort was 0, we don't connect at all
-        and therefore don't wait for Tor to be bootstrapped. In this
-        case, it's up to you to kill off the Tor you created.
-
     HACKS:
 
      1. It's hard to know when Tor has both (completely!) written its
@@ -122,6 +120,15 @@ def launch(
         port. It seems that waiting for the first 'bootstrap' message on
         stdout is sufficient. Seems fragile...and doesn't work 100% of
         the time, so FIXME look at Tor source.
+
+
+
+    XXX this "User" thing was, IIRC, a feature for root-using scripts
+    (!!) that were going to launch tor, but where tor would drop to a
+    different user. Do we still want to support this?
+
+    ``User``: if this exists, we attempt to set ownership of the tempdir
+    to this user (but only if our effective UID is 0).
     """
 
     # We have a slight problem with the approach: we need to pass a
@@ -130,13 +137,6 @@ def launch(
     # start a Tor up which doesn't really do anything except provide
     # "AUTHENTICATE" and "GETINFO config/names" so we can do our
     # config validation.
-
-    # the other option here is to simply write a torrc version of our
-    # config and get Tor to load that...which might be the best
-    # option anyway.
-
-    # actually, can't we pass them all as command-line arguments?
-    # could be pushing some limits for giant configs...
 
     if tor_binary is None:
         tor_binary = find_tor_binary()
@@ -152,14 +152,30 @@ def launch(
                 'File-like object needed for stdout or stderr args.'
             )
 
-    try:
-        data_directory = config.DataDirectory
+    config = TorConfig()
+    if data_directory is not None:
         user_set_data_directory = True
-    except KeyError:
+        config.DataDirectory = data_directory
+        try:
+            os.mkdir(data_directory, 0700)
+        except OSError:
+            pass
+    else:
         user_set_data_directory = False
         data_directory = tempfile.mkdtemp(prefix='tortmp')
         config.DataDirectory = data_directory
+        # note: we also set up the ProcessProtocol to delete this when
+        # Tor exits, this is "just in case" fallback:
+        reactor.addSystemEventTrigger(
+            'before', 'shutdown',
+            functools.partial(delete_file_or_tree, data_directory)
+        )
 
+    if socks_port is None:
+        socks_port = yield available_tcp_port(reactor)
+    config.SOCKSPort = socks_port
+
+    if False: # XXX see note in docstring
         # Set ownership on the temp-dir to the user tor will drop privileges to
         # when executing as root.
         try:
@@ -170,37 +186,29 @@ def launch(
             if sys.platform in ('linux2', 'darwin') and os.geteuid() == 0:
                 os.chown(data_directory, pwd.getpwnam(user).pw_uid, -1)
 
-    try:
-        control_port = config.ControlPort
-    except KeyError:
-        control_port = yield available_tcp_port(reactor)
-        config.ControlPort = control_port
+    # XXX would be better, on supported platforms, to use a
+    # unix-socket inside the data-directory?
+    control_port = yield available_tcp_port(reactor)
+    config.ControlPort = control_port
 
-    # so, we support passing in ControlPort=0 -- not really sure if
-    # this is a good idea (since then the caller has to kill the tor
-    # off, etc), but at least one person has requested its :/
-    if control_port != 0:
-        config.CookieAuthentication = 1
-        config.__OwningControllerProcess = os.getpid()
-        if connection_creator is None:
-            connection_creator = functools.partial(
-                TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
-                TorProtocolFactory()
-            )
-    else:
-        connection_creator = None
+    config.CookieAuthentication = 1
+    config.__OwningControllerProcess = os.getpid()
+    if connection_creator is None:
+        connection_creator = functools.partial(
+            TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
+            TorProtocolFactory()
+        )
 
     # NOTE well, that if we don't pass "-f" then Tor will merrily load
-    # its default torrc, and apply our options over top... :/
-    config_args = ['-f', '/non-existant', '--ignore-missing-torrc']
+    # its default torrc, and apply our options over top... :/ should
+    # file a bug probably?
+    config_args = ['-f', '/dev/null/non-existant-on-purpose', '--ignore-missing-torrc']
 
     # ...now add all our config options on the command-line. This
     # avoids writing a temporary torrc.
     for (k, v) in config.config_args():
         config_args.append(k)
         config_args.append(v)
-
-    # txtorlog.msg('Running with config:\n', ' '.join(config_args))
 
     process_protocol = TorProcessProtocol(
         connection_creator,
@@ -222,36 +230,28 @@ def launch(
     # ones this method created.
     if not user_set_data_directory:
         process_protocol.to_delete = [data_directory]
-        reactor.addSystemEventTrigger(
-            'before', 'shutdown',
-            functools.partial(delete_file_or_tree, data_directory)
-        )
 
-    try:
-        log.msg('Spawning tor process with DataDirectory', data_directory)
-        args = [tor_binary] + config_args
-        transport = reactor.spawnProcess(
-            process_protocol,
-            tor_binary,
-            args=args,
-            env={'HOME': data_directory},
-            path=data_directory
-        )
-        # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
-        transport.closeStdin()
-
-    except RuntimeError:
-        # XXX if we can indeed just let this out, take out the
-        # try/except
-        raise
+    log.msg('Spawning tor process with DataDirectory', data_directory)
+    args = [tor_binary] + config_args
+    transport = reactor.spawnProcess(
+        process_protocol,
+        tor_binary,
+        args=args,
+        env={'HOME': data_directory},
+        path=data_directory
+    )
+    # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
+    transport.closeStdin()
 
     if process_protocol.connected_cb:
         yield process_protocol.connected_cb
+    yield config.post_bootstrap
+    # ^ should also wait for protocol to bootstrap; be more explicit?
 
     returnValue(
         Tor(
             reactor,
-            process_protocol.tor_protocol,
+            config,
             _process_proto=process_protocol,
         )
     )
@@ -330,15 +330,26 @@ class Tor(object):
             print(port.getHost())
     """
 
-    def __init__(self, reactor, tor_control_protocol, _process_proto=None):
+    def __init__(self, reactor, tor_config, _process_proto=None):
         """
-        (mostly) don't instantiate this class yourself -- instead use the
-        factory methods :func:`txtorcon.launch` or :func:`txtorcon.connect`
+        don't instantiate this class yourself -- instead use the factory
+        methods :func:`txtorcon.launch` or :func:`txtorcon.connect`
         """
-        self._protocol = tor_control_protocol
+        self._config = tor_config
+        self._protocol = tor_config.protocol
         self._reactor = reactor
         # this only passed/set when we launch()
         self._process_protocol = _process_proto
+
+    # XXX this shold probasbly include access to the "process
+    # protocol" instance, too...bikeshed on this name?
+    @property
+    def process(self):
+        if self._process_protocol:
+            return self._process_protocol
+        raise RuntimeError(
+            "This Tor instance was not launched by us; no process to return"
+        )
 
     @property
     def protocol(self):
@@ -347,6 +358,15 @@ class Tor(object):
         Tor instance.
         """
         return self._protocol
+
+    @property
+    def config(self):
+        """
+        The TorConfig instance associated with the tor instance we
+        launched. This instance represents up-to-date configuration of
+        the tor instance (even if another controller is connected).
+        """
+        return self._config
 
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
@@ -375,15 +395,6 @@ class Tor(object):
         state = TorState(self.protocol)
         yield state.post_bootstrap
         returnValue(state)
-
-    def create_config(self):
-        """
-        returns a Deferred that fires with a ready-to-go
-        :class:`txtorcon.TorConfig` instance.
-        """
-        config = TorConfig(self.protocol)
-        yield config.post_bootstrap
-        returnValue(config)
 
     def shutdown(self):
         # shuts down the Tor instance; nothing else will work after this
