@@ -27,6 +27,9 @@ sys.path.insert(0, os.path.join(os.path.split(__file__)[0], '_themes'))
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
+#keep_warnings = True
+pygments_style = 'monokai'
+
 ## trying to set t his somewhere...
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'show-inheritance', 'undoc-members']
