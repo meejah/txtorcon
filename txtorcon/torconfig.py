@@ -25,6 +25,7 @@ from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
 from txtorcon.log import txtorlog
 from txtorcon.interface import ITorControlProtocol
 
+import six
 
 class TorNotFound(RuntimeError):
     """
@@ -633,8 +634,12 @@ class _ListWrapper(list):
         list.__init__(self, thelist)
         self.on_modify = on_modify_cb
 
-    __setitem__ = _wrapture(list.__setitem__)
-    __setslice__ = _wrapture(list.__setslice__)
+    if six.PY3:    
+        __setitem__ = _wrapture(list.__setitem__)
+    else:
+        __setitem__ = _wrapture(list.__setitem__)
+        __setslice__ = _wrapture(list.__setslice__)
+
     append = _wrapture(list.append)
     extend = _wrapture(list.extend)
     insert = _wrapture(list.insert)
