@@ -634,11 +634,11 @@ class _ListWrapper(list):
         list.__init__(self, thelist)
         self.on_modify = on_modify_cb
 
-    if six.PY3:    
-        __setitem__ = _wrapture(list.__setitem__)
-    else:
-        __setitem__ = _wrapture(list.__setitem__)
-        __setslice__ = _wrapture(list.__setslice__)
+        if six.PY3:    
+            __setitem__ = _wrapture(list.__setitem__)
+        else:
+            __setitem__ = _wrapture(list.__setitem__)
+            __setslice__ = _wrapture(list.__setslice__)
 
     append = _wrapture(list.append)
     extend = _wrapture(list.extend)
