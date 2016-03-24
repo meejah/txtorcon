@@ -16,6 +16,8 @@ from txtorcon.util import unescape_quoted_string
 import os
 import tempfile
 
+import pytest
+
 
 class FakeState:
     tor_pid = 0
@@ -77,47 +79,7 @@ class TestFindKeywords(unittest.TestCase):
         )
 
 
-class FakeGeoIP(object):
-    def __init__(self, version=2):
-        self.version = version
-
-    def record_by_addr(self, ip):
-        r = dict(country_code='XX',
-                 latitude=50.0,
-                 longitude=0.0,
-                 city='City')
-        if self.version == 2:
-            r['region_code'] = 'Region'
-        else:
-            r['region_name'] = 'Region'
-        return r
-
-
 class TestNetLocation(unittest.TestCase):
-
-    def test_valid_lookup_v2(self):
-        from txtorcon import util
-        orig = util.city
-        try:
-            util.city = FakeGeoIP(version=2)
-            nl = util.NetLocation('127.0.0.1')
-            self.assertTrue(nl.city)
-            self.assertEquals(nl.city[0], 'City')
-            self.assertEquals(nl.city[1], 'Region')
-        finally:
-            util.ity = orig
-
-    def test_valid_lookup_v3(self):
-        from txtorcon import util
-        orig = util.city
-        try:
-            util.city = FakeGeoIP(version=3)
-            nl = util.NetLocation('127.0.0.1')
-            self.assertTrue(nl.city)
-            self.assertEquals(nl.city[0], 'City')
-            self.assertEquals(nl.city[1], 'Region')
-        finally:
-            util.ity = orig
 
     def test_city_fails(self):
         "make sure we don't fail if the city lookup excepts"
@@ -175,6 +137,43 @@ class TestNetLocation(unittest.TestCase):
             util.city = origcity
             util.country = origcountry
             util.asn = origasn
+
+
+class FakeGeoIP(object):
+    def __init__(self, version=2):
+        self.version = version
+
+    def record_by_addr(self, ip):
+        r = dict(country_code='XX',
+                 latitude=50.0,
+                 longitude=0.0,
+                 city='City')
+        if self.version == 2:
+            r['region_code'] = 'Region'
+        else:
+            r['region_name'] = 'Region'
+        return r
+
+
+GEO_IP_VERSIONS = [2, 3]
+
+
+@pytest.fixture(params=GEO_IP_VERSIONS)
+def fake_geo_ip_version(request):
+    return FakeGeoIP(version=request.param)
+
+
+def test_valid_lookup_version(fake_geo_ip_version):
+    from txtorcon import util
+    orig = util.city
+    try:
+        util.city = fake_geo_ip_version
+        nl = util.NetLocation('127.0.0.1')
+        assert nl.city
+        assert nl.city[0] == 'City'
+        assert nl.city[1] == 'Region'
+    finally:
+        util.ity = orig
 
 
 class TestProcessFromUtil(unittest.TestCase):
@@ -284,32 +283,6 @@ class TestUnescapeQuotedString(unittest.TestCase):
     '''
     Test cases for the function unescape_quoted_string.
     '''
-    def test_valid_string_unescaping(self):
-        unescapeable = {
-            '\\\\': '\\',         # \\     -> \
-            r'\"': r'"',          # \"     -> "
-            r'\\\"': r'\"',       # \\\"   -> \"
-            r'\\\\\"': r'\\"',    # \\\\\" -> \\"
-            '\\"\\\\': '"\\',     # \"\\   -> "\
-            "\\'": "'",           # \'     -> '
-            "\\\\\\'": "\\'",     # \\\'   -> \
-            r'some\"text': 'some"text',
-            'some\\word': 'someword',
-            '\\delete\\ al\\l un\\used \\backslashes': 'delete all unused backslashes',
-            '\\n\\r\\t': '\n\r\t',
-            '\\x00 \\x0123': 'x00 x0123',
-            '\\\\x00 \\\\x00': '\\x00 \\x00',
-            '\\\\\\x00  \\\\\\x00': '\\x00  \\x00'
-        }
-
-        for escaped, correct_unescaped in unescapeable.items():
-            escaped = '"{}"'.format(escaped)
-            unescaped = unescape_quoted_string(escaped)
-            msg = "Wrong unescape: {escaped} -> {unescaped} instead of {correct}"
-            msg = msg.format(unescaped=unescaped, escaped=escaped,
-                             correct=correct_unescaped)
-            self.assertEqual(unescaped, correct_unescaped, msg=msg)
-
     def test_string_unescape_octals(self):
         '''
         Octal numbers can be escaped by a backslash:
@@ -328,13 +301,41 @@ class TestUnescapeQuotedString(unittest.TestCase):
             self.assertEquals(result, expected, msg=msg)
 
 
-    def test_invalid_string_unescaping(self):
-        invalid_escaped = [
-            '"""',      # "     - unescaped quote
-            '"\\"',     # \     - unescaped backslash
-            '"\\\\\\"', # \\\   - uneven backslashes
-            '"\\\\""',  # \\"   - quotes not escaped
-        ]
+UNESCAPEABLE = {
+    '\\\\': '\\',         # \\     -> \
+    r'\"': r'"',          # \"     -> "
+    r'\\\"': r'\"',       # \\\"   -> \"
+    r'\\\\\"': r'\\"',    # \\\\\" -> \\"
+    '\\"\\\\': '"\\',     # \"\\   -> "\
+    "\\'": "'",           # \'     -> '
+    "\\\\\\'": "\\'",     # \\\'   -> \
+    r'some\"text': 'some"text',
+    'some\\word': 'someword',
+    '\\delete\\ al\\l un\\used \\backslashes': 'delete all unused backslashes',
+    '\\n\\r\\t': '\n\r\t',
+    '\\x00 \\x0123': 'x00 x0123',
+    '\\\\x00 \\\\x00': '\\x00 \\x00',
+    '\\\\\\x00  \\\\\\x00': '\\x00  \\x00'
+}
 
-        for invalid_string in invalid_escaped:
-            self.assertRaises(ValueError, unescape_quoted_string, invalid_string)
+
+@pytest.mark.parametrize('unescapable', UNESCAPEABLE.items(),
+                         ids=UNESCAPEABLE.keys())
+def test_valid_string_unescaping(unescapable):
+    escaped, correct_unescaped = unescapable
+    escaped = '"{}"'.format(escaped)
+    unescaped = unescape_quoted_string(escaped)
+    assert unescaped == correct_unescaped
+
+
+INVALID_ESCAPED = [
+    '"""',       # "     - unescaped quote
+    '"\\"',      # \     - unescaped backslash
+    '"\\\\\\"',  # \\\   - uneven backslashes
+    '"\\\\""',   # \\"   - quotes not escaped
+]
+
+
+@pytest.mark.parametrize('invalid_string', INVALID_ESCAPED)
+def test_invalid_string_unescaping(invalid_string):
+    pytest.raises(ValueError, 'unescape_quoted_string(invalid_string)')
