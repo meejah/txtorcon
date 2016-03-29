@@ -17,14 +17,13 @@ from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
-from txtorcon import TorProtocolFactory
 from txtorcon.stream import Stream
 from txtorcon.circuit import Circuit
 from txtorcon.router import Router, hashFromHexId
 from txtorcon.addrmap import AddrMap
 from txtorcon.torcontrolprotocol import parse_keywords
 from txtorcon.log import txtorlog
-from txtorcon.torcontrolprotocol import TorProtocolError
+from txtorcon.torcontrolprotocol import TorProtocolError, TorProtocolFactory
 
 from txtorcon.interface import ITorControlProtocol
 from txtorcon.interface import IRouterContainer

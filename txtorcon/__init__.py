@@ -13,7 +13,11 @@ from txtorcon.circuit import Circuit
 from txtorcon.circuit import build_timeout_circuit
 from txtorcon.circuit import CircuitBuildTimedOutError
 from txtorcon.stream import Stream
-from txtorcon.torcontrolprotocol import connect
+from txtorcon.controller import connect
+from txtorcon.controller import launch
+from txtorcon.controller import Tor
+from txtorcon.controller import TorProcessProtocol
+from txtorcon.controller import TorNotFound
 from txtorcon.torcontrolprotocol import TorControlProtocol
 from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.torcontrolprotocol import TorProtocolFactory
@@ -56,14 +60,15 @@ __all__ = [
     "Router",
     "Circuit",
     "Stream",
-    "connect",
+    "connect", "launch", "Tor",
     "TorControlProtocol", "TorProtocolError", "TorProtocolFactory",
     "TorState", "DEFAULT_VALUE",
     "TorInfo",
-    "build_tor_connection", "build_local_tor_connection", "launch_tor",
+    "build_tor_connection", "build_local_tor_connection",
+    "launch_tor",  # XXX deprecate?
     "create_onion_service",
     "TorNotFound", "TorConfig",
-    "FilesystemHiddenService", "HiddenService", "AuthenticatedHiddenService",
+    "FilesystemHiddenService", "HiddenService", "AuthenticatedHiddenService", # XXX FIXME
     "TorProcessProtocol",
     "TorInfo",
     "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",

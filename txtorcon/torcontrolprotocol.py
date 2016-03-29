@@ -24,37 +24,6 @@ import base64
 
 DEFAULT_VALUE = 'DEFAULT'
 
-@defer.inlineCallbacks
-def connect(endpoint, password_function=lambda: None):
-    """
-    (experimental; details may change) This connects to the given
-    endpoint, presuming it is a Tor control connection and gives back
-    a TorControlProtocol instance. This does *not* reconnect if the
-    connection is dropped. This is the preferred entry point to
-    control a running Tor; if you need to *start* a Tor see
-    :ref:`launching_tor`.
-
-    See :meth:`txtorcon.TorState.from_protocol` to create a valid
-    :class:`txtorcon.TorState` instance from the connection.
-
-    :param endpoint: A Twisted IEndpoint, in practice either a
-        TCP4ClientEndpoint or a UnixClientEndpoint. By default, Tor
-        uses "tcp:localhost:9051" or "unix:/var/run/tor/control".
-
-    :param password_function: This is only consulted if the Tor to
-        which we connect does not have cookie authentication enabled. In
-        that case, this function is called to request a password. It may
-        return a Deferred.
-
-    :returns: A Deferred that fires with a ready-to-use
-        TorControlProtocol instance is returned, or Failure if a
-        connection can't be established.
-    """
-
-    factory = TorProtocolFactory(password_function=password_function)
-    proto = yield endpoint.connect(factory)
-    yield proto.post_bootstrap
-    defer.returnValue(proto)
 
 class TorProtocolError(RuntimeError):
     """

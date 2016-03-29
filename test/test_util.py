@@ -12,6 +12,7 @@ from txtorcon.util import ip_from_int
 from txtorcon.util import find_tor_binary
 from txtorcon.util import maybe_ip_addr
 from txtorcon.util import unescape_quoted_string
+from txtorcon.util import available_tcp_port
 
 import os
 import tempfile
@@ -208,11 +209,12 @@ class TestProcessFromUtil(unittest.TestCase):
         # tests, but I was using "nc" before, and I think this is
         # preferable.
         from twisted.internet import reactor
-        ep = TCP4ServerEndpoint(reactor, 9887)
+        port = yield available_tcp_port(reactor)
+        ep = TCP4ServerEndpoint(reactor, port)
         listener = yield ep.listen(FakeProtocolFactory())
 
         try:
-            pid = process_from_address('0.0.0.0', 9887, self.fakestate)
+            pid = process_from_address('0.0.0.0', port, self.fakestate)
         finally:
             listener.stopListening()
 
