@@ -17,7 +17,8 @@ from twisted.python import log
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet import protocol, error
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.interfaces import IReactorTime, IStreamClientEndpoint
+from twisted.internet.interfaces import IReactorTime, IReactorCore
+from twisted.internet.interfaces import IStreamClientEndpoint
 
 from txtorcon.util import delete_file_or_tree, find_keywords
 from txtorcon.util import find_tor_binary, available_tcp_port
@@ -138,6 +139,9 @@ def launch(reactor,
     # "AUTHENTICATE" and "GETINFO config/names" so we can do our
     # config validation.
 
+    if not IReactorCore.providedBy(reactor):
+        raise ValueError("'reactor' argument must provide IReactorCore")
+
     if tor_binary is None:
         tor_binary = find_tor_binary()
     if tor_binary is None:
@@ -190,6 +194,7 @@ def launch(reactor,
     # unix-socket inside the data-directory?
     control_port = yield available_tcp_port(reactor)
     config.ControlPort = control_port
+    print("CONTROL PORT", control_port)
 
     config.CookieAuthentication = 1
     config.__OwningControllerProcess = os.getpid()
@@ -245,6 +250,7 @@ def launch(reactor,
 
     if process_protocol.connected_cb:
         yield process_protocol.connected_cb
+        print("OHAI")
     yield config.post_bootstrap
     # ^ should also wait for protocol to bootstrap; be more explicit?
 
@@ -596,6 +602,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.attempted_connect = False
 
     def status_client(self, arg):
+        print("KERBLAMMO", arg)
         args = shlex.split(arg)
         if args[1] != 'BOOTSTRAP':
             return

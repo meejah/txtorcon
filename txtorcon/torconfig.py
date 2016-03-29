@@ -265,13 +265,13 @@ class IAuthenticatedService(Interface):
     auth_token = Attribute("the keyz!!!")
 
 
-@implements(IFilesystemOnionService)
-@implements(IAuthencitaedService)
+@implementer(IFilesystemOnionService)
+@implementer(IAuthenticatedService)
 class AuthenticatedFilesystemOnionService(object):
     pass
 
 
-@implements(IFilesystemOnionService)
+@implementer(IFilesystemOnionService)
 class FilesystemOnionService(object):
     pass
 
@@ -622,7 +622,7 @@ class AuthenticatedHiddenServiceClient(object):
         return self._parent.group_readable
 
 
-@implementer(IAuthenticatedOnionService)
+@implementer(IAuthenticatedService)
 class AuthenticatedHiddenService(object):
     """
     Corresponds to::

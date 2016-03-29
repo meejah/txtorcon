@@ -29,12 +29,11 @@ from txtorcon.torconfig import TorConfig
 from txtorcon.torconfig import FilesystemHiddenService
 from txtorcon.torconfig import AuthenticatedHiddenService
 HiddenService = FilesystemHiddenService  # backwards-compat; plz deprecate!
-from txtorcon.onion import create_onion_service
-from txtorcon.torconfig import TorProcessProtocol
-from txtorcon.torconfig import launch_tor
-from txtorcon.torconfig import TorNotFound
-from txtorcon.torconfig import IOnionService
-from txtorcon.torconfig import IAuthenticatedOnionService
+##from txtorcon.onion import create_onion_service
+from txtorcon.controller import TorProcessProtocol
+##from txtorcon.torconfig import launch_tor # XXX backwards-compat: (put back??)
+#from txtorcon.torconfig import IOnionService
+#from txtorcon.torconfig import IAuthenticatedOnionService
 #from txtorcon.torconfig import OnionService, EphemeralOnionService
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
