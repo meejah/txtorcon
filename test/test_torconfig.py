@@ -1319,38 +1319,41 @@ class LaunchTorTests(unittest.TestCase):
         react.advance(12)
         self.assertTrue(trans.loseConnection.called)
 
-    @defer.inlineCallbacks
     def test_launch_timeout_process_exits(self):
         # cover the "one more edge case" where we get a processEnded()
         # but we've already "done" a timeout.
-        self.protocol = FakeControlProtocol([])
-        self.protocol.answers.append('''config/names=
-DataDirectory String
-ControlPort Port''')
-        self.protocol.answers.append({'DataDirectory': 'foo'})
-        self.protocol.answers.append({'ControlPort': 0})
-        config = TorConfig(self.protocol)
-        yield config.post_bootstrap
-        config.DataDirectory = '/dev/null'
-
         trans = Mock()
-        d = launch(
-            FakeReactor(self, trans, Mock()),
-            tor_binary='/bin/echo'
-        )
-        tor = yield d
-        tpp = tor._process_protocol
-        tpp.timeout_expired()
-        tpp.transport = trans
         trans.signalProcess = Mock()
         trans.loseConnection = Mock()
-        status = Mock()
-        status.value.exitCode = None
-        self.assertTrue(tpp._did_timeout)
-        tpp.processEnded(status)
 
+        class MyFakeReactor(FakeReactor):
+            def spawnProcess(self, processprotocol, bin, args, env, path,
+                             uid=None, gid=None, usePTY=None, childFDs=None):
+                self.protocol = processprotocol
+                self.protocol.makeConnection(self.transport)
+                self.transport.process_protocol = processprotocol
+                self.on_protocol(self.protocol)
+
+                status = Mock()
+                status.value.exitCode = None
+                processprotocol.processEnded(status)
+                return self.transport
+
+        react=MyFakeReactor(self, trans, Mock(), [1234, 9052])
+
+        d = launch(
+            reactor=react,
+            tor_binary='/bin/echo',
+            timeout=10,
+            data_directory='/dev/null',
+        )
+        react.advance(20)
+
+        # XXX why are we getting this logged twice?
         errs = self.flushLoggedErrors(RuntimeError)
-        self.assertEqual(1, len(errs))
+        self.assertEqual(2, len(errs))
+        for x in errs:
+            self.assertTrue("Tor was killed" in str(x))
 
     @defer.inlineCallbacks
     def test_launch_wrong_stdout(self):
@@ -1521,7 +1524,7 @@ ControlPort Port''')
         trans.protocol = self.protocol
         creator = functools.partial(Connector(), self.protocol, self.transport)
         d = launch(
-            FakeReactor(self, trans, on_protocol, [9052]),
+            FakeReactor(self, trans, on_protocol, [1234, 9052]),
             connection_creator=creator,
             tor_binary='/bin/echo'
         )
@@ -1552,7 +1555,7 @@ ControlPort Port''')
         trans.protocol = self.protocol
         creator = functools.partial(Connector(), self.protocol, self.transport)
         d = launch(
-            FakeReactor(self, trans, on_protocol, [9051]),
+            FakeReactor(self, trans, on_protocol, [1234, 9051]),
             connection_creator=creator,
             tor_binary='/bin/echo'
         )
@@ -1592,7 +1595,8 @@ ControlPort Port''')
         d = launch(
             FakeReactor(self, trans, on_protocol, [9052]),
             connection_creator=creator,
-            tor_binary='/bin/echo'
+            tor_binary='/bin/echo',
+            socks_port=1234,
         )
 
         def check_control_port(proto, tester):
@@ -1628,7 +1632,8 @@ ControlPort Port''')
         d = launch(
             FakeReactor(self, trans, on_protocol, [9052]),
             connection_creator=creator,
-            tor_binary='/bin/echo'
+            tor_binary='/bin/echo',
+            socks_port=1234,
         )
 
         def check_control_port(proto, tester):

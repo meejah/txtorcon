@@ -250,7 +250,6 @@ def launch(reactor,
 
     if process_protocol.connected_cb:
         yield process_protocol.connected_cb
-        print("OHAI")
     yield config.post_bootstrap
     # ^ should also wait for protocol to bootstrap; be more explicit?
 
