@@ -2,7 +2,7 @@ import tempfile
 
 from twisted.internet import defer
 
-from txtorcon.torconfig import HiddenService
+from txtorcon.torconfig import FilesystemHiddenService
 from txtorcon.torconfig import EphemeralHiddenService
 from txtorcon.endpoints import TCPHiddenServiceEndpoint
 
@@ -19,16 +19,51 @@ from txtorcon.endpoints import TCPHiddenServiceEndpoint
 # XXX: so, should create_onion() "just" be a dispatcher to "more
 # specific" factory-functions, like "create_ephemeral_onion"
 # "create_detached_onion" "create_permanent_onion??" etc...?
+# --> yes.
+# --> also: direct people to Tor() thing (doesn't exist in this branch tho)
 
 @defer.inlineCallbacks
-def create_onion_service(
+def create_authenticated_filesystem_onion_service(
+        reactor, torconfig, ports, directory,
+        auth): # StealthAuth(['bob', 'alice']) or BasicAuth(['bob', 'alice'])
+    pass
+
+
+@defer.inlineCallbacks
+def create_filesystem_onion_service(
+        reactor, torconfig, ports, directory,
+#        auth=NoAuth(),#_type='none',
+#or:        auth=StealthAuth(['bob', 'alice']),
+#or:        auth=BasicAuth(['bob', 'alice']),
+        # XXX really? await_upload=True):
+        ):
+    pass
+
+
+## XXX
+## kurt: so the "auth" is either NoAuth(), StealthAuth(), BasicAuth()
+## -> can we do the same thing for ephemeral/not
+
+## kurt: private_key + discard_key --> can combine?
+## or: can we "unify" the private_key to enum: "don't have key", "don't want key", "here's key"
+##     -> sounds like tears. does it want "some kind of object" to encode these desires?
+## or: pass **kwargs OR dict, and if 'private_key' in it, you want it
+## back; and if it's already a keyblob, you're a winner
+## kurt doesn't like magic **kwargs, tho.
+
+_THROW_AWAY = object()
+
+@defer.inlineCallbacks
+# not supported by tor, but might be ...
+def create_authenticated_ephemeral_onion_service():
+    pass
+
+
+@defer.inlineCallbacks
+def create_ephemeral_onion_service(
         reactor, torconfig, ports,
-        directory=None,
-        private_key=None,
-        ephemeral=True,
-        detach=None,
-        discard_key=None,
-        auth_type='none',
+        private_key=_THROW_AWAY,# if None, means "create, but don't send back".
+        detach=None, # XXX probably False by default
         await_upload=True):
     """
     This yields a new IOnionService if ``auth_type`` is "none" (the
@@ -116,7 +151,8 @@ def create_onion_service(
                 directory = tempfile.mkdtemp()
                 print("MADE", directory)
 
-            hs = HiddenService(
+            # XXX should be a .create() call
+            hs = FilesystemHiddenService(
                 torconfig, directory, ports,
             )
             torconfig.HiddenServices.append(hs)

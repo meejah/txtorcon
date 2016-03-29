@@ -686,7 +686,16 @@ class HiddenServiceClientAuth(object):
 
 class IOnionService(Interface):
     """
-    Encapsulates a single onion service.
+    Encapsulates a single, ephemeral onion service.
+
+    If this happens to be a filesystem-based service (instead of
+    ephemeral), it shall implement IFilesystemOnionService as well.
+
+    If this object happens to represent an authenticated service, it
+    shall implement IAuthenticatedOnionService ONLY (not this
+    interface too; IAuthenticatedOnionService returns *lists* of
+    IAuthenticatedOnionClient instances which are a subclass of
+    IOnionService; see :class:`txtorcon.IAuthenticatedOnionService`).
 
     For non-authenticated services, there will be one of these per
     directory (i.e. HiddenServiceDir) if using non-ephemeral services,
@@ -698,17 +707,43 @@ class IOnionService(Interface):
     (with a different authethentication token) whereas for a "stealth"
     sevice the .onion URI is different.
     """
-    auth_token = Attribute('None if not authenticated, bytes otherwise')
     hostname = Attribute("hostname, including .onion") # XXX *with* .onion? or not?
     private_key = Attribute("Private key blob (bytes)")
-    ephemeral = Attribute("True iff this service is ephemeral (ADD_ONION)")
     ports = Attribute("list of str; the ports lines like 'public_port host:local_port'")
-    group_readable = Attribute("set HiddenServiceGroupReadable if true (and non-ephemeral)")
 
 
-class IAuthenticatedOnionService(Interface):
+#class IFilesystemOnionService(Interface):
+class IFilesystemOnionService(IOnionService):
+    # XXX do we want to expose the directory in the API? probably...
+    hidden_service_directory = Attribute('The directory where private data is kept')
+    group_readable = Attribute("set HiddenServiceGroupReadable if true")
+
+
+class IAuthenticatedService(Interface):
+    name = Attribute("which client is this")
+    auth_token = Attribute("the keyz!!!")
+
+
+@implements(IFilesystemOnionService)
+@implements(IAuthencitaedService)
+class AuthenticatedFilesystemOnionService(object):
+    pass
+
+
+@implements(IFilesystemOnionService)
+class FilesystemOnionService(object):
+    pass
+
+
+# XXX bad name? why isn't it something collection-releated
+# e.g. IOnionServiceCollection ... or whatever bikeshed color
+# just having "OnionSerivce" in this class name smells real bad, because it doesn't implement IOnionService
+# maybe: IOnionClients? IOnionClientCollection?
+##class IAuthenticatedOnionService(Interface):
+
+class IOnionClients(Interface):
     """
-    This encapsulates both 'stealh' and 'basic' authenticated Onion
+    This encapsulates both 'stealth' and 'basic' authenticated Onion
     (nee Hidden) services, whether ephemeral or not. Note that Tor
     doesn't yet support ephemeral authenticated services.
     """
@@ -720,17 +755,42 @@ class IAuthenticatedOnionService(Interface):
 
     def get_client(self, name):
         """
-        :return: object implementing IOnionService for the named client
+        :return: object implementing IOnionClient for the named client
+        """
+
+    def add_client(self, name):
+        """
+        probably returns a Deferred? god fucking knows
+        """
+
+    def del_client(self, name):
+        """
+        moar deferreds
         """
 
 
+class IOnionClient(IOnionService):
+    """
+    A single client from a 'parent' IAuthenticatedOnionService. We do
+    this because hidden services can have different URLs and/or
+    auth_tokens on a per-client basis. So, the only way to access
+    *anything* from an authenticated onion service is to list the
+    cleints -- which gives you one IAuthenticatedOnionClient per
+    client.
+    """
+    auth_token = Attribute('Some secret bytes')
+    name = Attribute('str') # XXX required? probably.
+    # XXX do we want/need to reveal the "parent"
+#    parent = Attribute("XXX?")
+
+
 @implementer(IOnionService)
-class HiddenService(object):
+@implementer(IFilesystemOnionService)
+class FilesystemHiddenService(object):
     """
     """
     def __init__(self, config, thedir, ports,
                  auth=None, ver=2, group_readable=0):
-        print("DING", config, thedir)
         if not isinstance(ports, list):
             raise ValueError("'ports' must be a list of strings")
         self._config = config
@@ -769,10 +829,6 @@ class HiddenService(object):
             with open(os.path.join(self._dir, 'private_key'), 'r') as f:
                 self._private_key = f.read().strip()
         return self._private_key
-
-    @property
-    def ephemeral(self):
-        return False
 
     @property
     def ports(self):
@@ -1047,6 +1103,7 @@ class AuthenticatedHiddenService(object):
         self._config = config
         self._dir = thedir
         self._ports = ports
+        # dict: name -> IAuthenticatedOnionClient
         self._clients = None  # XXX validate vs. clients if not None?
         self._version = ver
         self._group_readable = group_readable
@@ -1056,11 +1113,24 @@ class AuthenticatedHiddenService(object):
     # provide is "clients" because there's a separate .onion hostname
     # and authentication token per client.
 
-    @property
-    def clients(self):
+    def client_names(self):
+        """
+        IAuthenticatedOnionService API
+        """
         if self._clients is None:
             self._parse_hostname()
-        return self._clients
+        return self._clients.keys()
+
+    def get_client(self, name):
+        """
+        IAuthenticatedOnionService API
+        """
+        if self._clients is None:
+            self._parse_hostname()
+        try:
+            return self._clients[name]
+        except KeyError:
+            raise RuntimeError("No such client '{}'".format(name))
 
     def _private_key(self, name):
         if self._client_keys is None:
@@ -1092,146 +1162,6 @@ class AuthenticatedHiddenService(object):
                 )
         self._clients = clients
 
-class __HiddenService(object):
-    """
-    Because hidden service configuration is handled specially by Tor,
-    we wrap the config in this class. This corresponds to the
-    HiddenServiceDir, HiddenServicePort, HiddenServiceVersion and
-    HiddenServiceAuthorizeClient lines from the config. If you want
-    multiple HiddenServicePort lines, simply append more strings to
-    the ports member.
-
-    To create an additional hidden service, append a new instance of
-    this class to the config (ignore the conf argument). You are
-    greatly encouraged to use methods provided by TorConfig to create
-    your HiddenService instance, one of:
-
-      - :meth:`txtorcon.TorConfig.onion_create`
-      - :meth:`txtorcon.TorConfig.onion_create_ephemeral`
-
-    Authentication is off by default, or can be specified with a
-    ``StealthAuthentication`` or ``BasicAuthentication`` instance to the
-    above methods.
-    """
-
-    def __init__(self, config, thedir, ports,
-                 auth=[], ver=2, group_readable=0):
-        """
-        config is the TorConfig to which this will belong, thedir
-        corresponds to 'HiddenServiceDir' and will ultimately contain
-        a 'hostname' and 'private_key' file, ports is a list of lines
-        corresponding to HiddenServicePort (like '80 127.0.0.1:1234'
-        to advertise a hidden service at port 80 and redirect it
-        internally on 127.0.0.1:1234). auth corresponds to the
-        HiddenServiceAuthenticateClient lines and can be either a
-        string or a list of strings (like 'basic client0,client1' or
-        'stealth client5,client6') and ver corresponds to
-        HiddenServiceVersion and is always 2 right now.
-
-        XXX FIXME can we avoid having to pass the config object
-        somehow? Like provide a factory-function on TorConfig for
-        users instead?
-        """
-
-        self.conf = config
-        self.dir = thedir
-        self.version = ver
-        self.group_readable = group_readable
-
-        # HiddenServiceAuthorizeClient is a list
-        # in case people are passing '' for the auth
-        if not auth:
-            auth = []
-        elif not isinstance(auth, list):
-            auth = [auth]
-        self.authorize_client = _ListWrapper(
-            auth, functools.partial(
-                self.conf.mark_unsaved, 'HiddenServices'
-            )
-        )
-
-        # there are three magic attributes, "hostname" and
-        # "private_key" are gotten from the dir if they're still None
-        # when accessed. "client_keys" parses out any client
-        # authorizations. Note that after a SETCONF has returned '250
-        # OK' it seems from tor code that the keys will always have
-        # been created on disk by that point
-
-        if not isinstance(ports, list):
-            ports = [ports]
-        self.ports = _ListWrapper(ports, functools.partial(
-            self.conf.mark_unsaved, 'HiddenServices'))
-
-    def __setattr__(self, name, value):
-        """
-        We override the default behavior so that we can mark
-        HiddenServices as unsaved in our TorConfig object if anything
-        is changed.
-        """
-        watched_params = ['dir', 'version', 'authorize_client', 'ports']
-        if name in watched_params and self.conf:
-            self.conf.mark_unsaved('HiddenServices')
-        if isinstance(value, list):
-            value = _ListWrapper(value, functools.partial(
-                self.conf.mark_unsaved, 'HiddenServices'))
-        self.__dict__[name] = value
-
-    def __getattr__(self, name):
-        '''
-        FIXME can't we just move this to @property decorated methods
-        instead?
-        '''
-
-        # For stealth authentication, the .onion is per-client. So in
-        # that case, we really have no choice here -- we can't have
-        # "a" hostname. So we just barf; it's an error to access to
-        # hostname this way. Instead, use .clients.{hostname, cookie}
-
-        if name == 'private_key':
-            with open(os.path.join(self.dir, name)) as f:
-                data = f.read().strip()
-            self.__dict__[name] = data
-
-        elif name == 'clients':
-            clients = []
-            try:
-                with open(os.path.join(self.dir, 'hostname')) as f:
-                    for line in f.readlines():
-                        args = line.split()
-                        # XXX should be a dict?
-                        if len(args) > 1:
-                            # tag, onion-uri?
-                            clients.append((args[0], args[1]))
-                        else:
-                            clients.append(('default', args[0]))
-            except IOError:
-                pass
-            # XXX should be listwrapper!
-            self.__dict__[name] = clients
-
-        elif name == 'hostname':
-            with open(os.path.join(self.dir, name)) as f:
-                data = f.read().strip()
-            host = None
-            for line in data.split('\n'):
-                h = line.split(' ')[0]
-                if host is None:
-                    host = h
-                elif h != host:
-                    raise RuntimeError(
-                        ".hostname accessed on stealth-auth'd hidden-service "
-                        "with multiple onion addresses."
-                    )
-            self.__dict__[name] = h
-
-        elif name == 'client_keys':
-            fname = os.path.join(self.dir, name)
-            keys = []
-            if os.path.exists(fname):
-                with open(fname) as f:
-                    keys = parse_client_keys(f)
-            self.__dict__[name] = keys
-        return self.__dict__[name]
 
     def config_attributes(self):
         """
@@ -1249,119 +1179,6 @@ class __HiddenService(object):
         for authline in self.authorize_client:
             rtn.append(('HiddenServiceAuthorizeClient', str(authline)))
         return rtn
-
-
-class __EphemeralHiddenService(object):
-    '''
-    This uses the ephemeral hidden-service APIs (in comparison to
-    torrc or SETCONF). This means your hidden-service private-key is
-    never in a file. It also means that when the process exits, that
-    HS goes away. See documentation for ADD_ONION in torspec:
-    https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1295
-    '''
-
-    # XXX the "ports" stuff is still kind of an awkward API, especialy
-    # making the actual list public (since it'll have
-    # "80,127.0.0.1:80" instead of with a space
-
-    # XXX descriptor upload stuff needs more features from Tor (the
-    # actual uploaded key; the event always says UNKNOWN)
-
-    # XXX "auth" is unused (also, no Tor support I don't think?)
-
-    def __init__(self, ports, key_blob_or_type='NEW:BEST', auth=[], ver=2):
-        if not isinstance(ports, types.ListType):
-            ports = [ports]
-        # for "normal" HSes the port-config bit looks like "80
-        # 127.0.0.1:1234" whereas this one wants a comma, so we leave
-        # the public API the same and fix up the space. Or of course
-        # you can just use the "real" comma-syntax if you wanted.
-        self._ports = map(lambda x: x.replace(' ', ','), ports)
-        self._key_blob = key_blob_or_type
-        self.auth = auth  # FIXME ununsed
-        # FIXME nicer than assert, plz
-        assert ' ' not in self._key_blob
-        assert isinstance(ports, types.ListType)
-        if not key_blob_or_type.startswith('NEW:') \
-           and (len(key_blob_or_type) > 825 or len(key_blob_or_type) < 820):
-            raise RuntimeError('Wrong size key-blob')
-
-    @defer.inlineCallbacks
-    def add_to_tor(self, protocol):
-        '''
-        Returns a Deferred which fires with 'self' after at least one
-        descriptor has been uploaded. Errback if no descriptor upload
-        succeeds.
-        '''
-        ports = ' '.join(map(lambda x: 'Port=' + x.strip(), self._ports))
-        cmd = 'ADD_ONION %s %s' % (self._key_blob, ports)
-        ans = yield protocol.queue_command(cmd)
-        ans = find_keywords(ans.split('\n'))
-        self.hostname = ans['ServiceID'] + '.onion'
-        if self._key_blob == 'NEW:BEST':
-            self.private_key = ans['PrivateKey']
-
-        log.msg('Created hidden-service at', self.hostname)
-
-        # Now we want to wait for the descriptor uploads. This doesn't
-        # quite work, as the UPLOADED events always say "UNKNOWN" for
-        # the HSAddress so we can't correlate it to *this* onion for
-        # sure :/ "yet", though. Yawning says on IRC this is coming.
-
-        # XXX Hmm, still UPLOADED always says UNKNOWN, but the UPLOAD
-        # events do say the address -- so we save all those, and
-        # correlate to the target nodes. Not sure if this will really
-        # even work, but better than nothing.
-
-        uploaded = defer.Deferred()
-        attempted_uploads = set()
-        confirmed_uploads = set()
-        failed_uploads = set()
-
-        def hs_desc(evt):
-            """
-            From control-spec:
-            "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
-            [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
-            """
-
-            args = evt.split()
-            subtype = args[0]
-            if subtype == 'UPLOAD':
-                if args[1] == self.hostname[:-6]:
-                    attempted_uploads.add(args[3])
-
-            elif subtype == 'UPLOADED':
-                # we only need ONE successful upload to happen for the
-                # HS to be reachable. (addr is args[1])
-                if args[3] in attempted_uploads:
-                    confirmed_uploads.add(args[3])
-                    log.msg("Uploaded '{}' to '{}'".format(self.hostname, args[3]))
-                    uploaded.callback(self)
-
-            elif subtype == 'FAILED':
-                if args[1] == self.hostname[:-6]:
-                    failed_uploads.add(args[3])
-                    if failed_uploads == attempted_uploads:
-                        msg = "Failed to upload '{}' to: {}".format(
-                            self.hostname,
-                            ', '.join(failed_uploads),
-                        )
-                        uploaded.errback(RuntimeError(msg))
-
-        log.msg("Created '{}', waiting for descriptor uploads.".format(self.hostname))
-        yield protocol.add_event_listener('HS_DESC', hs_desc)
-        yield uploaded
-        yield protocol.remove_event_listener('HS_DESC', hs_desc)
-
-    @defer.inlineCallbacks
-    def remove_from_tor(self, protocol):
-        '''
-        Returns a Deferred which fires with None
-        '''
-        r = yield protocol.queue_command('DEL_ONION %s' % self.hostname[:-6])
-        if r.strip() != 'OK':
-            raise RuntimeError('Failed to remove hidden service: "%s".' % r)
 
 
 def parse_rsa_blob(lines):
@@ -1717,8 +1534,9 @@ class TorConfig(object):
         code to determine what sort of thing a key is?
         """
 
+        # XXX FIXME uhm...how to do all the different types of hidden-services?
         if name.lower() == 'hiddenservices':
-            return HiddenService
+            return FilesystemHiddenService
         return type(self.parsers[name])
 
     def _conf_changed(self, arg):
@@ -1805,7 +1623,8 @@ class TorConfig(object):
             if key == 'HiddenServices':
                 self.config['HiddenServices'] = value
                 for hs in value:
-                    if not isinstance(hs, HiddenService):
+                    # XXX should use interface class instead
+                    if not isinstance(hs, FilesystemHiddenService):
                         raise ValueError(
                             "Only txtorcon.HiddenService instances may be added"
                             " via TorConfig.hiddenservices; ephemeral services"
@@ -1964,7 +1783,7 @@ class TorConfig(object):
                 if directory not in directories:
                     directories.append(directory)
                     if not auth:
-                        service = HiddenService(
+                        service = FilesystemHiddenService(
                             self, directory, ports, auth, ver, group_read
                         )
                         hs.append(service)
@@ -1973,8 +1792,8 @@ class TorConfig(object):
                         parent_service = AuthenticatedHiddenService(
                             self, directory, ports, auth, ver, group_read
                         )
-                        for (_, service) in parent_service.clients.items():
-                            hs.append(service)
+                        for client_name in parent_service.client_names():
+                            hs.append(parent_service.get_client(client_name))
                 else:
                     raise RuntimeError("Trying to add hidden service with same HiddenServiceDir: %s" % directory)
 

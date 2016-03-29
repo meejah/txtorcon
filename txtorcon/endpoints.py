@@ -41,7 +41,8 @@ from zope.interface import Interface, Attribute
 
 from txsocksx.client import SOCKS5ClientEndpoint
 
-from .torconfig import TorConfig, launch_tor, HiddenService, EphemeralHiddenService
+from .torconfig import TorConfig, launch_tor
+from .torconfig import FilesystemHiddenService, EphemeralHiddenService
 from .torstate import build_tor_connection
 
 
@@ -124,7 +125,7 @@ class IProgressProvider(Interface):
 
 # XXX essentially, we either want an ephemeral vs. non-ephemeral etc
 # endpoint instance, *or* we just make this a "delayed" version of
-# create_onion_services -- i.e. holds all the same args as that and
+# create_onion_service -- i.e. holds all the same args as that and
 # listen() instantiates it and knows "which" tor it wants.
 @implementer(IStreamServerEndpoint, IProgressProvider)
 class TCPHiddenServiceEndpoint(object):
@@ -306,6 +307,16 @@ class TCPHiddenServiceEndpoint(object):
         )
         progress.target = r._tor_progress_update
         return r
+
+    @classmethod
+    def create(
+            cls, reactor, config, public_port,
+            hidden_service_dir=None,
+            local_port=None,
+            control_port=None,
+            ephemeral=None,
+            private_key=None):
+        pass
 
     def __init__(self, reactor, config, public_port,
                  hidden_service_dir=None,
@@ -512,7 +523,7 @@ class TCPHiddenServiceEndpoint(object):
                 )
             else:
                 # XXX should be a .create() call
-                self.hiddenservice = HiddenService(
+                self.hiddenservice = FilesystemHiddenService(
                     self.config, self.hidden_service_dir,
                     ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                     auth=authlines,

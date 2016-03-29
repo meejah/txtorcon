@@ -35,6 +35,8 @@ from txtorcon import IProgressProvider
 from txtorcon import torconfig
 from txtorcon.torconfig import TorProcessProtocol
 from txtorcon.torconfig import IOnionService  # FIXME
+from txtorcon.torconfig import CommaList
+from txtorcon.torconfig import FilesystemHiddenService
 
 from txtorcon.util import delete_file_or_tree
 from txtorcon.torconfig import parse_client_keys
@@ -428,9 +430,8 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append({'SomethingExciting': 'a,b'})
         conf = TorConfig(self.protocol)
 
-        from txtorcon.torconfig import CommaList, HiddenService
         self.assertEqual(conf.get_type('SomethingExciting'), CommaList)
-        self.assertEqual(conf.get_type('HiddenServices'), HiddenService)
+        self.assertEqual(conf.get_type('HiddenServices'), FilesystemHiddenService)
 
     def test_immediate_hiddenservice_append(self):
         '''issue #88. we check that a .append(hs) works on a blank TorConfig'''
@@ -870,9 +871,9 @@ Z2Tur2c8UP8zxIoWfSVAi0Ahx+Ou8yKrlCGxYuFiRw==
             conf = TorConfig(self.protocol)
             hs = AuthenticatedHiddenService(conf, d, [])
 
-            self.assertEqual(1, len(hs.clients))
-            self.assertTrue('hungry' in hs.clients)
-            onion = hs.clients['hungry']
+            self.assertEqual(1, len(hs.client_names()))
+            self.assertTrue('hungry' in hs.client_names())
+            onion = hs.get_client('hungry')
             self.assertEqual(onion.hostname, 'blarglyfoo.onion')
             self.assertEqual(onion.private_key, 'RSA1024:Z2Tur2c8UP8zxIoWfSVAi0Ahx+Ou8yKrlCGxYuFiRw==')
 #            self.assertEqual(len(onion.client_keys), 1)
@@ -913,14 +914,14 @@ Z2Tur2c8UP8zxIoWfSVAi0Ahx+Ou8yKrlCGxYuFiRw==
             hs = AuthenticatedHiddenService(conf, d, [])
             print("DING", hs, dir(hs))
 
-            self.assertEqual(2, len(hs.clients))
-            self.assertTrue('foo' in hs.clients)
-            self.assertEqual('oniona.onion', hs.clients['foo'].hostname)
-            self.assertEqual('cookiea', hs.clients['foo'].auth_token)
+            self.assertEqual(2, len(hs.client_names()))
+            self.assertTrue('foo' in hs.client_names())
+            self.assertEqual('oniona.onion', hs.get_client('foo').hostname)
+            self.assertEqual('cookiea', hs.get_client('foo').auth_token)
 
-            self.assertTrue('bar' in hs.clients)
-            self.assertEqual('onionb.onion', hs.clients['bar'].hostname)
-            self.assertEqual('cookieb', hs.clients['bar'].auth_token)
+            self.assertTrue('bar' in hs.client_names())
+            self.assertEqual('onionb.onion', hs.get_client('bar').hostname)
+            self.assertEqual('cookieb', hs.get_client('bar').auth_token)
 
         finally:
             shutil.rmtree(d, ignore_errors=True)

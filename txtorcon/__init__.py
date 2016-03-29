@@ -22,8 +22,9 @@ from txtorcon.torstate import TorState
 from txtorcon.torstate import build_tor_connection
 from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
-from txtorcon.torconfig import HiddenService
+from txtorcon.torconfig import FilesystemHiddenService
 from txtorcon.torconfig import AuthenticatedHiddenService
+HiddenService = FilesystemHiddenService  # backwards-compat; plz deprecate!
 from txtorcon.onion import create_onion_service
 from txtorcon.torconfig import TorProcessProtocol
 from txtorcon.torconfig import launch_tor
@@ -61,7 +62,8 @@ __all__ = [
     "TorInfo",
     "build_tor_connection", "build_local_tor_connection", "launch_tor",
     "create_onion_service",
-    "TorNotFound", "TorConfig", "HiddenService", "AuthenticatedHiddenService",
+    "TorNotFound", "TorConfig",
+    "FilesystemHiddenService", "HiddenService", "AuthenticatedHiddenService",
     "TorProcessProtocol",
     "TorInfo",
     "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",
