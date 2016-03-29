@@ -533,7 +533,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         """
         A timeout was supplied during setup, and the time has run out.
         """
-
+        print("EXPIRED!")
         try:
             self.transport.signalProcess('TERM')
         except error.ProcessExitedAlready:
