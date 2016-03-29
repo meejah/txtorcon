@@ -1359,10 +1359,14 @@ class LaunchTorTests(unittest.TestCase):
     def test_launch_wrong_stdout(self):
         config = TorConfig()
         try:
-            yield launch(None, stdout=object(), tor_binary='/bin/echo')
+            yield launch(
+                FakeReactor(self, Mock(), Mock()),
+                stdout=object(),
+                tor_binary='/bin/echo',
+            )
             self.fail("Should have thrown an error")
-        except RuntimeError:
-            pass
+        except RuntimeError as e:
+            self.assertTrue("file-like object needed" in str(e).lower())
 
     @defer.inlineCallbacks
     def test_launch_with_timeout(self):
