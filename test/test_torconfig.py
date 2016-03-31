@@ -38,6 +38,10 @@ from txtorcon import TorProcessProtocol
 
 from txtorcon.util import delete_file_or_tree
 from txtorcon.torconfig import parse_client_keys
+from txtorcon.torconfig import AuthenticatedHiddenService
+from txtorcon.torconfig import FilesystemHiddenService
+from txtorcon.torconfig import IOnionService # XXX interfaces.py
+from txtorcon.torconfig import CommaList
 
 
 @implementer(ITorControlProtocol)     # actually, just get_info_raw
@@ -1612,12 +1616,11 @@ class LaunchTorTests(unittest.TestCase):
         d.addErrback(self.fail)
         return d
 
+    @defer.inlineCallbacks
     def test_tor_connection_default_control_port(self):
         """
         Confirm a default control-port is set if not user-supplied.
         """
-
-        config = TorConfig()
 
         class Connector:
             def __call__(self, proto, trans):
@@ -1633,20 +1636,14 @@ class LaunchTorTests(unittest.TestCase):
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
         creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch(
+        tor = yield launch(
             FakeReactor(self, trans, on_protocol, [9052]),
             connection_creator=creator,
             tor_binary='/bin/echo',
             socks_port=1234,
         )
 
-        def check_control_port(proto, tester):
-            # ensure ControlPort was set to a default value
-            tester.assertEquals(config.ControlPort, 9052)
-
-        d.addCallback(check_control_port, self)
-        d.addErrback(self.fail)
-        return d
+        self.assertEqual(tor.config.ControlPort, 9052)
 
     def test_progress_updates(self):
         self.got_progress = False

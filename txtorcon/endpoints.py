@@ -296,7 +296,7 @@ class TCPHiddenServiceEndpoint(object):
         @defer.inlineCallbacks
         def _launch(control_port):
             config = yield _create_default_config(reactor, control_port)
-            yield launch(config, reactor, progress_updates=progress)
+            yield launch(reactor, progress_updates=progress)
             yield config.post_bootstrap
             defer.returnValue(config)
         r = TCPHiddenServiceEndpoint(

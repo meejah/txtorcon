@@ -5,7 +5,7 @@ import tempfile
 from mock import patch
 from mock import Mock, MagicMock
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from twisted.trial import unittest
 from twisted.test import proto_helpers
@@ -41,6 +41,15 @@ import util
 
 
 mock_add_onion_response = '''ServiceID=s3aoqcldyhju7dic\nPrivateKey=RSA1024:MIICXQIBAAKBgQDSb1NOcxPNV2GyVLaikkYIcvTIi4ZBaoF4pGAr67WiQP1kzobRthW9IKPmzru45rXUSQHjg3mGvRxE6s0tBqU6OfPCxEzRgCm/KGyxcipVtDbwpImYZfmOFu+tn4NmqXkB0J5n9/YnbcJCkV3gDOeQ2BPPe+kTuVrc24rUHgoX/QIDAQABAoGAFyXJyyJbdkX7aCtrX5ypeXpztK+sV/vIPCYQsiQeebeeZ/1T1TOrVn+Fp/jrq14teCmDvKwUrR6WQnp1kVNez0LFsCUohuiG0+Qj26Ach5GZR8K1nkqfOBEbH+3A3dCcDYETL9XnKCIaLrmVKlrFvB5dLbZv0MiCw+K6X2W6iKECQQDukfCUR7/GLmc5oyra61D0ROwhti9DBEVPsOvOFI0q07A+bGqXB7kOog0dPj6xO2V/6MPYvc59vWk5XwoVG+nJAkEA4c8psUrGefbs3iQxr0ge6r3f3SccSCfc/YjwTnmf8yCJ0PRYdirVl+WfG5AGfwDCwrDrelkScLhj/bWssvXWlQJAGs6DPeYiAl7McomHEzpFymzEK7WQ8fLU5vN2S527jwhiUWFVSMsxXBeRaavI15lY+lppRz1sqmxSGoQ3Wc/dIQJBAKbWz7FE1FytCtoe1+7wVJeQbuURzp2phmh1U0hIKNwUQH946ht1DpfKesJ8qbAQudXrrjCZuzw5oPeF0fHwHfkCQQC8GhO4mLGD+aLvmhPHD9owUsKhL7HHVHkEvPm2sNdQBvOR9iKNGsC91LT2h3AQ7Zse95Rn00HLNKFCu1nn8hEf\n'''
+
+
+@implementer(IReactorCore)
+class MockReactor(Mock):
+    """
+    Just so that our 'provides IReactorCore' assertions pass, but it's
+    still "just a Mock".
+    """
+    pass
 
 
 class EndpointTests(unittest.TestCase):
@@ -102,7 +111,7 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_endpoint_properties(self):
-        ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
+        ep = yield TCPHiddenServiceEndpoint.private_tor(MockReactor(), 80)
         self.assertEqual(None, ep.onion_private_key)
         self.assertEqual(None, ep.onion_uri)
         ep.hiddenservice = Mock()
@@ -112,16 +121,22 @@ class EndpointTests(unittest.TestCase):
     @patch('txtorcon.endpoints.launch')
     @defer.inlineCallbacks
     def test_private_tor(self, launch):
-        ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80,
-                                                        control_port=1234)
+        ep = yield TCPHiddenServiceEndpoint.private_tor(
+            MockReactor(), 80,
+            control_port=1234,
+        )
         self.assertTrue(launch.called)
+        # XXX what about a second call, to confirm we call launch again?
 
     @defer.inlineCallbacks
     def test_private_tor_no_control_port(self):
+        @implementer(IReactorCore)
+        class Reactor(Mock):
+            pass
         m = Mock()
         from txtorcon import endpoints
         endpoints.launch = m
-        ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
+        ep = yield TCPHiddenServiceEndpoint.private_tor(MockReactor(), 80)
         self.assertTrue(m.called)
 
     @defer.inlineCallbacks
@@ -332,6 +347,7 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_explicit_data_dir(self):
+        print("START")
         tmpdir = tempfile.mkdtemp()
         try:
             with open(os.path.join(tmpdir, 'hostname'), 'w') as f:
@@ -356,6 +372,7 @@ class EndpointTests(unittest.TestCase):
 
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
+        print("END")
 
     def test_failure(self):
         self.reactor.failures = 1
@@ -546,8 +563,8 @@ class EndpointLaunchTests(unittest.TestCase):
 
 
 # FIXME should probably go somewhere else, so other tests can easily use these.
+@implementer(IProtocol)
 class FakeProtocol(object):
-    implements(IProtocol)
 
     def dataReceived(self, data):
         print "DATA", data
@@ -563,8 +580,8 @@ class FakeProtocol(object):
         print "MADE!"
 
 
+@implementer(IAddress)
 class FakeAddress(object):
-    implements(IAddress)
 
     compareAttributes = ('type', 'host', 'port')
     type = 'fakeTCP'
@@ -581,8 +598,8 @@ class FakeAddress(object):
         return hash((self.type, self.host, self.port))
 
 
+@implementer(IListeningPort)
 class FakeListeningPort(object):
-    implements(IListeningPort)
 
     def __init__(self, port):
         self.port = port
@@ -607,8 +624,8 @@ from test_torconfig import FakeProcessTransport  # FIXME importing from other te
 from test_torconfig import FakeControlProtocol  # FIXME
 
 
+@implementer(IReactorTCP, IReactorCore)
 class FakeReactorTcp(FakeReactor):
-    implements(IReactorTCP)
 
     failures = 0
     _port_generator = port_generator()
