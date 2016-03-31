@@ -343,8 +343,6 @@ class FilesystemHiddenService(object):
         self._auth = auth
         if self._auth is None:
             self._auth = []
-        else:
-            print("AZXCASDFASDFASDFASDF", auth)
         self._version = ver
         self._group_readable = group_readable
         self._hostname = None
@@ -385,7 +383,6 @@ class FilesystemHiddenService(object):
             functools.partial(self._config.mark_unsaved, 'HiddenServices'),
         )
         self._config.mark_unsaved('HiddenServices')
-        print("BOOOOMO", ports, self._ports, self)
 
     @property
     def dir(self):  # XXX propbably should be 'directory'?
@@ -429,7 +426,6 @@ class FilesystemHiddenService(object):
         if self.version:
             rtn.append(('HiddenServiceVersion', str(self.version)))
         for authline in self.authorize_client:
-            print("XXX", authline)
             rtn.append(('HiddenServiceAuthorizeClient', str(authline)))
             #rtn.append(('HiddenServiceAuthorizeClient', str(self.authorize_client)))
         return rtn
@@ -493,7 +489,6 @@ class EphemeralHiddenService(object):
             "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
             [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
             """
-            print("GODEVENT", evt)
             args = evt.split()
             subtype = args[0]
             if subtype == 'UPLOAD':
@@ -548,11 +543,8 @@ class EphemeralHiddenService(object):
             )
 
         log.msg("Created '{}', waiting for descriptor uploads.".format(onion.hostname))
-        print("waiting for upload")
         yield uploaded
-        print("UPLOADED!")
         yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
-        print("removed")
 
         # XXX more thinking req'd
         #config.HiddenServices.append(onion)
@@ -691,7 +683,6 @@ class AuthenticatedHiddenService(object):
             for idx, line in enumerate(f.readlines()):
                 # lines are like: hex.onion hex # client: name
                 m = re.match("(.*) (.*) # client: (.*)", line)
-                print("DinG", m, line)
                 hostname, cookie, name = m.groups()
                 # -> for auth'd services we end up with multiple
                 # -> HiddenService instances now (because different
@@ -1113,7 +1104,6 @@ class TorConfig(object):
         This only takes args so it can be used as a callback. Don't
         pass an arg, it is ignored.
         '''
-        print("BOOM! BOOTSTRAP")
         try:
             self.protocol.add_event_listener(
                 'CONF_CHANGED', self._conf_changed)
@@ -1141,12 +1131,9 @@ class TorConfig(object):
         return len(self.unsaved) > 0
 
     def mark_unsaved(self, name):
-        print("ZINGA markunsaved", name, self)
         name = self._find_real_name(name)
-        print("xxxxx", name)
         if name in self.config and name not in self.unsaved:
             self.unsaved[name] = self.config[self._find_real_name(name)]
-        print("unsaved now", self.unsaved, name, self.config)
 
     def save(self):
         """
@@ -1202,7 +1189,6 @@ class TorConfig(object):
                 value = self.parsers[real_name].parse(value)
             self.config[real_name] = value
 
-        print("AAAAARGZ", args, self.protocol)
         # FIXME might want to re-think this, but currently there's no
         # way to put things into a config and get them out again
         # nicely...unless you just don't assign a protocol
@@ -1281,7 +1267,6 @@ class TorConfig(object):
         try:
             ephemeral = yield self.protocol.get_info('onions/current')
         except Exception:
-            print("ZIMZAM0")
             self.config['EphemeralOnionServices'] = []
         else:
             onions = []
@@ -1296,7 +1281,6 @@ class TorConfig(object):
                             discard_key=True,  # we don't know it...
                         )
                     )
-            print("ZIMZAM1")
             self.config['EphemeralOnionServices'] = onions
 
         try:
@@ -1318,7 +1302,7 @@ class TorConfig(object):
         defer.returnValue(self)
 
     def _setup_hidden_services(self, servicelines):
-        print("SETUP", servicelines)
+
         def maybe_add_hidden_service():
             if directory is not None:
                 if directory not in directories:
@@ -1329,7 +1313,6 @@ class TorConfig(object):
                         )
                         hs.append(service)
                     else:
-                        print("AUTH", auth)
                         parent_service = AuthenticatedHiddenService(
                             self, directory, ports, auth, ver, group_read
                         )
@@ -1354,7 +1337,6 @@ class TorConfig(object):
             k, v = line.split('=')
             if k == 'HiddenServiceDir':
                 maybe_add_hidden_service()
-                print("MAYBE!", v)
                 directory = v
                 _directory = directory
                 directory = os.path.abspath(directory)

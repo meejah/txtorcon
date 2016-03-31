@@ -822,8 +822,6 @@ HiddenServiceAuthorizeClient Dependant''')
         self.assertTrue(conf.needs_save())
         conf.save()
 
-        for x in self.protocol.sets:
-            print("FOO", x)
         self.assertEqual(len(self.protocol.sets), 9)
         self.assertEqual(self.protocol.sets[0], ('HiddenServiceDir', '/fake/path'))
         self.assertEqual(self.protocol.sets[1], ('HiddenServiceDirGroupReadable', '1'))
@@ -913,7 +911,6 @@ Z2Tur2c8UP8zxIoWfSVAi0Ahx+Ou8yKrlCGxYuFiRw==
 
             conf = TorConfig(self.protocol)
             hs = AuthenticatedHiddenService(conf, d, [])
-            print("DING", hs, dir(hs))
 
             self.assertEqual(2, len(hs.client_names()))
             self.assertTrue('foo' in hs.client_names())
@@ -1024,7 +1021,6 @@ HiddenServiceDir=/fake/path'''
         self.assertTrue(conf.post_bootstrap is None or conf.post_bootstrap.called)
         self.assertEqual(len(conf.hiddenservices), 1)
         self.assertTrue(conf.hiddenservices[0]._config)
-        print("XXX", type(conf.hiddenservices[0]))
         conf.hiddenservices[0].version = 3
         self.assertTrue(conf.needs_save())
         conf.hiddenservices[0].version = 4
@@ -1054,10 +1050,7 @@ HiddenServiceDir=/fake/path'''
         conf.save()
 
         self.assertTrue(not conf.needs_save())
-        print("BLAMMO", conf.hiddenservices[0], type(conf.hiddenservices[0]))
-        print("ZZZ", conf.hiddenservices[0].ports, conf.hiddenservices[0])
         conf.hiddenservices[0].ports.append('90 127.0.0.1:2345')
-        print("ZZZ", conf.hiddenservices[0].ports, conf.hiddenservices[0])
         self.assertTrue(conf.needs_save())
 
 @implementer(IListeningPort)

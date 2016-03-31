@@ -194,7 +194,6 @@ def launch(reactor,
     # unix-socket inside the data-directory?
     control_port = yield available_tcp_port(reactor)
     config.ControlPort = control_port
-    print("CONTROL PORT", control_port)
 
     config.CookieAuthentication = 1
     config.__OwningControllerProcess = os.getpid()
@@ -532,7 +531,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         """
         A timeout was supplied during setup, and the time has run out.
         """
-        print("EXPIRED!")
         try:
             self.transport.signalProcess('TERM')
         except error.ProcessExitedAlready:
@@ -601,7 +599,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.attempted_connect = False
 
     def status_client(self, arg):
-        print("KERBLAMMO", arg)
         args = shlex.split(arg)
         if args[1] != 'BOOTSTRAP':
             return

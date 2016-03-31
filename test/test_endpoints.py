@@ -166,7 +166,6 @@ class EndpointTests(unittest.TestCase):
                 port = yield d
 
                 toa = port.getHost()
-                print("XXXX", toa)
 #                self.assertTrue(hasattr(toa, 'clients'))
 #                self.assertTrue(hasattr(toa, 'onion_port'))
                 port.startListening()
@@ -252,7 +251,6 @@ class EndpointTests(unittest.TestCase):
         def more_listen(arg):
             yield arg.stopListening()
             d1 = ep.listen(NoOpProtocolFactory())
-            print("ZINGA", self.protocol.commands)
             self.assertEqual(2, len(self.protocol.commands))
             self.protocol.commands[1][1].callback(mock_add_onion_response)
 
@@ -264,7 +262,6 @@ class EndpointTests(unittest.TestCase):
         d0.addBoth(more_listen)
         self.config.bootstrap()
 
-        print("dingus", self.protocol.sets)
         self.assertEqual(1, len(self.protocol.sets))
         self.protocol.commands[0][1].callback(mock_add_onion_response)
         self.protocol.events['HS_DESC']('UPLOAD s3aoqcldyhju7dic X X X')
@@ -294,7 +291,6 @@ class EndpointTests(unittest.TestCase):
         d0.addBoth(more_listen)
         self.config.bootstrap()
 
-        print("dingus", self.protocol.sets)
         self.assertEqual(3, len(self.protocol.sets))
 
         def check(arg):
@@ -311,7 +307,6 @@ class EndpointTests(unittest.TestCase):
         def more_listen(arg):
             yield arg.stopListening()
             d1 = ep.listen(NoOpProtocolFactory())
-            print("ZINGA", self.protocol.commands)
             self.assertEqual(2, len(self.protocol.commands))
             self.protocol.commands[1][1].callback(mock_add_onion_response)
 
@@ -329,7 +324,6 @@ class EndpointTests(unittest.TestCase):
 
         def check(arg):
             self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
-            print("XXX", self.config.EphemeralOnionServices)
             self.assertEqual(len(self.config.EphemeralOnionServices), 2)
         d0.addCallback(check).addErrback(self.fail)
         return d0
@@ -347,7 +341,6 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_explicit_data_dir(self):
-        print("START")
         tmpdir = tempfile.mkdtemp()
         try:
             with open(os.path.join(tmpdir, 'hostname'), 'w') as f:
@@ -366,13 +359,11 @@ class EndpointTests(unittest.TestCase):
             port = yield d
 
             self.assertEqual(1, len(config.HiddenServices))
-            print("ASDF", dir(config.HiddenServices[0]))
             self.assertEqual(config.HiddenServices[0].dir, tmpdir)
             self.assertEqual(config.HiddenServices[0].hostname, 'public')
 
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
-        print("END")
 
     def test_failure(self):
         self.reactor.failures = 1

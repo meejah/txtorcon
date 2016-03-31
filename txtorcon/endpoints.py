@@ -466,9 +466,7 @@ class TCPHiddenServiceEndpoint(object):
         # self.config is always a Deferred; see __init__
         self.config = yield self.config
         # just to be sure:
-        print("BIMMBA")
         yield self.config.post_bootstrap
-        print("Bootedup")
 
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would
@@ -507,7 +505,6 @@ class TCPHiddenServiceEndpoint(object):
         # see if the hidden-serivce instance we want is already in the
         # config; for non-ephemeral services, the directory is unique;
         # for ephemeral services, the key should exist and be unique.
-        print("BOOOOOOM", self.config.HiddenServices)
         hs_dirs = [hs.dir for hs in self.config.HiddenServices if hasattr(hs, 'dir')]
         if self.hidden_service_dir not in hs_dirs:
             authlines = []
@@ -530,7 +527,6 @@ class TCPHiddenServiceEndpoint(object):
                     auth=authlines,
                 )
                 self.config.HiddenServices.append(self.hiddenservice)
-                print("BALOOOGA", self.config.HiddenServices)
                 yield self.config.save()
         else:
             for hs in self.config.HiddenServices:
