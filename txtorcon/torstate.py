@@ -15,6 +15,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IStreamClientEndpoint
+from twisted.python.failure import Failure
 from zope.interface import implementer
 
 from txtorcon.stream import Stream
@@ -213,7 +214,7 @@ class TorState(object):
         self.circuit_factory = Circuit
         self.stream_factory = Stream
 
-        self.attacher = None
+        self._attachers = []
         """If set, provides
         :class:`txtorcon.interface.IStreamAttacher` to attach new
         streams we hear about."""
@@ -257,7 +258,7 @@ class TorState(object):
         self.authorities = {}
 
         #: see set_attacher
-        self.cleanup = None
+        self._cleanup = None
 
         class die(object):
             __name__ = 'die'  # FIXME? just to ease spagetti.py:82's pain
@@ -441,7 +442,7 @@ class TorState(object):
         self.post_bootstrap.callback(self)
         self.post_boostrap = None
 
-    def undo_attacher(self):
+    def _undo_attacher(self):
         """
         Shouldn't Tor handle this by turning this back to 0 if the
         controller that twiddled it disconnects?
@@ -449,32 +450,52 @@ class TorState(object):
 
         return self.protocol.set_conf("__LeaveStreamsUnattached", 0)
 
-    def set_attacher(self, attacher, myreactor):
+    def add_attacher(self, attacher, myreactor):
         """
         Provide an :class:`txtorcon.interface.IStreamAttacher` to
         associate streams to circuits. This won't get turned on until
         after bootstrapping is completed. ('__LeaveStreamsUnattached'
         needs to be set to '1' and the existing circuits list needs to
         be populated).
+
+        attachers are called in the order they're added until one of
+        them returns non-None. If all attachers return None, we just
+        ask Tor to attach the stream. If you don't want to attach the
+        stream at all (e.g. reject it) then call
+        :meth:`txtorcon.Stream.close` on the stream.
         """
 
         react = IReactorCore(myreactor)
-        if attacher:
-            self.attacher = IStreamAttacher(attacher)
-        else:
-            self.attacher = None
-
-        if self.attacher is None:
-            d = self.undo_attacher()
-            if self.cleanup:
-                react.removeSystemEventTrigger(self.cleanup)
-                self.cleanup = None
-
-        else:
+        if len(self._attachers) == 0:
             d = self.protocol.set_conf("__LeaveStreamsUnattached", "1")
-            self.cleanup = react.addSystemEventTrigger('before', 'shutdown',
-                                                       self.undo_attacher)
+            self._cleanup = react.addSystemEventTrigger(
+                'before', 'shutdown',
+                self._undo_attacher,
+            )
+        else:
+            d = defer.succeed(None)
+        self._attachers.append(IStreamAttacher(attacher))
         return d
+
+    def remove_attacher(self, attacher, myreactor):
+        """
+        Returns a Deferred that fires when we've successfully removed the
+        give attacher.
+
+        Note: this must be async becase we may have to issue cleanup
+        commands to Tor if this is the last attacher.
+
+        XXX probably just put reactor arg into TorState ctor?
+        """
+        react = IReactorCore(myreactor)
+        self._attachers.remove(attacher)
+        if not self._attachers:
+            d = self._undo_attacher()
+            if self._cleanup:
+                react.removeSystemEventTrigger(self._cleanup)
+                self._cleanup = None
+            return d
+        return defer.succeed(None)
 
     # noqa
     stream_close_reasons = {
@@ -613,6 +634,7 @@ class TorState(object):
 
     DO_NOT_ATTACH = object()
 
+    @defer.inlineCallbacks
     def _maybe_attach(self, stream):
         """
         If we've got a custom stream-attachment instance (see
@@ -628,8 +650,9 @@ class TorState(object):
         (neither attaching it, nor telling Tor to attach it).
         """
 
-        if self.attacher is None:
-            return None
+        if not self._attachers:
+            defer.returnValue(None)
+            return
 
         if stream.target_host is not None \
            and '.exit' in stream.target_host:
@@ -641,49 +664,56 @@ class TorState(object):
             return
 
         # handle async or sync .attach() the same
-        circ_d = defer.maybeDeferred(
-            self.attacher.attach_stream,
-            stream, self.circuits,
-        )
+        circ = None
+        for attacher in self._attachers:
+            circ_d = defer.maybeDeferred(
+                attacher.attach_stream,
+                stream, self.circuits,
+            )
+            try:
+                res = yield circ_d
+            except Exception:
+                res = None
+                self._attacher_error(Failure())
+
+            if res is not None:
+                circ = res  # could be DO_NOT_ATTACH
+                break
 
         # actually do the attachment logic; .attach() can return 3 things:
         #    1. None: let Tor do whatever it wants
         #    2. DO_NOT_ATTACH: don't attach the stream at all
         #    3. Circuit instance: attach to the provided circuit
-        def issue_stream_attach(circ):
-            txtorlog.msg("circuit:", circ)
-            if circ is None:
-                # tell Tor to do what it likes
-                return self.protocol.queue_command("ATTACHSTREAM %d 0" % stream.id)
 
-            elif circ is self.DO_NOT_ATTACH:
-                # do nothing; don't attach the stream
-                return
+        txtorlog.msg("circuit:", circ)
+        if circ is self.DO_NOT_ATTACH:
+            # do nothing; don't attach the stream
+            return
 
-            else:
-                # should get a Circuit instance; check it for suitability
-                if not isinstance(circ, Circuit):
-                    raise RuntimeError(
-                        "IStreamAttacher.attach() must return a Circuit instance "
-                        "(or None or DO_NOT_ATTACH): %s"
-                    )
-                if circ.id not in self.circuits:
-                    raise RuntimeError(
-                        "Attacher returned a circuit unknown to me."
-                    )
-                if circ.state != 'BUILT':
-                    raise RuntimeError(
-                        "Can only attach to BUILT circuits; %d is in %s." %
-                        (circ.id, circ.state)
-                    )
-                # we've got a valid Circuit instance; issue the command
-                return self.protocol.queue_command(
-                    "ATTACHSTREAM %d %d" % (stream.id, circ.id)
+        elif circ is None:
+            # tell Tor to do what it likes
+            yield self.protocol.queue_command("ATTACHSTREAM %d 0" % stream.id)
+
+        else:
+            # should get a Circuit instance; check it for suitability
+            if not isinstance(circ, Circuit):
+                raise RuntimeError(
+                    "IStreamAttacher.attach() must return a Circuit instance "
+                    "(or None or DO_NOT_ATTACH): %s"
                 )
-
-        circ_d.addCallback(issue_stream_attach)
-        circ_d.addErrback(self._attacher_error)
-        return circ_d
+            if circ.id not in self.circuits:
+                raise RuntimeError(
+                    "Attacher returned a circuit unknown to me."
+                )
+            if circ.state != 'BUILT':
+                raise RuntimeError(
+                    "Can only attach to BUILT circuits; %d is in %s." %
+                    (circ.id, circ.state)
+                )
+            # we've got a valid Circuit instance; issue the command
+            yield self.protocol.queue_command(
+                "ATTACHSTREAM %d %d" % (stream.id, circ.id)
+            )
 
     def _attacher_error(self, fail):
         """

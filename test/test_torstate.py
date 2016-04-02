@@ -124,7 +124,7 @@ class FakeReactor:
     def addSystemEventTrigger(self, *args):
         self.test.assertEqual(args[0], 'before')
         self.test.assertEqual(args[1], 'shutdown')
-        self.test.assertEqual(args[2], self.test.state.undo_attacher)
+        self.test.assertEqual(args[2], self.test.state._undo_attacher)
         return 1
 
     def removeSystemEventTrigger(self, id):
@@ -335,7 +335,7 @@ class StateTests(unittest.TestCase):
                 return None
 
         attacher = MyAttacher()
-        self.state.set_attacher(attacher, FakeReactor(self))
+        self.state.add_attacher(attacher, FakeReactor(self))
         self.state._stream_update("76 CLOSED 0 www.example.com:0 REASON=DONE")
 
     def test_attacher_error_handler(self):
@@ -494,9 +494,10 @@ class StateTests(unittest.TestCase):
                 return None
 
         fr = FakeReactor(self)
-        self.state.set_attacher(MyAttacher(), fr)
+        attacher = MyAttacher()
+        self.state.add_attacher(attacher, fr)
         self.send("250 OK")
-        self.state.set_attacher(None, fr)
+        self.state.remove_attacher(attacher, fr)
         self.send("250 OK")
         self.assertEqual(
             self.transport.value(),
@@ -517,7 +518,7 @@ class StateTests(unittest.TestCase):
                 return self.answer
 
         attacher = MyAttacher()
-        self.state.set_attacher(attacher, FakeReactor(self))
+        self.state.add_attacher(attacher, FakeReactor(self))
         events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
         self.protocol._set_valid_events(events)
         self.state._add_events()
@@ -569,7 +570,7 @@ class StateTests(unittest.TestCase):
         self.state.circuits[1] = FakeCircuit(1)
         self.state.circuits[1].state = 'BUILT'
         attacher = MyAttacher(self.state.circuits[1])
-        self.state.set_attacher(attacher, FakeReactor(self))
+        self.state.add_attacher(attacher, FakeReactor(self))
 
         # boilerplate to finish enough set-up in the protocol so it
         # works
@@ -600,7 +601,7 @@ class StateTests(unittest.TestCase):
 
         self.state.circuits[1] = FakeCircuit(1)
         attacher = MyAttacher(FakeCircuit(2))
-        self.state.set_attacher(attacher, FakeReactor(self))
+        self.state.add_attacher(attacher, FakeReactor(self))
 
         stream = Stream(self.state)
         stream.id = 3
@@ -639,7 +640,7 @@ class StateTests(unittest.TestCase):
                 return TorState.DO_NOT_ATTACH
 
         attacher = MyAttacher()
-        self.state.set_attacher(attacher, FakeReactor(self))
+        self.state.add_attacher(attacher, FakeReactor(self))
         events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
         self.protocol._set_valid_events(events)
         self.state._add_events()
