@@ -115,6 +115,26 @@ class Circuit(object):
             self._when_built.append(d)
         return d
 
+    def stream_to(self, endpoint):
+        """
+        This returns an IStreamClientEndpoint that wraps the passed-in
+        endpoint such that it goes via Tor, and via this parciular
+        circuit.
+
+        So, for example, to connect to ``torproject.org`` you could
+        use code similar to this, if you have a ``Circuit`` instance
+        in ``circ``.
+
+        ```
+        from twisted.internet.endpoints import HostnameEndpoint
+
+        dest = HostnameEndpoint(reactor, "torproject.org", 443)
+        circ = yield torstate.build_circuit()  # lets Tor decide the path
+        tor_ep = circ.stream_to(dest)
+        proto = yield tor_ep.connect(factory)
+        ```
+        """
+
     @property
     def time_created(self):
         if self._time_created is not None:
