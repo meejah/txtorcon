@@ -60,6 +60,9 @@ instance associated with this tor.
 Making Connections Over Tor
 ---------------------------
 
+SOCKS5
+~~~~~~
+
 Tor exposes a SOCKS5 interface to make client-type connections over
 the network. We use the ``txsocksx`` library to forward all such
 connections over Tor.
@@ -128,8 +131,8 @@ From an API perspective, here are the parts we care about:
    ``.hostname`` is unique for each client in the ``stealth`` case.
 
 
-Endpoint API
-------------
+Onion Services Endpoints API
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 No matter which kind of service you need, you interact via Twisted's
 `IStreamServerEndpoint`_ interface. There are various txtorcon methods
@@ -170,7 +173,7 @@ support any type of authentication (however, it may in the future).
 
 .. _create_onion:
 Creating Onion Endpoints
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 XXX the easiest to use API are methods of :class:`txtorcon.Tor`, which allow you to create `IStreamServerEndpoint` instances (bring in from other branch).
 
@@ -238,3 +241,80 @@ For completeness, the methods to create authenticated endpoints are:
  - :meth:`txtorcon.TCPAuthenticatedHiddenSeviceEndpoint.global_tor`
  - :meth:`txtorcon.TCPAuthenticatedHiddenSeviceEndpoint.system_tor`
  - :meth:`txtorcon.TCPAuthenticatedHiddenSeviceEndpoint.private_tor`
+
+
+Custom Circuits
+---------------
+
+txtorcon provides a low-level interface over top of Tor's
+circuit-attachment API, which allows you to specify which circuit any
+new streams use. Often, though, you also want to create custom
+circuits for streams -- and so we also provide a more convenient
+higher-level API (see :ref:`circuit_builder`).
+
+For one-shot connections, use
+:meth:`txtorcon.Circuit.create_client_endpoint` to acquire an
+``IStreamClientEndpoint`` instance. Calling ``connect()`` on this
+endpoint instance causes the resulting stream to go via the particular
+:class:`txtorcon.Circuit` instance. (If the circuit has closed by the
+time you call ``connect()``, the connection will fail).
+
+Note that Tor doesn't currently allow controllers to attach circuits
+destined for hidden-services (even over an otherwise suitable circuit).
+
+
+Creating a Single Circuit
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If your use-case needs just a single circuit, it is probably easiest
+to call :meth:`txtorcon.TorState.build_circuit`. This methods takes a
+list of :class:`txtorcon.Router` instances, which you can get from the
+:class:`txtorcon.TorState` instance by using one of the attributes:
+
+ - ``.all_routers``
+ - ``.routers``
+ - ``.routers_by_name`` or
+ - ``.routers_by_hash``
+
+The last three are all hash-tables. For relays that have the ``Guard``
+flag, you can access the hash-tables ``.guards`` (for **all** of them)
+or ``.entry_guards`` (for just the entry guards configured on this Tor
+client).
+
+If you don't actually care which relays are used, but simply want a
+fresh circuit, you can call :meth:`txtorcon.TorState.build_circuit`
+without any arguments (or, set ``routers=None``).
+
+
+.. _circuit_builder:
+Building Many Circuits
+~~~~~~~~~~~~~~~~~~~~~~
+
+If you would like to build many circuits, you'll want an instance that
+implements :class:`txtorcon.ICircuitBuilder` (which is usually simply
+an instance of :class:`txtorcon.CircuitBuilder`). Instances of this
+class can be created by calling one of the factory functions like
+:func:`txtorcon.circuit_builder_fixed_exit`.
+
+XXX what about a "config object" idea, e.g. could have keys:
+
+ - ``guard_selection``: one of ``entry_only`` (use one of the current
+   entry guards) or ``random_guard`` (use any relay with the Guard
+   flag, selected by XXX).
+ - ``middle_selection``: one of ``uniform`` (selected randomly from
+   all relays), ``weighted`` (selected randomly, but weighted by
+   consensus weight -- basically same way as Tor would select).
+
+
+Attaching Streams to Circuits
+-----------------------------
+
+Tor allows the controller to decide how to attach new streams to
+circuits. This doesn't work for hidden-service bound streams. The
+lower-level API is to implement an :class:`txtorcon.IStreamAttacher`
+and call :meth:`txtorcon.TorState.set_stream_attacher` on your
+``TorState`` instance.
+
+Often, however, making low-level per-stream decisions isn't what you
+want -- you just want to create a stream that goes over a particular
+circuit. For this use-case, you use :meth:`txtorcon.Circuit.
