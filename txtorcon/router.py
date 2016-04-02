@@ -114,7 +114,7 @@ class Router(object):
             # see if Tor is magic and knows more...
             d = self.controller.get_info_raw('ip-to-country/' + self.ip)
             d.addCallback(self._set_country)
-            d.addCallback(lambda _: return self._location)
+            d.addCallback(lambda _: self._location)
         return defer.succeed(self._location)
 
     @property

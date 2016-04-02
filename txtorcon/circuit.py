@@ -349,7 +349,7 @@ class CircuitBuilder(object):
     # above) etc. instead of trying to make some kind of configuration
     # stuff work ...
     @classmethod
-    @inlineCallbacks
+    @defer.inlineCallbacks
     def from_config(cls, torstate, config):
         """
         Create a new CircuitBuilder instance from the given
@@ -413,7 +413,7 @@ class CircuitBuilder(object):
         guard = yield self._select_guard(self)
         middle = yield self._select_middle(self)
         exit_ = yield self._select_exit(self)
-        return [guard, middle, exit_]
+        defer.returnValue([guard, middle, exit_])
 
     @defer.inlineCallbacks
     def create(self, timeout=None):
