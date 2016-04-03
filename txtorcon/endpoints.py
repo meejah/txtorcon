@@ -499,7 +499,8 @@ class TCPHiddenServiceEndpoint(object):
             # XXX giant hack here; Right Thing would be to implement a
             # "real" event in Tor and listen for that.
             if 'Service descriptor (v2) stored' in msg:
-                info_callback.callback(None)
+                if not info_callback.called:
+                    info_callback.callback(None)
         self.config.protocol.add_event_listener('INFO', info_event)
 
         # see if the hidden-serivce instance we want is already in the

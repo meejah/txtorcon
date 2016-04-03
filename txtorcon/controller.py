@@ -26,6 +26,7 @@ from txtorcon.log import txtorlog
 from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
+from txtorcon.endpoints import TCPHiddenServiceEndpoint
 
 
 @inlineCallbacks
@@ -262,10 +263,9 @@ def launch(reactor,
     )
 
 
-def connect(control_endpoint, password_function=None):
+@inlineCallbacks
+def connect(reactor, control_endpoint, password_function=None):
     """
-    XXX THINK: do we want/need a reactor arg?
-
     Creates a :class:`txtorcon.Tor` instance by connecting to an
     already-running tor's control port. For example, a common default
     tor uses is UNIXClientEndpoint(reactor, '/var/run/tor/control') or
@@ -305,8 +305,9 @@ def connect(control_endpoint, password_function=None):
             password_function=password_function
         )
     )
-    yield proto.post_bootstrap
-    returnValue(proto)
+    config = yield TorConfig.from_protocol(proto)
+    tor = Tor(reactor, config)
+    returnValue(tor)
 
 
 class Tor(object):
@@ -376,11 +377,31 @@ class Tor(object):
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
     # or ...?
-    def create_onion_endpoint(self, port, private_key=None, hs_dir=None, ):
+    def create_onion_endpoint(self, port, private_key=None):
         """
         for "real" args, see onion.py in the hidden-services API branch
         """
-        raise NotImplemented(__name__)
+        # note, we're just depending on this being The Ultimate
+        # Everything endpoint. Which seems fine, because "normal"
+        # users should use this or another factory-method to
+        # instantiate them...
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.config, port,
+            hidden_service_dir=None,
+            local_port=None,
+            ephemeral=True,
+            private_key=private_key,
+        )
+
+    def create_onion_disk_endpoint(self, port, hs_dir=None):
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.config, port,
+            hidden_service_dir=hs_dir,
+            local_port=None,
+            ephemeral=False,
+            private_key=None,
+        )
+
 
     def create_client_endpoint(self, host, port):
         """
