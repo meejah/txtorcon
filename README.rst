@@ -31,6 +31,4 @@ For example, serve some files via hidden service:
     $ sudo apt-get install python-txtorcon
     $ twistd -n web --port "onion:80" --path ~/public_html
 
-See the "real" documentation in :ref:`docs/index`.
-
-see `real documentation <docs/index.rst>`_
+See the "real" documentation `in docs/index.rst <docs/index.rst>`_.
