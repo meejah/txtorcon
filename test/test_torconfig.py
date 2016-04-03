@@ -1313,8 +1313,8 @@ ControlPort Port''')
         trans.signalProcess = Mock(side_effect=error.ProcessExitedAlready)
         trans.loseConnection = Mock()
 
+        # obsolete? conflict from cherry-pick 37bc60f
         tpp.timeout_expired()
-
         self.assertTrue(tpp.transport.loseConnection.called)
 
     @defer.inlineCallbacks
@@ -1691,7 +1691,8 @@ ControlPort Port''')
         process.status_client(
             'STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=cabbage'
         )
-        self.assertEqual(None, process.connected_cb)
+        # XXX why this assert?
+        self.assertEqual(None, process._connected_cb)
 
         class Value(object):
             exitCode = 123
