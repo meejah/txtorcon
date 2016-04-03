@@ -1,17 +1,17 @@
 txtorcon
 ========
+.. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
+    :target: https://www.travis-ci.org/meejah/txtorcon
+
+.. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
+    :target: https://coveralls.io/r/meejah/txtorcon
+
+.. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
+    :target: http://codecov.io/github/meejah/txtorcon?branch=master
 
 - **docs**: https://txtorcon.readthedocs.org or http://timaq4ygg2iegci7.onion
 - **code**: https://github.com/meejah/txtorcon
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
-- .. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
-      :target: https://www.travis-ci.org/meejah/txtorcon
-
-- .. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
-      :target: https://coveralls.io/r/meejah/txtorcon
-
-  .. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
-      :target: http://codecov.io/github/meejah/txtorcon?branch=master
 
 txtorcon is an implementation of the `control-spec
 <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
@@ -31,4 +31,6 @@ For example, serve some files via hidden service:
     $ sudo apt-get install python-txtorcon
     $ twistd -n web --port "onion:80" --path ~/public_html
 
-See the "real" documentation `in docs/index.rst <docs/index.rst>`_.
+All the documentation starts `in docs/index.rst
+<docs/index.rst>`_. Also hosted at `txtorcon.rtfd.org
+<https://txtorcon.readthedocs.org>`_.
