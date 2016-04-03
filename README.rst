@@ -32,3 +32,5 @@ For example, serve some files via hidden service:
     $ twistd -n web --port "onion:80" --path ~/public_html
 
 See the "real" documentation in :ref:`docs/index`.
+
+see `real documentation <docs/index.rst>`_
