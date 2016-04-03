@@ -1,8 +1,16 @@
+.. _programming_guide:
 
-txtorcon Programming Guide
-==========================
+Programming Guide
+=================
+
+.. contents::
+    :depth: 2
+    :local:
+    :backlinks: none
 
 .. _get_tor_instance:
+
+
 A Tor Instance
 --------------
 
@@ -15,7 +23,7 @@ We abstract "a tor instance" behind the :class:`txtorcon.Tor` class,
 which provides a very high-level API for all the other things you
 might want to do with that Tor:
 
- - make client-type connections over tor (see :ref:`client_use`);
+ - make client-type connections over tor (see ":ref:`client_use`");
  - change its configuration;
  - monitor its state;
  - offer hidden-/onion- services via tor;
@@ -31,7 +39,7 @@ Connecting to a Running Tor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Tor can listen for control connections on TCP ports, or UNIX
-sockets. See :ref:`configure_tor` for information on how to configure
+sockets. See ":ref:`configure_tor`" for information on how to configure
 tor to work with txtorcon. By default, "COOKIE" authentication is
 used; only if that is not available do we try password authentication.
 
@@ -57,6 +65,7 @@ instance associated with this tor.
 
 
 .. _client_use:
+
 Making Connections Over Tor
 ---------------------------
 
@@ -68,14 +77,14 @@ the network. We use the ``txsocksx`` library to forward all such
 connections over Tor.
 
 All client-side interactions are via instances that implement
-`IStreamClientEndpoit`_. There are several factory functions used to
+`IStreamClientEndpoint`_. There are several factory functions used to
 create suitable instances.
 
 The recommended API is to acquire a :class:`txtorcon.Tor` instance
-(:ref:`get_tor_instance`) and then call
+(see ":ref:`get_tor_instance`") and then call
 :meth:`txtorcon.Tor.create_client_endpoint`.
 
-If you need a stream to go over a specific circuit, see XXX:
+If you need a stream to go over a specific circuit, see ":ref:`circuit_builder`".
 
 (notes to self):
 
@@ -104,6 +113,7 @@ methods are un-suitable (as those are the suggested API).
 
 
 .. _server_use:
+
 Onion (Hidden) Services
 -----------------------
 
@@ -136,7 +146,7 @@ Onion Services Endpoints API
 
 No matter which kind of service you need, you interact via Twisted's
 `IStreamServerEndpoint`_ interface. There are various txtorcon methods
-(see :ref:`create_onion`) which return some instance implementing that
+(see ":ref:`create_onion`") which return some instance implementing that
 interface. These instances will also implement
 :class:`txtorcon.IProgressProvider` -- which is a hook to register
 listerers which get updates about Tor's launching progress (if we
@@ -172,6 +182,7 @@ support any type of authentication (however, it may in the future).
 
 
 .. _create_onion:
+
 Creating Onion Endpoints
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -250,7 +261,7 @@ txtorcon provides a low-level interface over top of Tor's
 circuit-attachment API, which allows you to specify which circuit any
 new streams use. Often, though, you also want to create custom
 circuits for streams -- and so we also provide a more convenient
-higher-level API (see :ref:`circuit_builder`).
+higher-level API (see ":ref:`circuit_builder`").
 
 For one-shot connections, use
 :meth:`txtorcon.Circuit.create_client_endpoint` to acquire an
@@ -263,7 +274,7 @@ Note that Tor doesn't currently allow controllers to attach circuits
 destined for hidden-services (even over an otherwise suitable circuit).
 
 
-Creating a Single Circuit
+Building a Single Circuit
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If your use-case needs just a single circuit, it is probably easiest
@@ -287,6 +298,7 @@ without any arguments (or, set ``routers=None``).
 
 
 .. _circuit_builder:
+
 Building Many Circuits
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -317,4 +329,10 @@ and call :meth:`txtorcon.TorState.set_stream_attacher` on your
 
 Often, however, making low-level per-stream decisions isn't what you
 want -- you just want to create a stream that goes over a particular
-circuit. For this use-case, you use :meth:`txtorcon.Circuit.
+circuit. For this use-case, you use :meth:`txtorcon.Circuit`.
+
+.. _istreamclientendpoint: http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IStreamClientEndpoint.html
+.. _istreamserverendpoint: http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IStreamServerEndpoint.html
+.. _clientfromstring: http://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.html#clientFromString
+.. _serverfromstring: http://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.html#serverFromString
+.. _ilisteningport: http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IListeningPort.html

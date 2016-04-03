@@ -16,8 +16,8 @@ txtorcon
    .. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
        :target: http://codecov.io/github/meejah/txtorcon?branch=master
 
-If this is your first time exploring txtorcon, please look at the
-:ref:`introduction` first.
+If this is your first time exploring txtorcon, please **look at the**
+:ref:`introduction` **first**.
 
 
 Documentation
@@ -27,6 +27,7 @@ Documentation
    :maxdepth: 3
 
    introduction
+   features
    installing
    guide
 ..   howtos
@@ -53,9 +54,8 @@ API Documentation
 -----------------
 
 These are the lowest-level documents, directly from the doc-strings in
-the code; if you're just getting started with txtorcon, the
-"narrative" docs starting with :ref:`introduction` and
-:ref:`walkthrough` are probably a better place to start.
+the code; if you're just getting started with txtorcon the
+":ref:`programming_guide`" is a better place to start.
 
 .. toctree::
    :maxdepth: 3

@@ -1,10 +1,12 @@
+.. _releases:
+
 Releases
 ========
 
 There isn't a "release schedule" in any sense. If there is something
 in master your project depends upon, let me know and I'll do a
-release. Starting with v0.8.0 versions are following `semantic
-versioning <http://semver.org/>`_.
+release.
+
 
 unreleased
 ----------

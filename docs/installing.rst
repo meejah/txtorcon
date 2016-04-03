@@ -15,9 +15,8 @@ Lunar!). So, one of these should work:
 - Watch an `asciinema demo <http://asciinema.org/a/5654>`_ for an overview.
 
 Rendered documentation for the latest release is at
-`txtorcon.readthedocs.org
-<https://txtorcon.readthedocs.org/en/latest/>_`. What exists for
-release-notes are in the `Releases <releases>`_ section.
+`txtorcon.readthedocs.org <https://txtorcon.readthedocs.org/en/latest/>`_. What exists for
+release-notes are in ":ref:`releases`".
 
 If you're still using wheezy, ``python-txtorcon`` is also in `wheezy-backports <http://packages.debian.org/source/wheezy-backports/txtorcon>`_.
 
