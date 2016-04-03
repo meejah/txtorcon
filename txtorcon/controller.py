@@ -214,6 +214,7 @@ def launch(reactor,
         config_args.append(k)
         config_args.append(v)
 
+    connected_cb = Deferred()
     process_protocol = TorProcessProtocol(
         connection_creator,
         progress_updates,
@@ -221,7 +222,8 @@ def launch(reactor,
         timeout,
         kill_on_stderr,
         stdout,
-        stderr
+        stderr,
+        connected_cb=connected_cb
     )
 
     # we set both to_delete and the shutdown events because this
@@ -247,8 +249,7 @@ def launch(reactor,
     # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
     transport.closeStdin()
 
-    if process_protocol.connected_cb:
-        yield process_protocol.connected_cb
+    yield connected_cb
     yield config.post_bootstrap
     # ^ should also wait for protocol to bootstrap; be more explicit?
 
@@ -416,7 +417,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     def __init__(self, connection_creator, progress_updates=None, config=None,
                  ireactortime=None, timeout=None, kill_on_stderr=True,
-                 stdout=None, stderr=None):
+                 stdout=None, stderr=None, connected_cb=None):
         """
         This will read the output from a Tor process and attempt a
         connection to its control port when it sees any 'Bootstrapped'
@@ -464,26 +465,28 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         :param stderr:
             Anything subprocess writes to stderr is sent to .write() on this
 
+        :param connected_cb:
+            Pass a Deferred in here if you want to be notified when
+            we've successfully connected to the underlying Tor process
+            (errback()s on timeouts)
+
         :ivar tor_protocol: The TorControlProtocol instance connected
             to the Tor this :api:`twisted.internet.protocol.ProcessProtocol
             <ProcessProtocol>`` is speaking to. Will be valid
             when the `connected_cb` callback runs.
-
-        :ivar connected_cb: Triggered when the Tor process we
-            represent is fully bootstrapped
-
         """
 
         self.config = config
         self.tor_protocol = None
         self.progress_updates = progress_updates
 
+        # XXX if connection_creator is not None .. is connected_cb
+        # tied to connection_creator...?
         if connection_creator:
             self.connection_creator = connection_creator
-            self.connected_cb = Deferred()
         else:
             self.connection_creator = None
-            self.connected_cb = None
+        self._connected_cb = connected_cb
 
         self.attempted_connect = False
         self.to_delete = []
@@ -576,9 +579,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
                 "Tor exited with error-code %d" % status.value.exitCode)
 
         log.err(err)
-        if self.connected_cb:
-            self.connected_cb.errback(err)
-            self.connected_cb = None
+        if self._connected_cb:
+            self._connected_cb.errback(err)
+            self._connected_cb = None
 
     def progress(self, percent, tag, summary):
         """
@@ -613,9 +616,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             if self._timeout_delayed_call:
                 self._timeout_delayed_call.cancel()
                 self._timeout_delayed_call = None
-            if self.connected_cb:
-                self.connected_cb.callback(self)
-                self.connected_cb = None
+            if self._connected_cb:
+                self._connected_cb.callback(self)
+                self._connected_cb = None
 
     def tor_connected(self, proto):
         txtorlog.msg("tor_connected %s" % proto)

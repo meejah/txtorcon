@@ -1316,6 +1316,7 @@ class LaunchTorTests(unittest.TestCase):
         react.advance(12)
         self.assertTrue(trans.loseConnection.called)
 
+    @defer.inlineCallbacks
     def test_launch_timeout_process_exits(self):
         # cover the "one more edge case" where we get a processEnded()
         # but we've already "done" a timeout.
@@ -1346,11 +1347,14 @@ class LaunchTorTests(unittest.TestCase):
         )
         react.advance(20)
 
-        # XXX why are we getting this logged twice?
+        try:
+            yield d
+        except RuntimeError as e:
+            self.assertTrue("Tor was killed" in str(e))
+
         errs = self.flushLoggedErrors(RuntimeError)
-        self.assertEqual(2, len(errs))
-        for x in errs:
-            self.assertTrue("Tor was killed" in str(x))
+        self.assertEqual(1, len(errs))
+        self.assertTrue("Tor was killed" in str(errs[0]))
 
     @defer.inlineCallbacks
     def test_launch_wrong_stdout(self):
@@ -1663,7 +1667,8 @@ class LaunchTorTests(unittest.TestCase):
         process.status_client(
             'STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=cabbage'
         )
-        self.assertEqual(None, process.connected_cb)
+        # XXX why this assert?
+        self.assertEqual(None, process._connected_cb)
 
         class Value(object):
             exitCode = 123
