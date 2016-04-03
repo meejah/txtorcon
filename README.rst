@@ -13,3 +13,22 @@ txtorcon
   .. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
       :target: http://codecov.io/github/meejah/txtorcon?branch=master
 
+txtorcon is an implementation of the `control-spec
+<https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
+for `Tor <https://www.torproject.org/>`_ using the `Twisted
+<https://twistedmatrix.com/trac/>`_ networking library for `Python
+<http://python.org/>`_.
+
+This is useful for writing utilities to control or make use of Tor in
+event-based Python programs. If your Twisted program supports
+endpoints (like ``twistd`` does) your server or client can make use of
+Tor immediately, with no code changes.
+
+For example, serve some files via hidden service:
+
+.. code-block:: shell-session
+
+    $ sudo apt-get install python-txtorcon
+    $ twistd -n web --port "onion:80" --path ~/public_html
+
+See the "real" documentation in :ref:`docs/index`.
