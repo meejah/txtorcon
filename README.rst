@@ -1,4 +1,10 @@
 
+
+
+.. _NOTE: see docs/index.rst for the starting-point
+
+
+
 .. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
     :target: https://www.travis-ci.org/meejah/txtorcon
 
