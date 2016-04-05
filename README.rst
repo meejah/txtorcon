@@ -25,6 +25,13 @@ txtorcon
 - **docs**: https://txtorcon.readthedocs.org or http://timaq4ygg2iegci7.onion
 - **code**: https://github.com/meejah/txtorcon
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
+- licence: MIT
+- compatible: Python2.7, PyPy, Python3
+- depends on:
+    `Twisted <https://twistedmatrix.com>`_,
+    `ipaddress <https://pypi.python.org/pypi/ipaddress>`_,
+    `txsocksx <https://github.com/habnabit/txsocksx>`_ (optional)
+
 
 Brief Overview
 --------------
