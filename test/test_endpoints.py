@@ -118,7 +118,7 @@ class EndpointTests(unittest.TestCase):
         ep.hiddenservice.private_key = 'mumble'
         self.assertEqual('mumble', ep.onion_private_key)
 
-    @patch('txtorcon.endpoints.launch')
+    @patch('txtorcon.controller.launch')
     @defer.inlineCallbacks
     def test_private_tor(self, launch):
         ep = yield TCPHiddenServiceEndpoint.private_tor(
@@ -128,16 +128,14 @@ class EndpointTests(unittest.TestCase):
         self.assertTrue(launch.called)
         # XXX what about a second call, to confirm we call launch again?
 
+    @patch('txtorcon.controller.launch')
     @defer.inlineCallbacks
-    def test_private_tor_no_control_port(self):
+    def test_private_tor_no_control_port(self, launch):
         @implementer(IReactorCore)
         class Reactor(Mock):
             pass
-        m = Mock()
-        from txtorcon import endpoints
-        endpoints.launch = m
         ep = yield TCPHiddenServiceEndpoint.private_tor(MockReactor(), 80)
-        self.assertTrue(m.called)
+        self.assertTrue(launch.called)
 
     @defer.inlineCallbacks
     def test_system_tor(self):
@@ -150,7 +148,7 @@ class EndpointTests(unittest.TestCase):
             def bam(*args, **kw):
                 return self.protocol
             return bam
-        with patch('txtorcon.endpoints.launch') as launch_mock:
+        with patch('txtorcon.controller.launch') as launch_mock:
             with patch('txtorcon.endpoints.build_tor_connection', new_callable=boom) as btc:
                 client = clientFromString(
                     self.reactor,
@@ -209,8 +207,8 @@ class EndpointTests(unittest.TestCase):
         ep._tor_progress_update(*args)
         self.assertTrue(ding.called_with(*args))
 
-    @patch('txtorcon.endpoints.launch')
-    def test_progress_updates_private_tor(self, tor):
+    @patch('txtorcon.controller.launch')
+    def _test_progress_updates_private_tor(self, tor):
         ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
         tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
         return ep
