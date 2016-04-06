@@ -5,8 +5,13 @@ To just install this as quickly as possible, using a Debian or Ubuntu
 system, run the following as root:
 
    apt-get install python-setuptools python-twisted python-ipaddress python-geoip python-psutil graphviz
-
    python setup.py install
+
+It's recommended to use a virtualenv (see below), but on OSX (and
+assuming homebrew is installed):
+
+brew install geoip
+pip install -r requirements.txt
 
 Or, instead of installing locally, simply:
 
