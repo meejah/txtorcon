@@ -46,8 +46,6 @@ from txtorcon.endpoints import TorClientEndpointStringParser
 from txtorcon.endpoints import IHiddenService, IProgressProvider
 
 from txtorcon.endpoints import get_global_tor
-#from . import util
-#from . import interface
 from txtorcon.interface import (
     ITorControlProtocol,
     IStreamListener, IStreamAttacher, StreamListenerMixin,
@@ -78,11 +76,6 @@ __all__ = [
     "build_timeout_circuit",
     "CircuitBuildTimedOutError",
     "AddrMap",
-
-# XXX these are "supposed" to be exported as modules, but doing it
-# like this causes strangeness in, at least, 'towncrier'
-#    "util", "interface",
-
     "ITorControlProtocol",
     "IStreamListener", "IStreamAttacher", "StreamListenerMixin",
     "ICircuitContainer", "ICircuitListener", "CircuitListenerMixin",
