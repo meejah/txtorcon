@@ -435,22 +435,18 @@ class TCPHiddenServiceEndpoint(object):
 
     @defer.inlineCallbacks
     def listen(self, protocolfactory):
-        """Implement :api:`twisted.internet.interfaces.IStreamServerEndpoint
+        """
+        Implement :api:`twisted.internet.interfaces.IStreamServerEndpoint
         <IStreamServerEndpoint>`.
 
         Returns a Deferred that delivers an
         :api:`twisted.internet.interfaces.IListeningPort` implementation.
 
-        This port can also be adapted to two other interfaces:
-
+        This port can also be adapted to
         :class:`txtorcon.IHiddenService` so you can get the
         `onion_uri` and `onion_private_key` members (these correspond
         to "hostname" and "private_key" from the HiddenServiceDir Tor
         is using).
-
-        :class:`txtorcon.IProgressProvider` can provide you progress
-        updates while Tor is launched. Note that Tor is not always
-        launched when calling this listen() method.
 
         At this point, Tor will have fully started up and successfully
         accepted the hidden service's config.
@@ -462,7 +458,6 @@ class TCPHiddenServiceEndpoint(object):
         It is "connection_dir_client_reached_eof(): Uploaded
         rendezvous descriptor (status 200 ("Service descriptor (v2)
         stored"))" at INFO level.
-
         """
 
         self.protocolfactory = protocolfactory
@@ -634,6 +629,8 @@ class EphemeralHiddenServiceClient(object):
         self.private_key = private_key
 
 
+# XXX should implement IOnionService
+# ...so what shall implement IOnionClients etc? need multiple TorOnionListeningPort impls?
 @implementer(IListeningPort, IHiddenService)
 class TorOnionListeningPort(object):
     """

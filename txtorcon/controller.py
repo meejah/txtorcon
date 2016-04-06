@@ -379,7 +379,20 @@ class Tor(object):
     # or ...?
     def create_onion_endpoint(self, port, private_key=None):
         """
-        for "real" args, see onion.py in the hidden-services API branch
+        Returns an object that implements IStreamServerEndpoint, which
+        will create an "ephemeral" Onion service when ``.listen()`` is
+        called. This uses the ``ADD_ONION`` tor control-protocol command.
+
+        :param private_key: if not None (the default), this should be
+            the same blob of key material that you received from a
+            previous call to this method. "Retrieved" here means by
+            accessing the ``.onion_private_key`` attribute of the
+            object returned from ``.listen()`` (see
+            :class:`txtorcon.IHiddenService` and
+            :meth:`txtorcon.TCPHiddenServiceEndpoint.listen`) which
+            will be a :class:`txtorcon.TorOnionListeningPort` -- and
+            therefore implments :class:`txtorcon.IOnionService` (XXX
+            FIXME it implements IHiddenService).
         """
         # note, we're just depending on this being The Ultimate
         # Everything endpoint. Which seems fine, because "normal"
