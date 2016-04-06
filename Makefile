@@ -112,5 +112,5 @@ venv:
 	@echo "pip install -r dev-requirements.txt"
 	@echo "python examples/monitor.py"
 
-html: docs/README.rst
+html: docs/*.rst
 	cd docs && make html

@@ -66,7 +66,7 @@ from asciinema.org:
 .. role:: raw-html(raw)
    :format: html
 
-:raw-html:`<script type="text/javascript" src="https://asciinema.org/a/5654.js" id="asciicast-5654" async></script>`
+:raw-html:`<script type="text/javascript" src="https://asciinema.org/a/eh2gxfz3rc1ztgapkcol47d6o.js" id="asciicast-eh2gxfz3rc1ztgapkcol47d6o" async></script>`
 
 
 Known Users
