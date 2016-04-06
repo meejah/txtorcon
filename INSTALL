@@ -8,10 +8,15 @@ system, run the following as root:
 
    python setup.py install
 
+It's recommended to use a virtualenv (see below), but on OSX (and
+assuming homebrew is installed):
+
+   brew install geoip
+   pip install -r requirements.txt
+
 Or, instead of installing locally, simply:
 
    export PYTHONPATH=.
-
 
 
 If you want to take slightly more time, but only install temporarily,
