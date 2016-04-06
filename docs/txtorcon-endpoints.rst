@@ -1,30 +1,35 @@
-Endpoint Related Classes
-========================
+Endpoints and Related Classes
+=============================
 
 TCPHiddenServiceEndpoint
 ------------------------
 
 .. autoclass:: txtorcon.TCPHiddenServiceEndpoint
 
+
 TCPHiddenServiceEndpointParser
 ------------------------------
 
 .. autoclass:: txtorcon.TCPHiddenServiceEndpointParser
+
 
 TorOnionAddress
 ---------------
 
 .. autoclass:: txtorcon.TorOnionAddress
 
+
 TorOnionListeningPort
 ---------------------
 
 .. autoclass:: txtorcon.TorOnionListeningPort
 
+
 IProgressProvider
 -----------------
 
 .. autointerface:: txtorcon.IProgressProvider
+
 
 IHiddenService
 --------------

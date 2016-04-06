@@ -1,16 +1,9 @@
-State-Tracking Classes
-======================
+Tracking and Changing Live Tor State
+====================================
 
 .. comment::
 	launch_tor is documented in txtorcon-launching.rst
 
-build_tor_connection
---------------------
-.. autofunction:: txtorcon.build_tor_connection
-
-build_local_tor_connection
---------------------------
-.. autofunction:: txtorcon.build_local_tor_connection
 
 TorState
 --------

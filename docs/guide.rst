@@ -23,11 +23,11 @@ We abstract "a tor instance" behind the :class:`txtorcon.Tor` class,
 which provides a very high-level API for all the other things you
 might want to do with that Tor:
 
- - make client-type connections over tor (see ":ref:`client_use`");
- - change its configuration;
- - monitor its state;
- - offer hidden-/onion- services via tor;
- - issue low-level commands
+ - make client-type connections over tor (see ":ref:`guide_client_use`");
+ - change its configuration (see ":ref:`guide_configuration`");
+ - monitor its state (see ":ref:`guide_state`");
+ - offer hidden-/onion- services via tor (see ":ref:``");
+ - issue low-level commands (see ":ref:`protocol`")
 
 The actual control-protocol connection to tor is abstracted behind
 :class:`txtorcon.TorControlProtocol`. This can usually be ignored by
@@ -64,7 +64,128 @@ options, use ``.config`` to retrieve the :class:`txtorcon.TorConfig`
 instance associated with this tor.
 
 
-.. _client_use:
+.. _guide_configuration:
+
+Tracking and Changing Tor's Configuration
+-----------------------------------------
+
+Instances of the :class:`txtorcon.TorConfig` class represent the
+current, live state of a running Tor. There is a bit of
+attribute-magic to make it possible to simply get and set things
+easily::
+
+    tor = launch(..)
+    print("SOCKS ports: {}".format(tor.config.SOCKSPort))
+    tor.config.ControlPort.append(4321)
+    tor.config.save()
+
+**Only when** ``.save()`` is called are any ``SETCONF`` commands
+issued -- and then, all changed configuration values are sent in a
+single command. All ``TorConfig`` instances subscribe to configuration
+updates from Tor, so "live state" includes actions by any other
+controllers that may be connected.
+
+Note that is a tiny window during which the state may appear slightly
+inconsistent: after Tor has acknowledged a ``SETCONF`` command, but
+before we've gotten all the ``CONF_CHANGED`` events.
+
+Since :class:`txtorcon.TorConfig` conforms to the Iterator protocol,
+you can easily find all the config-options that Tor supports::
+
+    tor = launch(..)
+    for config_key in tor.config:
+        print("{} has value: {}".format(config_key, getattr(tor.config.config_key)))
+
+These come from interrogating tor using ``GETINFO config/names`` and
+so represent the configuration options of the current connected Tor
+process. If the value "isn't set" (i.e. is the default), the value
+from Tor will be ``txtorcon.DEFAULT_VALUE``.
+
+
+.. _guide_state:
+
+Monitor and Change Tor's State
+------------------------------
+
+Instances of :class:`txtorcon.TorState` prepresent a live, interactive
+version of all the relays/routers (:class:`txtorcon.Router`
+instances), all circuits (:class:`txtorcon.Circuit` instances) and
+streams (:class:`txtorcon.Stream` instances) active in the underlying
+Tor instance.
+
+As the ``TorState`` instance has subscribed to various events from
+Tor, the "live" state represents an "as up-to-date as possible"
+view.
+
+.. note::
+
+    If you need to be **absolutely sure** there's nothing stuck in
+    networking buffers, you can issue a do-nothing command to Tor via
+    :meth:`txtorcon.TorControlProtocol.queue_command` (e.g. ``yield
+    queue_command("GETINFO version")``)
+
+You can modify the state of these things in a few simple ways. For
+example, you can call :meth:`txtorcon.Stream.close` or
+:meth:`txtorcon.Circuit.close` to cause a stream or circuit to be
+closed. You can wait for a circuit to become usable with
+:meth:`txtorcon.Circuit.when_built`.
+
+For a lot of the read-only state, you can simply access interesting
+attributes. The relays through which a circuit traverses are in
+``Circuit.path`` (a list of :class:`txtorcon.Router` instances),
+``Circuit.streams`` contains a list of :class:`txtorcon.Stream`
+instances, ``.state`` and ``.purpose`` are strings. ``.time_created``
+returns a `datetime
+<https://docs.python.org/2/library/datetime.html>`_ instance. There
+are also some convenience functions like :meth:`txtorcon.Circuit.age`.
+
+For sending streams over a particular circuit,
+:meth:`txtorcon.Circuit.stream_to` returns an `IStreamClientEndpoint`_
+implementation that will cause a subsequent ``.connect()`` on it to
+go via the given circuit in Tor. Combined with a
+:class:`txtorcon.CircuitBuilder` gives the power to do many things.
+
+Listening for certain events to happen can be done by implementing the
+interfaces :class:`txtorcon.interface.IStreamListener` and
+:class:`txtorcon.interface.ICircuitListener`. You can request notifications on a
+tor-wide basis with :meth:`txtorcon.TorState.add_circuit_listener` or
+:meth:`txtorcon.TorState.add_stream_listener`. If you are just
+interested in a single circuit, you can call
+:meth:`txtorcon.Circuit.listen`.
+
+(XXX think about the composible-style API; e.g. ``circuit.on('extend',
+call_back)`` and/or ``state.on('circuit_extend', call_back)``)
+
+The Tor relays are abstracted with :class:`txtorcon.Router`
+instances. Again, these have read-only attributes for interesting
+information, e.g.: ``id_hex``, ``ip``, ``flags`` (a list of strings),
+``bandwidth``, ``policy``, etc. Note that all information in these
+objects is from "microdescriptors". If you're doing a long-running
+iteration over relays, it may be important to remember that the
+collection of routers can change every hour (when a new "consensus"
+from the Directory Authorities is published).
+
+Here's a simple sketch that traverses all circuits printing their
+router IDs, and closing each streams and circuit afterwards:
+
+(XXX FIXME test this for realz)
+
+.. code-block:: python
+
+    @inlineCallbacks
+    def main(reactor):
+        tor = yield connect(reactor, UNIXClientEndpoint('/var/run/tor/control'))
+        state = yield tor.get_state()
+        for circuit in state.circuits.values():
+            path = '->'.join(map(lambda r: r.id_hex, circuit.streams))
+            print("Circuit {} through {}".format(circuit.id, path))
+            for stream in circuit.streams:
+                print("  Stream {} to {}".format(stream.id, stream.target_host))
+                yield stream.close()
+            yield circuit.close()
+
+
+.. _guide_client_use:
 
 Making Connections Over Tor
 ---------------------------
