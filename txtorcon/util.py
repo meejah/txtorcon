@@ -147,7 +147,7 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
         keywords found in args.
     """
     if type(args) is bytes:
-        args = args.decode('utf8')
+        args = args.decode('ascii')
     filtered = [x for x in args if '=' in x and key_filter(x.split('=')[0])]
     return dict(x.split('=', 1) for x in filtered)
 
@@ -319,5 +319,5 @@ def unescape_quoted_string(string):
     string = re.sub(r'((?:^|[^\\])(?:\\\\)*)\\([^ntr0-7\\])', r'\1\2', string)
     if py3k:
         # XXX hmmm?
-        return bytes(string, 'utf8').decode('unicode-escape')
+        return bytes(string, 'ascii').decode('unicode-escape')
     return string.decode('string-escape')

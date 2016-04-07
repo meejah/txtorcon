@@ -424,8 +424,8 @@ OK'''.format(unexisting_file))
         try:
             self.protocol._safecookie_authchallenge(
                 '250 AUTHCHALLENGE SERVERHASH={} SERVERNONCE={}'.format(
-                    b2a_hex(server_hash).decode('utf8'),
-                    b2a_hex(server_nonce).decode('utf8'),
+                    b2a_hex(server_hash).decode('ascii'),
+                    b2a_hex(server_nonce).decode('ascii'),
                 )
             )
             self.assertTrue(False)
@@ -744,7 +744,7 @@ iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 .
 250 OK"""
         d = self.protocol.get_info("desc/name/moria1")
-        d.addCallback(CallbackChecker({'desc/name/moria1': '\n' + '\n'.join(descriptor_info.decode('utf8').split('\n')[1:-2])}))
+        d.addCallback(CallbackChecker({'desc/name/moria1': '\n' + '\n'.join(descriptor_info.decode('ascii').split('\n')[1:-2])}))
         d.addErrback(self.fail)
 
         for line in descriptor_info.split(b'\n'):

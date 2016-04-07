@@ -22,7 +22,7 @@ def hexIdFromHash(thehash):
     :param thehash: base64-encoded str
     :return: hex-encoded hash
     """
-    return '$' + b2a_hex(b64decode(thehash + '=')).decode('utf8').upper()
+    return '$' + b2a_hex(b64decode(thehash + '=')).decode('ascii').upper()
 
 
 def hashFromHexId(hexid):
@@ -31,7 +31,7 @@ def hashFromHexId(hexid):
     """
     if hexid[0] == '$':
         hexid = hexid[1:]
-    return b64encode(a2b_hex(hexid))[:-1].decode('utf8')
+    return b64encode(a2b_hex(hexid))[:-1].decode('ascii')
 
 
 class PortRange(object):
@@ -124,6 +124,7 @@ class Router(object):
             d = self.controller.get_info_raw('ip-to-country/' + self.ip)
             d.addCallback(self._set_country)
             d.addCallback(lambda _: self._location)
+            return d
         return defer.succeed(self._location)
 
     @property
