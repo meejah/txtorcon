@@ -582,7 +582,7 @@ class TorControlProtocol(LineOnlyReceiver):
         """
 
         if not isinstance(cmd, bytes):
-            cmd = cmd.encode('utf8')
+            cmd = cmd.encode('ascii')
         d = defer.Deferred()
         self.commands.append((d, cmd, arg))
         self._maybe_issue_command()
@@ -599,7 +599,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
         self.debuglog.write(line + b'\n')
         self.debuglog.flush()
-        self.fsm.process(line.decode('utf8'))
+        self.fsm.process(line.decode('ascii'))
 
     def connectionMade(self):
         "Protocol API"
