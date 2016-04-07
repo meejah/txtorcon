@@ -167,7 +167,7 @@ class Stream(object):
         return flags
 
     def update(self, args):
-        # print "update",self.id,args
+        print("update",self.id,args)
 
         if self.id is None:
             self.id = int(args[0])

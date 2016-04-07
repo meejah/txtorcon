@@ -139,7 +139,7 @@ def maybe_ip_addr(addr):
     return str(addr)
 
 
-def find_keywords(args, key_filter=lambda x: not x.startswith(b"$")):
+def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
     """
     This splits up strings like name=value, foo=bar into a dict. Does NOT deal
     with quotes in value (e.g. key="value with space" will not work

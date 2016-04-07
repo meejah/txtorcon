@@ -118,4 +118,4 @@ class FsmTests(unittest.TestCase):
         self.assertEqual(fsm.state, cmd)
 
     def doCommand(self, data):
-        print "transition:", data
+        print("transition:", data)

@@ -4,7 +4,7 @@ import tempfile
 import functools
 from getpass import getuser
 from mock import patch
-from StringIO import StringIO
+from six import StringIO
 
 from mock import Mock, patch
 
@@ -393,7 +393,7 @@ class ConfigTests(unittest.TestCase):
         try:
             conf.foo
             self.assertTrue(False)
-        except KeyError, e:
+        except KeyError as e:
             self.assertTrue('foo' in str(e))
 
     def test_invalid_parser(self):
@@ -431,7 +431,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(conf.HiddenServices[0], hs)
 
     def foo(self, *args):
-        print "FOOO", args
+        print("FOOO", args)
 
     def test_slutty_postbootstrap(self):
         # test that doPostbootstrap still works in "slutty" mode
@@ -703,7 +703,7 @@ class LogTests(unittest.TestCase):
         try:
             conf.log = ('this', 'is', 'a', 'tuple')
             self.fail()
-        except ValueError, e:
+        except ValueError as e:
             self.assertTrue('Not valid' in str(e))
 
 
@@ -960,7 +960,7 @@ HiddenServicePort=90 127.0.0.1:2345''')
         try:
             conf._setup_hidden_services('''FakeHiddenServiceKey=foo''')
             self.fail()
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('parse' in str(e))
 
     def test_hidden_service_directory_absolute_path(self):
@@ -1069,16 +1069,16 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
         )
 
     def closeStdin(self):
-        self.protocol.dataReceived('250 OK\r\n')
-        self.protocol.dataReceived('250 OK\r\n')
-        self.protocol.dataReceived('250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
         self.protocol.dataReceived(
-            '650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=90 '
-            'TAG=circuit_create SUMMARY="Establishing a Tor circuit"\r\n'
+            b'650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=90 '
+            b'TAG=circuit_create SUMMARY="Establishing a Tor circuit"\r\n'
         )
         self.protocol.dataReceived(
-            '650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=100 '
-            'TAG=done SUMMARY="Done"\r\n'
+            b'650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=100 '
+            b'TAG=done SUMMARY="Done"\r\n'
         )
 
 
@@ -1087,12 +1087,12 @@ class FakeProcessTransportNeverBootstraps(FakeProcessTransport):
     pid = -1
 
     def closeStdin(self):
-        self.protocol.dataReceived('250 OK\r\n')
-        self.protocol.dataReceived('250 OK\r\n')
-        self.protocol.dataReceived('250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
         self.protocol.dataReceived(
-            '650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=90 TAG=circuit_create '
-            'SUMMARY="Establishing a Tor circuit"\r\n')
+            b'650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=90 TAG=circuit_create '
+            b'SUMMARY="Establishing a Tor circuit"\r\n')
 
 
 class FakeProcessTransportNoProtocol(FakeProcessTransport):
@@ -1716,7 +1716,7 @@ ControlPort Port''')
         trans.protocol = self.protocol
 
         def creator(*args, **kw):
-            print "Bad: connection creator called"
+            print("Bad: connection creator called")
             self.fail()
 
         def on_protocol(proto):

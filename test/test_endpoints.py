@@ -33,11 +33,11 @@ from txtorcon import TorNotFound
 from txtorcon import TCPHiddenServiceEndpointParser
 from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
-from txtorcon.util import NoOpProtocolFactory
+from txtorcon.util import NoOpProtocolFactory, py3k
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import _HAVE_TLS
 
-import util
+from . import util
 
 
 class EndpointTests(unittest.TestCase):
@@ -125,7 +125,7 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_system_tor(self):
-        from test_torconfig import FakeControlProtocol
+        from .test_torconfig import FakeControlProtocol
 
         def boom(*args):
             # why does the new_callable thing need a callable that
@@ -227,6 +227,7 @@ class EndpointTests(unittest.TestCase):
 
         @defer.inlineCallbacks
         def more_listen(arg):
+            print("DING", arg)
             yield arg.stopListening()
             d1 = ep.listen(NoOpProtocolFactory())
 
@@ -380,7 +381,7 @@ class EndpointTests(unittest.TestCase):
         d = ep.listen(NoOpProtocolFactory())
 
         def foo(fail):
-            print "ERROR", fail
+            print("ERROR", fail)
         d.addErrback(foo)
         port = yield d
         self.assertEqual(1, len(config.HiddenServices))
@@ -460,17 +461,17 @@ class FakeProtocol(object):
     implements(IProtocol)
 
     def dataReceived(self, data):
-        print "DATA", data
+        print("DATA", data)
 
     def connectionLost(self, reason):
-        print "LOST", reason
+        print("LOST", reason)
 
     def makeConnection(self, transport):
-        print "MAKE", transport
+        print("MAKE", transport)
         transport.protocol = self
 
     def connectionMade(self):
-        print "MADE!"
+        print("MADE!")
 
 
 class FakeAddress(object):
@@ -508,13 +509,14 @@ class FakeListeningPort(object):
 
 
 def port_generator():
-    for x in xrange(65535, 0, -1):
+    # XXX six has xrange/range stuff?
+    for x in range(65535, 0, -1):
         yield x
 
 
-from test_torconfig import FakeReactor  # FIXME put in util or something?
-from test_torconfig import FakeProcessTransport  # FIXME importing from other test sucks
-from test_torconfig import FakeControlProtocol  # FIXME
+from .test_torconfig import FakeReactor  # FIXME put in util or something?
+from .test_torconfig import FakeProcessTransport  # FIXME importing from other test sucks
+from .test_torconfig import FakeControlProtocol  # FIXME
 
 
 class FakeReactorTcp(FakeReactor):
@@ -543,7 +545,7 @@ class FakeReactorTcp(FakeReactor):
             raise error.CannotListenError(None, None, None)
 
         if port == 0:
-            port = self._port_generator.next()
+            port = next(self._port_generator)
         p = FakeListeningPort(port)
         p.factory = factory
         p.startListening()
@@ -557,7 +559,7 @@ class FakeReactorTcp(FakeReactor):
         )
 
         def blam(*args):
-            print "BLAAAAAM", args
+            print("BLAAAAAM", args)
         r.connect = blam
         return r
 
@@ -587,6 +589,7 @@ class FakeTorSocksEndpoint(object):
 
 
 class TestTorClientEndpoint(unittest.TestCase):
+    skip = "no txsocksx on py3" if py3k else None
 
     def test_client_connection_failed(self):
         """

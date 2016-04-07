@@ -47,7 +47,11 @@ from twisted.python.util import FancyEqMixin
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
-from txsocksx.client import SOCKS5ClientEndpoint
+try:
+    from txsocksx.client import SOCKS5ClientEndpoint
+    HAVE_SOCKSX = True
+except ImportError:
+    HAVE_SOCKSX = False
 
 from .torconfig import TorConfig, launch_tor, HiddenService
 from .torstate import build_tor_connection
@@ -414,6 +418,8 @@ class TCPHiddenServiceEndpoint(object):
         # just to be sure:
         yield self.config.post_bootstrap
 
+        print("XXXXXXX", self.config)
+
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would
         # probably want to check for "is a local interface or not" and
@@ -663,7 +669,11 @@ class TorClientEndpoint(object):
     def __init__(self, host, port,
                  socks_endpoint=None,
                  socks_username=None, socks_password=None,
-                 tls=False, **kw):
+                 tls=False,
+                 _proxy_endpoint_generator=default_tcp4_endpoint_generator,
+                 **kw):
+        if not HAVE_SOCKSX:
+            raise Exception("No SOCKS5 support; txsocksx not found")
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
