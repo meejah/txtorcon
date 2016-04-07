@@ -276,7 +276,7 @@ class TorState(object):
 
         def ignorable_line(x):
             x = x.strip()
-            return x in [b'.', b'OK', b''] or x.startswith(b'ns/')
+            return x in ['.', 'OK', ''] or x.startswith('ns/')
 
         waiting_r.add_transition(Transition(waiting_r, ignorable_line, None))
         waiting_r.add_transition(Transition(waiting_s, lambda x: x.startswith('r '), self._router_begin))
@@ -316,7 +316,7 @@ class TorState(object):
             args[1],                  # nickname
             args[2],                  # idhash
             args[3],                  # orhash
-            args[4] + ' ' + args[5],  # modified (like '%Y-%m-%f %H:%M:%S')
+            args[4] + ' ' + args[5], # modified (like '%Y-%m-%f %H:%M:%S')
             args[6],                  # ip address
             args[7],                  # ORPort
             args[8],                  # DirPort
@@ -393,7 +393,7 @@ class TorState(object):
         am = yield self.protocol.get_info_raw(key)
         # strip addressmappsings/all= and OK\n from raw data
         am = am[len(key) + 1:]
-        for line in am.split(b'\n'):
+        for line in am.split('\n'):
             if len(line.strip()) == 0:
                 continue            # FIXME
             self.addrmap.update(line)
@@ -401,8 +401,8 @@ class TorState(object):
         self._add_events()
 
         entries = yield self.protocol.get_info_raw("entry-guards")
-        for line in entries.split(b'\n')[1:]:
-            if len(line.strip()) == 0 or line.strip() == b'OK':
+        for line in entries.split('\n')[1:]:
+            if len(line.strip()) == 0 or line.strip() == 'OK':
                 # XXX does this ever really happen?
                 continue
             args = line.split()
@@ -536,10 +536,10 @@ class TorState(object):
                     'Unknown stream close reason "%s"' % str(reason)
                 )
 
-        flags = flags_from_dict(kwargs).encode()
+        flags = flags_from_dict(kwargs)
 
         # stream is now an ID no matter what we passed in
-        cmd = b'CLOSESTREAM %d %d%s' % (stream, reason, flags)
+        cmd = 'CLOSESTREAM %d %d%s' % (stream, reason, flags)
         return self.protocol.queue_command(cmd)
 
     def close_circuit(self, circid, **kwargs):
@@ -564,7 +564,7 @@ class TorState(object):
             circid = circid.id
         flags = flags_from_dict(kwargs)
         return self.protocol.queue_command(
-            b'CLOSECIRCUIT %s%s' % (circid, flags)
+            'CLOSECIRCUIT %s%s' % (circid, flags)
         )
 
     def add_circuit_listener(self, icircuitlistener):
@@ -616,13 +616,13 @@ class TorState(object):
                     "Circuit doesn't start with a guard: %s" % routers,
                     RuntimeWarning
                 )
-            cmd = b"EXTENDCIRCUIT 0 "
+            cmd = "EXTENDCIRCUIT 0 "
             first = True
             for router in routers:
                 if first:
                     first = False
                 else:
-                    cmd += b','
+                    cmd += ','
                 if isinstance(router, basestring) and len(router) == 40 \
                    and hashFromHexId(router):
                     cmd += router
@@ -692,7 +692,7 @@ class TorState(object):
 
         elif circ is None:
             # tell Tor to do what it likes
-            yield self.protocol.queue_command(b"ATTACHSTREAM %d 0" % stream.id)
+            yield self.protocol.queue_command("ATTACHSTREAM %d 0" % stream.id)
 
         else:
             # should get a Circuit instance; check it for suitability
@@ -712,7 +712,7 @@ class TorState(object):
                 )
             # we've got a valid Circuit instance; issue the command
             yield self.protocol.queue_command(
-                b"ATTACHSTREAM %d %d" % (stream.id, circ.id)
+                "ATTACHSTREAM %d %d" % (stream.id, circ.id)
             )
 
     def _attacher_error(self, fail):
@@ -730,7 +730,7 @@ class TorState(object):
     def _circuit_status(self, data):
         """Used internally as a callback for updating Circuit information"""
 
-        data = data[len(b'circuit-status='):].split(b'\n')
+        data = data[len('circuit-status='):].split('\n')
         # sometimes there's a newline after circuit-status= and
         # sometimes not, so we get rid of it
         if len(data) and len(data[0].strip()) == 0:
@@ -747,7 +747,7 @@ class TorState(object):
         # single-stream case which has "stream-status=123 blahblah"
         # (i.e. the key + value on one line)
 
-        lines = data.split(b'\n')
+        lines = data.split('\n')
         if len(lines) == 1:
             d = lines[0][len('stream-status='):]
             # if there are actually 0 streams, then there's nothing
@@ -764,7 +764,7 @@ class TorState(object):
         """
 
         self.all_routers = set()
-        for line in data.split(b'\n'):
+        for line in data.split('\n'):
             self._network_status_parser.process(line)
 
         txtorlog.msg(len(self.routers_by_name), "named routers found.")
@@ -810,8 +810,7 @@ class TorState(object):
         from STREAM events.
         """
 
-        print("stream_update", line)
-        if line.strip() == b'stream-status=':
+        if line.strip() == 'stream-status=':
             # this happens if there are no active streams
             return
 

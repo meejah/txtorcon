@@ -36,7 +36,7 @@ class Listener(object):
             elif k == 'kwargs':
                 for (key, value) in v.items():
                     if key not in kw:
-                        print key, value, k, v, kw
+                        print(key, value, k, v, kw)
                         raise RuntimeError(
                             'Expected keyword argument for key "%s" but found nothing.' % key
                         )
@@ -191,7 +191,7 @@ class StreamTests(unittest.TestCase):
         try:
             stream.update("999 SENTCONNECT 186 1.2.3.4:80 SOURCE=EXIT".split())
             self.fail()
-        except Exception, e:
+        except Exception as e:
             self.assertTrue('wrong stream' in str(e))
 
     def test_update_illegal_state(self):
@@ -201,7 +201,7 @@ class StreamTests(unittest.TestCase):
         try:
             stream.update("316 FOO 0 www.yahoo.com:80 SOURCE_ADDR=127.0.0.1:55877 PURPOSE=USER".split())
             self.fail()
-        except Exception, e:
+        except Exception as e:
             self.assertTrue('Unknown state' in str(e))
 
     def test_listen_unlisten(self):

@@ -1,4 +1,9 @@
+import os
+import sys
+import tempfile
 from mock import patch
+from unittest import skipIf
+
 from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ServerEndpoint
@@ -13,9 +18,6 @@ from txtorcon.util import find_tor_binary
 from txtorcon.util import maybe_ip_addr
 from txtorcon.util import unescape_quoted_string
 from txtorcon.util import available_tcp_port
-
-import os
-import tempfile
 
 
 class FakeState:
@@ -60,6 +62,7 @@ class TestGeoIpDatabaseLoading(unittest.TestCase):
         util.GeoIP = _GeoIP
         self.assertEquals(ret_val, None)
 
+    @skipIf('pypy' in sys.version.lower(), "No GeoIP in PyPy")
     def test_return_geoip_object(self):
         from txtorcon import util
         (fd, f) = tempfile.mkstemp()
@@ -317,13 +320,10 @@ class TestUnescapeQuotedString(unittest.TestCase):
         Octal numbers can be escaped by a backslash:
         \0 is interpreted as a byte with the value 0
         '''
-        for number in range(1000):
-            escaped = '\\{}'.format(number)
+        for number in range(0x7f):
+            escaped = '\\%o' % number
             result = unescape_quoted_string('"{}"'.format(escaped))
-
-            expected = escaped.decode('string-escape')
-            if expected[0] == '\\' and len(expected) > 1:
-                expected = expected[1:]
+            expected = chr(number)
 
             msg = "Number not decoded correctly: {escaped} -> {result} instead of {expected}"
             msg = msg.format(escaped=escaped, result=repr(result), expected=repr(expected))

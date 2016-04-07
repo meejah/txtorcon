@@ -32,12 +32,12 @@ from txtorcon import TorNotFound
 from txtorcon import TCPHiddenServiceEndpointParser
 from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
-from txtorcon.util import NoOpProtocolFactory
+from txtorcon.util import NoOpProtocolFactory, py3k
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import default_tcp4_endpoint_generator
 from txtorcon.endpoints import EphemeralHiddenServiceClient
 
-import util
+from . import util
 
 
 mock_add_onion_response = '''ServiceID=s3aoqcldyhju7dic\nPrivateKey=RSA1024:MIICXQIBAAKBgQDSb1NOcxPNV2GyVLaikkYIcvTIi4ZBaoF4pGAr67WiQP1kzobRthW9IKPmzru45rXUSQHjg3mGvRxE6s0tBqU6OfPCxEzRgCm/KGyxcipVtDbwpImYZfmOFu+tn4NmqXkB0J5n9/YnbcJCkV3gDOeQ2BPPe+kTuVrc24rUHgoX/QIDAQABAoGAFyXJyyJbdkX7aCtrX5ypeXpztK+sV/vIPCYQsiQeebeeZ/1T1TOrVn+Fp/jrq14teCmDvKwUrR6WQnp1kVNez0LFsCUohuiG0+Qj26Ach5GZR8K1nkqfOBEbH+3A3dCcDYETL9XnKCIaLrmVKlrFvB5dLbZv0MiCw+K6X2W6iKECQQDukfCUR7/GLmc5oyra61D0ROwhti9DBEVPsOvOFI0q07A+bGqXB7kOog0dPj6xO2V/6MPYvc59vWk5XwoVG+nJAkEA4c8psUrGefbs3iQxr0ge6r3f3SccSCfc/YjwTnmf8yCJ0PRYdirVl+WfG5AGfwDCwrDrelkScLhj/bWssvXWlQJAGs6DPeYiAl7McomHEzpFymzEK7WQ8fLU5vN2S527jwhiUWFVSMsxXBeRaavI15lY+lppRz1sqmxSGoQ3Wc/dIQJBAKbWz7FE1FytCtoe1+7wVJeQbuURzp2phmh1U0hIKNwUQH946ht1DpfKesJ8qbAQudXrrjCZuzw5oPeF0fHwHfkCQQC8GhO4mLGD+aLvmhPHD9owUsKhL7HHVHkEvPm2sNdQBvOR9iKNGsC91LT2h3AQ7Zse95Rn00HLNKFCu1nn8hEf\n'''
@@ -139,7 +139,7 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_system_tor(self):
-        from test_torconfig import FakeControlProtocol
+        from .test_torconfig import FakeControlProtocol
 
         def boom(*args):
             # why does the new_callable thing need a callable that
@@ -277,6 +277,7 @@ class EndpointTests(unittest.TestCase):
 
         @defer.inlineCallbacks
         def more_listen(arg):
+            print("DING", arg)
             yield arg.stopListening()
             d1 = ep.listen(NoOpProtocolFactory())
             self.assertEqual(3, len(self.protocol.sets))
@@ -475,7 +476,7 @@ class EndpointTests(unittest.TestCase):
         d = ep.listen(NoOpProtocolFactory())
 
         def foo(fail):
-            print "ERROR", fail
+            print("ERROR", fail)
         d.addErrback(foo)
         port = yield d
         self.assertEqual(1, len(config.HiddenServices))
@@ -556,17 +557,17 @@ class EndpointLaunchTests(unittest.TestCase):
 class FakeProtocol(object):
 
     def dataReceived(self, data):
-        print "DATA", data
+        print("DATA", data)
 
     def connectionLost(self, reason):
-        print "LOST", reason
+        print("LOST", reason)
 
     def makeConnection(self, transport):
-        print "MAKE", transport
+        print("MAKE", transport)
         transport.protocol = self
 
     def connectionMade(self):
-        print "MADE!"
+        print("MADE!")
 
 
 @implementer(IAddress)
@@ -604,13 +605,14 @@ class FakeListeningPort(object):
 
 
 def port_generator():
-    for x in xrange(65535, 0, -1):
+    # XXX six has xrange/range stuff?
+    for x in range(65535, 0, -1):
         yield x
 
 
-from test_torconfig import FakeReactor  # FIXME put in util or something?
-from test_torconfig import FakeProcessTransport  # FIXME importing from other test sucks
-from test_torconfig import FakeControlProtocol  # FIXME
+from .test_torconfig import FakeReactor  # FIXME put in util or something?
+from .test_torconfig import FakeProcessTransport  # FIXME importing from other test sucks
+from .test_torconfig import FakeControlProtocol  # FIXME
 
 
 @implementer(IReactorTCP, IReactorCore)
@@ -639,7 +641,7 @@ class FakeReactorTcp(FakeReactor):
             raise error.CannotListenError(None, None, None)
 
         if port == 0:
-            port = self._port_generator.next()
+            port = next(self._port_generator)
         p = FakeListeningPort(port)
         p.factory = factory
         p.startListening()
@@ -653,7 +655,7 @@ class FakeReactorTcp(FakeReactor):
         )
 
         def blam(*args):
-            print "BLAAAAAM", args
+            print("BLAAAAAM", args)
         r.connect = blam
         return r
 
@@ -683,6 +685,7 @@ class FakeTorSocksEndpoint(object):
 
 
 class TestTorClientEndpoint(unittest.TestCase):
+    skip = "no txsocksx on py3" if py3k else None
 
     def test_client_connection_failed(self):
         """

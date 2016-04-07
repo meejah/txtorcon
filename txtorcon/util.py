@@ -130,7 +130,7 @@ def maybe_ip_addr(addr):
     return str(addr)
 
 
-def find_keywords(args, key_filter=lambda x: not x.startswith(b"$")):
+def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
     """
     This splits up strings like name=value, foo=bar into a dict. Does NOT deal
     with quotes in value (e.g. key="value with space" will not work
@@ -147,10 +147,9 @@ def find_keywords(args, key_filter=lambda x: not x.startswith(b"$")):
         keywords found in args.
     """
     if type(args) is bytes:
-        args = args.encode()
-##    print("XXX", type(args), args)
-    filtered = [x for x in args if b'=' in x and key_filter(x.split(b'=')[0])]
-    return dict(x.split(b'=', 1) for x in filtered)
+        args = args.decode('utf8')
+    filtered = [x for x in args if '=' in x and key_filter(x.split('=')[0])]
+    return dict(x.split('=', 1) for x in filtered)
 
 
 def delete_file_or_tree(*args):
@@ -318,4 +317,7 @@ def unescape_quoted_string(string):
     # handeled as escape codes by string.decode('string-escape').
     # This is needed so e.g. '\x00' is not unescaped as '\0'
     string = re.sub(r'((?:^|[^\\])(?:\\\\)*)\\([^ntr0-7\\])', r'\1\2', string)
+    if py3k:
+        # XXX hmmm?
+        return bytes(string, 'utf8').decode('unicode-escape')
     return string.decode('string-escape')

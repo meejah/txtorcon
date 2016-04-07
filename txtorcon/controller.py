@@ -10,7 +10,7 @@ import shlex
 import tempfile
 import functools
 from io import StringIO
-if sys.platform in ('linux2', 'darwin'):
+if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
 
 from twisted.python import log
@@ -150,7 +150,7 @@ def launch(reactor,
         raise TorNotFound('Tor binary could not be found')
 
     # make sure we got things that have write() for stderr, stdout
-    # kwargs
+    # kwargs (XXX is there a "better" way to check for file-like object?)
     for arg in [stderr, stdout]:
         if arg and not getattr(arg, "write", None):
             raise RuntimeError(
@@ -162,7 +162,7 @@ def launch(reactor,
         user_set_data_directory = True
         config.DataDirectory = data_directory
         try:
-            os.mkdir(data_directory, 0700)
+            os.mkdir(data_directory, 0x0700)
         except OSError:
             pass
     else:
@@ -224,7 +224,7 @@ def launch(reactor,
         kill_on_stderr,
         stdout,
         stderr,
-        connected_cb=connected_cb
+        connected_cb=connected_cb,
     )
 
     # we set both to_delete and the shutdown events because this
@@ -240,6 +240,7 @@ def launch(reactor,
 
     log.msg('Spawning tor process with DataDirectory', data_directory)
     args = [tor_binary] + config_args
+    print("XXXXX")
     transport = reactor.spawnProcess(
         process_protocol,
         tor_binary,
@@ -247,9 +248,11 @@ def launch(reactor,
         env={'HOME': data_directory},
         path=data_directory
     )
+    print("OHAI", transport)
     # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
     transport.closeStdin()
 
+    print("OHAI2")
     yield connected_cb
     yield config.post_bootstrap
     # ^ should also wait for protocol to bootstrap; be more explicit?

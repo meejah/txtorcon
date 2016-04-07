@@ -20,9 +20,8 @@ def hexIdFromHash(thehash):
     :param thehash: base64-encoded str
     :return: hex-encoded hash
     """
-    if isinstance(thehash, bytes):
-        thehash = thehash.decode()
-    return b2a_hex(b64decode(thehash + '='))
+##    print((b2a_hex(b64decode(thehash + '='))))
+    return '$' + b2a_hex(b64decode(thehash + '=')).decode('utf8').upper()
 
 
 def hashFromHexId(hexid):
@@ -31,7 +30,7 @@ def hashFromHexId(hexid):
     """
     if hexid[0] == '$':
         hexid = hexid[1:]
-    return b64encode(a2b_hex(hexid))[:-1]
+    return b64encode(a2b_hex(hexid))[:-1].decode('utf8')
 
 
 class PortRange(object):
@@ -42,10 +41,8 @@ class PortRange(object):
         self.min = a
         self.max = b
 
-    def __cmp__(self, b):
-        if b >= self.min and b <= self.max:
-            return 0
-        return 1
+    def __eq__(self, b):
+        return b >= self.min and b <= self.max
 
     def __str__(self):
         return "%d-%d" % (self.min, self.max)
@@ -106,6 +103,10 @@ class Router(object):
         self._location = None
 
         self.id_hex = hexIdFromHash(self.id_hash)
+        # for py3, these should be valid (but *not* py2)
+        # assert type(idhash) is not bytes
+        # assert type(orhash) is not bytes
+
 
     def get_location(self):
         """

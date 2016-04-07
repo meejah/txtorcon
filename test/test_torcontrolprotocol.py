@@ -16,6 +16,7 @@ import types
 import functools
 import tempfile
 import base64
+from binascii import b2a_hex, a2b_hex
 
 
 class CallbackChecker:
@@ -26,7 +27,7 @@ class CallbackChecker:
     def __call__(self, *args, **kwargs):
         v = args[0]
         if v != self.expected_value:
-            print "WRONG"
+            print("WRONG")
             raise RuntimeError(
                 'Expected "%s" but got "%s"' % (self.expected_value, v)
             )
@@ -80,8 +81,8 @@ class AuthenticationTests(unittest.TestCase):
         self.protocol.makeConnection(self.transport)
         self.assertEqual(self.transport.value(), b'PROTOCOLINFO 1\r\n')
         self.transport.clear()
-        cookie_data = 'cookiedata!cookiedata!cookiedata'
-        with open('authcookie', 'w') as f:
+        cookie_data = b'cookiedata!cookiedata!cookiedata'
+        with open('authcookie', 'wb') as f:
             f.write(cookie_data)
         self.send(b'250-PROTOCOLINFO 1')
         self.send(b'250-AUTH METHODS=COOKIE,HASHEDPASSWORD COOKIEFILE="authcookie"')
@@ -90,26 +91,29 @@ class AuthenticationTests(unittest.TestCase):
 
         self.assertEqual(
             self.transport.value(),
-            'AUTHENTICATE %s\r\n' % cookie_data.encode("hex")
+            b'AUTHENTICATE ' + b2a_hex(cookie_data) + b'\r\n',
         )
 
     def test_authenticate_password(self):
         self.protocol.password_function = lambda: 'foo'
         self.protocol.makeConnection(self.transport)
-        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
+        self.assertEqual(self.transport.value(), b'PROTOCOLINFO 1\r\n')
         self.transport.clear()
         self.send(b'250-PROTOCOLINFO 1')
         self.send(b'250-AUTH METHODS=HASHEDPASSWORD')
         self.send(b'250-VERSION Tor="0.2.2.34"')
         self.send(b'250 OK')
 
-        self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
+        self.assertEqual(
+            self.transport.value(),
+            b'AUTHENTICATE ' + b2a_hex(b'foo') + b'\r\n'
+        )
 
     def test_authenticate_password_deferred(self):
         d = defer.Deferred()
         self.protocol.password_function = lambda: d
         self.protocol.makeConnection(self.transport)
-        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
+        self.assertEqual(self.transport.value(), b'PROTOCOLINFO 1\r\n')
         self.transport.clear()
         self.send(b'250-PROTOCOLINFO 1')
         self.send(b'250-AUTH METHODS=HASHEDPASSWORD')
@@ -118,13 +122,13 @@ class AuthenticationTests(unittest.TestCase):
 
         # make sure we haven't tried to authenticate before getting
         # the password callback
-        self.assertEqual(self.transport.value(), '')
+        self.assertEqual(self.transport.value(), b'')
         d.callback('foo')
 
         # now make sure we DID try to authenticate
         self.assertEqual(
             self.transport.value(),
-            'AUTHENTICATE %s\r\n' % "foo".encode("hex")
+            b'AUTHENTICATE ' + b2a_hex(b"foo") + b'\r\n'
         )
 
     def test_authenticate_password_deferred_but_no_password(self):
@@ -148,7 +152,7 @@ class AuthenticationTests(unittest.TestCase):
         self.auth_failed = False
 
         self.protocol.makeConnection(self.transport)
-        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
+        self.assertEqual(self.transport.value(), b'PROTOCOLINFO 1\r\n')
 
         self.send(b'250-PROTOCOLINFO 1')
         self.send(b'250-AUTH METHODS=HASHEDPASSWORD')
@@ -220,7 +224,7 @@ class ProtocolTests(unittest.TestCase):
         try:
             self.protocol._broadcast_response("foo")
             self.fail()
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('No code set yet' in str(e))
 
     def test_statemachine_broadcast_unknown_code(self):
@@ -228,7 +232,7 @@ class ProtocolTests(unittest.TestCase):
             self.protocol.code = 999
             self.protocol._broadcast_response("foo")
             self.fail()
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('Unknown code' in str(e))
 
     def test_statemachine_is_finish(self):
@@ -245,7 +249,7 @@ class ProtocolTests(unittest.TestCase):
             self.protocol.code = 250
             self.protocol._is_continuation_line("123 ")
             self.fail()
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('Unexpected code' in str(e))
 
     def test_statemachine_multiline(self):
@@ -253,7 +257,7 @@ class ProtocolTests(unittest.TestCase):
             self.protocol.code = 250
             self.protocol._is_multi_line("123 ")
             self.fail()
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('Unexpected code' in str(e))
 
     def auth_failed(self, msg):
@@ -279,12 +283,12 @@ FOOAUTH METHODS=COOKIE,SAFECOOKIE COOKIEFILE="/dev/null"
 VERSION Tor="0.2.2.35"
 OK''')
             self.assertTrue(False)
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('find AUTH line' in str(e))
 
     def test_authenticate_not_enough_cookie_data(self):
         with tempfile.NamedTemporaryFile() as cookietmp:
-            cookietmp.write('x' * 35)  # too much data
+            cookietmp.write(b'x' * 35)  # too much data
             cookietmp.flush()
 
             try:
@@ -293,12 +297,12 @@ AUTH METHODS=COOKIE COOKIEFILE="%s"
 VERSION Tor="0.2.2.35"
 OK''' % cookietmp.name)
                 self.assertTrue(False)
-            except RuntimeError, e:
+            except RuntimeError as e:
                 self.assertTrue('cookie to be 32' in str(e))
 
     def test_authenticate_not_enough_safecookie_data(self):
         with tempfile.NamedTemporaryFile() as cookietmp:
-            cookietmp.write('x' * 35)  # too much data
+            cookietmp.write(b'x' * 35)  # too much data
             cookietmp.flush()
 
             try:
@@ -307,12 +311,12 @@ AUTH METHODS=SAFECOOKIE COOKIEFILE="%s"
 VERSION Tor="0.2.2.35"
 OK''' % cookietmp.name)
                 self.assertTrue(False)
-            except RuntimeError, e:
+            except RuntimeError as e:
                 self.assertTrue('cookie to be 32' in str(e))
 
     def test_authenticate_safecookie(self):
         with tempfile.NamedTemporaryFile() as cookietmp:
-            cookiedata = str(bytearray([0] * 32))
+            cookiedata = bytes(bytearray([0] * 32))
             cookietmp.write(cookiedata)
             cookietmp.flush()
 
@@ -321,32 +325,38 @@ AUTH METHODS=SAFECOOKIE COOKIEFILE="%s"
 VERSION Tor="0.2.2.35"
 OK''' % cookietmp.name)
             self.assertTrue(
-                'AUTHCHALLENGE SAFECOOKIE ' in self.transport.value()
+                b'AUTHCHALLENGE SAFECOOKIE ' in self.transport.value()
             )
-            client_nonce = base64.b16decode(self.transport.value().split()[-1])
+            x = self.transport.value().split()[-1]
+            print("XXX", x, len(x))
+            #client_nonce = base64.b16decode(x)
+            client_nonce = a2b_hex(x)
+            print("NONCE", client_nonce, len(client_nonce))
             self.transport.clear()
-            server_nonce = str(bytearray([0] * 32))
+            server_nonce = bytes(bytearray([0] * 32))
             server_hash = hmac_sha256(
-                "Tor safe cookie authentication server-to-controller hash",
-                cookiedata + client_nonce + server_nonce
+                b"Tor safe cookie authentication server-to-controller hash",
+                cookiedata + client_nonce + server_nonce,
             )
 
             self.send(
-                '250 AUTHCHALLENGE SERVERHASH=%s SERVERNONCE=%s' %
-                (base64.b16encode(server_hash), base64.b16encode(server_nonce))
+                b'250 AUTHCHALLENGE SERVERHASH=' + \
+                base64.b16encode(server_hash) + b' SERVERNONCE=' + \
+                base64.b16encode(server_nonce) + b'\r\n'
             )
-            self.assertTrue('AUTHENTICATE ' in self.transport.value())
+            print("transport:", self.transport.value())
+            self.assertTrue(b'AUTHENTICATE ' in self.transport.value())
 
     def test_authenticate_cookie_without_reading(self):
-        server_nonce = str(bytearray([0] * 32))
-        server_hash = str(bytearray([0] * 32))
+        server_nonce = bytes(bytearray([0] * 32))
+        server_hash = bytes(bytearray([0] * 32))
         try:
             self.protocol._safecookie_authchallenge(
                 '250 AUTHCHALLENGE SERVERHASH=%s SERVERNONCE=%s' %
                 (base64.b16encode(server_hash), base64.b16encode(server_nonce))
             )
             self.assertTrue(False)
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('not read' in str(e))
 
     def test_authenticate_unexisting_cookie_file(self):
@@ -364,9 +374,9 @@ OK''' % unexisting_file)
         unexisting_file = __file__ + "-unexisting"
         try:
             self.protocol._do_authenticate('''PROTOCOLINFO 1
-AUTH METHODS=SAFECOOKIE COOKIEFILE="%s"
+AUTH METHODS=SAFECOOKIE COOKIEFILE="{}"
 VERSION Tor="0.2.2.35"
-OK''' % unexisting_file)
+OK'''.format(unexisting_file))
             self.assertTrue(False)
         except RuntimeError:
             pass
@@ -385,25 +395,30 @@ OK''')
         unexisting_file = __file__ + "-unexisting"
         self.protocol.password_function = lambda: 'foo'
         self.protocol._do_authenticate('''PROTOCOLINFO 1
-AUTH METHODS=COOKIE,HASHEDPASSWORD COOKIEFILE="%s"
+AUTH METHODS=COOKIE,HASHEDPASSWORD COOKIEFILE="{}"
 VERSION Tor="0.2.2.35"
-OK''' % unexisting_file)
-        self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
-
+OK'''.format(unexisting_file))
+        self.assertEqual(
+            self.transport.value(),
+            b'AUTHENTICATE ' + b2a_hex(b'foo') + b'\r\n',
+        )
 
     def test_authenticate_password_when_safecookie_unavailable(self):
         unexisting_file = __file__ + "-unexisting"
         self.protocol.password_function = lambda: 'foo'
         self.protocol._do_authenticate('''PROTOCOLINFO 1
-AUTH METHODS=SAFECOOKIE,HASHEDPASSWORD COOKIEFILE="%s"
+AUTH METHODS=SAFECOOKIE,HASHEDPASSWORD COOKIEFILE="{}"
 VERSION Tor="0.2.2.35"
-OK''' % unexisting_file)
-        self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
+OK'''.format(unexisting_file))
+        self.assertEqual(
+            self.transport.value(),
+            b'AUTHENTICATE ' + b2a_hex(b'foo') + b'\r\n',
+        )
 
     def test_authenticate_safecookie_wrong_hash(self):
-        cookiedata = str(bytearray([0] * 32))
-        server_nonce = str(bytearray([0] * 32))
-        server_hash = str(bytearray([0] * 32))
+        cookiedata = bytes(bytearray([0] * 32))
+        server_nonce = bytes(bytearray([0] * 32))
+        server_hash = bytes(bytearray([0] * 32))
 
         # pretend we already did PROTOCOLINFO and read the cookie
         # file
@@ -411,11 +426,13 @@ OK''' % unexisting_file)
         self.protocol.client_nonce = server_nonce  # all 0's anyway
         try:
             self.protocol._safecookie_authchallenge(
-                '250 AUTHCHALLENGE SERVERHASH=%s SERVERNONCE=%s' %
-                (base64.b16encode(server_hash), base64.b16encode(server_nonce))
+                '250 AUTHCHALLENGE SERVERHASH={} SERVERNONCE={}'.format(
+                    b2a_hex(server_hash).decode('utf8'),
+                    b2a_hex(server_nonce).decode('utf8'),
+                )
             )
             self.assertTrue(False)
-        except RuntimeError, e:
+        except RuntimeError as e:
             self.assertTrue('hash not expected' in str(e))
 
     def confirm_version_events(self, arg):
@@ -429,7 +446,7 @@ OK''' % unexisting_file)
         d.addCallback(CallbackChecker(self.protocol))
         d.addCallback(self.confirm_version_events)
 
-        events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
+        events = b'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
         self.protocol._bootstrap()
 
         # answer all the requests generated by boostrapping etc.
@@ -577,7 +594,7 @@ OK''' % unexisting_file)
         )
         self.send(b"250 OK")
         self._wait(d)
-        self.assertEqual(self.transport.value(), "SETCONF foo=bar\r\n")
+        self.assertEqual(self.transport.value(), b"SETCONF foo=bar\r\n")
 
     def test_setconf_with_space(self):
         d = self.protocol.set_conf("foo", "a value with a space")
@@ -586,20 +603,26 @@ OK''' % unexisting_file)
         self._wait(d)
         self.assertEqual(
             self.transport.value(),
-            'SETCONF foo="a value with a space"\r\n'
+            b'SETCONF foo="a value with a space"\r\n'
         )
 
     def test_setconf_multi(self):
         d = self.protocol.set_conf("foo", "bar", "baz", 1)
         self.send(b"250 OK")
         self._wait(d)
-        self.assertEqual(self.transport.value(), "SETCONF foo=bar baz=1\r\n")
+        self.assertEqual(
+            self.transport.value(),
+            b"SETCONF foo=bar baz=1\r\n",
+        )
 
     def test_quit(self):
         d = self.protocol.quit()
         self.send(b"250 OK")
         self._wait(d)
-        self.assertEqual(self.transport.value(), "QUIT\r\n")
+        self.assertEqual(
+            self.transport.value(),
+            b"QUIT\r\n",
+        )
 
     def test_dot(self):
         # just checking we don't expode
@@ -610,7 +633,7 @@ OK''' % unexisting_file)
         self.assertTrue(exists('txtorcon-debug.log'))
 
     def error(self, failure):
-        print "ERROR", failure
+        print("ERROR", failure)
         self.assertTrue(False)
 
     def test_twocommands(self):
@@ -633,13 +656,16 @@ OK''' % unexisting_file)
         try:
             self.protocol.signal('FOO')
             self.fail()
-        except Exception, e:
+        except Exception as e:
             self.assertTrue('Invalid signal' in str(e))
 
     def test_signal(self):
         self.protocol.valid_signals = ['NEWNYM']
         self.protocol.signal('NEWNYM')
-        self.assertEqual(self.transport.value(), 'SIGNAL NEWNYM\r\n')
+        self.assertEqual(
+            self.transport.value(),
+            b'SIGNAL NEWNYM\r\n',
+        )
 
     def test_650_after_authenticate(self):
         self.protocol._set_valid_events('CONF_CHANGED')
@@ -679,11 +705,14 @@ OK''' % unexisting_file)
         self.send(b"250-version=0.2.2.34")
         self.send(b"250 OK")
 
-        self.assertEqual(self.transport.value(), "GETINFO version\r\n")
+        self.assertEqual(
+            self.transport.value(),
+            b"GETINFO version\r\n",
+        )
         return d
 
     def test_getinfo_for_descriptor(self):
-        descriptor_info = """250+desc/name/moria1=
+        descriptor_info = b"""250+desc/name/moria1=
 router moria1 128.31.0.34 9101 0 9131
 platform Tor 0.2.5.0-alpha-dev on Linux
 protocols Link 1 2 Circuit 1
@@ -718,15 +747,15 @@ iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 .
 250 OK"""
         d = self.protocol.get_info("desc/name/moria1")
-        d.addCallback(CallbackChecker({'desc/name/moria1': '\n' + '\n'.join(descriptor_info.split('\n')[1:-2])}))
+        d.addCallback(CallbackChecker({'desc/name/moria1': '\n' + '\n'.join(descriptor_info.decode('utf8').split('\n')[1:-2])}))
         d.addErrback(self.fail)
 
-        for line in descriptor_info.split('\n'):
+        for line in descriptor_info.split(b'\n'):
             self.send(line)
         return d
 
     def test_getinfo_multiline(self):
-        descriptor_info = """250+desc/name/moria1=
+        descriptor_info = b"""250+desc/name/moria1=
 router moria1 128.31.0.34 9101 0 9131
 platform Tor 0.2.5.0-alpha-dev on Linux
 .
@@ -736,7 +765,7 @@ platform Tor 0.2.5.0-alpha-dev on Linux
         d.addCallback(CallbackChecker({'desc/name/moria1': gold}))
         d.addErrback(self.fail)
 
-        for line in descriptor_info.split('\n'):
+        for line in descriptor_info.split(b'\n'):
             self.send(line)
         return d
 
@@ -750,16 +779,18 @@ platform Tor 0.2.5.0-alpha-dev on Linux
         self.send(b"250 OK")
         self._wait(d)
         self.assertEqual(
-            self.transport.value().split('\r\n')[-2],
-            "SETEVENTS FOO"
+            self.transport.value().split(b'\r\n')[-2],
+            b"SETEVENTS FOO"
         )
         self.transport.clear()
 
         self.protocol.add_event_listener('BAR', lambda _: None)
         d = self.protocol.defer
         self.send(b"250 OK")
-        self.assertTrue(self.transport.value() == "SETEVENTS FOO BAR\r\n" or
-                        self.transport.value() == "SETEVENTS BAR FOO\r\n")
+        self.assertTrue(
+            self.transport.value() == b"SETEVENTS FOO BAR\r\n" or
+            self.transport.value() == b"SETEVENTS BAR FOO\r\n"
+        )
         self._wait(d)
 
         try:
@@ -800,11 +831,11 @@ platform Tor 0.2.5.0-alpha-dev on Linux
 
         listener = EventListener()
         self.protocol.add_event_listener('STREAM', listener)
-        self.assertEqual(self.transport.value(), 'SETEVENTS STREAM\r\n')
-        self.protocol.lineReceived("250 OK")
+        self.assertEqual(self.transport.value(), b'SETEVENTS STREAM\r\n')
+        self.protocol.lineReceived(b"250 OK")
         self.transport.clear()
         self.protocol.remove_event_listener('STREAM', listener)
-        self.assertEqual(self.transport.value(), 'SETEVENTS \r\n')
+        self.assertEqual(self.transport.value(), b'SETEVENTS \r\n')
 
     def test_remove_eventlistener_multiple(self):
         self.protocol._set_valid_events('STREAM')
@@ -818,26 +849,26 @@ platform Tor 0.2.5.0-alpha-dev on Linux
         listener0 = EventListener()
         listener1 = EventListener()
         self.protocol.add_event_listener('STREAM', listener0)
-        self.assertEqual(self.transport.value(), 'SETEVENTS STREAM\r\n')
-        self.protocol.lineReceived("250 OK")
+        self.assertEqual(self.transport.value(), b'SETEVENTS STREAM\r\n')
+        self.protocol.lineReceived(b"250 OK")
         self.transport.clear()
         # add another one, shouldn't issue a tor command
         self.protocol.add_event_listener('STREAM', listener1)
-        self.assertEqual(self.transport.value(), '')
+        self.assertEqual(self.transport.value(), b'')
 
         # remove one, should still not issue a tor command
         self.protocol.remove_event_listener('STREAM', listener0)
-        self.assertEqual(self.transport.value(), '')
+        self.assertEqual(self.transport.value(), b'')
 
         # remove the other one, NOW should issue a command
         self.protocol.remove_event_listener('STREAM', listener1)
-        self.assertEqual(self.transport.value(), 'SETEVENTS \r\n')
+        self.assertEqual(self.transport.value(), b'SETEVENTS \r\n')
 
         # try removing invalid event
         try:
             self.protocol.remove_event_listener('FOO', listener0)
             self.fail()
-        except Exception, e:
+        except Exception as e:
             self.assertTrue('FOO' in str(e))
 
     def checkContinuation(self, v):
@@ -882,8 +913,8 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         return d
 
     def test_plus_line_no_command(self):
-        self.protocol.lineReceived("650+NS\r\n")
-        self.protocol.lineReceived("r Gabor gFpAHsFOHGATy12ZUswRf0ZrqAU GG6GDp40cQfR3ODvkBT0r+Q09kw 2012-05-12 16:54:56 91.219.238.71 443 80\r\n")
+        self.protocol.lineReceived(b"650+NS\r\n")
+        self.protocol.lineReceived(b"r Gabor gFpAHsFOHGATy12ZUswRf0ZrqAU GG6GDp40cQfR3ODvkBT0r+Q09kw 2012-05-12 16:54:56 91.219.238.71 443 80\r\n")
 
     def test_minus_line_no_command(self):
         """
@@ -892,8 +923,8 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
         """
         self.protocol._set_valid_events('NS')
         self.protocol.add_event_listener('NS', lambda _: None)
-        self.protocol.lineReceived("650-NS\r\n")
-        self.protocol.lineReceived("650 OK\r\n")
+        self.protocol.lineReceived(b"650-NS\r\n")
+        self.protocol.lineReceived(b"650 OK\r\n")
 
 
 class ParseTests(unittest.TestCase):
@@ -923,7 +954,7 @@ class ParseTests(unittest.TestCase):
     def test_multientry_keywords_2(self):
         x = parse_keywords('foo=bar\nfoo=zarimba')
         self.assertEqual(len(x), 1)
-        self.assertTrue(isinstance(x['foo'], types.ListType))
+        self.assertTrue(isinstance(x['foo'], list))
         self.assertEqual(len(x['foo']), 2)
         self.assertEqual(x['foo'][0], 'bar')
         self.assertEqual(x['foo'][1], 'zarimba')
@@ -931,7 +962,7 @@ class ParseTests(unittest.TestCase):
     def test_multientry_keywords_3(self):
         x = parse_keywords('foo=bar\nfoo=baz\nfoo=zarimba')
         self.assertEqual(len(x), 1)
-        self.assertTrue(isinstance(x['foo'], types.ListType))
+        self.assertTrue(isinstance(x['foo'], list))
         self.assertEqual(len(x['foo']), 3)
         self.assertEqual(x['foo'][0], 'bar')
         self.assertEqual(x['foo'][1], 'baz')
@@ -940,7 +971,7 @@ class ParseTests(unittest.TestCase):
     def test_multientry_keywords_4(self):
         x = parse_keywords('foo=bar\nfoo=baz\nfoo=zarimba\nfoo=foo')
         self.assertEqual(len(x), 1)
-        self.assertTrue(isinstance(x['foo'], types.ListType))
+        self.assertTrue(isinstance(x['foo'], list))
         self.assertEqual(len(x['foo']), 4)
         self.assertEqual(x['foo'][0], 'bar')
         self.assertEqual(x['foo'][1], 'baz')
@@ -959,8 +990,7 @@ w Bandwidth=1234
 OK
 ''')
         self.assertEqual(2, len(x))
-        keys = x.keys()
-        keys.sort()
+        keys = sorted(x.keys())
         self.assertEqual(keys, ['ns/name/bar', 'ns/name/foo'])
 
     def test_multiline_keywords(self):
