@@ -4,7 +4,7 @@ from twisted.internet import defer
 
 from txtorcon.torconfig import FilesystemHiddenService
 from txtorcon.torconfig import EphemeralHiddenService
-from txtorcon.endpoints import TCPHiddenServiceEndpoint
+# from txtorcon.endpoints import TCPHiddenServiceEndpoint
 
 # XXX
 # think: port vs ports: and how do we represent that? i.e. if we
@@ -22,10 +22,11 @@ from txtorcon.endpoints import TCPHiddenServiceEndpoint
 # --> yes.
 # --> also: direct people to Tor() thing (doesn't exist in this branch tho)
 
+
 @defer.inlineCallbacks
 def create_authenticated_filesystem_onion_service(
         reactor, torconfig, ports, directory,
-        auth): # StealthAuth(['bob', 'alice']) or BasicAuth(['bob', 'alice'])
+        auth):  # StealthAuth(['bob', 'alice']) or BasicAuth(['bob', 'alice'])
     pass
 
 
@@ -149,7 +150,6 @@ def create_ephemeral_onion_service(
             if directory is None:
                 # XXX when to delete this?
                 directory = tempfile.mkdtemp()
-                print("MADE", directory)
 
             # XXX should be a .create() call
             hs = FilesystemHiddenService(
@@ -170,7 +170,6 @@ def create_ephemeral_onion_service(
             yield info_callback  # awaits an INFO log-line from Tor .. sketchy
             torconfig.protocol.remove_event_listener('INFO', info_event)
 
-            print("DING", hs)
             defer.returnValue(hs)
             return
 

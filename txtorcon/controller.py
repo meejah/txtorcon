@@ -10,8 +10,6 @@ import shlex
 import tempfile
 import functools
 from io import StringIO
-if sys.platform in ('linux', 'linux2', 'darwin'):
-    import pwd
 
 from twisted.python import log
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
@@ -27,6 +25,9 @@ from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TCPHiddenServiceEndpoint
+
+if sys.platform in ('linux', 'linux2', 'darwin'):
+    import pwd
 
 
 @inlineCallbacks
@@ -180,7 +181,7 @@ def launch(reactor,
         socks_port = yield available_tcp_port(reactor)
     config.SOCKSPort = socks_port
 
-    if False: # XXX see note in docstring
+    if False:  # XXX see note in docstring
         # Set ownership on the temp-dir to the user tor will drop privileges to
         # when executing as root.
         try:
@@ -240,7 +241,6 @@ def launch(reactor,
 
     log.msg('Spawning tor process with DataDirectory', data_directory)
     args = [tor_binary] + config_args
-    print("XXXXX")
     transport = reactor.spawnProcess(
         process_protocol,
         tor_binary,
@@ -248,11 +248,9 @@ def launch(reactor,
         env={'HOME': data_directory},
         path=data_directory
     )
-    print("OHAI", transport)
     # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
     transport.closeStdin()
 
-    print("OHAI2")
     yield connected_cb
     yield config.post_bootstrap
     # ^ should also wait for protocol to bootstrap; be more explicit?
@@ -417,7 +415,6 @@ class Tor(object):
             ephemeral=False,
             private_key=None,
         )
-
 
     def create_client_endpoint(self, host, port):
         """

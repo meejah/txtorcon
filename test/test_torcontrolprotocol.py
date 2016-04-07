@@ -328,10 +328,8 @@ OK''' % cookietmp.name)
                 b'AUTHCHALLENGE SAFECOOKIE ' in self.transport.value()
             )
             x = self.transport.value().split()[-1]
-            print("XXX", x, len(x))
             #client_nonce = base64.b16decode(x)
             client_nonce = a2b_hex(x)
-            print("NONCE", client_nonce, len(client_nonce))
             self.transport.clear()
             server_nonce = bytes(bytearray([0] * 32))
             server_hash = hmac_sha256(
@@ -344,7 +342,6 @@ OK''' % cookietmp.name)
                 base64.b16encode(server_hash) + b' SERVERNONCE=' + \
                 base64.b16encode(server_nonce) + b'\r\n'
             )
-            print("transport:", self.transport.value())
             self.assertTrue(b'AUTHENTICATE ' in self.transport.value())
 
     def test_authenticate_cookie_without_reading(self):

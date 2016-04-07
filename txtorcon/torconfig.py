@@ -6,8 +6,6 @@ from __future__ import with_statement
 
 import os
 import re
-import sys
-import types
 import functools
 import warnings
 from io import StringIO
@@ -210,7 +208,6 @@ if not py3k:
     setattr(_ListWrapper, '__setslice__', _wrapture(list.__setslice__))
 
 
-
 class HiddenServiceClientAuth(object):
     """
     Encapsulates a single client-authorization, as parsed from a
@@ -251,7 +248,7 @@ class IOnionService(Interface):
     (with a different authethentication token) whereas for a "stealth"
     sevice the .onion URI is different.
     """
-    hostname = Attribute("hostname, including .onion") # XXX *with* .onion? or not?
+    hostname = Attribute("hostname, including .onion")  # XXX *with* .onion? or not?
     private_key = Attribute("Private key blob (bytes)")
     ports = Attribute("list of str; the ports lines like 'public_port host:local_port'")
 
@@ -283,7 +280,7 @@ class FilesystemOnionService(object):
 # e.g. IOnionServiceCollection ... or whatever bikeshed color
 # just having "OnionSerivce" in this class name smells real bad, because it doesn't implement IOnionService
 # maybe: IOnionClients? IOnionClientCollection?
-##class IAuthenticatedOnionService(Interface):
+# class IAuthenticatedOnionService(Interface):
 
 class IOnionClients(Interface):
     """
@@ -697,7 +694,6 @@ class AuthenticatedHiddenService(object):
                 )
         self._clients = clients
 
-
     def config_attributes(self):
         """
         Helper method used by TorConfig when generating a torrc file.
@@ -1009,9 +1005,15 @@ class TorConfig(object):
         attributes we need in the constructor without uusing __dict__
         all over the place.
         """
-        has_setup_attr = lambda o: '_setup_' in o.__dict__
-        has_slutty_attr = lambda o: '_slutty_' in o.__dict__
-        is_hidden_services = lambda s: s.lower() == "hiddenservices"
+
+        def has_setup_attr(ob):
+            return '_setup_' in ob.__dict__
+
+        def has_slutty_attr(ob):
+            return '_slutty_' in ob.__dict__
+
+        def is_hidden_services(svc):
+            return svc.lower() == "hiddenservices"
 
         if has_setup_attr(self):
             name = self._find_real_name(name)

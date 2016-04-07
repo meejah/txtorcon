@@ -7,13 +7,15 @@ from __future__ import with_statement
 
 import time
 import datetime
+import random
 
 from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
+from twisted.internet.interfaces import IReactorTime
 from .interface import IRouterContainer
 from txtorcon.util import find_keywords
-from zope.interface import Interface, implementer # XXX FIXME
+from zope.interface import Interface, implementer  # XXX FIXME
 
 # look like "2014-01-25T02:12:14.593772"
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -333,7 +335,7 @@ def circuit_builder_fixed_country(reactor, torstate, country_code):
             r = random.choice(torstate.all_routers)
             loc = yield r.get_location()
             if loc.country_code == country_code:
-                returnValue(r)
+                defer.returnValue(r)
                 return
     return CircuitBuilder(reactor, torstate, select_exit=select_exit)
 
@@ -373,7 +375,6 @@ class CircuitBuilder(object):
         all the select_*() functions can be async
         """
         self._state = torstate
-        self._config = config
         self._reactor = IReactorTime(reactor)
         self._select_guard = select_guard if select_guard else self._default_select_guard
         self._select_middle = select_middle if select_middle else self._default_select_middle
@@ -444,7 +445,7 @@ class CircuitBuilder(object):
                             )
                         )
                 continue
-            returnValue(circ)
+            defer.returnValue(circ)
             return
 
 

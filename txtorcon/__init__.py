@@ -28,7 +28,6 @@ from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
 from txtorcon.torconfig import FilesystemHiddenService
 from txtorcon.torconfig import AuthenticatedHiddenService
-HiddenService = FilesystemHiddenService  # backwards-compat; plz deprecate!
 ##from txtorcon.onion import create_onion_service
 from txtorcon.controller import TorProcessProtocol
 ##from txtorcon.torconfig import launch_tor # XXX backwards-compat: (put back??)
@@ -52,6 +51,7 @@ from txtorcon.interface import (
     ICircuitContainer, ICircuitListener, CircuitListenerMixin,
     IRouterContainer, IAddrListener,
 )
+HiddenService = FilesystemHiddenService  # backwards-compat; plz deprecate!
 
 __all__ = [
     "Router",
@@ -65,7 +65,7 @@ __all__ = [
     "launch_tor",  # XXX deprecate?
     "create_onion_service",
     "TorNotFound", "TorConfig",
-    "FilesystemHiddenService", "HiddenService", "AuthenticatedHiddenService", # XXX FIXME
+    "FilesystemHiddenService", "HiddenService", "AuthenticatedHiddenService",  # XXX FIXME
     "TorProcessProtocol",
     "TorInfo",
     "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",

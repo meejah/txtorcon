@@ -316,7 +316,7 @@ class TorState(object):
             args[1],                  # nickname
             args[2],                  # idhash
             args[3],                  # orhash
-            args[4] + ' ' + args[5], # modified (like '%Y-%m-%f %H:%M:%S')
+            args[4] + ' ' + args[5],  # modified (like '%Y-%m-%f %H:%M:%S')
             args[6],                  # ip address
             args[7],                  # ORPort
             args[8],                  # DirPort

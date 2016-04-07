@@ -302,7 +302,7 @@ class TCPHiddenServiceEndpoint(object):
 
         @defer.inlineCallbacks
         def _launch(control_port):
-            from .controller import launch # XXX :( mutual dependencies
+            from .controller import launch  # XXX :( mutual dependencies
             config = yield _create_default_config(reactor, control_port)
             yield launch(reactor, progress_updates=progress)
             yield config.post_bootstrap
@@ -381,7 +381,7 @@ class TCPHiddenServiceEndpoint(object):
                 "'ephemeral=True' onion services don't support stealth_auth"
             )
 
-        if ephemeral and hidden_service_dir != None:
+        if ephemeral and hidden_service_dir is not None:
             raise ValueError(
                 "Specifying 'hidden_service_dir' is incompatible"
                 " with 'ephemeral=True'"
@@ -471,8 +471,6 @@ class TCPHiddenServiceEndpoint(object):
         # just to be sure:
         yield self.config.post_bootstrap
 
-        print("XXXXXXX", self.config)
-
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would
         # probably want to check for "is a local interface or not" and
@@ -548,7 +546,7 @@ class TCPHiddenServiceEndpoint(object):
         self._tor_progress_update(100.0, 'wait_descriptor',
                                   'At least one descriptor uploaded.')
 
-        uri = None
+        #uri = None
         log.msg('Started hidden service on %s:%d' % (self.onion_uri, self.public_port))
 #        for client in self.hiddenservice.clients:
 #            log.msg('  listening on %s' % client[1])

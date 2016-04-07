@@ -4,8 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
-from base64 import b64encode, b64decode
-from binascii import b2a_hex, a2b_hex, hexlify
+from binascii import b2a_hex, hexlify
 
 from twisted.python import log
 from twisted.internet import defer
@@ -109,7 +108,6 @@ class Event(object):
         self.callbacks.remove(cb)
 
     def got_update(self, data):
-        print(self.name, "got_update:", data)
         for cb in self.callbacks:
             cb(data)
 
@@ -620,7 +618,6 @@ class TorControlProtocol(LineOnlyReceiver):
 
             data = cmd + b'\r\n'
             txtorlog.msg("cmd: {}".format(data.strip()))
-            print("DOIT", repr(data))
             self.transport.write(data)
 
     def _auth_failed(self, fail):
@@ -628,7 +625,9 @@ class TorControlProtocol(LineOnlyReceiver):
         Errback if authentication fails.
         """
 
-        print("authentication failed", fail)
+        # XXX FIXME if post_bootstrap is already callback()'d, this
+        # goes into the aether; should be logged in that case...
+        # print("authentication failed", fail)
         self.post_bootstrap.errback(fail)
         return None
 
@@ -643,12 +642,10 @@ class TorControlProtocol(LineOnlyReceiver):
         server_hash = base64.b16decode(kw['SERVERHASH'])
         server_nonce = base64.b16decode(kw['SERVERNONCE'])
         # FIXME put string in global. or something.
-        print("XXX", type(self._cookie_data), type(self.client_nonce), type(server_nonce))
         expected_server_hash = hmac_sha256(
             b"Tor safe cookie authentication server-to-controller hash",
             self._cookie_data + self.client_nonce + server_nonce,
         )
-        print("EXCEP", repr(expected_server_hash), repr(server_hash))
 
         if not compare_via_hash(expected_server_hash, server_hash):
             raise RuntimeError(
@@ -714,10 +711,9 @@ class TorControlProtocol(LineOnlyReceiver):
                 txtorlog.msg("Using SAFECOOKIE authentication", cookiefile,
                              len(self._cookie_data), "bytes")
                 self.client_nonce = os.urandom(32)
-                print("XXX", repr(hexlify(self.client_nonce).decode('utf8')))
 
                 cmd = b'AUTHCHALLENGE SAFECOOKIE ' + \
-                      hexlify(self.client_nonce)
+                      b2a_hex(self.client_nonce)
                 d = self.queue_command(cmd)
                 d.addCallback(self._safecookie_authchallenge)
                 d.addCallback(self._bootstrap)
@@ -823,7 +819,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def _is_continuation_line(self, line):
         "for FSM"
-        print("isContinuationLine",self.code,line,line[3],'-')
+        # print("isContinuationLine",self.code,line,line[3],'-')
         code = int(line[:3])
         if self.code and self.code != code:
             raise RuntimeError("Unexpected code %d, wanted %d" % (code,
@@ -833,7 +829,7 @@ class TorControlProtocol(LineOnlyReceiver):
     def _is_multi_line(self, line):
         "for FSM"
         code = int(line[:3])
-        print("isMultiLine",code,line,line[3])
+        # print("isMultiLine",code,line,line[3])
         if self.code and self.code != code:
             raise RuntimeError("Unexpected code %d, wanted %d" % (code,
                                                                   self.code))

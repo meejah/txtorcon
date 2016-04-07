@@ -11,6 +11,8 @@ from .util import basestring
 from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
+from twisted.internet import defer
+
 
 def hexIdFromHash(thehash):
     """
@@ -20,7 +22,6 @@ def hexIdFromHash(thehash):
     :param thehash: base64-encoded str
     :return: hex-encoded hash
     """
-##    print((b2a_hex(b64decode(thehash + '='))))
     return '$' + b2a_hex(b64decode(thehash + '=')).decode('utf8').upper()
 
 
@@ -107,10 +108,10 @@ class Router(object):
         # assert type(idhash) is not bytes
         # assert type(orhash) is not bytes
 
-
     def get_location(self):
         """
-        Returns a Deferred that fires with a NetLocation object for this router.
+        Returns a Deferred that fires with a NetLocation object for this
+        router.
         """
         if self._location:
             return defer.succeed(self._location)
