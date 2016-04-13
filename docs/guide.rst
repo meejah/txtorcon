@@ -63,6 +63,25 @@ To explicitly launch your own Tor instance, use
 options, use ``.config`` to retrieve the :class:`txtorcon.TorConfig`
 instance associated with this tor.
 
+.. _guide_style:
+
+A Note On Style
+---------------
+
+Most of txtorcon tends towards "attribute-style access".  The guiding
+principle is that "mere data" that is immediately available will be an
+attribute, whereas things that "take work" or are async (and thus
+return ``Deferred`` s) will be functions. For example,
+:meth:`txtorcon.Router.get_location` is a method because it
+potentially has to ask Tor for the country, whereas
+:attr:`txtorcon.Router.hex_id` is a plain attribute because it's
+always available.
+
+Now, in some cases, this may have gotten a little out-of-control. For
+example, I'm curious on feedback about whether you like or dislike
+:class:`txtorcon.TorConfig`'s use of attribute-style access for Tor
+config items...
+
 
 .. _guide_configuration:
 
@@ -85,9 +104,17 @@ single command. All ``TorConfig`` instances subscribe to configuration
 updates from Tor, so "live state" includes actions by any other
 controllers that may be connected.
 
+For some configuration items, the order they're sent to Tor
+matters. Sometimes, if you change one config item, you have to set a
+series of related items. TorConfig handles these cases for you -- you
+just manipulate the configuration, and wait for ``.save()``'s
+``Deferred`` to fire and the running tor's configuration is updated.
+
 Note that is a tiny window during which the state may appear slightly
 inconsistent: after Tor has acknowledged a ``SETCONF`` command, but
-before we've gotten all the ``CONF_CHANGED`` events.
+before a separate ``TorConfig`` instance has gotten all the
+``CONF_CHANGED`` events (because they're hung up in the networking
+stack for some reason). This shouldn't concern most users.
 
 Since :class:`txtorcon.TorConfig` conforms to the Iterator protocol,
 you can easily find all the config-options that Tor supports::
@@ -100,6 +127,13 @@ These come from interrogating tor using ``GETINFO config/names`` and
 so represent the configuration options of the current connected Tor
 process. If the value "isn't set" (i.e. is the default), the value
 from Tor will be ``txtorcon.DEFAULT_VALUE``.
+
+When you set values into ``TorConfig``, they are parsed according to
+control-spec for the different types given to the values, via
+information from ``GETINFO config/names``. So, for example, setting
+``.SOCKSPort`` to a ``"quux"`` won't work. Of course, it would also
+fail the whole ``SETCONF`` command if txtorcon happens to allow some
+values that Tor doesn't.
 
 
 .. _guide_state:
@@ -122,7 +156,8 @@ view.
     If you need to be **absolutely sure** there's nothing stuck in
     networking buffers, you can issue a do-nothing command to Tor via
     :meth:`txtorcon.TorControlProtocol.queue_command` (e.g. ``yield
-    queue_command("GETINFO version")``)
+    queue_command("GETINFO version")``). Most users shouldn't have to
+    worry about this edge-case.
 
 You can modify the state of these things in a few simple ways. For
 example, you can call :meth:`txtorcon.Stream.close` or
@@ -142,16 +177,19 @@ are also some convenience functions like :meth:`txtorcon.Circuit.age`.
 For sending streams over a particular circuit,
 :meth:`txtorcon.Circuit.stream_to` returns an `IStreamClientEndpoint`_
 implementation that will cause a subsequent ``.connect()`` on it to
-go via the given circuit in Tor. Combined with a
-:class:`txtorcon.CircuitBuilder` gives the power to do many things.
+go via the given circuit in Tor.
+
+Combined with a :class:`txtorcon.CircuitBuilder` this gives the power
+to do many things.
 
 Listening for certain events to happen can be done by implementing the
 interfaces :class:`txtorcon.interface.IStreamListener` and
-:class:`txtorcon.interface.ICircuitListener`. You can request notifications on a
-tor-wide basis with :meth:`txtorcon.TorState.add_circuit_listener` or
+:class:`txtorcon.interface.ICircuitListener`. You can request
+notifications on a tor-wide basis with
+:meth:`txtorcon.TorState.add_circuit_listener` or
 :meth:`txtorcon.TorState.add_stream_listener`. If you are just
 interested in a single circuit, you can call
-:meth:`txtorcon.Circuit.listen`.
+:meth:`txtorcon.Circuit.listen` directly on a ``Circuit`` instance.
 
 (XXX think about the composible-style API; e.g. ``circuit.on('extend',
 call_back)`` and/or ``state.on('circuit_extend', call_back)``)
@@ -163,12 +201,15 @@ information, e.g.: ``id_hex``, ``ip``, ``flags`` (a list of strings),
 objects is from "microdescriptors". If you're doing a long-running
 iteration over relays, it may be important to remember that the
 collection of routers can change every hour (when a new "consensus"
-from the Directory Authorities is published).
+from the Directory Authorities is published) which may change the
+underlying collection (e.g. :attr:`txtorcon.TorState.routers_by_hash`)
+over which you're iterating.
 
 Here's a simple sketch that traverses all circuits printing their
-router IDs, and closing each streams and circuit afterwards:
+router IDs, and closing each stream and circuit afterwards:
 
-(XXX FIXME test this for realz)
+(XXX FIXME test this for realz; can we put it in a "listing"-type
+file?)
 
 .. code-block:: python
 
