@@ -15,6 +15,8 @@ from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.interfaces import IStreamClientEndpoint
+from zope.interface import implementer
 
 from txtorcon.spaghetti import FSM, State, Transition
 
@@ -31,7 +33,44 @@ def resolve(tor_endpoint, hostname):
     returnValue(result)
 
 
+@inlineCallbacks
+def resolve_ptr(tor_endpoint, hostname):
+    done = Deferred()
+    factory = Factory.forProtocol(
+        lambda: TorSocksProtocol(done, hostname, 0, 'RESOLVE_PTR')
+    )
+    proto = yield tor_endpoint.connect(factory)
+    result = yield done
+    returnValue(result)
+
+
+@implementer(IStreamClientEndpoint)
+class TorSocksEndpoint(object):
+    def __init__(self, proxy_endpoint, host, port):
+        self._proxy_ep = proxy_endpoint
+        self._host = host
+        self._port = port
+        self._socks_method = socks_method
+
+    def connect(self, factory):
+        factory = Factory.forProtocol(
+            lambda: TorSocksProtocol(done, self._host, self._port, 'CONNECT')
+        )
+
+
 class TorSocksProtocol(Protocol):
+    error_code_to_string = {
+        0x00: 'succeeded',
+        0x01: 'general SOCKS server failure',
+        0x02: 'connection not allowed by ruleset',
+        0x03: 'Network unreachable',
+        0x04: 'Host unreachable',
+        0x05: 'Connection refused',
+        0x06: 'TTL expired',
+        0x07: 'Command not supported',
+        0x08: 'Address type not supported',
+    }
+
     @classmethod
     @inlineCallbacks
     def connect(cls, host, port):
@@ -87,7 +126,7 @@ class TorSocksProtocol(Protocol):
 
     def _error(self, msg):
         reply = struct.unpack('B', msg[1:2])[0]
-        print("error; aborting SOCKS:", reply)
+        print("error; aborting SOCKS:", self.error_code_to_string[reply])
         self.transport.loseConnection()
         # connectionLost will errback on self._done
 
@@ -141,22 +180,27 @@ class TorSocksProtocol(Protocol):
 
         # XXX probably "state machine" itself here; could split
         # SENT_REQUEST to 2 states?
-        atyp = 0x03  # DOMAINNAME
-        host = self._host
         if self._socks_method == 0xf1:
-            atyp = 0x01  # IPv4 Address
-            host = inet_aton(self._host)
-        data = struct.pack(
-            '!BBBBB{}sH'.format(len(host)),
-            5,                  # version
-            self._socks_method, # command
-            0x00,               # reserved
-            atyp,               # ATYP
-            len(host),
-            host,
-            self._port,
-        )
-        print("sending req", repr(data))
+            data = struct.pack(
+                '!BBBB4sH',
+                5,                  # version
+                self._socks_method, # command
+                0x00,               # reserved
+                0x01,               # IPv4 address
+                inet_aton(self._host),
+                self._port,
+            )
+        else:
+            data = struct.pack(
+                '!BBBBB{}sH'.format(len(self._host)),
+                5,                  # version
+                self._socks_method, # command
+                0x00,               # reserved
+                0x03,               # DOMAINNAME
+                len(self._host),
+                self._host,
+                self._port,
+            )
         self.transport.write(data)
 
 
@@ -174,7 +218,7 @@ class TorSocksProtocol(Protocol):
             self._done.callback(reason)
 
     def dataReceived(self, d):
-        print("data!", d)
+        print("data {}bytes".format(len(d)))
         self._fsm.process(d)
         return
 
@@ -199,7 +243,7 @@ class TorSocksProtocol(Protocol):
                 self._host,
                 self._port,
             )
-            print("sending", data)
+            #print("sending", data)
             self.transport.write(data)
             self._state = 'sent_command'
         elif self._state == 'sent_command':
@@ -216,26 +260,16 @@ class TorSocksProtocol(Protocol):
             self.transport.write(b'GET / HTTP/1.1\r\nHost: timaq4ygg2iegci7.onion\r\n\r\n')
 
 
-class TorSocksFactory(Factory):
-    def __init__(self, host, port):
-        self._host = host
-        self._port = port
-        self._done = Deferred()
-
-    def buildProtocol(self, addr):
-        print("buiLD", addr)
-        return TorSocksProtocol(self._done, self._host, self._port)
-
-
 @inlineCallbacks
 def main(reactor):
-    #factory = TorSocksFactory('torproject.org', 443)
-    #factory = TorSocksFactory('torproject.org', 80)
-    #factory = TorSocksFactory('hedgeivoyioq5trz.onion', 80)
-    #factory = TorSocksFactory('timaq4ygg2iegci7.onion', 80)
-    addr = yield resolve(
+    ip = yield resolve(
         TCP4ClientEndpoint(reactor, '127.0.0.1', 9050),
         'torproject.org',
+    )
+    print("result:", ip)
+    addr = yield resolve_ptr(
+        TCP4ClientEndpoint(reactor, '127.0.0.1', 9050),
+        '38.229.72.16',
     )
     print("result:", addr)
 
