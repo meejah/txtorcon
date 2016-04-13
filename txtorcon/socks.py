@@ -61,9 +61,7 @@ class TorSocksEndpoint(object):
             lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', factory)
         )
         socks_proto = yield self._proxy_ep.connect(socks_factory)
-        print("B00M!", socks_proto)
         wrapped_proto = yield done
-        print("zingus!", wrapped_proto)
         returnValue(wrapped_proto)
 
 
@@ -132,17 +130,15 @@ class _TorSocksProtocol(Protocol):
     @inlineCallbacks
     def _make_connection(self, _):
         print("make connection!")
-        #sender = yield self._factory.connect(null_modem)
         addr = IPv4Address('TCP', self._reply_addr, self._reply_port)
         sender = yield self._factory.buildProtocol(addr)
-        print("sender", sender)
         # portforward.ProxyClient is going to call setPeer but this
         # probably doesn't have it...
         client_proxy = portforward.ProxyClient()
         sender.makeConnection(self.transport)
         setattr(sender, 'setPeer', lambda _: None)
         client_proxy.setPeer(sender)
-        print("ZZZZ", client_proxy.transport, sender.transport)
+        self._sender = sender
         returnValue(sender)
 
 
@@ -153,8 +149,8 @@ class _TorSocksProtocol(Protocol):
         # connectionLost will errback on self._done
 
     def _relay_data(self, data):
-        print("relay {} bytes".format(data))
-        self.transport.write(data)
+        # print("relay {} bytes".format(len(data)))
+        self._sender.dataReceived(data)
 
     def _is_valid_response(self, msg):
         print("_is_valid_response", msg)
@@ -183,9 +179,9 @@ class _TorSocksProtocol(Protocol):
             self.transport.loseConnection()
             return self._sent_version_state
         else:  # CONNECT
-            # 'sending' side is ... the other protocol
-            print("DING", self._done)
-            print("DING", self._done.callbacks)
+            # XXX probably we could receive some early bytes? if we
+            # have more than the expected bytes, should
+            # self._relay_data() them here...
             self._done.callback(None)
             # _done will actually callback with 'sender' from
             # self._make_connection()
@@ -245,9 +241,12 @@ class _TorSocksProtocol(Protocol):
         ##print("lost", reason)
         if not self._done.called:
             self._done.callback(reason)
+        else:
+            # presuming we're relaying
+            self._sender.connectionLost(reason)
 
     def dataReceived(self, d):
-        print("data {}bytes".format(len(d)))
+        print("dataReceived({} bytes)".format(len(d)))
         self._fsm.process(d)
         return
 
