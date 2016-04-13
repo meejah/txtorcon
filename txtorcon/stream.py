@@ -193,9 +193,11 @@ class Stream(object):
             if self.state == 'NEW':
                 if self.circuit is not None:
                     log.err(RuntimeError("Weird: circuit valid in NEW"))
-                [x.stream_new(self) for x in self.listeners]
+                for x in self.listeners:
+                    x.stream_new(self)
             else:
-                [x.stream_succeeded(self) for x in self.listeners]
+                for x in self.listeners:
+                    x.stream_succeeded(self)
 
         elif self.state == 'REMAP':
             self.target_addr = maybe_ip_addr(args[3][:args[3].rfind(':')])
@@ -206,7 +208,8 @@ class Stream(object):
             self.circuit = None
             self.maybe_call_closing_deferred()
             flags = self._create_flags(kw)
-            [x.stream_closed(self, **flags) for x in self.listeners]
+            for x in self.listeners:
+                x.stream_closed(self, **flags)
 
         elif self.state == 'FAILED':
             if self.circuit:
@@ -215,7 +218,8 @@ class Stream(object):
             self.maybe_call_closing_deferred()
             # build lower-case version of all flags
             flags = self._create_flags(kw)
-            [x.stream_failed(self, **flags) for x in self.listeners]
+            for x in self.listeners:
+                x.stream_failed(self, **flags)
 
         elif self.state == 'SENTCONNECT':
             pass  # print 'SENTCONNECT',self,args
@@ -228,7 +232,8 @@ class Stream(object):
             # FIXME does this count as closed?
             # self.maybe_call_closing_deferred()
             flags = self._create_flags(kw)
-            [x.stream_detach(self, **flags) for x in self.listeners]
+            for x in self.listeners:
+                x.stream_detach(self, **flags)
 
         elif self.state in ['NEWRESOLVE', 'SENTRESOLVE']:
             pass  # print self.state, self, args

@@ -261,7 +261,8 @@ class Circuit(object):
         # print "Circuit.update:",args
         if self.id is None:
             self.id = int(args[0])
-            [x.circuit_new(self) for x in self.listeners]
+            for x in self.listeners:
+                x.circuit_new(self)
 
         else:
             if int(args[0]) != self.id:
@@ -277,14 +278,16 @@ class Circuit(object):
 
         if self.state == 'LAUNCHED':
             self.path = []
-            [x.circuit_launched(self) for x in self.listeners]
+            for x in self.listeners:
+                x.circuit_launched(self)
         else:
             if self.state != 'FAILED' and self.state != 'CLOSED':
                 if len(args) > 2:
                     self.update_path(args[2].split(','))
 
         if self.state == 'BUILT':
-            [x.circuit_built(self) for x in self.listeners]
+            for x in self.listeners:
+                x.circuit_built(self)
             for d in self._when_built:
                 d.callback(self)
             self._when_built = []
@@ -298,7 +301,8 @@ class Circuit(object):
                                      (self.state, len(self.streams))))
             flags = self._create_flags(kw)
             self.maybe_call_closing_deferred()
-            [x.circuit_closed(self, **flags) for x in self.listeners]
+            for x in self.listeners:
+                x.circuit_closed(self, **flags)
 
         elif self.state == 'FAILED':
             if len(self.streams) > 0:
@@ -306,7 +310,8 @@ class Circuit(object):
                                      (self.state, len(self.streams))))
             flags = self._create_flags(kw)
             self.maybe_call_closing_deferred()
-            [x.circuit_failed(self, **flags) for x in self.listeners]
+            for x in self.listeners:
+                x.circuit_failed(self, **flags)
 
     def maybe_call_closing_deferred(self):
         """
@@ -345,7 +350,8 @@ class Circuit(object):
 
             self.path.append(router)
             if len(self.path) > len(oldpath):
-                [x.circuit_extend(self, router) for x in self.listeners]
+                for x in self.listeners:
+                    x.circuit_extend(self, router)
                 oldpath = self.path
 
     def __str__(self):
