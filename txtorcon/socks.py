@@ -14,6 +14,8 @@ from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.protocol import Protocol, Factory
+from twisted.internet.address import IPv4Address
+from twisted.protocols import portforward
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
@@ -26,7 +28,7 @@ from txtorcon.spaghetti import FSM, State, Transition
 def resolve(tor_endpoint, hostname):
     done = Deferred()
     factory = Factory.forProtocol(
-        lambda: TorSocksProtocol(done, hostname, 0, 'RESOLVE')
+        lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE', None)
     )
     proto = yield tor_endpoint.connect(factory)
     result = yield done
@@ -37,7 +39,7 @@ def resolve(tor_endpoint, hostname):
 def resolve_ptr(tor_endpoint, hostname):
     done = Deferred()
     factory = Factory.forProtocol(
-        lambda: TorSocksProtocol(done, hostname, 0, 'RESOLVE_PTR')
+        lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE_PTR', None)
     )
     proto = yield tor_endpoint.connect(factory)
     result = yield done
@@ -46,19 +48,26 @@ def resolve_ptr(tor_endpoint, hostname):
 
 @implementer(IStreamClientEndpoint)
 class TorSocksEndpoint(object):
-    def __init__(self, proxy_endpoint, host, port):
+    def __init__(self, proxy_endpoint, host, port, tls=False):
         self._proxy_ep = proxy_endpoint
         self._host = host
         self._port = port
-        self._socks_method = socks_method
+        self._tls = tls
 
+    @inlineCallbacks
     def connect(self, factory):
-        factory = Factory.forProtocol(
-            lambda: TorSocksProtocol(done, self._host, self._port, 'CONNECT')
+        done = Deferred()
+        socks_factory = Factory.forProtocol(
+            lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', factory)
         )
+        socks_proto = yield self._proxy_ep.connect(socks_factory)
+        print("B00M!", socks_proto)
+        wrapped_proto = yield done
+        print("zingus!", wrapped_proto)
+        returnValue(wrapped_proto)
 
 
-class TorSocksProtocol(Protocol):
+class _TorSocksProtocol(Protocol):
     error_code_to_string = {
         0x00: 'succeeded',
         0x01: 'general SOCKS server failure',
@@ -71,26 +80,14 @@ class TorSocksProtocol(Protocol):
         0x08: 'Address type not supported',
     }
 
-    @classmethod
-    @inlineCallbacks
-    def connect(cls, host, port):
-        d = Deferred()
-        tsp = TorSocksProtocol(d, host, port, 'CONNECT')
-        yield d
-        returnValue(tsp)
-
-    @classmethod
-    @inlineCallbacks
-    def resolve_ptr(cls, ip_addr):
-        d = Deferred()
-        tsp = TorSocksProtocol(d, ip_addr, 0, 'RESOLVE_PTR')
-        yield d
-        returnValue(tsp)
-
-    def __init__(self, done, host, port, socks_method):
+    def __init__(self, done, host, port, socks_method, factory):
         """
-        Do not instantiate directly; use a factory method (one of the
-        @classmethods of this class).
+        Private implementation detail -- do not instantiate directly. Use
+        one of: resolve(), resolve_ptr() or TorSocksEndpoint
+
+        :param done: a Deferred that will be callback()d with the
+            address requested for RESOLVE or RESOLVE_PTR, or for the
+            underlying (wrapped) protocol if the request was CONNECT.
         """
         self._done = done
         self._host = host[:255]
@@ -105,6 +102,14 @@ class TorSocksProtocol(Protocol):
         }
         assert socks_method in methods
         self._socks_method = methods[socks_method]
+        self._factory = factory
+        if self._socks_method == 0x01:
+            self._done.addCallback(self._make_connection)
+            if not self._factory:
+                raise RuntimeError("factory required for CONNECT")
+        else:
+            if self._factory:
+                raise RuntimeError("factory not allowed for RESOLVE/RESOLVE_PTR")
 
         self._sent_version_state = sent_version = State("SENT_VERSION")
         sent_request = State("SENT_REQUEST")
@@ -123,6 +128,23 @@ class TorSocksProtocol(Protocol):
             Transition(relaying, None, self._relay_data),
         ])
         self._fsm = FSM([sent_version, sent_request, relaying, complete, error])
+
+    @inlineCallbacks
+    def _make_connection(self, _):
+        print("make connection!")
+        #sender = yield self._factory.connect(null_modem)
+        addr = IPv4Address('TCP', self._reply_addr, self._reply_port)
+        sender = yield self._factory.buildProtocol(addr)
+        print("sender", sender)
+        # portforward.ProxyClient is going to call setPeer but this
+        # probably doesn't have it...
+        client_proxy = portforward.ProxyClient()
+        sender.makeConnection(self.transport)
+        setattr(sender, 'setPeer', lambda _: None)
+        client_proxy.setPeer(sender)
+        print("ZZZZ", client_proxy.transport, sender.transport)
+        returnValue(sender)
+
 
     def _error(self, msg):
         reply = struct.unpack('B', msg[1:2])[0]
@@ -160,6 +182,13 @@ class TorSocksProtocol(Protocol):
             self._done.callback(addr)
             self.transport.loseConnection()
             return self._sent_version_state
+        else:  # CONNECT
+            # 'sending' side is ... the other protocol
+            print("DING", self._done)
+            print("DING", self._done.callbacks)
+            self._done.callback(None)
+            # _done will actually callback with 'sender' from
+            # self._make_connection()
 
     def _is_valid_version(self, msg):
         print("_is_valid_version", msg)
@@ -272,6 +301,12 @@ def main(reactor):
         '38.229.72.16',
     )
     print("result:", addr)
+
+    ep = TorSocksEndpoint(
+        TCP4ClientEndpoint(reactor, '127.0.0.1', 9050),
+        'torproject.org', 443,
+    )
+    proto = yield ep.connect(Factory.forProtocol(foo))
 
 if __name__ == '__main__':
     react(main)
