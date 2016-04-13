@@ -133,7 +133,9 @@ control-spec for the different types given to the values, via
 information from ``GETINFO config/names``. So, for example, setting
 ``.SOCKSPort`` to a ``"quux"`` won't work. Of course, it would also
 fail the whole ``SETCONF`` command if txtorcon happens to allow some
-values that Tor doesn't.
+values that Tor doesn't. Unfortunately, **for any item that's a
+list**, Tor doesn't tell us anything about each element so they're all
+strings.
 
 
 .. _guide_state:
