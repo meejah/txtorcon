@@ -12,13 +12,57 @@ import random
 from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
-from twisted.internet.interfaces import IReactorTime
-from .interface import IRouterContainer
+from twisted.internet.interfaces import IReactorTime, IStreamClientEndpoint
+from .interface import IRouterContainer, IStreamAttacher
 from txtorcon.util import find_keywords
 from zope.interface import Interface, implementer  # XXX FIXME
 
 # look like "2014-01-25T02:12:14.593772"
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+
+@implementer(IStreamClientEndpoint)
+@implementer(IStreamAttacher)
+class TorCircuitEndpoint(object):
+    def __init__(self, reactor, torstate, circuit, target_endpoint):
+        self._reactor = reactor
+        self._state = torstate
+        self._target_endpoint = target_endpoint
+        self._circuit = circuit
+        self._attached = defer.Deferred()
+
+    def attach_stream(self, stream, circuits):
+        print("MAYBE!", stream)
+        # XXX note to self: we'll want to listen for "circuit_failed"
+        # etc. on just this one circuit, so that we can .errback()
+        # attached if the circuit fails before we get to do
+        # this-here...
+        print(stream.target_host, stream.target_port)
+        if stream.target_host == self._target_endpoint.host and \
+           stream.target_port == self._target_endpoint.port:
+            print("  YES!", self._circuit)
+            self._attached.callback(None)
+            return self._circuit
+        return None
+
+    @defer.inlineCallbacks
+    def connect(self, protocol_factory):
+        """IStreamClientEndpoint API"""
+        # need to:
+        # 1. add 'our' attacher to state
+        # 2. do the "underlying" connect
+        # 3. recognize our stream
+        # 4. attach it to our circuit
+        print("top-level connect", protocol_factory)
+        yield self._state.add_attacher(self, self._reactor)
+        try:
+            d = self._target_endpoint.connect(protocol_factory)
+            yield self._attached
+            proto = yield d
+            defer.returnValue(proto)
+
+        finally:
+            yield self._state.remove_attacher(self, self._reactor)
 
 
 class Circuit(object):
@@ -118,15 +162,22 @@ class Circuit(object):
             self._when_built.append(d)
         return d
 
-    def stream_to(self, endpoint):
+    def stream_to(self, reactor, host, port, use_tls=False):
         """
         This returns an IStreamClientEndpoint that wraps the passed-in
         endpoint such that it goes via Tor, and via this parciular
         circuit.
 
-        So, for example, to connect to ``torproject.org`` you could
-        use code similar to this, if you have a ``Circuit`` instance
-        in ``circ``.
+        Because of the way Tor notifies us about streams to attach,
+        the only information we have to go on is the target host +
+        port pair. Thus, this is somewhat fragile if you have many
+        streams to the same host/port being set up "at once" with
+        different target circuits. If this is the case, it might be
+        better to implement your own :class:`txtorcon.IStreamAttacher`.
+
+        That said, to connect to ``torproject.org`` you can use code
+        similar to this, if you have a ``Circuit`` instance in
+        ``circ``.
 
         ```
         from twisted.internet.endpoints import HostnameEndpoint
@@ -137,6 +188,9 @@ class Circuit(object):
         proto = yield tor_ep.connect(factory)
         ```
         """
+        from .endpoints import TorClientEndpoint
+        ep = TorClientEndpoint(host, port, tls=use_tls)
+        return TorCircuitEndpoint(reactor, self.torstate, self, ep)
 
     @property
     def time_created(self):

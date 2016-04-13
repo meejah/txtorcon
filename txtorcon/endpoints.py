@@ -32,6 +32,7 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.ssl import optionsForClientTLS
 from twisted.internet import error
 from twisted.plugin import IPlugin
 from twisted.python.util import FancyEqMixin
@@ -41,6 +42,7 @@ from zope.interface import Interface, Attribute
 
 try:
     from txsocksx.client import SOCKS5ClientEndpoint
+    from txsocksx.tls import TLSWrapClientEndpoint
     HAVE_SOCKSX = True
 except ImportError:
     HAVE_SOCKSX = False
@@ -786,6 +788,7 @@ class TorClientEndpoint(object):
     socks_ports_to_try = [9050, 9150]
 
     def __init__(self, host, port,
+                 tls=False,
                  socks_hostname=None, socks_port=None,
                  socks_username=None, socks_password=None,
                  _proxy_endpoint_generator=default_tcp4_endpoint_generator):
@@ -796,11 +799,12 @@ class TorClientEndpoint(object):
 
         self.host = host
         self.port = int(port)
-        self._proxy_endpoint_generator = _proxy_endpoint_generator
-        self.socks_hostname = socks_hostname
+        self.tls = tls
+        self.socks_hostname = socks_hostname if socks_hostname else '127.0.0.1'
         self.socks_port = int(socks_port) if socks_port is not None else None
         self.socks_username = socks_username
         self.socks_password = socks_password
+        self._proxy_endpoint_generator = _proxy_endpoint_generator
 
         if self.socks_port is None:
             self._socks_port_iter = iter(self.socks_ports_to_try)
@@ -827,13 +831,20 @@ class TorClientEndpoint(object):
                     login=(self.socks_username, self.socks_password),
                 )
 
-            socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
+            if self.tls:
+                socks_ep = TLSWrapClientEndpoint(
+                    optionsForClientTLS(unicode(self.host)),
+                    SOCKS5ClientEndpoint(*args, **kwargs),
+                )
+            else:
+                socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
 
             try:
                 proto = yield socks_ep.connect(protocolfactory)
                 defer.returnValue(proto)
 
             except error.ConnectError as e0:
+                print("error", e0)
                 last_error = e0
         if last_error is not None:
             raise last_error

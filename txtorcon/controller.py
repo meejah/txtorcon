@@ -375,6 +375,15 @@ class Tor(object):
         """
         return self._config
 
+    def dns_lookup(self, hostname):
+        """
+        Returns a Deferred that calbacks with the hostname as looked-up
+        via Tor, or errbacks.
+
+        This uses Tor's custom extension to the SOCKS5 protocol.
+        """
+        
+
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
     # or ...?
