@@ -237,8 +237,10 @@ SOCKS5
 ~~~~~~
 
 Tor exposes a SOCKS5 interface to make client-type connections over
-the network. We use the ``txsocksx`` library to forward all such
-connections over Tor.
+the network. There are also a couple of `custom extensions
+<https://gitweb.torproject.org/torspec.git/tree/socks-extensions.txt>`_
+tor provides to do DNS resolution over a Tor circuit (txtorcon
+supports these, too).
 
 All client-side interactions are via instances that implement
 `IStreamClientEndpoint`_. There are several factory functions used to
@@ -246,9 +248,33 @@ create suitable instances.
 
 The recommended API is to acquire a :class:`txtorcon.Tor` instance
 (see ":ref:`get_tor_instance`") and then call
-:meth:`txtorcon.Tor.create_client_endpoint`.
+:meth:`txtorcon.Tor.create_client_endpoint`. To do DNS lookups (or
+reverse lookups) via a Tor circuit, use
+:meth:`txtorcon.Tor.dns_resolve` and
+:meth:`txtorcon.Tor.dns_resolve_ptr`.
 
-If you need a stream to go over a specific circuit, see ":ref:`circuit_builder`".
+A common use-case is to download a Web resource; you can do so via
+Twisted's built-in ``twisted.web.client`` package, or using the
+friendlier `treq`_ library. In both cases, you need a
+`twisted.web.client.Agent
+<https://twistedmatrix.com/documents/current/api/twisted.web.client.Agent.html>`_
+instance which you can acquire with :meth:`txtorcon.Tor.web_agent` or
+:meth:`txtorcon.Circuit.web_agent`. The latter is used to make the
+request over a specific circuit. Usually, txtorcon will simply use one
+of the available SOCKS ports configured in the Tor it is connected to
+-- if you care which one, you can specify it as the optional
+``socks_endpoint=`` argument.
+
+.. note::
+
+   Tor supports SOCKS over Unix sockets. So does txtorcon. To take
+   advantage of this, simply configure tor with at least one SOCKS
+   port over a unix-socket (e.g. ``SocksPort unix:/tmp/foo/socks``)
+   and then specify it as the ``socks_endpoint`` argument to either
+   ``web_agent()`` call.
+
+If you need a stream to go over a specific circuit, see
+":ref:`circuit_builder`".
 
 (notes to self):
 
@@ -500,3 +526,4 @@ circuit. For this use-case, you use :meth:`txtorcon.Circuit`.
 .. _clientfromstring: http://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.html#clientFromString
 .. _serverfromstring: http://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.html#serverFromString
 .. _ilisteningport: http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IListeningPort.html
+.. _treq: https://github.com/twisted/treq

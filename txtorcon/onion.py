@@ -32,27 +32,27 @@ def create_authenticated_filesystem_onion_service(
 
 @defer.inlineCallbacks
 def create_filesystem_onion_service(
-        reactor, torconfig, ports, directory,
-#        auth=NoAuth(),#_type='none',
-#or:        auth=StealthAuth(['bob', 'alice']),
-#or:        auth=BasicAuth(['bob', 'alice']),
+        reactor, torconfig, ports, directory):
+        #        auth=NoAuth(),#_type='none',
+        # or:        auth=StealthAuth(['bob', 'alice']),
+        # or:        auth=BasicAuth(['bob', 'alice']),
         # XXX really? await_upload=True):
-        ):
     pass
 
 
-## XXX
-## kurt: so the "auth" is either NoAuth(), StealthAuth(), BasicAuth()
-## -> can we do the same thing for ephemeral/not
+# XXX
+# kurt: so the "auth" is either NoAuth(), StealthAuth(), BasicAuth()
+# -> can we do the same thing for ephemeral/not
 
-## kurt: private_key + discard_key --> can combine?
-## or: can we "unify" the private_key to enum: "don't have key", "don't want key", "here's key"
-##     -> sounds like tears. does it want "some kind of object" to encode these desires?
-## or: pass **kwargs OR dict, and if 'private_key' in it, you want it
-## back; and if it's already a keyblob, you're a winner
-## kurt doesn't like magic **kwargs, tho.
+# kurt: private_key + discard_key --> can combine?
+# or: can we "unify" the private_key to enum: "don't have key", "don't want key", "here's key"
+#     -> sounds like tears. does it want "some kind of object" to encode these desires?
+# or: pass **kwargs OR dict, and if 'private_key' in it, you want it
+# back; and if it's already a keyblob, you're a winner
+# kurt doesn't like magic **kwargs, tho.
 
 _THROW_AWAY = object()
+
 
 @defer.inlineCallbacks
 # not supported by tor, but might be ...
@@ -63,8 +63,8 @@ def create_authenticated_ephemeral_onion_service():
 @defer.inlineCallbacks
 def create_ephemeral_onion_service(
         reactor, torconfig, ports,
-        private_key=_THROW_AWAY,# if None, means "create, but don't send back".
-        detach=None, # XXX probably False by default
+        private_key=_THROW_AWAY,  # if None, means "create, but don't send back".
+        detach=None,  # XXX probably False by default
         await_upload=True):
     """
     This yields a new IOnionService if ``auth_type`` is "none" (the
@@ -84,7 +84,7 @@ def create_ephemeral_onion_service(
     :type directory: str
 
     :param ephemeral: If True, uses ADD_ONION command; otherwise, uses
-        the HiddenServiceDir configuration option (and creates/uses a
+    the HiddenServiceDir configuration option (and creates/uses a
         temporary or permanent directory to pass private keys to/from
         Tor.  Note that ADD_ONION doesn't yet allow passing any
         authentication options, so this is only allowed if auth_type

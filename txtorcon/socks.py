@@ -10,7 +10,6 @@ import struct
 from socket import inet_aton, inet_ntoa
 from ipaddress import ip_address
 
-from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.protocol import Protocol, Factory
@@ -327,4 +326,6 @@ def main(reactor):
     proto = yield ep.connect(Factory.forProtocol(foo))
 
 if __name__ == '__main__':
+    # not in Twisted <= 12
+    from twisted.internet.task import react
     react(main)

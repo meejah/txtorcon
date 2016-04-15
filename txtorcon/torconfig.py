@@ -320,7 +320,7 @@ class IOnionClient(IOnionService):
     client.
     """
     auth_token = Attribute('Some secret bytes')
-    name = Attribute('str') # XXX required? probably.
+    name = Attribute('str')  # XXX required? probably.
     # XXX do we want/need to reveal the "parent"
 #    parent = Attribute("XXX?")
 
@@ -390,7 +390,7 @@ class FilesystemHiddenService(object):
 
     @dir.setter
     def dir(self, d):
-        self._dir = d # XXX FIXME see above
+        self._dir = d  # XXX FIXME see above
         self._config.mark_unsaved('HiddenServices')
 
     @property
@@ -427,11 +427,11 @@ class FilesystemHiddenService(object):
             rtn.append(('HiddenServiceVersion', str(self.version)))
         for authline in self.authorize_client:
             rtn.append(('HiddenServiceAuthorizeClient', str(authline)))
-            #rtn.append(('HiddenServiceAuthorizeClient', str(self.authorize_client)))
+            # rtn.append(('HiddenServiceAuthorizeClient', str(self.authorize_client)))
         return rtn
 
     def config_commands(self):
-        pass # XXX FIXME
+        pass  # XXX FIXME
 
 
 # XXX: probably better/nicer to make "EphemeralHiddenService" object
@@ -498,7 +498,7 @@ class EphemeralHiddenService(object):
             elif subtype == 'UPLOADED':
                 # we only need ONE successful upload to happen for the
                 # HS to be reachable.
-                addr = args[1]
+                # unused? addr = args[1]
                 if args[3] in attempted_uploads:
                     confirmed_uploads.add(args[3])
                     log.msg("Uploaded '{}' to '{}'".format(onion.hostname, args[3]))

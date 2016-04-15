@@ -547,10 +547,7 @@ class TCPHiddenServiceEndpoint(object):
         self._tor_progress_update(100.0, 'wait_descriptor',
                                   'At least one descriptor uploaded.')
 
-        #uri = None
         log.msg('Started hidden service on %s:%d' % (self.onion_uri, self.public_port))
-#        for client in self.hiddenservice.clients:
-#            log.msg('  listening on %s' % client[1])
 
         defer.returnValue(
             TorOnionListeningPort(

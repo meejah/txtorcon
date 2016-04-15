@@ -349,7 +349,8 @@ class Tor(object):
         # this only passed/set when we launch()
         self._process_protocol = _process_proto
         # cache our preferred socks port
-        self._socks_endpoint = TCP4ClientEndpoint(reactor, '127.0.0.1', 9050) # XXX fixme
+        # XXX FIXME
+        self._socks_endpoint = TCP4ClientEndpoint(reactor, '127.0.0.1', 9050)
 
     # XXX this shold probasbly include access to the "process
     # protocol" instance, too...bikeshed on this name?
@@ -377,6 +378,25 @@ class Tor(object):
         the tor instance (even if another controller is connected).
         """
         return self._config
+
+    # XXX also want a Circuit.web_agent -- same args as here, but then
+    # it returns an agent that goes via the one particular circuit.
+    def web_agent(self, _socks_endpoint=None):
+        """
+        :param socks_endpoint: If supplied, should be one of the SOCKS
+            ports configured for this tor. Usually you shouldn't need to
+            supply one. txtorcon will use the first SOCKS port configured in tor
+
+        XXX THINK FIXME:
+        - should we even allow _socks_endpoint? easy to get wrong
+          (e.g. a valid SOCKS port that's in a different tor, or not tor
+          at all)
+        - other ways to specify "which socks port to use"?
+        - maybe just take any valid "SocksPort" config-string, and if
+        we already have such a port in this tor great (use it) but if
+        not, we re-configure tor to add it...
+        """
+        return NotImplemented
 
     def dns_resolve(self, hostname):
         """
