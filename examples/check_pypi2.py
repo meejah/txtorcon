@@ -39,7 +39,7 @@ class AgentEndpointFactoryUsingTor(object):
     def endpointForURI(self, uri):
         print("URI", uri, uri.host, uri.port)
         # XXX tls=True/False
-        return txtorcon.socks.TorSocksEndpoint(self._proxy_ep, uri.host, uri.port)
+        return txtorcon.socks.TorSocksEndpoint(self._proxy_ep, uri.host, uri.port, True)
 
 
 @inlineCallbacks
@@ -55,14 +55,14 @@ def main(reactor):
         reactor, TCP4ClientEndpoint(reactor, '127.0.0.1', int(tor.config.SOCKSPort[0]))
     )
     agent = Agent.usingEndpointFactory(reactor, fac)
-    uri = 'https://www.torproject.org:80'
-    #uri = 'https://www.torproject.org:443'
+    #uri = 'https://www.torproject.org:80'
+    uri = 'https://www.torproject.org:443'
     #uri = 'http://check.torproject.org/api/ip'
     import treq
     resp = yield treq.get(uri, agent=agent)
     print("Retrieving {} bytes".format(resp.length))
     data = yield resp.text()
-    print("Data:\n{}".format(data))
+    print("Got {} bytes:\n{}\n[...]{}".format(len(data), data[:120], data[-120:]))
 
 # XXX WOOOOoo000t this works to :)
 

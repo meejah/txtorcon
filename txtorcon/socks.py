@@ -16,6 +16,7 @@ from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.address import IPv4Address
 from twisted.protocols import portforward
+from twisted.protocols import tls
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
@@ -57,12 +58,27 @@ class TorSocksEndpoint(object):
     @inlineCallbacks
     def connect(self, factory):
         done = Deferred()
-        socks_factory = Factory.forProtocol(
-            lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', factory)
-        )
+        # further wrap the protocol if we're doing TLS.
+        # "pray i do not wrap it further".
+        if self._tls:
+            # XXX requires Twisted 14+
+            from twisted.internet.ssl import optionsForClientTLS
+            context = optionsForClientTLS(unicode(self._host))
+            tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
+            socks_factory = Factory.forProtocol(
+                lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', tls_factory)
+            )
+        else:
+            socks_factory = Factory.forProtocol(
+                lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', factory)
+            )
+
         socks_proto = yield self._proxy_ep.connect(socks_factory)
         wrapped_proto = yield done
-        returnValue(wrapped_proto)
+        if self._tls:
+            returnValue(wrapped_proto.wrappedProtocol)
+        else:
+            returnValue(wrapped_proto)
 
 
 class _TorSocksProtocol(Protocol):
@@ -130,7 +146,7 @@ class _TorSocksProtocol(Protocol):
 
     @inlineCallbacks
     def _make_connection(self, _):
-        print("make connection!")
+        # print("make connection!")
         addr = IPv4Address('TCP', self._reply_addr, self._reply_port)
         sender = yield self._factory.buildProtocol(addr)
         # portforward.ProxyClient is going to call setPeer but this
