@@ -28,12 +28,11 @@ from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
 from txtorcon.torconfig import FilesystemHiddenService
 from txtorcon.torconfig import AuthenticatedHiddenService
-##from txtorcon.onion import create_onion_service
-from txtorcon.controller import TorProcessProtocol
-##from txtorcon.torconfig import launch_tor # XXX backwards-compat: (put back??)
-#from txtorcon.torconfig import IOnionService
-#from txtorcon.torconfig import IAuthenticatedOnionService
-#from txtorcon.torconfig import OnionService, EphemeralOnionService
+# from txtorcon.onion import create_onion_service
+# from txtorcon.torconfig import launch_tor # XXX backwards-compat: (put back??)
+# from txtorcon.torconfig import IOnionService
+# from txtorcon.torconfig import IAuthenticatedOnionService
+# from txtorcon.torconfig import OnionService, EphemeralOnionService
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress

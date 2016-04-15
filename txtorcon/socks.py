@@ -109,6 +109,7 @@ class _TorSocksProtocol(Protocol):
             if self._factory:
                 raise RuntimeError("factory not allowed for RESOLVE/RESOLVE_PTR")
 
+        self._sender = None
         self._sent_version_state = sent_version = State("SENT_VERSION")
         sent_request = State("SENT_REQUEST")
         relaying = State("RELAY_DATA")
@@ -153,7 +154,7 @@ class _TorSocksProtocol(Protocol):
         self._sender.dataReceived(data)
 
     def _is_valid_response(self, msg):
-        print("_is_valid_response", msg)
+        # print("_is_valid_response", msg)
         try:
             (version, reply, _, typ) = struct.unpack('BBBB', msg[:4])
             return version == 5 and reply == 0 and typ in [0x01, 0x03]
@@ -173,7 +174,7 @@ class _TorSocksProtocol(Protocol):
         port = struct.unpack('H', msg[-2:])[0]
         self._reply_addr = addr
         self._reply_port = port
-        print("reply {} {}".format(addr, port))
+        # print("reply {} {}".format(addr, port))
         if self._socks_method in [0xf0, 0xf1]:
             self._done.callback(addr)
             self.transport.loseConnection()
@@ -187,7 +188,7 @@ class _TorSocksProtocol(Protocol):
             # self._make_connection()
 
     def _is_valid_version(self, msg):
-        print("_is_valid_version", msg)
+        # print("_is_valid_version", msg)
         try:
             (version, method) = struct.unpack('BB', msg)
             return version == 5 and method in [0x00, 0x02]
@@ -238,15 +239,14 @@ class _TorSocksProtocol(Protocol):
         self.transport.write(data)
 
     def connectionLost(self, reason):
-        ##print("lost", reason)
+        # print("lost", reason)
+        if self._sender:
+            self._sender.connectionLost(reason)
         if not self._done.called:
             self._done.callback(reason)
-        else:
-            # presuming we're relaying
-            self._sender.connectionLost(reason)
 
     def dataReceived(self, d):
-        print("dataReceived({} bytes)".format(len(d)))
+        # print("dataReceived({} bytes)".format(len(d)))
         self._fsm.process(d)
         return
 

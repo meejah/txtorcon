@@ -32,7 +32,6 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.ssl import optionsForClientTLS
 from twisted.internet import error
 from twisted.plugin import IPlugin
 from twisted.python.util import FancyEqMixin
@@ -832,6 +831,8 @@ class TorClientEndpoint(object):
                 )
 
             if self.tls:
+                # XXX requires Twisted 14+
+                from twisted.internet.ssl import optionsForClientTLS
                 socks_ep = TLSWrapClientEndpoint(
                     optionsForClientTLS(unicode(self.host)),
                     SOCKS5ClientEndpoint(*args, **kwargs),

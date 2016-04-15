@@ -25,6 +25,7 @@ from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TCPHiddenServiceEndpoint
+from txtorcon import socks
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
@@ -347,6 +348,8 @@ class Tor(object):
         self._reactor = reactor
         # this only passed/set when we launch()
         self._process_protocol = _process_proto
+        # cache our preferred socks port
+        self._socks_endpoint = TCP4ClientEndpoint(reactor, '127.0.0.1', 9050) # XXX fixme
 
     # XXX this shold probasbly include access to the "process
     # protocol" instance, too...bikeshed on this name?
@@ -375,14 +378,25 @@ class Tor(object):
         """
         return self._config
 
-    def dns_lookup(self, hostname):
+    def dns_resolve(self, hostname):
         """
-        Returns a Deferred that calbacks with the hostname as looked-up
-        via Tor, or errbacks.
+        :param hostname: a string
 
-        This uses Tor's custom extension to the SOCKS5 protocol.
+        :returns: a Deferred that calbacks with the hostname as looked-up
+            via Tor (or errback).  This uses Tor's custom extension to the
+            SOCKS5 protocol.
         """
-        
+        return socks.resolve(self._socks_endpoint, hostname)
+
+    def dns_resolve_ptr(self, ip):
+        """
+        :param ip: a string, like "127.0.0.1"
+
+        :returns: a Deferred that calbacks with the IP address as
+            looked-up via Tor (or errback).  This uses Tor's custom
+            extension to the SOCKS5 protocol.
+        """
+        return socks.resolve_ptr(self._socks_endpoint, ip)
 
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
