@@ -173,7 +173,8 @@ class _TorSocksProtocol(Protocol):
         # print("_is_valid_response", msg)
         try:
             (version, reply, _, typ) = struct.unpack('BBBB', msg[:4])
-            return version == 5 and reply == 0 and typ in [0x01, 0x03]
+            # print(version, reply, _, typ)
+            return version == 5 and reply == 0 and typ in [0x01, 0x03, 0x04]
         except Exception as e:
             print("error", e)
             return False
@@ -185,6 +186,8 @@ class _TorSocksProtocol(Protocol):
         elif typ == 0x03:  # DOMAINNAME
             addrlen = struct.unpack('B', msg[4:5])[0]
             addr = msg[5:5 + addrlen]
+        elif typ == 0x04:  # IPv6
+            addr = msg[4:20]
         else:
             raise Exception("logic error")
         port = struct.unpack('H', msg[-2:])[0]

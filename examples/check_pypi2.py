@@ -52,7 +52,7 @@ def main(reactor):
     print("State:", state)
 
     fac = AgentEndpointFactoryUsingTor(
-        reactor, TCP4ClientEndpoint(reactor, '127.0.0.1', int(tor.config.SOCKSPort[0]))
+        reactor, UNIXClientEndpoint(reactor, '/tmp/torsocks/socks'),
     )
     agent = Agent.usingEndpointFactory(reactor, fac)
     #uri = 'https://www.torproject.org:80'
