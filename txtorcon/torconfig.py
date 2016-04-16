@@ -547,7 +547,7 @@ class EphemeralHiddenService(object):
         yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
 
         # XXX more thinking req'd
-        #config.HiddenServices.append(onion)
+        # config.HiddenServices.append(onion)
         if onion not in config.EphemeralOnionServices:
             config.EphemeralOnionServices.append(onion)
 

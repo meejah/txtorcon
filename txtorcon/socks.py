@@ -48,8 +48,8 @@ def resolve_ptr(tor_endpoint, hostname):
 
 @implementer(IStreamClientEndpoint)
 class TorSocksEndpoint(object):
-    def __init__(self, proxy_endpoint, host, port, tls=False):
-        self._proxy_ep = proxy_endpoint
+    def __init__(self, socks_endpoint, host, port, tls=False):
+        self._proxy_ep = socks_endpoint
         self._host = host
         self._port = port
         self._tls = tls

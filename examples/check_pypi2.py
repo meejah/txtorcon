@@ -48,13 +48,8 @@ def main(reactor):
     tor = yield txtorcon.connect(reactor, ep)
     print("Connected:", tor)
 
-    state = yield tor.create_state()
-    print("State:", state)
-
-    fac = AgentEndpointFactoryUsingTor(
-        reactor, UNIXClientEndpoint(reactor, '/tmp/torsocks/socks'),
-    )
-    agent = Agent.usingEndpointFactory(reactor, fac)
+    #agent = yield txtorcon.agent_for_socks_port(reactor, tor.config, 'unix:/tmp/torsocks/socks', True)
+    agent = yield txtorcon.agent_for_socks_port(reactor, tor.config, '9875')
     #uri = 'https://www.torproject.org:80'
     uri = 'https://www.torproject.org:443'
     #uri = 'http://check.torproject.org/api/ip'

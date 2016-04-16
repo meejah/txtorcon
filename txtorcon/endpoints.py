@@ -22,7 +22,7 @@ except ImportError:
     from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor
     _HAVE_TX_14 = False
 
-from twisted.internet import defer, reactor
+from twisted.internet import defer
 from twisted.python import log
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamServerEndpoint
@@ -38,13 +38,6 @@ from twisted.python.util import FancyEqMixin
 
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
-
-try:
-    from txsocksx.client import SOCKS5ClientEndpoint
-    from txsocksx.tls import TLSWrapClientEndpoint
-    HAVE_SOCKSX = True
-except ImportError:
-    HAVE_SOCKSX = False
 
 from .torconfig import FilesystemHiddenService, EphemeralHiddenService
 from .torconfig import TorConfig
@@ -750,22 +743,21 @@ class TCPHiddenServiceEndpointParser(object):
         )
 
 
-def default_tcp4_endpoint_generator(*args, **kw):
-    """
-    Default generator used to create client-side TCP4ClientEndpoint
-    instances.  We do this to make the unit tests work...
-    """
-    return TCP4ClientEndpoint(*args, **kw)
-
-
 @implementer(IStreamClientEndpoint)
 class TorClientEndpoint(object):
     """
     I am an endpoint class who attempts to establish a SOCKS5
-    connection with the system tor process. Either the user must pass
-    a SOCKS port into my constructor OR I will attempt to guess the
-    Tor SOCKS port by iterating over a list of ports that tor is
-    likely to be listening on.
+    connection with the system tor process. It is recommended that you
+    do not instantiate these directly; use clientFromString() or any
+    of the @classmethods on this class. Best is to use
+    :meth:`txtorcon.Tor.stream_to`
+
+    You must pass in a valid Tor SOCKS endpoint. The method
+    ``.from_config`` will ensure the underlying Tor SocksPort list
+    actually contains the required configuration.
+
+    :param tor_config:
+        An instance of :class:`txtorcon.TorConfig`
 
     :param host:
         The hostname to connect to. This of course can be a Tor Hidden
@@ -773,79 +765,79 @@ class TorClientEndpoint(object):
 
     :param port: The tcp port or Tor Hidden Service port.
 
+    :param socks_config: If None (the default) we use the first
+        SocksPort entry from Tor's config. Otherwise, this can be a
+        string which is any valid value for a Tor ``SocksPort``
+        configuration item.
+
+    :param tls: Can be False or True (to get default Browser-like
+        hostname verification) or the result of calling
+        optionsForClientTLS() yourself.
+
     :param _proxy_endpoint_generator: This is used for unit tests.
-
-    :param socks_port:
-       This optional argument lets the user specify which Tor SOCKS
-       port should be used.
     """
-    # XXX should get these via the control connection, i.e. ask Tor
-    # via GETINFO net/listeners/socks or whatever
-    socks_ports_to_try = [9050, 9150]
 
-    def __init__(self, host, port,
+    def __init__(self,
+                 reactor,
+                 tor_config,
+                 host, port,
+                 socks_config=None,
                  tls=False,
-                 socks_hostname=None, socks_port=None,
-                 socks_username=None, socks_password=None,
-                 _proxy_endpoint_generator=default_tcp4_endpoint_generator):
-        if not HAVE_SOCKSX:
-            raise Exception("No SOCKS5 support; txsocksx not found")
+
+                 # XXX our custom SOCKS stuff doesn't support auth (yet?)
+                 socks_username=None, socks_password=None):
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
         self.host = host
         self.port = int(port)
-        self.tls = tls
-        self.socks_hostname = socks_hostname if socks_hostname else '127.0.0.1'
-        self.socks_port = int(socks_port) if socks_port is not None else None
-        self.socks_username = socks_username
-        self.socks_password = socks_password
-        self._proxy_endpoint_generator = _proxy_endpoint_generator
+        self._tls = _tls
+        self._torconfig = tor_config
+        self._socks_config = None if socks_config is None else str(socks_config)
+        self._reactor = reactor
 
-        if self.socks_port is None:
-            self._socks_port_iter = iter(self.socks_ports_to_try)
-            self._socks_guessing_enabled = True
-        else:
-            self._socks_port_iter = [socks_port]
-            self._socks_guessing_enabled = False
+        # XXX think, do we want to expose these like this? Or some
+        # other way (because they're for stream-isolation, not actual
+        # auth)
+        self._socks_username = socks_username
+        self._socks_password = socks_password
 
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
-        last_error = None
-        for socks_port in self._socks_port_iter:
-            self.socks_port = socks_port
-            tor_ep = self._proxy_endpoint_generator(
-                reactor,
-                self.socks_hostname,
-                self.socks_port,
-            )
-
-            args = (self.host, self.port, tor_ep)
-            kwargs = dict()
-            if self.socks_username is not None and self.socks_password is not None:
-                kwargs['methods'] = dict(
-                    login=(self.socks_username, self.socks_password),
+        # see if Tor has our desired SOCKS configuration already
+        if self._socks_config is None:
+            if len(sel._torconfig.SocksPort) == 0:
+                raise RuntimeError(
+                    "socks_port is None and Tor has no SocksPorts configured"
                 )
+            self._socks_config = self._torconfig.SocksPort[0]
+        else:
+            if self._socks_config not in self._torconfig.SocksPort:
+                # need to configure Tor
+                self._torconfig.SocksPort.append(self._socks_config)
+                yield self._torconfig.save()
 
-            if self.tls:
-                # XXX requires Twisted 14+
-                from twisted.internet.ssl import optionsForClientTLS
-                socks_ep = TLSWrapClientEndpoint(
-                    optionsForClientTLS(unicode(self.host)),
-                    SOCKS5ClientEndpoint(*args, **kwargs),
-                )
+        # now, Tor should have our SocksPort, and self._socks_config
+        # is a valid string
+        # XXX duplicate code; put in "endpoint_from_socks_config" or something
+        if self._socks_config.startswith('unix:'):
+            socks_ep = UNIXClientEndpoint(self._reactor, self._socks_config[5:])
+        else:
+            if ':' in self._socks_config:
+                host, port = self._socks_config.split(':', 1)
+                port = int(port)
             else:
-                socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
+                host = '127.0.0.1'
+                port = int(self._socks_config)
+            socks_ep = TCP4ClientEndpoint(self._reactor, host, port)
 
-            try:
-                proto = yield socks_ep.connect(protocolfactory)
-                defer.returnValue(proto)
 
-            except error.ConnectError as e0:
-                print("error", e0)
-                last_error = e0
-        if last_error is not None:
-            raise last_error
+        tor_socks_ep = TorSocksEndpoint(
+            socks_ep, self.host, self.port, self.tls,
+        )
+
+        proto = yield tor_socks_ep.connect(protocolfactory)
+        defer.returnValue(proto)
 
 
 @implementer(IPlugin, IStreamClientEndpointStringParserWithReactor)

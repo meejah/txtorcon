@@ -418,6 +418,11 @@ class Tor(object):
         """
         return socks.resolve_ptr(self._socks_endpoint, ip)
 
+    def stream_to(self, target_endpoint):
+        """
+        XXX FIXME something to create client-side endpoints
+        """
+
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
     # or ...?

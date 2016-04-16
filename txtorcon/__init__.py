@@ -52,6 +52,8 @@ from txtorcon.interface import (
 )
 HiddenService = FilesystemHiddenService  # backwards-compat; plz deprecate!
 
+from txtorcon.web import agent_for_socks_port
+
 __all__ = [
     "Router",
     "Circuit",
