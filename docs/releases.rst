@@ -15,11 +15,15 @@ APIs will break, but wherever possible backwards-compatiblity with 0.x
 will be kept.
 
  * full Python3 support
- * a bunch of API fixups and embetterments.
+ * re-work (re-do?) most documentation, adding a
+   :ref:`programming_guide` and extensive re-organization
+ * a bunch of API fixups, improvements and better-ments.
  * new high-level API :class:`txtorcon.Tor` abstracts "a single
    running Tor process" (that we either connected to or launched).
- * `twisted.web.Agent <>`_ support, via :meth:`txtorcon.Tor.web_agent`
-   and :meth:`txtorcon.Circuit.web_agent`
+ * `twisted.web.client
+   <https://twistedmatrix.com/documents/current/api/twisted.web.client.html>`_
+   support, via :meth:`txtorcon.Tor.web_agent` and
+   :meth:`txtorcon.Circuit.web_agent`
  * :meth:`txtorcon.Circuit.stream_via`: easily attach client-type
    streams to specific Circuits
  * :meth:`txtorcon.Tor.stream_via`: create client-type streams that go

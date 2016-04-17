@@ -43,7 +43,7 @@ setuptools. At least on Debian, it is important to upgrade setuptools
 Compatibility
 -------------
 
-txtorcon runs all tests cleanly under Python2 and PyPy on:
+txtorcon runs all tests cleanly under Python2, Python3 and PyPy on:
 
   -  Debian: "squeeze", "wheezy" and "jessie"
   -  OS X: 10.4 (naif), 10.8 (lukas lueg), 10.9 (kurt neufeld)
@@ -51,10 +51,6 @@ txtorcon runs all tests cleanly under Python2 and PyPy on:
   -  FreeBSD 10 (enrique fynn) (**needed to install "lsof"**)
   -  RHEL6
   -  **Reports from other OSes appreciated.**
-
-Python3 support is "nearly there", except for the client-side
-endpoints which depend on ``txsocksx``, which is not ported to
-Python3.
 
 
 Tor Configuration
@@ -86,7 +82,7 @@ Most people will use the code from https://github.com/meejah/txtorcon
 The canonical URI is http://timaq4ygg2iegci7.onion
 I sign tags with my public key (:download:`meejah.asc <../meejah.asc>`)
 
-- code: ``git clone git://github.com/meejah/txtorcon.git``
+- code: ``git clone https://github.com/meejah/txtorcon.git``
 
 Rendered documentation for the latest release is at
 `txtorcon.readthedocs.org
@@ -102,9 +98,9 @@ I like to set up my Python development like this:
 
 .. code-block:: shell-session
 
-    $ git clone git://github.com/meejah/txtorcon.git
+    $ git clone https://github.com/meejah/txtorcon.git
     # if you later clone it on github, do this:
-    $ git remote add -f github git://github.com/<my github handle>/txtorcon.git
+    $ git remote add -f github git+ssh://git@github.com/<my github handle>/txtorcon.git
     $ cd txtorcon
     $ virtualenv venv
     $ source venv/bin/activate
@@ -115,7 +111,7 @@ I like to set up my Python development like this:
 
 You can now edit code in the repository as normal. To submit a patch,
 the easiest way is to "clone" the txtxtcon project, and add a remote
-called "github" (``git remote add -f github git://github.com/<my
+called "github" (``git remote add -f github git+ssh://git@github.com/<my
 github handle>/txtorcon.git``). The ``-f`` is so you don't have to
 ``git fetch`` right after.
 
