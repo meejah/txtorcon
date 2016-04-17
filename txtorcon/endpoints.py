@@ -758,6 +758,7 @@ def _socks_endpoint_from_config(reactor, socks_config):
         socks_ep = TCP4ClientEndpoint(reactor, host, port)
     return socks_ep
 
+
 @implementer(IStreamClientEndpoint)
 class TorClientEndpoint(object):
     """

@@ -153,7 +153,7 @@ class Circuit(object):
         """
         self.listeners = []
         self.router_container = IRouterContainer(routercontainer)
-        self.torstate = routercontainer
+        self._torstate = routercontainer  # XXX FIXME
         self.path = []
         self.streams = []
         self.purpose = None
@@ -197,38 +197,44 @@ class Circuit(object):
         """
         :param socks_config: If supplied, should be a valid option for
             Tor's ``SocksPort`` option; if this isn't available in the
-            underlying Tor we use, it will be added (and then used).
+            underlying Tor we use, it will be added (and then used). If
+            `None` (the default) we'll use the first configured SOCKS
+            port.
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
         factory = AgentEndpointFactoryForCircuit(reactor, torconfig, self)
         return Agent.usingEndpointFactory(reactor, factory)
 
-    def stream_via(self, reactor, torconfig, host, port, use_tls=False):
+    def stream_via(self, reactor, torconfig, host, port, use_tls=False, socks_config=None):
         """
         This returns an IStreamClientEndpoint that wraps the passed-in
         endpoint such that it goes via Tor, and via this parciular
         circuit.
 
-        Because of the way Tor notifies us about streams to attach,
-        the only information we have to go on is the target host +
-        port pair. Thus, this is somewhat fragile if you have many
-        streams to the same host/port being set up "at once" with
-        different target circuits. If this is the case, it might be
-        better to implement your own :class:`txtorcon.IStreamAttacher`.
+        We match the streams up using their source-ports, so even if
+        there are many streams in-flight to the same destination they
+        will align correctly. For example, to cause a stream to go to
+        ``torproject.org:443`` via a particular circuit::
 
-        That said, to connect to ``torproject.org`` you can use code
-        similar to this, if you have a ``Circuit`` instance in
-        ``circ``.
+            from twisted.internet.endpoints import HostnameEndpoint
 
-        ```
-        from twisted.internet.endpoints import HostnameEndpoint
+            dest = HostnameEndpoint(reactor, "torproject.org", 443)
+            circ = yield torstate.build_circuit()  # lets Tor decide the path
+            tor_ep = circ.stream_via(dest)
+            # 'factory' is for your protocol
+            proto = yield tor_ep.connect(factory)
 
-        dest = HostnameEndpoint(reactor, "torproject.org", 443)
-        circ = yield torstate.build_circuit()  # lets Tor decide the path
-        tor_ep = circ.stream_via(dest)
-        proto = yield tor_ep.connect(factory)
-        ```
+        Note that if you're doing client-side Web requests, you
+        probably want to use `treq
+        <http://treq.readthedocs.org/en/latest/>`_ or ``Agent``
+        directly so call :meth:`txtorcon.Circuit.web_agent` instead.
+
+        :param socks_config: If supplied, should be a valid option for
+            Tor's ``SocksPort`` option; if this isn't available in the
+            underlying Tor we use, it will be added (and then used). If
+            `None` (the default) we'll use the first configured SOCKS
+            port.
         """
         from .endpoints import TorClientEndpoint
         from .torconfig import TorConfig
@@ -237,8 +243,13 @@ class Circuit(object):
                 "'torconfig' should be an instance of TorConfig"
             )
         got_source_port = defer.Deferred()
-        ep = TorClientEndpoint(reactor, torconfig, host, port, tls=use_tls, got_source_port=got_source_port)
-        return TorCircuitEndpoint(reactor, self.torstate, self, ep, got_source_port)
+        ep = TorClientEndpoint(
+            reactor, torconfig, host, port,
+            tls=use_tls,
+            got_source_port=got_source_port,
+            socks_config=socks_config,
+        )
+        return TorCircuitEndpoint(reactor, self._torstate, self, ep, got_source_port)
 
     @property
     def time_created(self):
@@ -278,7 +289,7 @@ class Circuit(object):
 
         def close_command_is_queued(*args):
             return self._closing_deferred
-        d = self.torstate.close_circuit(self.id, **kw)
+        d = self._torstate.close_circuit(self.id, **kw)
         d.addCallback(close_command_is_queued)
         return self._closing_deferred
 
