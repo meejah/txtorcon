@@ -177,7 +177,7 @@ class Circuit(object):
     def web_agent(self, reactor, socks_endpoint, pool=None):
         """
         :param socks_endpoint: create one with
-            :meth:`txtorcon.TorState.socks_endpoint`.
+            :meth:`txtorcon.TorState.socks_endpoint`. Can be a Deferred.
 
         :param pool: passed on to the Agent (as ``pool=``)
         """

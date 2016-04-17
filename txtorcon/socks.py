@@ -54,7 +54,7 @@ class TorSocksEndpoint(object):
     :meth:`txtorcon.TorConfig.socks_endpoint`.
     """
     def __init__(self, socks_endpoint, host, port, tls=False, got_source_port=None):
-        self._proxy_ep = socks_endpoint
+        self._proxy_ep = socks_endpoint  # can be Deferred
         self._host = host
         self._port = port
         self._tls = tls
@@ -78,7 +78,12 @@ class TorSocksEndpoint(object):
                 lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', factory, self._got_source_port)
             )
 
-        socks_proto = yield self._proxy_ep.connect(socks_factory)
+        if isinstance(self._proxy_ep, Deferred):
+            proxy_ep = yield self._proxy_ep
+        else:
+            proxy_ep = self._proxy_ep
+
+        socks_proto = yield proxy_ep.connect(socks_factory)
         wrapped_proto = yield done
         if self._tls:
             returnValue(wrapped_proto.wrappedProtocol)

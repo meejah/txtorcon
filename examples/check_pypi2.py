@@ -49,7 +49,8 @@ def main(reactor):
     print("Connected:", tor)
 
     #agent = yield txtorcon.agent_for_socks_port(reactor, tor.config, 'unix:/tmp/torsocks/socks', True)
-    agent = yield txtorcon.agent_for_socks_port(reactor, tor.config, '9875')
+    #agent = yield txtorcon.agent_for_socks_port(reactor, tor.config, '9875')
+    agent = tor.web_agent('9875')
     #uri = 'https://www.torproject.org:80'
     uri = 'https://www.torproject.org:443'
     #uri = 'http://check.torproject.org/api/ip'

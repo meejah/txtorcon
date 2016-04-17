@@ -391,8 +391,8 @@ class Tor(object):
         :param pool: passed on to the Agent (as ``pool=``)
         """
         return web.tor_agent(
-            self._reactor, self.config, None,
-            socks_config=socks_config,
+            self._reactor,
+            self.config.socks_endpoint(self._reactor, socks_config),
             pool=pool,
         )
 

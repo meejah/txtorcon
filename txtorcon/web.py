@@ -49,7 +49,9 @@ class _AgentEndpointFactoryForCircuit(object):
             got_source_port=got_source_port,
         )
         from txtorcon.circuit import TorCircuitEndpoint
-        return TorCircuitEndpoint(self._reactor, self._circ._torstate, self._circ, torsocks, got_source_port)
+        return TorCircuitEndpoint(
+            self._reactor, self._circ._torstate, self._circ, torsocks, got_source_port,
+        )
 
 
 # XXX FIXME okay, this seems silly -- lotsa args to make this work,
@@ -74,7 +76,8 @@ def tor_agent(reactor, socks_endpoint, circuit=None, pool=None):
 
     :param circuit: If supplied, a particular circuit to use
 
-    :param socks_endpoint: XXX
+    :param socks_endpoint: Deferred that fires w/
+        IStreamClientEndpoint (or IStreamClientEndpoint instance)
 
     :param pool: passed on to the Agent (as ``pool=``)
     """

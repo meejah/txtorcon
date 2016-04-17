@@ -25,8 +25,8 @@ def main(reactor):
     print("State:", state)
 
     # only new tors
-    #socks = yield tor.config.socks_endpoint("unix:/tmp/foo/socks")
-    socks = yield tor.config.socks_endpoint(reactor, "9998")
+    #socks = tor.config.socks_endpoint("unix:/tmp/foo/socks")
+    socks = tor.config.socks_endpoint(reactor, "9998")
 
     circ = yield state.build_circuit()
     yield circ.when_built()
