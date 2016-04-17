@@ -150,13 +150,6 @@ requirements with e.g. ``pip install txtorcon[dev]``.
    Twisted 11.1.0 or newer. Twisted 15.4.0+ works with Python3, and so
    does txtorcon (if you find something broken on Py3 please file a bug).
 
--  `GeoIP <https://www.maxmind.com/app/python>`_: **optional** provides location
-   information for ip addresses; you will want to download GeoLite City
-   from `MaxMind <https://www.maxmind.com/app/geolitecity>`_ or pay them
-   for more accuracy. Or use tor-geoip, which makes this sort-of
-   optional, in that we'll query Tor for the IP if the GeoIP database
-   doesn't have an answer. It also does ASN lookups if you installed that MaxMind database.
-
 -  development: `Sphinx <http://sphinx.pocoo.org/>`_ if you want to build the
    documentation. In that case you'll also need something called
    ``python-repoze.sphinx.autointerface`` (at least in Debian) to build
@@ -174,14 +167,14 @@ requirements with e.g. ``pip install txtorcon[dev]``.
 In any case, on a `Debian <http://www.debian.org/>`_ wheezy, squeeze or
 Ubuntu system, this should work::
 
-    apt-get install -y python-setuptools python-twisted python-ipaddr python-geoip graphviz tor
+    apt-get install -y python-setuptools python-twisted python-ipaddress graphviz tor
     apt-get install -y python-sphinx python-repoze.sphinx.autointerface python-coverage # for development
 
 .. END_INSTALL
 
 Using pip this would be::
 
-    pip install Twisted ipaddr pygeoip
+    pip install Twisted ipaddress pygeoip
     pip install GeoIP Sphinx repoze.sphinx.autointerface coverage  # for development
 
 or::
@@ -192,4 +185,3 @@ or::
 or for the bare minimum::
 
     pip install Twisted  # will install zope.interface too
-
