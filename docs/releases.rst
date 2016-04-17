@@ -7,6 +7,36 @@ There isn't a "release schedule" in any sense. If there is something
 in master your project depends upon, let me know and I'll do a
 release.
 
+upcoming: 1.0.0
+---------------
+
+`branch release-1.x <>`_ will become release 1.0.0 in the future. Some
+APIs will break, but wherever possible backwards-compatiblity with 0.x
+will be kept.
+
+ * full Python3 support
+ * a bunch of API fixups and embetterments.
+ * new high-level API :class:`txtorcon.Tor` abstracts "a single
+   running Tor process" (that we either connected to or launched).
+ * `twisted.web.Agent <>`_ support, via :meth:`txtorcon.Tor.web_agent`
+   and :meth:`txtorcon.Circuit.web_agent`
+ * :meth:`txtorcon.Circuit.stream_via`: easily attach client-type
+   streams to specific Circuits
+ * :meth:`txtorcon.Tor.stream_via`: create client-type streams that go
+   via Tor
+ * SOCKS5: built-in support, including for Tor custom extensions (see
+   :meth:`txtorcon.Tor.resolve` and :meth:`txtorcon.Tor.resolve_ptr`)
+ * SOCKS5: see also :meth:`txtorcon.TorConfig.socks_endpoint`
+ * :meth:`txtorcon.TorControlProtocol.get_info` now returns a list of
+   values, in the same order as the keys. (Used to return a ``dict``)
+   (XXX is this true yet?)
+ * many things which "should" have been "private" all along grew an
+   underscore prefix.
+ * :class:`txtorcon.Router` no longer has a ``.location``
+   attribute. Instead, use :meth:`txtorcon.Router.get_location` (which
+   returns a Deferred)
+ * dropped GeoIP dependency entirely (no GeoIP support).
+
 
 unreleased
 ----------

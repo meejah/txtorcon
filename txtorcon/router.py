@@ -127,6 +127,7 @@ class Router(object):
             return d
         return defer.succeed(self._location)
 
+    # XXX fixme, deprecate
     @property
     def location(self):
         """
