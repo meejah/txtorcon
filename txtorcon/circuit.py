@@ -13,12 +13,32 @@ from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
 from twisted.internet.interfaces import IReactorTime, IStreamClientEndpoint
+from twisted.web.iweb import IAgentEndpointFactory
+from twisted.web.client import Agent, readBody
+from zope.interface import Interface, implementer  # XXX FIXME
+
 from .interface import IRouterContainer, IStreamAttacher
 from txtorcon.util import find_keywords, maybe_ip_addr
-from zope.interface import Interface, implementer  # XXX FIXME
+
 
 # look like "2014-01-25T02:12:14.593772"
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+
+@implementer(IAgentEndpointFactory)
+class AgentEndpointFactoryForCircuit(object):
+    def __init__(self, reactor, torconfig, circ):
+        self._reactor = reactor
+        self._config = torconfig
+        self._circ = circ
+
+    def endpointForURI(self, uri):
+        """IAgentEndpointFactory API"""
+        return self._circ.stream_via(
+            self._reactor, self._config,
+            uri.host, uri.port,
+            use_tls=True,
+        )
 
 
 @implementer(IStreamClientEndpoint)
@@ -172,6 +192,17 @@ class Circuit(object):
         else:
             self._when_built.append(d)
         return d
+
+    def web_agent(self, reactor, torconfig, socks_config=None, pool=None):
+        """
+        :param socks_config: If supplied, should be a valid option for
+            Tor's ``SocksPort`` option; if this isn't available in the
+            underlying Tor we use, it will be added (and then used).
+
+        :param pool: passed on to the Agent (as ``pool=``)
+        """
+        factory = AgentEndpointFactoryForCircuit(reactor, torconfig, self)
+        return Agent.usingEndpointFactory(reactor, factory)
 
     def stream_via(self, reactor, torconfig, host, port, use_tls=False):
         """

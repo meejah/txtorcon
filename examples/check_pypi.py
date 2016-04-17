@@ -15,21 +15,6 @@ from zope.interface import implementer
 import txtorcon
 
 
-@implementer(IAgentEndpointFactory)
-class AgentEndpointFactoryForCircuit(object):
-    def __init__(self, reactor, torconfig, circ):
-        self._reactor = reactor
-        self._config = torconfig
-        self._circ = circ
-
-    def endpointForURI(self, uri):
-        """IAgentEndpointFactory API"""
-        print("URI", uri, uri.host, uri.port)
-##        return txtorcon.TorClientEndpoint(uri.host, uri.port)
-        # XXX host will be *!@#F#$ bytes on py3
-        return self._circ.stream_via(self._reactor, self._config, uri.host, uri.port, use_tls=True)
-
-
 @inlineCallbacks
 def main(reactor):
     ep = UNIXClientEndpoint(reactor, '/var/run/tor/control')
@@ -42,8 +27,7 @@ def main(reactor):
     circ = yield state.build_circuit()
     yield circ.when_built()
     print("Built:", circ)
-    fac = AgentEndpointFactoryForCircuit(reactor, tor.config, circ)
-    agent = Agent.usingEndpointFactory(reactor, fac)
+    agent = circ.web_agent(reactor, tor.config, 'unix:/tmp/foo/socks')
     resp = yield agent.request('GET', 'https://www.torproject.org')
     print("Response has {} bytes".format(resp.length))
     body = yield readBody(resp)

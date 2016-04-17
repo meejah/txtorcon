@@ -381,20 +381,13 @@ class Tor(object):
 
     # XXX also want a Circuit.web_agent -- same args as here, but then
     # it returns an agent that goes via the one particular circuit.
-    def web_agent(self, _socks_endpoint=None):
+    def web_agent(self, socks_config=None, pool=None):
         """
-        :param socks_endpoint: If supplied, should be one of the SOCKS
-            ports configured for this tor. Usually you shouldn't need to
-            supply one. txtorcon will use the first SOCKS port configured in tor
+        :param socks_config: If supplied, should be a valid option for
+            Tor's ``SocksPort`` option; if this isn't available in the
+            underlying Tor we use, it will be added (and then used).
 
-        XXX THINK FIXME:
-        - should we even allow _socks_endpoint? easy to get wrong
-          (e.g. a valid SOCKS port that's in a different tor, or not tor
-          at all)
-        - other ways to specify "which socks port to use"?
-        - maybe just take any valid "SocksPort" config-string, and if
-        we already have such a port in this tor great (use it) but if
-        not, we re-configure tor to add it...
+        :param pool: passed on to the Agent (as ``pool=``)
         """
         return NotImplemented
 
