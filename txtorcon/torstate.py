@@ -715,16 +715,13 @@ class TorState(object):
                 "ATTACHSTREAM %d %d" % (stream.id, circ.id)
             )
 
-    def _attacher_error(self, fail):
+    def _attacher_error(self, stream, fail):
         """
-        not ideal, but there's not really a good way to let the caller
-        handler errors :/ since we ultimately call this due to an
-        async request from Tor. Mostly these errors will be logic or
-        syntax errors in the caller's code anyway.
-
-        tests monkey-patch this to reduce spew
+        Note that tests monkey-patch this to reduce spew
         """
-        print("Failure while attaching stream:", fail)
+        if self._attacher is None:
+            print("Failure while attaching stream, and can't notify attacher:", fail)
+        self._attacher.attach_stream_failure(stream, fail)
         return fail
 
     def _circuit_status(self, data):

@@ -129,6 +129,12 @@ class IStreamAttacher(Interface):
         to attach .onion addresses and will always give a 551 error.
         """
 
+    def attach_stream_failure(stream, fail):
+        """
+        If we get any errors while attaching a stream, this method is
+        called with a `Failure` instance.
+        """
+
 
 class ICircuitContainer(Interface):
     """
