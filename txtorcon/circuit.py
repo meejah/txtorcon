@@ -162,7 +162,8 @@ class Circuit(object):
             self._when_built.append(d)
         return d
 
-    def stream_to(self, reactor, host, port, use_tls=False):
+    # XXX bikeshed about API...
+    def stream_to(self, reactor, torconfig, host, port, use_tls=False):
         """
         This returns an IStreamClientEndpoint that wraps the passed-in
         endpoint such that it goes via Tor, and via this parciular
@@ -189,7 +190,7 @@ class Circuit(object):
         ```
         """
         from .endpoints import TorClientEndpoint
-        ep = TorClientEndpoint(host, port, tls=use_tls)
+        ep = TorClientEndpoint(reactor, torconfig, host, port, tls=use_tls)
         return TorCircuitEndpoint(reactor, self.torstate, self, ep)
 
     @property

@@ -11,6 +11,7 @@ import tempfile
 import functools
 
 from txtorcon.util import available_tcp_port
+from txtorcon.socks import TorSocksEndpoint
 
 # backwards-compatibility dance: we "should" be using the
 # ...WithReactor class, but in Twisted prior to 14, there is no such
@@ -32,6 +33,7 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet import error
 from twisted.plugin import IPlugin
 from twisted.python.util import FancyEqMixin
@@ -742,6 +744,19 @@ class TCPHiddenServiceEndpointParser(object):
             ephemeral=False,
         )
 
+def _socks_endpoint_from_config(reactor, socks_config):
+    # XXX duplicate code; put in "endpoint_from_socks_config" or something
+    if socks_config.startswith('unix:'):
+        socks_ep = UNIXClientEndpoint(reactor, socks_config[5:])
+    else:
+        if ':' in socks_config:
+            host, port = socks_config.split(':', 1)
+            port = int(port)
+        else:
+            host = '127.0.0.1'
+            port = int(socks_config)
+        socks_ep = TCP4ClientEndpoint(reactor, host, port)
+    return socks_ep
 
 @implementer(IStreamClientEndpoint)
 class TorClientEndpoint(object):
@@ -756,8 +771,9 @@ class TorClientEndpoint(object):
     ``.from_config`` will ensure the underlying Tor SocksPort list
     actually contains the required configuration.
 
-    :param tor_config:
-        An instance of :class:`txtorcon.TorConfig`
+    :param tor_config: An instance of :class:`txtorcon.TorConfig`. If
+        ``None`` we will use :meth:`txtorcon.get_global_tor` to
+        retrieve a default one.
 
     :param host:
         The hostname to connect to. This of course can be a Tor Hidden
@@ -784,6 +800,7 @@ class TorClientEndpoint(object):
                  socks_config=None,
                  tls=False,
 
+                 _proxy_endpoint_parser=_socks_endpoint_from_config,
                  # XXX our custom SOCKS stuff doesn't support auth (yet?)
                  socks_username=None, socks_password=None):
         if host is None or port is None:
@@ -791,10 +808,11 @@ class TorClientEndpoint(object):
 
         self.host = host
         self.port = int(port)
-        self._tls = _tls
+        self._tls = tls
         self._torconfig = tor_config
         self._socks_config = None if socks_config is None else str(socks_config)
         self._reactor = reactor
+        self._proxy_endpoint_parser = _proxy_endpoint_parser
 
         # XXX think, do we want to expose these like this? Or some
         # other way (because they're for stream-isolation, not actual
@@ -804,9 +822,21 @@ class TorClientEndpoint(object):
 
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
+        # if we have no config, try to get a default one
+        print("connect!", protocolfactory)
+        if self._torconfig is None:
+            print("no config")
+            try:
+                self._torconfig = yield get_global_tor(self._reactor)
+            except Exception as e:
+                raise RuntimeError(
+                    "No TorConfig provided, and we can't get a default "
+                    "one: {}".format(e)
+                )
+
         # see if Tor has our desired SOCKS configuration already
         if self._socks_config is None:
-            if len(sel._torconfig.SocksPort) == 0:
+            if len(self._torconfig.SocksPort) == 0:
                 raise RuntimeError(
                     "socks_port is None and Tor has no SocksPorts configured"
                 )
@@ -819,24 +849,15 @@ class TorClientEndpoint(object):
 
         # now, Tor should have our SocksPort, and self._socks_config
         # is a valid string
-        # XXX duplicate code; put in "endpoint_from_socks_config" or something
-        if self._socks_config.startswith('unix:'):
-            socks_ep = UNIXClientEndpoint(self._reactor, self._socks_config[5:])
-        else:
-            if ':' in self._socks_config:
-                host, port = self._socks_config.split(':', 1)
-                port = int(port)
-            else:
-                host = '127.0.0.1'
-                port = int(self._socks_config)
-            socks_ep = TCP4ClientEndpoint(self._reactor, host, port)
-
-
+        socks_ep = self._proxy_endpoint_parser(self._reactor, self._socks_config)
+        print(socks_ep)
         tor_socks_ep = TorSocksEndpoint(
-            socks_ep, self.host, self.port, self.tls,
+            socks_ep, self.host, self.port, self._tls,
         )
 
+        print("about to connect", protocolfactory)
         proto = yield tor_socks_ep.connect(protocolfactory)
+        print("PROTO!", proto)
         defer.returnValue(proto)
 
 
@@ -874,19 +895,16 @@ class TorClientEndpointStringParser(object):
     """
     prefix = "tor"
 
-    def _parseClient(self, host=None, port=None,
-                     socksHostname=None, socksPort=None,
+    def _parseClient(self, reactor,
+                     host=None, port=None,
                      socksUsername=None, socksPassword=None):
         if port is not None:
             port = int(port)
-        if socksHostname is None:
-            socksHostname = '127.0.0.1'
-        if socksPort is not None:
-            socksPort = int(socksPort)
 
         return TorClientEndpoint(
+            reactor,
+            None,
             host, port,
-            socks_hostname=socksHostname, socks_port=socksPort,
             socks_username=socksUsername, socks_password=socksPassword
         )
 
@@ -894,5 +912,7 @@ class TorClientEndpointStringParser(object):
         # for Twisted 14 and 15 (and more) the first argument is
         # 'reactor', for older Twisteds it's not
         if _HAVE_TX_14:
-            return self._parseClient(*args[1:], **kwargs)
-        return self._parseClient(*args, **kwargs)
+            return self._parseClient(*args, **kwargs)
+        else:
+            from twisted.internet import reactor
+            return self._parseClient(reactor, *args, **kwargs)

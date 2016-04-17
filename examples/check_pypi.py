@@ -17,8 +17,9 @@ import txtorcon
 
 @implementer(IAgentEndpointFactory)
 class AgentEndpointFactoryForCircuit(object):
-    def __init__(self, reactor, circ):
+    def __init__(self, reactor, torconfig, circ):
         self._reactor = reactor
+        self._config = torconfig
         self._circ = circ
 
     def endpointForURI(self, uri):
@@ -26,7 +27,7 @@ class AgentEndpointFactoryForCircuit(object):
         print("URI", uri, uri.host, uri.port)
 ##        return txtorcon.TorClientEndpoint(uri.host, uri.port)
         # XXX host will be *!@#F#$ bytes on py3
-        return self._circ.stream_to(self._reactor, uri.host, uri.port, use_tls=True)
+        return self._circ.stream_to(self._reactor, self._config, uri.host, uri.port, use_tls=True)
 
 
 @inlineCallbacks
@@ -41,7 +42,7 @@ def main(reactor):
     circ = yield state.build_circuit()
     yield circ.when_built()
     print("Built:", circ)
-    fac = AgentEndpointFactoryForCircuit(reactor, circ)
+    fac = AgentEndpointFactoryForCircuit(reactor, state, circ)
     agent = Agent.usingEndpointFactory(reactor, fac)
     resp = yield agent.request('GET', 'https://www.torproject.org:443')
     print("req", resp, dir(resp))
