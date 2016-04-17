@@ -12,6 +12,7 @@ from io import StringIO
 
 from twisted.python import log
 from twisted.internet import defer
+from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.util import find_keywords, py3k
@@ -934,6 +935,40 @@ class TorConfig(object):
             self.do_post_bootstrap(self)
 
         self.__dict__['_setup_'] = None
+
+    @defer.inlineCallbacks
+    def socks_endpoint(self, reactor, socks_config):
+        """
+        Creates a new TorSocksEndpoint instance given a valid
+        configuration line for ``SocksPort``; if this configuration
+        isn't already in the underlying tor, we add it. Note that this
+        method may call :meth:`txtorcon.TorConfig.save()` on this instance.
+
+        XXX we could avoid the "maybe call .save()" thing; worth it?
+        """
+        if socks_config is None:
+            if len(self.SocksPort) == 0:
+                raise RuntimeError(
+                    "socks_port is None and Tor has no SocksPorts configured"
+                )
+            socks_config = self.SocksPort[0]
+        else:
+            if socks_config not in self.SocksPort:
+                # need to configure Tor
+                self.SocksPort.append(socks_config)
+                yield self.save()
+
+        if socks_config.startswith('unix:'):
+            socks_ep = UNIXClientEndpoint(reactor, socks_config[5:])
+        else:
+            if ':' in socks_config:
+                host, port = socks_config.split(':', 1)
+                port = int(port)
+            else:
+                host = '127.0.0.1'
+                port = int(socks_config)
+            socks_ep = TCP4ClientEndpoint(reactor, host, port)
+        defer.returnValue(socks_ep)
 
     def onion_create(self, ports, auth=None, directory=None, private_key=None):
         """

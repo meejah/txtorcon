@@ -13,32 +13,15 @@ from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
 from twisted.internet.interfaces import IReactorTime, IStreamClientEndpoint
-from twisted.web.iweb import IAgentEndpointFactory
-from twisted.web.client import Agent, readBody
 from zope.interface import Interface, implementer  # XXX FIXME
 
 from .interface import IRouterContainer, IStreamAttacher
 from txtorcon.util import find_keywords, maybe_ip_addr
+from txtorcon import web
 
 
 # look like "2014-01-25T02:12:14.593772"
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
-
-
-@implementer(IAgentEndpointFactory)
-class AgentEndpointFactoryForCircuit(object):
-    def __init__(self, reactor, torconfig, circ):
-        self._reactor = reactor
-        self._config = torconfig
-        self._circ = circ
-
-    def endpointForURI(self, uri):
-        """IAgentEndpointFactory API"""
-        return self._circ.stream_via(
-            self._reactor, self._config,
-            uri.host, uri.port,
-            use_tls=True,
-        )
 
 
 @implementer(IStreamClientEndpoint)
@@ -72,11 +55,9 @@ class TorCircuitEndpoint(object):
             # etc. on just this one circuit, so that we can .errback()
             # attached if the circuit fails before we get to do
             # this-here...
-            # overkill? double-checking the target...
-            if stream.target_host == self._target_endpoint.host and \
-               stream.target_port == self._target_endpoint.port:
-                self._attached.callback(None)
-                defer.returnValue(self._circuit)
+            # XXX could check target_host, target_port to be sure...?
+            self._attached.callback(None)
+            defer.returnValue(self._circuit)
 
     @defer.inlineCallbacks
     def connect(self, protocol_factory):
@@ -193,18 +174,19 @@ class Circuit(object):
             self._when_built.append(d)
         return d
 
-    def web_agent(self, reactor, torconfig, socks_config=None, pool=None):
+    def web_agent(self, reactor, socks_endpoint, pool=None):
         """
-        :param socks_config: If supplied, should be a valid option for
-            Tor's ``SocksPort`` option; if this isn't available in the
-            underlying Tor we use, it will be added (and then used). If
-            `None` (the default) we'll use the first configured SOCKS
-            port.
+        :param socks_endpoint: create one with
+            :meth:`txtorcon.TorState.socks_endpoint`.
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
-        factory = AgentEndpointFactoryForCircuit(reactor, torconfig, self)
-        return Agent.usingEndpointFactory(reactor, factory)
+        return web.tor_agent(
+            reactor,
+            socks_endpoint,
+            circuit=self,
+            pool=pool,
+        )
 
     def stream_via(self, reactor, torconfig, host, port, use_tls=False, socks_config=None):
         """

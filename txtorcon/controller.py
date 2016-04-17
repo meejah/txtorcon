@@ -26,6 +26,7 @@ from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TCPHiddenServiceEndpoint
 from txtorcon import socks
+from txtorcon import web
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
@@ -389,7 +390,11 @@ class Tor(object):
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
-        return NotImplemented
+        return web.tor_agent(
+            self._reactor, self.config, None,
+            socks_config=socks_config,
+            pool=pool,
+        )
 
     def dns_resolve(self, hostname):
         """

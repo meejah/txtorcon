@@ -50,9 +50,8 @@ def resolve_ptr(tor_endpoint, hostname):
 class TorSocksEndpoint(object):
     """
     Represents a endpoint which will talk to a Tor SOCKS port. These
-    should usually not be instantiated directly; use
-    :meth:`txtorcon.Circuit.stream_via` or
-    :meth:`txtorcon.Tor.stream_via`.
+    should usually not be instantiated directly, instead use
+    :meth:`txtorcon.TorConfig.socks_endpoint`.
     """
     def __init__(self, socks_endpoint, host, port, tls=False, got_source_port=None):
         self._proxy_ep = socks_endpoint

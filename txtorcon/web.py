@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 from twisted.web.iweb import IAgentEndpointFactory
 from twisted.web.client import Agent
@@ -30,6 +30,60 @@ class _AgentEndpointFactoryUsingTor(object):
             uri.port,
             uri.scheme == 'https',
         )
+
+
+@implementer(IAgentEndpointFactory)
+class _AgentEndpointFactoryForCircuit(object):
+    def __init__(self, reactor, tor_socks_endpoint, circ):
+        self._reactor = reactor
+        self._socks_ep = tor_socks_endpoint
+        self._circ = circ
+
+    def endpointForURI(self, uri):
+        """IAgentEndpointFactory API"""
+        got_source_port = Deferred()
+        torsocks = TorSocksEndpoint(
+            self._socks_ep,
+            uri.host, uri.port,
+            tls=uri.scheme == 'https',
+            got_source_port=got_source_port,
+        )
+        from txtorcon.circuit import TorCircuitEndpoint
+        return TorCircuitEndpoint(self._reactor, self._circ._torstate, self._circ, torsocks, got_source_port)
+
+
+# XXX FIXME okay, this seems silly -- lotsa args to make this work,
+# should just ditch tor_agent() and it *only* works via Circuit or Tor
+# (and they create tor._Agent* instances)
+def tor_agent(reactor, socks_endpoint, circuit=None, pool=None):
+    """
+    This is the low-level method used by
+    :meth:`txtorcon.Tor.web_agent` and
+    :meth:`txtorcon.Circuit.web_agent` -- probably you should call one
+    of those instead.
+
+    :returns: a Deferred that fires with an object that implements
+        :class:`twisted.web.iweb.IAgent` and is thus suitable for passing
+        to ``treq`` as the ``agent=`` kwarg. Of course can be used
+        directly; see `using Twisted web cliet
+        <http://twistedmatrix.com/documents/current/web/howto/client.html>`_.
+
+    :param reactor: the reactor to use
+
+    :param torconfig: a :class:`txtorcon.TorConfig` instance
+
+    :param circuit: If supplied, a particular circuit to use
+
+    :param socks_endpoint: XXX
+
+    :param pool: passed on to the Agent (as ``pool=``)
+    """
+
+    if circuit is not None:
+        factory = _AgentEndpointFactoryForCircuit(reactor, socks_endpoint, circuit)
+    else:
+        factory = _AgentEndpointFactoryUsingTor(reactor, socks_endpoint)
+    return Agent.usingEndpointFactory(reactor, factory, pool=pool)
 
 
 @inlineCallbacks

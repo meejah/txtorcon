@@ -744,37 +744,15 @@ class TCPHiddenServiceEndpointParser(object):
             ephemeral=False,
         )
 
-def _socks_endpoint_from_config(reactor, socks_config):
-    # XXX duplicate code; put in "endpoint_from_socks_config" or something
-    if socks_config.startswith('unix:'):
-        socks_ep = UNIXClientEndpoint(reactor, socks_config[5:])
-    else:
-        if ':' in socks_config:
-            host, port = socks_config.split(':', 1)
-            port = int(port)
-        else:
-            host = '127.0.0.1'
-            port = int(socks_config)
-        socks_ep = TCP4ClientEndpoint(reactor, host, port)
-    return socks_ep
-
 
 @implementer(IStreamClientEndpoint)
 class TorClientEndpoint(object):
     """
-    I am an endpoint class who attempts to establish a SOCKS5
-    connection with the system tor process. It is recommended that you
-    do not instantiate these directly; use clientFromString() or any
-    of the @classmethods on this class. Best is to use
-    :meth:`txtorcon.Tor.stream_via`
+    An IStreamClientEndpoint which establishes a connection via Tor.
 
-    You must pass in a valid Tor SOCKS endpoint. The method
-    ``.from_config`` will ensure the underlying Tor SocksPort list
-    actually contains the required configuration.
-
-    :param tor_config: An instance of :class:`txtorcon.TorConfig`. If
-        ``None`` we will use :meth:`txtorcon.get_global_tor` to
-        retrieve a default one.
+    You should not instantiate these directly; use
+    ``clientFromString()``, :meth:`txtorcon.Tor.stream_via` or
+    :meth:`txtorcon.Circuit.stream_via`
 
     :param host:
         The hostname to connect to. This of course can be a Tor Hidden
@@ -782,10 +760,9 @@ class TorClientEndpoint(object):
 
     :param port: The tcp port or Tor Hidden Service port.
 
-    :param socks_config: If None (the default) we use the first
-        SocksPort entry from Tor's config. Otherwise, this can be a
-        string which is any valid value for a Tor ``SocksPort``
-        configuration item.
+    :param socks_endpoint: An IStreamClientEndpoint pointing at (one
+        of) our Tor's SOCKS ports. These can be instantiated with
+        :meth:`txtorcon.TorConfig.socks_endpoint`.
 
     :param tls: Can be False or True (to get default Browser-like
         hostname verification) or the result of calling
@@ -798,11 +775,10 @@ class TorClientEndpoint(object):
                  reactor,
                  tor_config,
                  host, port,
-                 socks_config=None,
+                 socks_endpoint,
                  tls=False,
                  got_source_port=None,
 
-                 _proxy_endpoint_parser=_socks_endpoint_from_config,
                  # XXX our custom SOCKS stuff doesn't support auth (yet?)
                  socks_username=None, socks_password=None):
         if host is None or port is None:
@@ -812,7 +788,7 @@ class TorClientEndpoint(object):
         self.port = int(port)
         self._tls = tls
         self._torconfig = tor_config
-        self._socks_config = None if socks_config is None else str(socks_config)
+        self._socks_endpoint = socks_endpoint
         self._reactor = reactor
         self._proxy_endpoint_parser = _proxy_endpoint_parser
         self._got_source_port = got_source_port

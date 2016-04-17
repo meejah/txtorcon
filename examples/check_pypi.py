@@ -24,10 +24,21 @@ def main(reactor):
     state = yield tor.create_state()
     print("State:", state)
 
+    # only new tors
+    #socks = yield tor.config.socks_endpoint("unix:/tmp/foo/socks")
+    socks = yield tor.config.socks_endpoint(reactor, "9998")
+
     circ = yield state.build_circuit()
     yield circ.when_built()
     print("Built:", circ)
-    agent = circ.web_agent(reactor, tor.config, 'unix:/tmp/foo/socks')
+    if False:
+        # any circuit Tor likes
+        agent = tor.web_agent('unix:/tmp/foo/socks')
+    else:
+        # this very circuit we created
+        #agent = yield circ.web_agent(reactor, tor.config, 'unix:/tmp/foo/socks')
+        agent = circ.web_agent(reactor, socks)
+    print("agent", agent)
     resp = yield agent.request('GET', 'https://www.torproject.org')
     print("Response has {} bytes".format(resp.length))
     body = yield readBody(resp)
