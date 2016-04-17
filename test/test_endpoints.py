@@ -689,7 +689,7 @@ class FakeTorSocksEndpoint(object):
 
 
 class FakeSocksProto(object):
-    def __init__(self, done, host, port, method, factory):
+    def __init__(self, done, host, port, method, factory, got_source_port):
         self.done = done
         self.factory = factory
 
@@ -710,15 +710,14 @@ class TestTorClientEndpoint(unittest.TestCase):
         config = Mock()
         config.SocksPort = ['9050']
         ggt.return_value = config
-        def fail_tor_socks_parser(reactor, socks, **kw):
-            kw['failure'] = Failure(ConnectionRefusedError())
-            return FakeTorSocksEndpoint(Mock(), '127.0.0.1', int(socks), **kw)
         endpoint = TorClientEndpoint(
             reactor=Mock(),
-            tor_config=None,
             host='host',
             port=0,
-            _proxy_endpoint_parser=fail_tor_socks_parser,
+            socks_endpoint=FakeTorSocksEndpoint(
+                Mock(), '127.0.0.1', 9050,
+                failure=Failure(ConnectionRefusedError()),
+            )
         )
         d = endpoint.connect(None)
         return self.assertFailure(d, ConnectionRefusedError)
@@ -727,19 +726,16 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         Same as above, but with a username/password.
         """
-        def fail_tor_socks_parser(reactor, socks, **kw):
-            kw['failure'] = Failure(ConnectionRefusedError())
-            return FakeTorSocksEndpoint(Mock(), '127.0.0.1', int(socks), **kw)
-        fake_config = Mock()
-        fake_config.SocksPort = ['9050']
         endpoint = TorClientEndpoint(
             reactor=Mock(),
-            tor_config=fake_config,
             host='invalid host',
             port=0,
+            socks_endpoint=FakeTorSocksEndpoint(
+                Mock(), '127.0.0.1', 0,
+                failure=Failure(ConnectionRefusedError())
+            ),
             socks_username='billy',
             socks_password='s333cure',
-            _proxy_endpoint_parser=fail_tor_socks_parser,
         )
         d = endpoint.connect(None)
         return self.assertFailure(d, ConnectionRefusedError)
@@ -747,7 +743,7 @@ class TestTorClientEndpoint(unittest.TestCase):
     def test_no_host(self):
         self.assertRaises(
             ValueError,
-            TorClientEndpoint, Mock(), Mock(), None, None,
+            TorClientEndpoint, Mock(), None, None, Mock(),
         )
 
     def test_parser_basic(self):
@@ -766,66 +762,15 @@ class TestTorClientEndpoint(unittest.TestCase):
         self.assertEqual(ep._socks_username, 'foo')
         self.assertEqual(ep._socks_password, 'bar')
 
-    @patch('txtorcon.endpoints.get_global_tor')
-    def test_no_config(self, ggt):
-        """
-        When user doesn't provide TorConfig, we get one
-        """
-        reactor = object()
-        ep = TorClientEndpoint(reactor, None, 'torproject.org', 443)
-
-        d = ep.connect(Mock())
-        d.addErrback(lambda _: None)  # don't care about errors
-
-        # 'get_global_tor()' should have been called by connect()
-        ggt.assert_called_once_with(reactor)
-
-    @patch('txtorcon.endpoints.get_global_tor')
-    def test_no_config_and_tor_fails(self, ggt):
-        """
-        A sane error to user if get_gloabl_tor() fails
-        """
-        reactor = object()
-        def fail_tor():
-            raise RuntimeError("starting tor fails")
-        ggt.side_effect = fail_tor
-        ep = TorClientEndpoint(reactor, None, 'torproject.org', 443)
-
-        d = ep.connect(Mock())
-        d.addErrback(lambda _: None)  # don't care about errors
-
-        # 'get_global_tor()' should have been called by connect()
-        ggt.assert_called_once_with(reactor)
-
-    def test_socks_config_not_in_tor(self):
-        """
-        When config for SocksPort isn't in tor, we add it
-        """
-        config = Mock()
-        config.SocksPort = []
-        ep = TorClientEndpoint(Mock(), config, 'torproject.org', 443,
-                               socks_config='9050')
-
-        d = ep.connect(Mock())
-
-        # should have added '9050' to Tor's SocksPort config
-        self.assertEqual(config.SocksPort, ['9050'])
-        # should have called save() once on the config, too
-        self.assertTrue(len(config.mock_calls), 1)
-        self.assertEqual(config.mock_calls[0][0], 'save')
-
     @patch('txtorcon.socks._TorSocksProtocol', FakeSocksProto)
     @defer.inlineCallbacks
     def test_happy_path(self):
         """
         We can actually connect.
         """
-        def succeed_tor_socks_parser(reactor, socks, **kw):
-            return FakeTorSocksEndpoint(Mock(), '127.0.0.1', socks, **kw)
-        config = Mock()
-        config.SocksPort = ['unix:/dev/null']
-        ep = TorClientEndpoint(Mock(), config, 'torproject.org', 443,
-                               _proxy_endpoint_parser=succeed_tor_socks_parser,)
+        fake_ep = FakeTorSocksEndpoint(Mock(), '127.0.0.1', 9050)
+        ep = TorClientEndpoint(Mock(), 'torproject.org', 443,
+                               socks_endpoint=fake_ep)
 
         proto = yield ep.connect(Mock())
         self.assertTrue(proto is not None)

@@ -9,7 +9,7 @@ from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 import os
 import tempfile
 
-from mock import patch
+from mock import patch, Mock
 
 from txtorcon import TorControlProtocol
 from txtorcon import TorProtocolError
@@ -317,7 +317,7 @@ class StateTests(unittest.TestCase):
         self.protocol = TorControlProtocol()
         self.state = TorState(self.protocol)
         # avoid spew in trial logs; state prints this by default
-        self.state._attacher_error = lambda f: f
+        self.state._attacher_error = lambda s, f: f
         self.protocol.connectionMade = lambda: None
         self.transport = proto_helpers.StringTransport()
         self.protocol.makeConnection(self.transport)
@@ -340,7 +340,7 @@ class StateTests(unittest.TestCase):
     def test_attacher_error_handler(self):
         # make sure error-handling "does something" that isn't blowing up
         with patch('sys.stdout') as fake_stdout:
-            TorState(self.protocol)._attacher_error(Failure(RuntimeError("quote")))
+            TorState(self.protocol)._attacher_error(Mock(), Failure(RuntimeError("quote")))
 
     def test_stream_update(self):
         # we use a circuit ID of 0 so it doesn't try to look anything

@@ -773,7 +773,6 @@ class TorClientEndpoint(object):
 
     def __init__(self,
                  reactor,
-                 tor_config,
                  host, port,
                  socks_endpoint,
                  tls=False,
@@ -787,10 +786,8 @@ class TorClientEndpoint(object):
         self.host = host
         self.port = int(port)
         self._tls = tls
-        self._torconfig = tor_config
         self._socks_endpoint = socks_endpoint
         self._reactor = reactor
-        self._proxy_endpoint_parser = _proxy_endpoint_parser
         self._got_source_port = got_source_port
 
         # XXX think, do we want to expose these like this? Or some
@@ -801,34 +798,8 @@ class TorClientEndpoint(object):
 
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
-        # if we have no config, try to get a default one
-        if self._torconfig is None:
-            try:
-                self._torconfig = yield get_global_tor(self._reactor)
-            except Exception as e:
-                raise RuntimeError(
-                    "No TorConfig provided, and we can't get a default "
-                    "one: {}".format(e)
-                )
-
-        # see if Tor has our desired SOCKS configuration already
-        if self._socks_config is None:
-            if len(self._torconfig.SocksPort) == 0:
-                raise RuntimeError(
-                    "socks_port is None and Tor has no SocksPorts configured"
-                )
-            self._socks_config = self._torconfig.SocksPort[0]
-        else:
-            if self._socks_config not in self._torconfig.SocksPort:
-                # need to configure Tor
-                self._torconfig.SocksPort.append(self._socks_config)
-                yield self._torconfig.save()
-
-        # now, Tor should have our SocksPort, and self._socks_config
-        # is a valid string
-        socks_ep = self._proxy_endpoint_parser(self._reactor, self._socks_config)
         tor_socks_ep = TorSocksEndpoint(
-            socks_ep, self.host, self.port, self._tls, self._got_source_port,
+            self._socks_endpoint, self.host, self.port, self._tls, self._got_source_port,
         )
 
         proto = yield tor_socks_ep.connect(protocolfactory)
@@ -877,9 +848,10 @@ class TorClientEndpointStringParser(object):
 
         return TorClientEndpoint(
             reactor,
-            None,
             host, port,
-            socks_username=socksUsername, socks_password=socksPassword
+            socks_endpoint=None,
+            socks_username=socksUsername,
+            socks_password=socksPassword
         )
 
     def parseStreamClient(self, *args, **kwargs):
