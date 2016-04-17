@@ -28,7 +28,7 @@ from txtorcon.spaghetti import FSM, State, Transition
 def resolve(tor_endpoint, hostname):
     done = Deferred()
     factory = Factory.forProtocol(
-        lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE', None)
+        lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE', None, None)
     )
     proto = yield tor_endpoint.connect(factory)
     result = yield done
@@ -39,7 +39,7 @@ def resolve(tor_endpoint, hostname):
 def resolve_ptr(tor_endpoint, hostname):
     done = Deferred()
     factory = Factory.forProtocol(
-        lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE_PTR', None)
+        lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE_PTR', None, None)
     )
     proto = yield tor_endpoint.connect(factory)
     result = yield done
@@ -48,11 +48,18 @@ def resolve_ptr(tor_endpoint, hostname):
 
 @implementer(IStreamClientEndpoint)
 class TorSocksEndpoint(object):
-    def __init__(self, socks_endpoint, host, port, tls=False):
+    """
+    Represents a endpoint which will talk to a Tor SOCKS port. These
+    should usually not be instantiated directly; use
+    :meth:`txtorcon.Circuit.stream_via` or
+    :meth:`txtorcon.Tor.stream_via`.
+    """
+    def __init__(self, socks_endpoint, host, port, tls=False, got_source_port=None):
         self._proxy_ep = socks_endpoint
         self._host = host
         self._port = port
         self._tls = tls
+        self._got_source_port = got_source_port
 
     @inlineCallbacks
     def connect(self, factory):
@@ -65,11 +72,11 @@ class TorSocksEndpoint(object):
             context = optionsForClientTLS(unicode(self._host))
             tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
             socks_factory = Factory.forProtocol(
-                lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', tls_factory)
+                lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', tls_factory, self._got_source_port)
             )
         else:
             socks_factory = Factory.forProtocol(
-                lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', factory)
+                lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', factory, self._got_source_port)
             )
 
         socks_proto = yield self._proxy_ep.connect(socks_factory)
@@ -93,7 +100,7 @@ class _TorSocksProtocol(Protocol):
         0x08: 'Address type not supported',
     }
 
-    def __init__(self, done, host, port, socks_method, factory):
+    def __init__(self, done, host, port, socks_method, factory, got_source_port):
         """
         Private implementation detail -- do not instantiate directly. Use
         one of: resolve(), resolve_ptr() or TorSocksEndpoint
@@ -105,6 +112,7 @@ class _TorSocksProtocol(Protocol):
         self._done = done
         self._host = host[:255]
         self._port = port
+        self._got_source_port = got_source_port
         assert port == int(port)
         assert port >= 0 and port < 2 ** 16
         self._auth_method = 0x02  # "USERNAME/PASSWORD"
@@ -152,6 +160,7 @@ class _TorSocksProtocol(Protocol):
         # probably doesn't have it...
         client_proxy = portforward.ProxyClient()
         sender.makeConnection(self.transport)
+
         setattr(sender, 'setPeer', lambda _: None)
         client_proxy.setPeer(sender)
         self._sender = sender
@@ -172,10 +181,9 @@ class _TorSocksProtocol(Protocol):
         # print("_is_valid_response", msg)
         try:
             (version, reply, _, typ) = struct.unpack('BBBB', msg[:4])
-            # print(version, reply, _, typ)
             return version == 5 and reply == 0 and typ in [0x01, 0x03, 0x04]
         except Exception as e:
-            print("error", e)
+            print("txtorcon internal error", e)
             return False
 
     def _parse_response(self, msg):
@@ -249,6 +257,9 @@ class _TorSocksProtocol(Protocol):
 
 
     def connectionMade(self):
+        # print("connectionMade", self.transport.getHost())
+        if self._got_source_port:
+            self._got_source_port.callback(self.transport.getHost())
         self._fsm.state = self._fsm.states[0]  # SENT_VERSION
         # ask for 2 methods: 0 (anonymous) and 2 (authenticated)
         data = struct.pack('BBBB', 5, 2, 0, 2)
@@ -257,7 +268,7 @@ class _TorSocksProtocol(Protocol):
         self.transport.write(data)
 
     def connectionLost(self, reason):
-        # print("lost", reason)
+        # print("connectionLost", reason)
         if self._sender:
             self._sender.connectionLost(reason)
         if not self._done.called:
@@ -267,65 +278,3 @@ class _TorSocksProtocol(Protocol):
         # print("dataReceived({} bytes)".format(len(d)))
         self._fsm.process(d)
         return
-
-        if self._state == 'wait_version':
-            (version, method) = struct.unpack('bb', d)
-            assert version == 5  # version
-            if method == 0xff:
-                self.transport.loseConnection()
-            assert method in [0, 2]
-
-            # WTF??! why doesn't the 'p' format character work?
-
-            # send a command
-            data = struct.pack(
-                '!BBBBB{}sH'.format(len(self._host)),
-                5,              # version
-                0x01,           # command (CONNECT)
-                #0xf0,           # command (RESOLVE) custom tor thing
-                0x00,           # reserved
-                0x03,           # ATYP (DOMAINNAME)
-                len(self._host),
-                self._host,
-                self._port,
-            )
-            #print("sending", data)
-            self.transport.write(data)
-            self._state = 'sent_command'
-        elif self._state == 'sent_command':
-            self._state = 'relaying'
-            (version, reply, _, typ) = struct.unpack('BBBB', d[:4])
-            print(version, reply, typ)
-            if reply != 0x00:
-                print("FAIL: {}".format(reply))
-            if typ != 0x01:
-                print("only know IPv4")
-            (addr, port) = struct.unpack('!IH', d[4:])
-            print(reply, typ, addr, port)
-            print("ADDR", ip_address(addr), port)
-            self.transport.write(b'GET / HTTP/1.1\r\nHost: timaq4ygg2iegci7.onion\r\n\r\n')
-
-
-@inlineCallbacks
-def main(reactor):
-    ip = yield resolve(
-        TCP4ClientEndpoint(reactor, '127.0.0.1', 9050),
-        'torproject.org',
-    )
-    print("result:", ip)
-    addr = yield resolve_ptr(
-        TCP4ClientEndpoint(reactor, '127.0.0.1', 9050),
-        '38.229.72.16',
-    )
-    print("result:", addr)
-
-    ep = TorSocksEndpoint(
-        TCP4ClientEndpoint(reactor, '127.0.0.1', 9050),
-        'torproject.org', 443,
-    )
-    proto = yield ep.connect(Factory.forProtocol(foo))
-
-if __name__ == '__main__':
-    # not in Twisted <= 12
-    from twisted.internet.task import react
-    react(main)

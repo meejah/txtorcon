@@ -27,7 +27,7 @@ class AgentEndpointFactoryForCircuit(object):
         print("URI", uri, uri.host, uri.port)
 ##        return txtorcon.TorClientEndpoint(uri.host, uri.port)
         # XXX host will be *!@#F#$ bytes on py3
-        return self._circ.stream_to(self._reactor, self._config, uri.host, uri.port, use_tls=True)
+        return self._circ.stream_via(self._reactor, self._config, uri.host, uri.port, use_tls=True)
 
 
 @inlineCallbacks
@@ -42,12 +42,13 @@ def main(reactor):
     circ = yield state.build_circuit()
     yield circ.when_built()
     print("Built:", circ)
-    fac = AgentEndpointFactoryForCircuit(reactor, state, circ)
+    fac = AgentEndpointFactoryForCircuit(reactor, tor.config, circ)
     agent = Agent.usingEndpointFactory(reactor, fac)
-    resp = yield agent.request('GET', 'https://www.torproject.org:443')
-    print("req", resp, dir(resp))
+    resp = yield agent.request('GET', 'https://www.torproject.org')
+    print("Response has {} bytes".format(resp.length))
     body = yield readBody(resp)
-    print("body {} bytes".format(len(body)))
+    print("received body ({} bytes)".format(len(body)))
+    print("{}\n[...]\n{}\n".format(body[:200], body[-200:]))
 
 # XXX fuck yeah! this works now ...
 

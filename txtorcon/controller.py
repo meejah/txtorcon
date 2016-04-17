@@ -418,7 +418,7 @@ class Tor(object):
         """
         return socks.resolve_ptr(self._socks_endpoint, ip)
 
-    def stream_to(self, target_endpoint):
+    def stream_via(self, target_endpoint):
         """
         XXX FIXME something to create client-side endpoints
         """

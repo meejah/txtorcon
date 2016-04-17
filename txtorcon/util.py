@@ -125,8 +125,8 @@ def maybe_ip_addr(addr):
 
     try:
         return ipaddress.ip_address(addr)
-    except ValueError:
-            pass
+    except ValueError as e:
+        pass
     return str(addr)
 
 

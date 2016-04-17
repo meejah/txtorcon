@@ -27,7 +27,7 @@ class AgentEndpointFactoryForCircuit(object):
         print("URI", uri, uri.host, uri.port)
 ##        return txtorcon.TorClientEndpoint(uri.host, uri.port)
         # XXX host will be *!@#F#$ bytes on py3
-        return self._circ.stream_to(self._reactor, uri.host, uri.port, use_tls=True)
+        return self._circ.stream_via(self._reactor, uri.host, uri.port, use_tls=True)
 
 
 @implementer(IAgentEndpointFactory)

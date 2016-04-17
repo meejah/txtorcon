@@ -674,7 +674,7 @@ class TorState(object):
                 res = yield circ_d
             except Exception:
                 res = None
-                self._attacher_error(Failure())
+                self._attacher_error(stream, Failure())
 
             if res is not None:
                 circ = res  # could be DO_NOT_ATTACH
@@ -719,9 +719,10 @@ class TorState(object):
         """
         Note that tests monkey-patch this to reduce spew
         """
-        if self._attacher is None:
-            print("Failure while attaching stream, and can't notify attacher:", fail)
-        self._attacher.attach_stream_failure(stream, fail)
+        if not self._attachers:
+            print("Failure while attaching stream, and not attachers:", fail)
+        for attacher in self._attachers:
+            attacher.attach_stream_failure(stream, fail)
         return fail
 
     def _circuit_status(self, data):

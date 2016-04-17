@@ -253,13 +253,14 @@ class IOnionService(Interface):
     ports = Attribute("list of str; the ports lines like 'public_port host:local_port'")
 
 
-#class IFilesystemOnionService(Interface):
+# class IFilesystemOnionService(Interface):
 class IFilesystemOnionService(IOnionService):
     # XXX do we want to expose the directory in the API? probably...
     hidden_service_directory = Attribute('The directory where private data is kept')
     group_readable = Attribute("set HiddenServiceGroupReadable if true")
 
 
+# XXX
 class IAuthenticatedService(Interface):
     name = Attribute("which client is this")
     auth_token = Attribute("the keyz!!!")

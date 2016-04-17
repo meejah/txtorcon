@@ -765,7 +765,7 @@ class TorClientEndpoint(object):
     connection with the system tor process. It is recommended that you
     do not instantiate these directly; use clientFromString() or any
     of the @classmethods on this class. Best is to use
-    :meth:`txtorcon.Tor.stream_to`
+    :meth:`txtorcon.Tor.stream_via`
 
     You must pass in a valid Tor SOCKS endpoint. The method
     ``.from_config`` will ensure the underlying Tor SocksPort list
@@ -799,6 +799,7 @@ class TorClientEndpoint(object):
                  host, port,
                  socks_config=None,
                  tls=False,
+                 got_source_port=None,
 
                  _proxy_endpoint_parser=_socks_endpoint_from_config,
                  # XXX our custom SOCKS stuff doesn't support auth (yet?)
@@ -813,6 +814,7 @@ class TorClientEndpoint(object):
         self._socks_config = None if socks_config is None else str(socks_config)
         self._reactor = reactor
         self._proxy_endpoint_parser = _proxy_endpoint_parser
+        self._got_source_port = got_source_port
 
         # XXX think, do we want to expose these like this? Or some
         # other way (because they're for stream-isolation, not actual
@@ -823,9 +825,7 @@ class TorClientEndpoint(object):
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
         # if we have no config, try to get a default one
-        print("connect!", protocolfactory)
         if self._torconfig is None:
-            print("no config")
             try:
                 self._torconfig = yield get_global_tor(self._reactor)
             except Exception as e:
@@ -850,14 +850,11 @@ class TorClientEndpoint(object):
         # now, Tor should have our SocksPort, and self._socks_config
         # is a valid string
         socks_ep = self._proxy_endpoint_parser(self._reactor, self._socks_config)
-        print(socks_ep)
         tor_socks_ep = TorSocksEndpoint(
-            socks_ep, self.host, self.port, self._tls,
+            socks_ep, self.host, self.port, self._tls, self._got_source_port,
         )
 
-        print("about to connect", protocolfactory)
         proto = yield tor_socks_ep.connect(protocolfactory)
-        print("PROTO!", proto)
         defer.returnValue(proto)
 
 

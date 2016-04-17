@@ -14,7 +14,7 @@ from twisted.python import log
 from twisted.internet import defer
 from twisted.internet.interfaces import IReactorTime, IStreamClientEndpoint
 from .interface import IRouterContainer, IStreamAttacher
-from txtorcon.util import find_keywords
+from txtorcon.util import find_keywords, maybe_ip_addr
 from zope.interface import Interface, implementer  # XXX FIXME
 
 # look like "2014-01-25T02:12:14.593772"
@@ -24,26 +24,39 @@ TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 @implementer(IStreamClientEndpoint)
 @implementer(IStreamAttacher)
 class TorCircuitEndpoint(object):
-    def __init__(self, reactor, torstate, circuit, target_endpoint):
+    def __init__(self, reactor, torstate, circuit, target_endpoint, got_source_port):
         self._reactor = reactor
         self._state = torstate
         self._target_endpoint = target_endpoint
         self._circuit = circuit
         self._attached = defer.Deferred()
+        self._got_source_port = got_source_port
 
-    def attach_stream(self, stream, circuits):
-        print("MAYBE!", stream)
-        # XXX note to self: we'll want to listen for "circuit_failed"
-        # etc. on just this one circuit, so that we can .errback()
-        # attached if the circuit fails before we get to do
-        # this-here...
-        print(stream.target_host, stream.target_port)
-        if stream.target_host == self._target_endpoint.host and \
-           stream.target_port == self._target_endpoint.port:
-            print("  YES!", self._circuit)
-            self._attached.callback(None)
-            return self._circuit
+    def attach_stream_failure(self, stream, fail):
+        print("failed:", fail)
         return None
+
+    @defer.inlineCallbacks
+    def attach_stream(self, stream, circuits):
+        real_addr = yield self._got_source_port
+        # joy oh joy, ipaddress wants unicode, Twisted gives us bytes...
+        real_host = maybe_ip_addr(unicode(real_addr.host))
+
+        # Note: matching via source port/addr is way better than
+        # target because multiple streams may be headed at the same
+        # target ... but a bit of a pain to pass it all through to here :/
+        if stream.source_addr == real_host and \
+           stream.source_port == real_addr.port:
+
+            # XXX note to self: we'll want to listen for "circuit_failed"
+            # etc. on just this one circuit, so that we can .errback()
+            # attached if the circuit fails before we get to do
+            # this-here...
+            # overkill? double-checking the target...
+            if stream.target_host == self._target_endpoint.host and \
+               stream.target_port == self._target_endpoint.port:
+                self._attached.callback(None)
+                defer.returnValue(self._circuit)
 
     @defer.inlineCallbacks
     def connect(self, protocol_factory):
@@ -53,12 +66,10 @@ class TorCircuitEndpoint(object):
         # 2. do the "underlying" connect
         # 3. recognize our stream
         # 4. attach it to our circuit
-        print("top-level connect", protocol_factory)
         yield self._state.add_attacher(self, self._reactor)
         try:
-            d = self._target_endpoint.connect(protocol_factory)
-            yield self._attached
-            proto = yield d
+            proto = yield self._target_endpoint.connect(protocol_factory)
+            yield self._attached  # ensure this fired, too
             defer.returnValue(proto)
 
         finally:
@@ -162,8 +173,7 @@ class Circuit(object):
             self._when_built.append(d)
         return d
 
-    # XXX bikeshed about API...
-    def stream_to(self, reactor, torconfig, host, port, use_tls=False):
+    def stream_via(self, reactor, torconfig, host, port, use_tls=False):
         """
         This returns an IStreamClientEndpoint that wraps the passed-in
         endpoint such that it goes via Tor, and via this parciular
@@ -185,13 +195,19 @@ class Circuit(object):
 
         dest = HostnameEndpoint(reactor, "torproject.org", 443)
         circ = yield torstate.build_circuit()  # lets Tor decide the path
-        tor_ep = circ.stream_to(dest)
+        tor_ep = circ.stream_via(dest)
         proto = yield tor_ep.connect(factory)
         ```
         """
         from .endpoints import TorClientEndpoint
-        ep = TorClientEndpoint(reactor, torconfig, host, port, tls=use_tls)
-        return TorCircuitEndpoint(reactor, self.torstate, self, ep)
+        from .torconfig import TorConfig
+        if not isinstance(torconfig, TorConfig):
+            raise ValueError(
+                "'torconfig' should be an instance of TorConfig"
+            )
+        got_source_port = defer.Deferred()
+        ep = TorClientEndpoint(reactor, torconfig, host, port, tls=use_tls, got_source_port=got_source_port)
+        return TorCircuitEndpoint(reactor, self.torstate, self, ep, got_source_port)
 
     @property
     def time_created(self):
