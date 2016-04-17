@@ -315,20 +315,40 @@ network-location hidden. For details of how this works, please read
 
 From an API perspective, here are the parts we care about:
 
- - each service has a secret, private key (with a public part)
-   - these keys can be on disk (in the "hidden service directory");
-   - or, they can be "ephemeral" (secrets only in memory);
+ - each service has a secret, private key (with a corresponding public
+   part):
+    - these keys can be on disk (in the "hidden service directory");
+    - or, they can be "ephemeral" (only in memory);
  - the "host name" is a hash of the public-key (e.g. ``timaq4ygg2iegci7.onion``);
  - a "Descriptor" (which tells clients how to connect) must be published;
  - a service has a list of port-mappings (public -> local)
-   - e.g. "80 127.0.0.1:5432" says you can contact the service
-     publically on port 80, which Tor will redirect to a daemon
-     running locally on port ``5432``;
+    - e.g. ``"80 127.0.0.1:5432"`` says you can contact the service
+      publically on port 80, which Tor will redirect to a daemon
+      running locally on port ``5432``;
  - services can be "authenticated", which means they have a list of
    client names for which Tor creates associated keys (``.auth_token``).
  - Tor has two flavours of service authentication: ``basic`` and
    ``stealth`` -- there's no API-level difference, but the
    ``.hostname`` is unique for each client in the ``stealth`` case.
+
+To summarize the above in a table format, here are the possible types
+of Onion Services; the two blank boxes aren't supported by Tor
+currently (but could be). I list the "interface" classes as well as
+the concrete classes, but you should only rely on methods/attributes
+of the interfaces themselves.
+
++-----------------------------+--------------------------------------+------------------------+
+|                             | Keys on disk                         | Keys in memory         |
++=============================+======================================+========================+
+| **no authentication**       | IFilesystemOnionService              | IOnionService          |
+|                             | FilesystemHiddenService              | EphemeralHiddenService |
++-----------------------------+--------------------------------------+------------------------+
+| **basic authentication**    | IOnionClients                        |                        |
+|                             | AuthenticatedFilesystemHiddenService |                        |
++-----------------------------+--------------------------------------+------------------------+
+| **stealth authentication**  | IOnionClients                        |                        |
+|                             | AuthenticatedFilesystemHiddenService |                        |
++-----------------------------+--------------------------------------+------------------------+
 
 
 Onion Services Endpoints API
@@ -387,10 +407,10 @@ instances -- so you first must decide whether to use an
    <https://www.torproject.org/download/download.html.en>`_ and see a
    Web site, you **do not want** authentication;
  - if you want only people with the URL *and* a secret authentication
-   token to see the Web site, you want **basic** authentication (can
-   have many more clients than stealth auth);
+   token to see the Web site, you want **basic** authentication (these
+   support many more clients than stealth auth);
  - if you don't even want anyone to be able to decrypt the descriptor
-   without the URL and a secret authentication token, you want
+   without a unique URL *and* a secret authentication token, you want
    **stealth** authentication (a lot less scalable; for only "a few"
    clients).
 

@@ -37,10 +37,10 @@ from txtorcon import torconfig
 from txtorcon import TorProcessProtocol
 
 from txtorcon.util import delete_file_or_tree
-from txtorcon.torconfig import parse_client_keys
-from txtorcon.torconfig import AuthenticatedHiddenService
-from txtorcon.torconfig import FilesystemHiddenService
-from txtorcon.torconfig import IOnionService # XXX interfaces.py
+from txtorcon.onion import parse_client_keys
+from txtorcon.onion import AuthenticatedHiddenService
+from txtorcon.onion import FilesystemHiddenService
+from txtorcon.onion import IOnionService # XXX interfaces.py
 from txtorcon.torconfig import CommaList
 
 

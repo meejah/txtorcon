@@ -41,7 +41,7 @@ from twisted.python.util import FancyEqMixin
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
-from .torconfig import FilesystemHiddenService, EphemeralHiddenService
+from .onion import FilesystemHiddenService, EphemeralHiddenService
 from .torconfig import TorConfig
 from .torstate import build_tor_connection
 
