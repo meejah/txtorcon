@@ -899,7 +899,7 @@ class TorConfig(object):
 
         if control is None:
             self._protocol = None
-            self.__dict__['_slutty_'] = None
+            self.__dict__['_open_'] = None
 
         else:
             self._protocol = ITorControlProtocol(control)
@@ -983,7 +983,7 @@ class TorConfig(object):
         self.__dict__['_protocol'] = proto
 
         # FIXME some of this is duplicated from ctor
-        del self.__dict__['_slutty_']
+        del self.__dict__['_open_']
         self.__dict__['post_bootstrap'] = defer.Deferred()
         if proto.post_bootstrap:
             proto.post_bootstrap.addCallback(self.bootstrap)
@@ -1009,15 +1009,15 @@ class TorConfig(object):
         def has_setup_attr(ob):
             return '_setup_' in ob.__dict__
 
-        def has_slutty_attr(ob):
-            return '_slutty_' in ob.__dict__
+        def has_open_attr(ob):
+            return '_open_' in ob.__dict__
 
         def is_hidden_services(svc):
             return svc.lower() == "hiddenservices"
 
         if has_setup_attr(self):
             name = self._find_real_name(name)
-            if not has_slutty_attr(self) and not is_hidden_services(name):
+            if not has_open_attr(self) and not is_hidden_services(name):
                 value = self.parsers[name].validate(value, self, name)
             if isinstance(value, list):
                 value = _ListWrapper(
@@ -1042,13 +1042,13 @@ class TorConfig(object):
         to be called''
         """
         rn = self._find_real_name(name)
-        if '_slutty_' in self.__dict__ and rn in self.unsaved:
+        if '_open_' in self.__dict__ and rn in self.unsaved:
             return self.unsaved[rn]
         self._maybe_create_listwrapper(rn)
         return self.config[rn]
 
     def __contains__(self, item):
-        if item in self.unsaved and '_slutty_' in self.__dict__:
+        if item in self.unsaved and '_open_' in self.__dict__:
             return True
         return item in self.config
 
