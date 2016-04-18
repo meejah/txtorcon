@@ -332,23 +332,22 @@ From an API perspective, here are the parts we care about:
    ``.hostname`` is unique for each client in the ``stealth`` case.
 
 To summarize the above in a table format, here are the possible types
-of Onion Services; the two blank boxes aren't supported by Tor
-currently (but could be). I list the "interface" classes as well as
-the concrete classes, but you should only rely on methods/attributes
-of the interfaces themselves.
+of Onion Service interfaces classes you may interact with (ephemeral
+services don't yet support any authentication).
 
-+-----------------------------+--------------------------------------+------------------------+
-|                             | Keys on disk                         | Keys in memory         |
-+=============================+======================================+========================+
-| **no authentication**       | IFilesystemOnionService              | IOnionService          |
-|                             | FilesystemHiddenService              | EphemeralHiddenService |
-+-----------------------------+--------------------------------------+------------------------+
-| **basic authentication**    | IOnionClients                        |                        |
-|                             | AuthenticatedFilesystemHiddenService |                        |
-+-----------------------------+--------------------------------------+------------------------+
-| **stealth authentication**  | IOnionClients                        |                        |
-|                             | AuthenticatedFilesystemHiddenService |                        |
-+-----------------------------+--------------------------------------+------------------------+
++----------------------------------+--------------------------------------+------------------------+
+|                                  | Keys on disk                         | Keys in memory         |
++==================================+======================================+========================+
+|      **no authentication**       | IFilesystemOnionService              | IOnionService          |
++----------------------------------+--------------------------------------+------------------------+
+| **basic/stealth authentication** | IOnionClients                        |                        |
++----------------------------------+--------------------------------------+------------------------+
+
+Note that it's **up to you to save the private keys** of ephemeral
+services if you want to re-launch them later; the "ephemeral" refers
+to the fact that Tor doesn't persist the private keys -- when Tor
+shuts down, they're gone and there will never be a service at the same
+URI again.
 
 
 Onion Services Endpoints API
@@ -396,7 +395,9 @@ support any type of authentication (however, it may in the future).
 Creating Onion Endpoints
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-XXX the easiest to use API are methods of :class:`txtorcon.Tor`, which allow you to create `IStreamServerEndpoint` instances (bring in from other branch).
+The easiest to use API are methods of :class:`txtorcon.Tor`, which
+allow you to create `IStreamServerEndpoint` instances for the various
+Onion Service types.
 
 Both the main endpoint types have several factory-methods to return
 instances -- so you first must decide whether to use an
@@ -414,20 +415,21 @@ instances -- so you first must decide whether to use an
    **stealth** authentication (a lot less scalable; for only "a few"
    clients).
 
+
 Non-Authenticated Services
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For non-authenticated services, you want to create a
 :class:`txtorcon.TCPHiddenServiceEndpoint` instance.
 
-You can do this via the
-:meth:`txtorcon.TCPHiddenServiceEndpoint.create` factory function if
-you already have a :class:`TorConfig` instance (or with
-:meth:`txtorcon.Tor.create_onion_service()` if you have a
-:class:`txtorcon.Tor` instance handy.
+You can do this via the :meth:`txtorcon.create_onion_service` factory
+function or with :meth:`txtorcon.Tor.create_onion_service`. It's also
+possible to use Twisted's ``clientFromString`` API with the ``onion:``
+prefix. (Thus, any program supporting endpoint strings for
+configuration can use Tor Onion Services with *no code changes*).
 
-Instead, if you don't want to manage launching or connecting to Tor
-yourself, you can use one of the three factory methods -- which all
+If you don't want to manage launching or connecting to Tor yourself,
+you can use one of the three @classmethods on the class, which all
 return a new endpoint instance:
 
  - :meth:`txtorcon.TCPHiddenSeviceEndpoint.global_tor`: uses a Tor
@@ -445,6 +447,10 @@ return a new endpoint instance:
    alone. This uses a tempdir (honoring ``$TMP``) which is deleted
    upon reactor shutdown or loss of the control connection.
 
+Note that nothing actually "happens" until you call ``.listen()`` on
+the ``IStreamServerEndpoint`` at which point Tor will possibly be
+launched, the Onion Service created, and the descriptor published.
+
 
 Authenticated Services
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -458,10 +464,31 @@ authentication method (``"basic"`` or ``"stealth"``).
 For completeness, the methods to create authenticated endpoints are:
 
  - :meth:`txtorcon.Tor.create_authenticated_onion_service()`;
- - :meth:`txtorcon.TCPAuthenticatedHiddenServiceEndpoint.create`;
+ - :meth:`txtorcon.create_authenticated_onion_service`;
  - :meth:`txtorcon.TCPAuthenticatedHiddenSeviceEndpoint.global_tor`
  - :meth:`txtorcon.TCPAuthenticatedHiddenSeviceEndpoint.system_tor`
  - :meth:`txtorcon.TCPAuthenticatedHiddenSeviceEndpoint.private_tor`
+
+
+Onion Service Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you just want to "look at" the configuration of existing onion
+services, they are avaialble via :class:`txtorcon.TorConfig` and the
+``.HiddenServices`` attribute.
+
+This presents a "flattened" version of any authenticated services, so
+that each element in the list of ``.HiddenServices`` is itself at
+least a :class:`txtorcon.IOnionService` (it may also implement other
+interfaces, but every one will implement ``IOnionService``).
+
+You can still set any settable attributes on these objects, and Tor's
+configuration for them will be updated when you call
+:meth:`txtorcon.TorConfig.save` with an **important exception**:
+"ephemeral" services cannot be updated after they're created.
+
+Note that it's possible for other controllers to create ephemeral
+services that your controller can't enumerate.
 
 
 Custom Circuits
