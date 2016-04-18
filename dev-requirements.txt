@@ -11,4 +11,3 @@ pyflakes
 pep8
 mock
 ipaddress>=1.0.16
-GeoIP
