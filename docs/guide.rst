@@ -308,9 +308,10 @@ Onion (Hidden) Services
 -----------------------
 
 An "Onion Service" (also called a "Hidden Service") refers to a
-feature of Tor allowing servers (e.g. a Web site) to keep their
-network-location hidden. For details of how this works, please read
-`Tor's documentation on Hidden Services
+feature of Tor allowing servers (e.g. a Web site) to get additional
+security properties such as: hiding their network location; providing
+end-to-end encryption; or offering authentication. For details of how
+this works, please read `Tor's documentation on Hidden Services
 <https://www.torproject.org/docs/hidden-services.html.en>`_.
 
 From an API perspective, here are the parts we care about:
@@ -330,6 +331,8 @@ From an API perspective, here are the parts we care about:
  - Tor has two flavours of service authentication: ``basic`` and
    ``stealth`` -- there's no API-level difference, but the
    ``.hostname`` is unique for each client in the ``stealth`` case.
+ - See :ref:`create_onion` for details on how to choose which (if any)
+   authentication method you'd like
 
 To summarize the above in a table format, here are the possible types
 of Onion Service interfaces classes you may interact with (ephemeral
