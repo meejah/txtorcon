@@ -362,7 +362,7 @@ No matter which kind of service you need, you interact via Twisted's
 (see ":ref:`create_onion`") which return some instance implementing that
 interface. These instances will also implement
 :class:`txtorcon.IProgressProvider` -- which is a hook to register
-listerers which get updates about Tor's launching progress (if we
+listeners which get updates about Tor's launching progress (if we
 started a new Tor) and Descriptor uploading.
 
 Fundamentally, "authenticated" services are different from
