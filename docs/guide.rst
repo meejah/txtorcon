@@ -326,7 +326,7 @@ From an API perspective, here are the parts we care about:
     - e.g. ``"80 127.0.0.1:5432"`` says you can contact the service
       publically on port 80, which Tor will redirect to a daemon
       running locally on port ``5432``;
-    - "Descriptors" only list the public ports, of course;
+    - note that "Descriptors" don't show this information
  - services can be "authenticated", which means they have a list of
    client names for which Tor creates associated keys (``.auth_token``).
  - Tor has two flavours of service authentication: ``basic`` and
