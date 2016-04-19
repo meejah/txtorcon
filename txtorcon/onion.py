@@ -4,7 +4,11 @@ import functools
 import tempfile
 
 from zope.interface import Interface, Attribute, implementer
+
 from twisted.internet import defer
+from twisted.python import log
+
+from txtorcon.util import find_keywords
 
 # XXX
 # think: port vs ports: and how do we represent that? i.e. if we
