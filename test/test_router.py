@@ -4,6 +4,8 @@ from twisted.internet import defer
 
 from txtorcon.router import Router, hexIdFromHash, hashFromHexId
 
+import pytest
+
 
 class FakeController(object):
     def get_info_raw(self, i):
@@ -26,6 +28,19 @@ class UtilityTests(unittest.TestCase):
             hexIdFromHash(hashFromHexId('00786E43CCC5409753F25E36031C5CEA6EA43702')),
             '$00786E43CCC5409753F25E36031C5CEA6EA43702'
         )
+
+
+@pytest.fixture
+def updated_router():
+    controller = object()
+    router = Router(controller)
+    router.update("foo",
+                  "AHhuQ8zFQJdT8l42Axxc6m6kNwI",
+                  "MAANkj30tnFvmoh7FsjVFr+cmcs",
+                  "2011-12-16 15:11:34",
+                  "77.183.225.114",
+                  "24051", "24052")
+    return router
 
 
 class RouterTests(unittest.TestCase):
@@ -68,30 +83,6 @@ class RouterTests(unittest.TestCase):
         )
         router.flags = ['Named']
         self.assertEqual(router.unique_name, "foo")
-
-    def test_flags(self):
-        controller = object()
-        router = Router(controller)
-        router.update("foo",
-                      "AHhuQ8zFQJdT8l42Axxc6m6kNwI",
-                      "MAANkj30tnFvmoh7FsjVFr+cmcs",
-                      "2011-12-16 15:11:34",
-                      "77.183.225.114",
-                      "24051", "24052")
-        router.flags = "Exit Fast Named Running V2Dir Valid".split()
-        self.assertEqual(router.name_is_unique, True)
-
-    def test_flags_from_string(self):
-        controller = object()
-        router = Router(controller)
-        router.update("foo",
-                      "AHhuQ8zFQJdT8l42Axxc6m6kNwI",
-                      "MAANkj30tnFvmoh7FsjVFr+cmcs",
-                      "2011-12-16 15:11:34",
-                      "77.183.225.114",
-                      "24051", "24052")
-        router.flags = "Exit Fast Named Running V2Dir Valid"
-        self.assertEqual(router.name_is_unique, True)
 
     def test_policy_accept(self):
         controller = object()
@@ -173,3 +164,14 @@ class RouterTests(unittest.TestCase):
     def test_repr_no_update(self):
         router = Router(FakeController())
         repr(router)
+
+
+FLAGS_STRING = "Exit Fast Named Running V2Dir Valid"
+FLAGS = {'list': FLAGS_STRING.split(),
+         'string': FLAGS_STRING}
+
+
+@pytest.mark.parametrize('flags', FLAGS.values(), ids=FLAGS.keys())
+def test_flags(updated_router, flags):
+    updated_router.flags = flags
+    assert updated_router.name_is_unique
