@@ -8,12 +8,18 @@ import txtorcon
 
 @inlineCallbacks
 def main(reactor):
-    tor = yield txtorcon.connect(reactor, TCP4ClientEndpoint(reactor, "localhost", 9051))
+    ep = TCP4ClientEndpoint(reactor, "localhost", 9051)
+    print("Connecting via '{}'".format(ep))
+    tor = yield txtorcon.connect(reactor, ep)
+    print("Connected to tor:", tor)
 
-    tpo = yield tor.dns_resolve('torproject.org')
-    print("'torproject.org' resolves to '{}'".format(tpo))
+    for uri in ['torproject.org']:
+        print("RESOLVE '{}'...".format(uri))
+        answer = yield tor.dns_resolve(uri)
+        print("'{}' resolves to '{}'".format(uri, answer))
 
-    rev = yield tor.dns_resolve_ptr(tpo)
-    print("'{}' reverses to '{}'".format(tpo, rev))
+        print("RESOLVE_PTR '{}'".format(answer))
+        rev = yield tor.dns_resolve_ptr(answer)
+        print("'{}' reverses to '{}'".format(answer, rev))
 
 react(main)
