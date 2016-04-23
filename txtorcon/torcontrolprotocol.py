@@ -365,13 +365,17 @@ class TorControlProtocol(LineOnlyReceiver):
             .. todo:: make some way to automagically obtain valid
                 keys, either from running Tor or parsing control-spec
 
-        :return:
-            a ``Deferred`` which will callback with a dict containing
-            the keys you asked for. If you want to avoid the parsing
-            into a dict, you can use get_info_raw instead.
+        :return: a ``Deferred`` which will callback with a list
+            containing the results of the keys you asked for (in
+            order). If you asked for just one key, there will be no
+            list -- merely the answer.
         """
         d = self.get_info_raw(*args)
         d.addCallback(parse_keywords, key_hints=args)
+        if len(args) == 1:
+            d.addCallback(lambda answers: answers[args[0]])
+        else:
+            d.addCallback(lambda answers: [answers[k] for k in args])
         return d
 
     def get_conf(self, *args):
@@ -764,16 +768,13 @@ class TorControlProtocol(LineOnlyReceiver):
 
         try:
             self.valid_signals = yield self.get_info('signal/names')
-            self.valid_signals = self.valid_signals['signal/names']
         except TorProtocolError:
             self.valid_signals = ["RELOAD", "DUMP", "DEBUG", "NEWNYM",
                                   "CLEARDNSCACHE"]
 
         self.version = yield self.get_info('version')
-        self.version = self.version['version']
         txtorlog.msg("Connected to a Tor with VERSION", self.version)
         eventnames = yield self.get_info('events/names')
-        eventnames = eventnames['events/names']
         self._set_valid_events(eventnames)
 
         yield self.queue_command('USEFEATURE EXTENDED_EVENTS')

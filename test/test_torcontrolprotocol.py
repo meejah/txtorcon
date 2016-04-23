@@ -511,7 +511,7 @@ OK'''.format(unexisting_file))
         """
 
         d = self.protocol.get_info("FOO")
-        d.addCallback(CallbackChecker({"FOO": "\na\nb\nc"}))
+        d.addCallback(CallbackChecker("\na\nb\nc"))
         self.send(b"250+FOO=")
         self.send(b"a")
         self.send(b"b")
@@ -525,7 +525,7 @@ OK'''.format(unexisting_file))
         """
 
         d = self.protocol.get_info("FOO")
-        d.addCallback(CallbackChecker({"FOO": "\na="}))
+        d.addCallback(CallbackChecker("\na="))
         self.send(b"250+FOO=")
         self.send(b"a=")
         self.send(b".")
@@ -684,7 +684,7 @@ OK'''.format(unexisting_file))
         self.send(b"250 OK")
 
         d = self.protocol.get_info("a")
-        d.addCallback(CallbackChecker({'a': 'one'})).addErrback(self.fail)
+        d.addCallback(CallbackChecker('one')).addErrback(self.fail)
         self.send(b"250-a=one")
         self.send(b"250 OK")
         self.send(b"650 CIRC 1000 EXTENDED moria1,moria2")
@@ -696,7 +696,7 @@ OK'''.format(unexisting_file))
 
     def test_getinfo(self):
         d = self.protocol.get_info("version")
-        d.addCallback(CallbackChecker({'version': '0.2.2.34'}))
+        d.addCallback(CallbackChecker('0.2.2.34'))
         d.addErrback(self.fail)
 
         self.send(b"250-version=0.2.2.34")
@@ -744,7 +744,7 @@ iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 .
 250 OK"""
         d = self.protocol.get_info("desc/name/moria1")
-        d.addCallback(CallbackChecker({'desc/name/moria1': '\n' + '\n'.join(descriptor_info.decode('ascii').split('\n')[1:-2])}))
+        d.addCallback(CallbackChecker('\n' + '\n'.join(descriptor_info.decode('ascii').split('\n')[1:-2])))
         d.addErrback(self.fail)
 
         for line in descriptor_info.split(b'\n'):
@@ -759,7 +759,7 @@ platform Tor 0.2.5.0-alpha-dev on Linux
 250 OK"""
         d = self.protocol.get_info("desc/name/moria1")
         gold = "\nrouter moria1 128.31.0.34 9101 0 9131\nplatform Tor 0.2.5.0-alpha-dev on Linux"
-        d.addCallback(CallbackChecker({'desc/name/moria1': gold}))
+        d.addCallback(CallbackChecker(gold))
         d.addErrback(self.fail)
 
         for line in descriptor_info.split(b'\n'):
