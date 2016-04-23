@@ -322,6 +322,8 @@ class TorConfig(object):
 
         XXX we could avoid the "maybe call .save()" thing; worth it?
         """
+        yield self.post_bootstrap
+
         if socks_config is None:
             if len(self.SocksPort) == 0:
                 raise RuntimeError(

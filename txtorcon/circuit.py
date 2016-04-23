@@ -27,13 +27,15 @@ TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 @implementer(IStreamClientEndpoint)
 @implementer(IStreamAttacher)
 class TorCircuitEndpoint(object):
-    def __init__(self, reactor, torstate, circuit, target_endpoint, got_source_port):
+    def __init__(self, reactor, torstate, circuit, target_endpoint, got_source_port,
+                 socks_config=None):
         self._reactor = reactor
         self._state = torstate
         self._target_endpoint = target_endpoint
         self._circuit = circuit
         self._attached = defer.Deferred()
         self._got_source_port = got_source_port
+        self._socks_config = socks_config
 
     def attach_stream_failure(self, stream, fail):
         print("failed:", fail)
@@ -224,12 +226,14 @@ class Circuit(object):
             raise ValueError(
                 "'torconfig' should be an instance of TorConfig"
             )
+        socks_endpoint = torconfig.socks_endpoint(reactor, socks_config)
+        # note socks_endpoint is a Deferred() right now, but that's okay
         got_source_port = defer.Deferred()
         ep = TorClientEndpoint(
-            reactor, torconfig, host, port,
+            reactor, host, port,
+            socks_endpoint,
             tls=use_tls,
             got_source_port=got_source_port,
-            socks_config=socks_config,
         )
         return TorCircuitEndpoint(reactor, self._torstate, self, ep, got_source_port)
 

@@ -49,8 +49,9 @@ def resolve_ptr(tor_endpoint, hostname):
 @implementer(IStreamClientEndpoint)
 class TorSocksEndpoint(object):
     """
-    Represents a endpoint which will talk to a Tor SOCKS port. These
-    should usually not be instantiated directly, instead use
+    Represents an endpoint which will talk to a Tor SOCKS port.
+
+    These should usually not be instantiated directly, instead use
     :meth:`txtorcon.TorConfig.socks_endpoint`.
     """
     def __init__(self, socks_endpoint, host, port, tls=False, got_source_port=None):

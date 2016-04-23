@@ -774,7 +774,7 @@ class TorClientEndpoint(object):
     def __init__(self,
                  reactor,
                  host, port,
-                 socks_endpoint,
+                 socks_endpoint,  # can be Deferred
                  tls=False,
                  got_source_port=None,
 
