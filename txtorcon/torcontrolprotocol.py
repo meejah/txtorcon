@@ -4,6 +4,11 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
+import os
+import re
+import sys
+import base64
+import traceback
 from binascii import b2a_hex
 
 from twisted.python import log
@@ -20,9 +25,6 @@ from txtorcon.log import txtorlog
 from txtorcon.interface import ITorControlProtocol
 from .spaghetti import FSM, State, Transition
 
-import os
-import re
-import base64
 
 DEFAULT_VALUE = 'DEFAULT'
 
@@ -109,7 +111,11 @@ class Event(object):
 
     def got_update(self, data):
         for cb in self.callbacks:
-            cb(data)
+            try:
+                cb(data)
+            except Exception as e:
+                print("notifying '{}' failed: {}".format(cb, e), file=sys.stderr)
+                traceback.print_stack()
 
 
 def unquote(word):

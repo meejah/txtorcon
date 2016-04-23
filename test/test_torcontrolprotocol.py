@@ -817,6 +817,40 @@ platform Tor 0.2.5.0-alpha-dev on Linux
         self.send(b"650 STREAM 2345 NEW 4321 2.3.4.5:666 REASON=MISC")
         self.assertEqual(listener.stream_events, 2)
 
+    def test_eventlistener_exception(self):
+        self.protocol._set_valid_events('STREAM')
+
+        class EventListener(object):
+            stream_events = 0
+
+            def __call__(self, data):
+                self.stream_events += 1
+                raise RuntimeError("foooo!")
+
+        listener = EventListener()
+        self.protocol.add_event_listener('STREAM', listener)
+
+        import sys
+        from StringIO import StringIO
+        orig = sys.stdout, sys.stderr
+        sys.stderr = StringIO()
+        sys.stdout = StringIO()
+        try:
+            d = self.protocol.defer
+            self.send(b"250 OK")
+            self._wait(d)
+            self.send(b"650 STREAM 1234 NEW 4321 1.2.3.4:555 REASON=MISC")
+            self.send(b"650 STREAM 2345 NEW 4321 2.3.4.5:666 REASON=MISC")
+            self.assertEqual(listener.stream_events, 2)
+
+        finally:
+            stderrdata = sys.stderr.getvalue()
+            stdoutdata = sys.stdout.getvalue()
+            sys.stdout, sys.stderr = orig
+
+        self.assertIn('print_stack', stderrdata)
+        self.assertIn('foooo!', stderrdata)
+
     def test_remove_eventlistener(self):
         self.protocol._set_valid_events('STREAM')
 
