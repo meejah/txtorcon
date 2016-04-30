@@ -15,6 +15,7 @@ from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
+from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.util import find_keywords, py3k
 from txtorcon.interface import ITorControlProtocol
 from .onion import *
@@ -320,6 +321,11 @@ class TorConfig(object):
         isn't already in the underlying tor, we add it. Note that this
         method may call :meth:`txtorcon.TorConfig.save()` on this instance.
 
+        XXX socks_config should be .. i dunno, but there's fucking
+        options and craziness, e.g. default Tor Browser Bundle is:
+        ['9150 IPv6Traffic PreferIPv6 KeepAliveIsolateSOCKSAuth',
+        '9155']
+
         XXX we could avoid the "maybe call .save()" thing; worth it?
         """
         yield self.post_bootstrap
@@ -331,14 +337,32 @@ class TorConfig(object):
                 )
             socks_config = self.SocksPort[0]
         else:
-            if socks_config not in self.SocksPort:
+            if not any([socks_config in port for port in self.SocksPort]):
                 # need to configure Tor
                 self.SocksPort.append(socks_config)
-                yield self.save()
+                try:
+                    yield self.save()
+                except TorProtocolError as e:
+                    extra = ''
+                    if socks_config.startswith('unix:'):
+                        # XXX so why don't we check this for the
+                        # caller, earlier on?
+                        extra = '\nNote Tor has specific ownship/permissions ' +\
+                                'requirements for unix sockets and parent dir.'
+                    raise RuntimeError(
+                        "While configuring SOCKSPort to '{}', error from"
+                        " Tor: {}{}".format(
+                            socks_config, e, extra
+                        )
+                    )
 
         if socks_config.startswith('unix:'):
             socks_ep = UNIXClientEndpoint(reactor, socks_config[5:])
         else:
+            # options like KeepAliveIsolateSOCKSAuth can be appended
+            # to a SocksPort line...
+            if ' ' in socks_config:
+                socks_config = socks_config.split()[0]
             if ':' in socks_config:
                 host, port = socks_config.split(':', 1)
                 port = int(port)

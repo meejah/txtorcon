@@ -7,7 +7,7 @@ from urlparse import urlparse
 
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import react
-from twisted.internet.endpoints import UNIXClientEndpoint, HostnameEndpoint
+from twisted.internet.endpoints import TCP4ClientEndpoint, HostnameEndpoint
 from twisted.web.iweb import IAgentEndpointFactory
 from twisted.web.client import Agent, readBody
 from zope.interface import implementer
@@ -17,14 +17,14 @@ import txtorcon
 
 @inlineCallbacks
 def main(reactor):
-    ep = UNIXClientEndpoint(reactor, '/var/run/tor/control')
+    # use port 9051 for system tor instances, or:
+    # ep = UNIXClientEndpoint(reactor, '/var/run/tor/control')
+    ep = TCP4ClientEndpoint(reactor, '127.0.0.1', 9151)
     tor = yield txtorcon.connect(reactor, ep)
     print("Connected:", tor)
 
     state = yield tor.create_state()
-    # a configuration for "SocksPort 9998" will be added if it doesn't
-    # already exist
-    socks = tor.config.socks_endpoint(reactor, "9998")
+    socks = tor.config.socks_endpoint(reactor, u"9150")
 
     # create a custom circuit; in this case we're just letting Tor
     # decide the path -- but this could be done several other ways

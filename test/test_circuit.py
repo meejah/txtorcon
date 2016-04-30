@@ -11,6 +11,7 @@ from txtorcon import build_timeout_circuit
 from txtorcon import Stream
 from txtorcon import TorControlProtocol
 from txtorcon import TorState
+from txtorcon import TorConfig
 from txtorcon import Router
 from txtorcon.router import hexIdFromHash
 from txtorcon.interface import IRouterContainer
@@ -369,3 +370,14 @@ class CircuitTests(unittest.TestCase):
 
         self.assertTrue(d.called)
         self.assertTrue(isinstance(d.result, Failure))
+
+    def test_stream_success(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+
+        config = TorConfig(tor)
+        circuit = Circuit(tor)
+        reactor = Mock()
+
+        ep = circuit.stream_via(reactor, config, 'torproject.org', 443, use_tls=True)

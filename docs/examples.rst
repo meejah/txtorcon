@@ -3,11 +3,66 @@
 Examples
 ========
 
-In the :file:`examples/` sub-directory are a few different
-mostly-simple ways of using txtorcon. They all show how to set up a
-connection and then wait for and use various information from Tor.
+The examples are grouped by functionality and serve as mini-HOWTOs --
+if you have a use-case that is missing, it may be useful to add an
+example, so please file a bug.
 
-.. _hello_darkweb.py:
+All files are in the :file:`examples/` sub-directory and are ready to
+run, usually with defaults designed to work with Tor Browser Bundle
+(``localhost:9151``).
+
+XXX maybe honour TOR_CONTROL env-var for just examples?
+
+
+:file:`../examples/web_client.py`
+----------------------------------
+
+:download:`Download the example <../examples/web_client.py>`.
+
+Uses `twisted.web.client
+<http://twistedmatrix.com/documents/current/web/howto/client.html>`_
+to download a Web page using a ``twisted.web.client.Agent``, via any
+circuit Tor chooses.
+
+
+:file:`../examples/web_client_custom_circuit.py`
+------------------------------------------------
+
+:download:`Download the example <../examples/web_client_custom_circuit.py>`.
+
+Builds a custom circuit, and then uses `twisted.web.client
+<http://twistedmatrix.com/documents/current/web/howto/client.html>`_
+to download a Web page using the circuit created.
+
+
+:file:`../examples/web_onion_service.py`
+------------------------------------------------
+
+:download:`Download the example <../examples/web_onion_service.py>`.
+
+XXX call this one "_endpoint.py" and move _ephemeral here i think
+
+This uses a server endpoint string via the `serverFromString` API in Twisted to do "whatever it takes" to set up a new Onion (location-hidden) service. If a Twisted application lets you configure server endpoint strings to listen on, you may get hidden-service support without having to change any code.
+
+If, instead, you're writing Python code and wish to have more control
+over the endpoint used (and e.g. whether a new Tor instance is
+launched or not) use one of the following examples.
+
+
+:file:`../examples/web_onion_service_ephemeral.py`
+------------------------------------------------
+
+:download:`Download the example <../examples/web_onion_service.py>`.
+
+
+Set up a `twisted.web.server <>`_ listening as a onion service. This
+uses the ``ADD_ONION`` API from Tor. If you don't know what that
+means, see `the spec
+<https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1365>`_. If
+you know you want to keep the private key for your onion service on
+disk somewhere, see the next example.
+
+
 
 :file:`hello_darkweb.py`
 ------------------------

@@ -10,6 +10,7 @@ import shlex
 import tempfile
 import functools
 from io import StringIO
+import six
 
 from twisted.python import log
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
@@ -384,15 +385,37 @@ class Tor(object):
     # it returns an agent that goes via the one particular circuit.
     def web_agent(self, socks_config=None, pool=None):
         """
-        :param socks_config: If supplied, should be a valid option for
-            Tor's ``SocksPort`` option; if this isn't available in the
-            underlying Tor we use, it will be added (and then used).
+        :param socks_config: If ``None`` (the default), a suitable SOCKS
+            port is chosen from our config (or added). If supplied, should
+            be either a string which is a valid option for Tor's
+            ``SocksPort`` option **or** a Deferred which fires an
+            IStreamClientEndpoint (e.g. the return-value from
+            :meth:`txtorcon.TorConfig.socks_endpoint`)
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
+        if socks_config is not None:
+            if isinstance(socks_config, six.text_type):
+                socks_config = self.config.socks_endpoint(
+                    self._reactor,
+                    socks_config,
+                )
+            elif isinstance(socks_config, str):
+                # play nice(r) on python2
+                socks_config = self.config.socks_endpoint(
+                    self._reactor,
+                    six.text_type(socks_config),
+                )
+            else:
+                if not isinstance(socks_config, Deferred):
+                    if not isinstance(socks_config, IStreamClientEndpoint):
+                        raise ValueError(
+                            "'socks_config' should be text, a Deferred or an "
+                            "IStreamClientEndpoint (got '{}')".format(type(socks_config))
+                        )
         return web.tor_agent(
             self._reactor,
-            self.config.socks_endpoint(self._reactor, socks_config),
+            socks_config,
             pool=pool,
         )
 
@@ -446,7 +469,7 @@ class Tor(object):
         # users should use this or another factory-method to
         # instantiate them...
         return TCPHiddenServiceEndpoint(
-            self._reactor, self.config, port,
+            self._reactor, self, port,
             hidden_service_dir=None,
             local_port=None,
             ephemeral=True,
@@ -455,7 +478,7 @@ class Tor(object):
 
     def create_onion_disk_endpoint(self, port, hs_dir=None):
         return TCPHiddenServiceEndpoint(
-            self._reactor, self.config, port,
+            self._reactor, self, port,
             hidden_service_dir=hs_dir,
             local_port=None,
             ephemeral=False,
@@ -484,6 +507,11 @@ class Tor(object):
     def shutdown(self):
         # shuts down the Tor instance; nothing else will work after this
         pass
+
+    def __str__(self):
+        return "<Tor version='{tor_version}'>".format(
+            tor_version=self._protocol.version,
+        )
 
 
 class TorNotFound(RuntimeError):

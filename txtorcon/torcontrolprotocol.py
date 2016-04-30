@@ -115,7 +115,7 @@ class Event(object):
                 cb(data)
             except Exception as e:
                 print("notifying '{}' failed: {}".format(cb, e), file=sys.stderr)
-                traceback.print_stack()
+                traceback.print_exc()
 
 
 def unquote(word):

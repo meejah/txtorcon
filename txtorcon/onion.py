@@ -151,6 +151,15 @@ class IOnionClient(IOnionService):
 class FilesystemHiddenService(object):
     """
     """
+
+    @staticmethod
+    @defer.inlineCallbacks
+    def create(config, hsdir, ports, auth=None):
+        fhs = FilesystemHiddenService(config, hsdir, ports, auth=auth)
+        config.HiddenServices.append(fhs)
+        yield self._tor.config.save()
+        defer.returnValue(fhs)
+
     def __init__(self, config, thedir, ports,
                  auth=None, ver=2, group_readable=0):
         if not isinstance(ports, list):
@@ -274,7 +283,8 @@ class EphemeralHiddenService(object):
     def create(cls, config, ports,
                detach=False,
                discard_key=False,
-               private_key=None):
+               private_key=None,
+               progress=None):
         """
         returns a new EphemeralHiddenService after adding it to the
         provided config and ensuring at least one of its descriptors
@@ -305,6 +315,7 @@ class EphemeralHiddenService(object):
         attempted_uploads = set()
         confirmed_uploads = set()
         failed_uploads = set()
+        pct = 101.0
 
         def hs_desc(evt):
             """
@@ -312,17 +323,30 @@ class EphemeralHiddenService(object):
             "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
             [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
             """
+            global pct
             args = evt.split()
             subtype = args[0]
             if subtype == 'UPLOAD':
                 if args[1] == onion.hostname[:-6]:
                     attempted_uploads.add(args[3])
+                    if progress:
+                        progress(
+                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
+                            "wait_descriptor",
+                            "Upload to {} started".format(args[3])
+                        )
 
             elif subtype == 'UPLOADED':
                 # we only need ONE successful upload to happen for the
                 # HS to be reachable.
                 # unused? addr = args[1]
                 if args[3] in attempted_uploads:
+                    if progress:
+                        progress(
+                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
+                            "wait_descriptor",
+                            "Successful upload to {}".format(args[3])
+                        )
                     confirmed_uploads.add(args[3])
                     log.msg("Uploaded '{}' to '{}'".format(onion.hostname, args[3]))
                     uploaded.callback(onion)
@@ -330,6 +354,12 @@ class EphemeralHiddenService(object):
             elif subtype == 'FAILED':
                 if args[1] == onion.hostname[:-6]:
                     failed_uploads.add(args[3])
+                    if progress:
+                        progress(
+                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
+                            "wait_descriptor",
+                            "Failed upload to {}".format(args[3])
+                        )
                     if failed_uploads == attempted_uploads:
                         msg = "Failed to upload '{}' to: {}".format(
                             onion.hostname,

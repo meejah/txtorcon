@@ -190,7 +190,11 @@ class Circuit(object):
             pool=pool,
         )
 
-    def stream_via(self, reactor, torconfig, host, port, use_tls=False, socks_config=None):
+    # XXX should make this API match above web_agent (i.e. pass a
+    # socks_endpoint) or change the above...
+    def stream_via(self, reactor, host, port,
+                   socks_endpoint,
+                   use_tls=False):
         """
         This returns an IStreamClientEndpoint that wraps the passed-in
         endpoint such that it goes via Tor, and via this parciular
@@ -214,20 +218,11 @@ class Circuit(object):
         <http://treq.readthedocs.org/en/latest/>`_ or ``Agent``
         directly so call :meth:`txtorcon.Circuit.web_agent` instead.
 
-        :param socks_config: If supplied, should be a valid option for
-            Tor's ``SocksPort`` option; if this isn't available in the
-            underlying Tor we use, it will be added (and then used). If
-            `None` (the default) we'll use the first configured SOCKS
-            port.
+        :param socks_endpoint: should be a Deferred firing a valid
+            IStreamClientEndpoint pointing at a Tor SOCKS port (or an
+            IStreamClientEndpoint already).
         """
         from .endpoints import TorClientEndpoint
-        from .torconfig import TorConfig
-        if not isinstance(torconfig, TorConfig):
-            raise ValueError(
-                "'torconfig' should be an instance of TorConfig"
-            )
-        socks_endpoint = torconfig.socks_endpoint(reactor, socks_config)
-        # note socks_endpoint is a Deferred() right now, but that's okay
         got_source_port = defer.Deferred()
         ep = TorClientEndpoint(
             reactor, host, port,
