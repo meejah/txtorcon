@@ -553,11 +553,12 @@ class TorOnionAddress(FancyEqMixin, object):
 
     :ivar clients: A list of IHiddenServiceClient instances, at least 1.
     """
-    compareAttributes = ('type', 'onion_port', 'clients')
+    compareAttributes = ('type', 'onion_port', 'onion_key')
     type = 'onion'
 
     def __init__(self, port, hs):
         self.onion_port = port
+        self.onion_key = hs.private_key
         try:
             self.onion_uri = hs.hostname
         except IOError:

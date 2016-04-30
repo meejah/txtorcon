@@ -33,5 +33,6 @@ def main(reactor):
 
     port = yield ep.listen(server.Site(res))
     print("Site listening: {}".format(port.getHost()))
+    print("Private key:\n{}".format(port.getHost().onion_key))
     yield defer.Deferred()  # wait forever
 task.react(main)
