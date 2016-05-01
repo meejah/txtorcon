@@ -314,7 +314,8 @@ class TCPHiddenServiceEndpoint(object):
             local_port=None,
             control_port=None,
             ephemeral=None,
-            private_key=None):
+            private_key=None,
+            progress=None):
         pass
 
     def __init__(self, reactor, tor, public_port,
@@ -516,9 +517,6 @@ class TCPHiddenServiceEndpoint(object):
                     auth=authlines,
                     progress=self._tor_progress_update,
                 )
-                # XXX required? why not in above ^ call
-                self._tor.config.HiddenServices.append(self.hiddenservice)
-                yield self._tor.config.save()
         else:
             for hs in self._tor.config.HiddenServices:
                 if hs.dir == self.hidden_service_dir:

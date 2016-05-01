@@ -593,14 +593,21 @@ class TorConfig(object):
         for (key, value) in self.unsaved.items():
             if key == 'HiddenServices':
                 self.config['HiddenServices'] = value
+                services = set()
+                # authenticated services get flattened into the HiddenServices list...
                 for hs in value:
-                    # XXX should use interface class instead
-                    if not isinstance(hs, FilesystemHiddenService):
+                    if IOnionClient.providedBy(hs):
+                        services.add(IOnionClient(hs).parent)
+                    elif isinstance(hs, EphemeralHiddenService):
                         raise ValueError(
                             "Only txtorcon.HiddenService instances may be added"
                             " via TorConfig.hiddenservices; ephemeral services"
                             " must be created with 'create_onion_service'."
                         )
+                    else:
+                        services.add(hs)
+
+                for hs in services:
                     for (k, v) in hs.config_attributes():
                         if k == 'HiddenServiceDir':
                             if v not in directories:
@@ -756,8 +763,10 @@ class TorConfig(object):
                         )
                         hs.append(service)
                     else:
+                        auth_type, clients = auth.split(' ', 1)
+                        clients = clients.split(',')
                         parent_service = AuthenticatedHiddenService(
-                            self, directory, ports, auth, ver, group_read
+                            self, directory, ports, auth_type, clients, ver, group_read
                         )
                         for client_name in parent_service.client_names():
                             hs.append(parent_service.get_client(client_name))
@@ -790,7 +799,7 @@ class TorConfig(object):
                     )
                 ports = []
                 ver = None
-                auth = []
+                auth = None
                 group_read = 0
 
             elif k == 'HiddenServicePort':
@@ -800,7 +809,10 @@ class TorConfig(object):
                 ver = int(v)
 
             elif k == 'HiddenServiceAuthorizeClient':
-                auth.append(v)
+                if auth is not None:
+                    # definitely error, or keep going?
+                    raise ValueError("Multiple HiddenServiceAuthorizeClient lines for one service")
+                auth = v
 
             elif k == 'HiddenServiceDirGroupReadable':
                 group_read = int(v)

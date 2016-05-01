@@ -142,8 +142,7 @@ class IOnionClient(IOnionService):
     """
     auth_token = Attribute('Some secret bytes')
     name = Attribute('str')  # XXX required? probably.
-    # XXX do we want/need to reveal the "parent"
-    # parent = Attribute("XXX?")
+    parent = Attribute('the IOnionClients instance who owns me')
 
 
 @implementer(IOnionService)
@@ -154,10 +153,75 @@ class FilesystemHiddenService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(config, hsdir, ports, auth=None):
+    def create(config, hsdir, ports, auth=None, progress=None):
         fhs = FilesystemHiddenService(config, hsdir, ports, auth=auth)
         config.HiddenServices.append(fhs)
-        yield self._tor.config.save()
+        # we .save() down below, after setting HS_DESC listener
+
+        # XXX fixme dupe of the other create() methods hs_desc listener
+        # we need to wait for confirmation that we've published the
+        # descriptor to at least one Directory Authority. This means
+        # watching the 'HS_DESC' event.
+        uploaded = defer.Deferred()
+        attempted_uploads = set()
+        confirmed_uploads = set()
+        failed_uploads = set()
+        pct = 101.0
+
+        def hs_desc(evt):
+            """
+            From control-spec:
+            "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
+            [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
+            """
+            print("HS_DESC", evt)
+            global pct
+            args = evt.split()
+            subtype = args[0]
+            if subtype == 'UPLOAD':
+                if args[1] == fhs.hostname[:-6]:
+                    attempted_uploads.add(args[3])
+                    if progress:
+                        progress(
+                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
+                            "wait_descriptor",
+                            "Upload to {} started".format(args[3])
+                        )
+
+            elif subtype == 'UPLOADED':
+                # we only need ONE successful upload to happen for the
+                # HS to be reachable.
+                # unused? addr = args[1]
+                if args[3] in attempted_uploads:
+                    if progress:
+                        progress(
+                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
+                            "wait_descriptor",
+                            "Successful upload to {}".format(args[3])
+                        )
+                    confirmed_uploads.add(args[3])
+                    log.msg("Uploaded '{}' to '{}'".format(fhs.hostname, args[3]))
+                    uploaded.callback(fhs)
+
+            elif subtype == 'FAILED':
+                if args[1] == fhs.hostname[:-6]:
+                    failed_uploads.add(args[3])
+                    if progress:
+                        progress(
+                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
+                            "wait_descriptor",
+                            "Failed upload to {}".format(args[3])
+                        )
+                    if failed_uploads == attempted_uploads:
+                        msg = "Failed to upload '{}' to: {}".format(
+                            fhs.hostname,
+                            ', '.join(failed_uploads),
+                        )
+                        uploaded.errback(RuntimeError(msg))
+        yield config.tor_protocol.add_event_listener('HS_DESC', hs_desc)
+        yield config.save()
+        yield uploaded
+        yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
         defer.returnValue(fhs)
 
     def __init__(self, config, thedir, ports,
@@ -249,7 +313,7 @@ class FilesystemHiddenService(object):
         # -> how to do ADD_ONION stuff, anyway?
         # -> hmm, could do helper methods, NOT member func (yes! <-- this one)
 
-        rtn = [('HiddenServiceDir', str(self.dir))]
+        rtn = [('HiddenServiceDir', str(self._dir))]
         if self._config._supports['HiddenServiceDirGroupReadable'] \
            and self.group_readable:
             rtn.append(('HiddenServiceDirGroupReadable', str(1)))
@@ -454,6 +518,10 @@ class AuthenticatedHiddenServiceClient(object):
         # XXX group_readable
 
     @property
+    def parent(self):
+        return self._parent
+
+    @property
     def ports(self):
         return self._ports
 
@@ -467,6 +535,7 @@ class AuthenticatedHiddenServiceClient(object):
         return self._parent.group_readable
 
 
+@implementer(IFilesystemOnionService)
 @implementer(IAuthenticatedService)
 class AuthenticatedHiddenService(object):
     """
@@ -484,16 +553,34 @@ class AuthenticatedHiddenService(object):
       HiddenServicePort 80 127.0.0.1:99
       HiddenServiceAuthorizeClient basic foo,bar,baz
     """
-    def __init__(self, config, thedir, ports, clients=None, ver=2, group_readable=0):
+    def __init__(self, config, thedir, ports, auth_type='basic', clients=None, ver=2, group_readable=0):
         # XXX do we need version here? probably...
         self._config = config
         self._dir = thedir
         self._ports = ports
+        self._auth_type = auth_type
+        if auth_type not in ['basic', 'stealth']:
+            raise ValueError("Unknown auth_type '{}'".format(auth_type))
         # dict: name -> IAuthenticatedOnionClient
-        self._clients = None  # XXX validate vs. clients if not None?
+        self._clients = None
+        self._expected_clients = clients
+        if clients and any(' ' in client for client in clients):
+            raise ValueError("Client names can't have spaces")
         self._version = ver
         self._group_readable = group_readable
         self._client_keys = None
+
+    @property
+    def hidden_service_directory(self):
+        return self._dir
+
+    @property
+    def group_readable(self):
+        return self._group_readable
+
+    @property
+    def ports(self):
+        return self._ports
 
     # basically everything in HiddenService, except the only API we
     # provide is "clients" because there's a separate .onion hostname
@@ -546,22 +633,30 @@ class AuthenticatedHiddenService(object):
                     token=cookie,
                 )
         self._clients = clients
+        if self._expected_clients:
+            for expected in self._expected_clients:
+                if expected not in self._clients:
+                    raise RuntimeError(
+                        "Didn't find xpected client '{}'".format(expected)
+                    )
 
     def config_attributes(self):
         """
         Helper method used by TorConfig when generating a torrc file.
         """
 
-        rtn = [('HiddenServiceDir', str(self.dir))]
-        if self.conf._supports['HiddenServiceDirGroupReadable'] \
+        rtn = [('HiddenServiceDir', str(self._dir))]
+        if self._config._supports['HiddenServiceDirGroupReadable'] \
            and self.group_readable:
             rtn.append(('HiddenServiceDirGroupReadable', str(1)))
         for port in self.ports:
             rtn.append(('HiddenServicePort', str(port)))
-        if self.version:
-            rtn.append(('HiddenServiceVersion', str(self.version)))
-        for authline in self.authorize_client:
-            rtn.append(('HiddenServiceAuthorizeClient', str(authline)))
+        if self._version:
+            rtn.append(('HiddenServiceVersion', str(self._version)))
+        rtn.append((
+            'HiddenServiceAuthorizeClient',
+            "{} {}".format(self._auth_type, ','.join(self.client_names()))
+         ))
         return rtn
 
 

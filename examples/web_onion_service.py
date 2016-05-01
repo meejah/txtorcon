@@ -16,19 +16,26 @@ from twisted.internet import defer, task, endpoints
 from twisted.web import server, static, resource
 import txtorcon
 
+@defer.inlineCallbacks
 def main(reactor):
+    # a simple Web site; could be any other listening service of course
     res = resource.Resource()
     res.putChild('/', static.Data("<html>Hello, onion-service world!</html>", 'text/html'))
-    ep = endpoints.serverFromString(reactor, "onion:80")
+
+    # "onion:" is for Tor Onion Services, and the only required
+    # argument is the public port we advertise. You can pass
+    # "controlPort=9051" for example, to connect to a system Tor
+    # (accepts paths, too, e.g. "controlPort=/var/run/tor/control")
+    ep = endpoints.serverFromString(reactor, "onion:80:controlPort=9251")
+    #ep = endpoints.serverFromString(reactor, "onion:80")
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
     txtorcon.IProgressProvider(ep).add_progress_listener(on_progress)
+    print("Note: descriptor upload can take several minutes")
 
-    def site_listening(port):
-        print("Site listening: {}".format(port.getHost()))
-    d = ep.listen(server.Site(res))
-    d.addCallback(site_listening)
-    d.addCallback(lambda _: defer.Deferred())  # wait forever
-    return d
+    port = yield ep.listen(server.Site(res))
+    print("Site listening: {}".format(port.getHost()))
+    print("Private key:\n{}".format(port.getHost().onion_key))
+    yield defer.Deferred()  # wait forever
 task.react(main)
