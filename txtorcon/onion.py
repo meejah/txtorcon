@@ -199,7 +199,6 @@ class FilesystemHiddenService(object):
             "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
             [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
             """
-            print("HS_DESC", evt)
             global pct
             args = evt.split()
             subtype = args[0]
