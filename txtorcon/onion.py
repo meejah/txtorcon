@@ -158,8 +158,6 @@ class FilesystemHiddenService(object):
         config.HiddenServices.append(fhs)
         # we .save() down below, after setting HS_DESC listener
 
-        uploaded = defer.Deferred()
-
         if not version_at_least(config.tor_protocol.version, 0, 2, 7, 2):
             if progress:
                 progress(
@@ -182,70 +180,12 @@ class FilesystemHiddenService(object):
                     106, "wait_desctiptor",
                     "So, we'll just declare it done right now..."
                 )
-                uploaded.callback(None)
+                uploaded = defer.succeed(None)
+        else:
+            uploaded = _await_descriptor_upload(config, fhs, progress)
 
-        # XXX fixme dupe of the other create() methods hs_desc listener
-        # we need to wait for confirmation that we've published the
-        # descriptor to at least one Directory Authority. This means
-        # watching the 'HS_DESC' event.
-        attempted_uploads = set()
-        confirmed_uploads = set()
-        failed_uploads = set()
-        pct = 101.0
-
-        def hs_desc(evt):
-            """
-            From control-spec:
-            "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
-            [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
-            """
-            global pct
-            args = evt.split()
-            subtype = args[0]
-            if subtype == 'UPLOAD':
-                if args[1] == fhs.hostname[:-6]:
-                    attempted_uploads.add(args[3])
-                    if progress:
-                        progress(
-                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
-                            "wait_descriptor",
-                            "Upload to {} started".format(args[3])
-                        )
-
-            elif subtype == 'UPLOADED':
-                # we only need ONE successful upload to happen for the
-                # HS to be reachable.
-                # unused? addr = args[1]
-                if args[3] in attempted_uploads:
-                    if progress:
-                        progress(
-                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
-                            "wait_descriptor",
-                            "Successful upload to {}".format(args[3])
-                        )
-                    confirmed_uploads.add(args[3])
-                    log.msg("Uploaded '{}' to '{}'".format(fhs.hostname, args[3]))
-                    uploaded.callback(fhs)
-
-            elif subtype == 'FAILED':
-                if args[1] == fhs.hostname[:-6]:
-                    failed_uploads.add(args[3])
-                    if progress:
-                        progress(
-                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
-                            "wait_descriptor",
-                            "Failed upload to {}".format(args[3])
-                        )
-                    if failed_uploads == attempted_uploads:
-                        msg = "Failed to upload '{}' to: {}".format(
-                            fhs.hostname,
-                            ', '.join(failed_uploads),
-                        )
-                        uploaded.errback(RuntimeError(msg))
-        yield config.tor_protocol.add_event_listener('HS_DESC', hs_desc)
         yield config.save()
         yield uploaded
-        yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
         defer.returnValue(fhs)
 
     def __init__(self, config, thedir, ports,
@@ -364,6 +304,70 @@ class FilesystemHiddenService(object):
 #       specific" factory-functions, like "create_ephemeral_onion"
 #       "create_detached_onion" "create_permanent_onion??" etc...?
 
+@defer.inlineCallbacks
+def _await_descriptor_upload(config, onion, progress):
+    pct = 101.0
+    attempted_uploads = set()
+    confirmed_uploads = set()
+    failed_uploads = set()
+    uploaded = defer.Deferred()
+
+    def hs_desc(evt):
+        """
+        From control-spec:
+        "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
+        [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
+        """
+        global pct
+        args = evt.split()
+        subtype = args[0]
+        if subtype == 'UPLOAD':
+            if args[1] == onion.hostname[:-6]:
+                attempted_uploads.add(args[3])
+                if progress:
+                    progress(
+                        101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
+                        "wait_descriptor",
+                        "Upload to {} started".format(args[3])
+                    )
+
+        elif subtype == 'UPLOADED':
+            # we only need ONE successful upload to happen for the
+            # HS to be reachable.
+            # unused? addr = args[1]
+            if args[3] in attempted_uploads:
+                if progress:
+                    progress(
+                        101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
+                        "wait_descriptor",
+                        "Successful upload to {}".format(args[3])
+                    )
+                confirmed_uploads.add(args[3])
+                log.msg("Uploaded '{}' to '{}'".format(onion.hostname, args[3]))
+                uploaded.callback(onion)
+
+        elif subtype == 'FAILED':
+            if args[1] == onion.hostname[:-6]:
+                failed_uploads.add(args[3])
+                if progress:
+                    progress(
+                        101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
+                        "wait_descriptor",
+                        "Failed upload to {}".format(args[3])
+                    )
+                if failed_uploads == attempted_uploads:
+                    msg = "Failed to upload '{}' to: {}".format(
+                        onion.hostname,
+                        ', '.join(failed_uploads),
+                    )
+                    uploaded.errback(RuntimeError(msg))
+
+    yield config.tor_protocol.add_event_listener('HS_DESC', hs_desc)
+    yield uploaded
+    yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
+    
+
+
 @implementer(IOnionService)
 class EphemeralHiddenService(object):
     @classmethod
@@ -395,68 +399,10 @@ class EphemeralHiddenService(object):
         if onion not in config.EphemeralOnionServices:
             config.EphemeralOnionServices.append(onion)
 
-        # we need to wait for confirmation that we've published the
-        # descriptor to at least one Directory Authority. This means
-        # watching the 'HS_DESC' event, but we do that right *before*
-        # issuing the ADD_ONION command(s) so we can't miss one.
-        uploaded = defer.Deferred()
-        attempted_uploads = set()
-        confirmed_uploads = set()
-        failed_uploads = set()
-        pct = 101.0
-
-        def hs_desc(evt):
-            """
-            From control-spec:
-            "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
-            [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
-            """
-            global pct
-            args = evt.split()
-            subtype = args[0]
-            if subtype == 'UPLOAD':
-                if args[1] == onion.hostname[:-6]:
-                    attempted_uploads.add(args[3])
-                    if progress:
-                        progress(
-                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
-                            "wait_descriptor",
-                            "Upload to {} started".format(args[3])
-                        )
-
-            elif subtype == 'UPLOADED':
-                # we only need ONE successful upload to happen for the
-                # HS to be reachable.
-                # unused? addr = args[1]
-                if args[3] in attempted_uploads:
-                    if progress:
-                        progress(
-                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
-                            "wait_descriptor",
-                            "Successful upload to {}".format(args[3])
-                        )
-                    confirmed_uploads.add(args[3])
-                    log.msg("Uploaded '{}' to '{}'".format(onion.hostname, args[3]))
-                    uploaded.callback(onion)
-
-            elif subtype == 'FAILED':
-                if args[1] == onion.hostname[:-6]:
-                    failed_uploads.add(args[3])
-                    if progress:
-                        progress(
-                            101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
-                            "wait_descriptor",
-                            "Failed upload to {}".format(args[3])
-                        )
-                    if failed_uploads == attempted_uploads:
-                        msg = "Failed to upload '{}' to: {}".format(
-                            onion.hostname,
-                            ', '.join(failed_uploads),
-                        )
-                        uploaded.errback(RuntimeError(msg))
-
-        yield config.tor_protocol.add_event_listener('HS_DESC', hs_desc)
-
+        # we have to keep this as a Deferred for now so that HS_DESC
+        # listener gets added before we issue ADD_ONION
+        uploaded = _await_descriptor_upload(config, onion, progress)
+        
         # okay, we're set up to listen, and now we issue the ADD_ONION
         # command. this will set ._hostname and ._private_key properly
         cmd = 'ADD_ONION {}'.format(onion.private_key or 'NEW:BEST')
@@ -485,7 +431,6 @@ class EphemeralHiddenService(object):
 
         log.msg("Created '{}', waiting for descriptor uploads.".format(onion.hostname))
         yield uploaded
-        yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
 
         # XXX more thinking req'd
         # config.HiddenServices.append(onion)
