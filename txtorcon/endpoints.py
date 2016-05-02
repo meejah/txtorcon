@@ -264,7 +264,7 @@ class TCPHiddenServiceEndpoint(object):
             control_port=control_port,
             progress_updates=progress
         )
-        # config is a Deferred here, but endpoint resolves it in
+        # tor is a Deferred here, but endpoint resolves it in
         # the listen() call
         r = TCPHiddenServiceEndpoint(
             reactor, tor, public_port,

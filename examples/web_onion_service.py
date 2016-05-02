@@ -26,8 +26,8 @@ def main(reactor):
     # argument is the public port we advertise. You can pass
     # "controlPort=9051" for example, to connect to a system Tor
     # (accepts paths, too, e.g. "controlPort=/var/run/tor/control")
-    ep = endpoints.serverFromString(reactor, "onion:80:controlPort=9251")
-    #ep = endpoints.serverFromString(reactor, "onion:80")
+    # ep = endpoints.serverFromString(reactor, "onion:80:controlPort=9151")
+    ep = endpoints.serverFromString(reactor, "onion:80")
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
