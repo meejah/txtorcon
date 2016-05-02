@@ -3,25 +3,22 @@
 # Just listens for a few EVENTs from Tor (INFO NOTICE WARN ERR) and
 # prints out the contents, so functions like a log monitor.
 
-from twisted.internet import reactor
+from twisted.internet import task, defer
+from twisted.internet.endpoints import UNIXEndpoint
 import txtorcon
 
 
-def log(msg):
-    print msg
+@defer.inlineCallbacks
+def main(reactor):
+    ep = UNIXEndpoint(reactor, '/var/run/tor/control')
+    tor = yield txtorcon.connect(reactor, ep)
 
-
-def setup(proto):
-    print "Connected to a Tor version", proto.version
+    def log(msg):
+        print msg
+    print "Connected to a Tor version", tor.protocol.version
     for event in ['INFO', 'NOTICE', 'WARN', 'ERR']:
-        proto.add_event_listener(event, log)
-    proto.get_info('status/version/current', 'version').addCallback(log)
-
-
-def setup_failed(arg):
-    print "SETUP FAILED", arg
-    reactor.stop()
-
-d = txtorcon.build_local_tor_connection(reactor, build_state=False)
-d.addCallback(setup).addErrback(setup_failed)
-reactor.run()
+        tor.protocol.add_event_listener(event, log)
+    is_current = yield tor.protocol.get_info('status/version/current')
+    version = yield tor.protocol.get_info('version')
+    print("Version '{}', is_current={}".format(version, is_current))
+task.react(main)
