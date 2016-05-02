@@ -42,6 +42,21 @@ else:
     py3k = False
     basestring = basestring
 
+def version_at_least(version_string, major, minor, micro, patch):
+    """
+    This returns True if the version_string represents a Tor version
+    of at least ``major``.``minor``.``micro``.``patch`` version,
+    ignoring any trailing specifiers.
+    """
+    parts = re.match(
+        r'^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+).*$',
+        version_string,
+    )
+    for ver, gold in zip(parts.group(1, 2, 3, 4), (major, minor, micro, patch)):
+        if int(ver) < int(gold):
+            return False
+    return True
+
 
 def create_geoip(fname):
     # It's more "pythonic" to just wait for the exception,

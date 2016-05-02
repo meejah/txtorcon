@@ -18,6 +18,7 @@ from txtorcon.util import find_tor_binary
 from txtorcon.util import maybe_ip_addr
 from txtorcon.util import unescape_quoted_string
 from txtorcon.util import available_tcp_port
+from txtorcon.util import version_at_least
 
 
 class FakeState:
@@ -340,3 +341,25 @@ class TestUnescapeQuotedString(unittest.TestCase):
 
         for invalid_string in invalid_escaped:
             self.assertRaises(ValueError, unescape_quoted_string, invalid_string)
+
+
+class TestVersions(unittest.TestCase):
+    def test_version_1(self):
+        self.assertTrue(
+            version_at_least("1.2.3.4", 1, 2, 3, 4)
+        )
+
+    def test_version_2(self):
+        self.assertFalse(
+            version_at_least("1.2.3.4", 1, 2, 3, 5)
+        )
+
+    def test_version_3(self):
+        self.assertTrue(
+            version_at_least("1.2.3.4", 1, 2, 3, 2)
+        )
+
+    def test_version_4(self):
+        self.assertTrue(
+            version_at_least("2.1.1.1", 2, 0, 0, 0)
+        )
