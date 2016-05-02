@@ -13,9 +13,15 @@ run, usually with defaults designed to work with Tor Browser Bundle
 
 XXX maybe honour TOR_CONTROL env-var for just examples?
 
+.. contents::
+    :depth: 2
+    :local:
+    :backlinks: none
 
-:file:`../examples/web_client.py`
-----------------------------------
+
+
+``web_client.py``
+-----------------
 
 :download:`Download the example <../examples/web_client.py>`.
 
@@ -24,9 +30,12 @@ Uses `twisted.web.client
 to download a Web page using a ``twisted.web.client.Agent``, via any
 circuit Tor chooses.
 
+.. literalinclude:: ../examples/web_client.py
 
-:file:`../examples/web_client_custom_circuit.py`
-------------------------------------------------
+
+
+``web_client_custom_circuit.py``
+--------------------------------
 
 :download:`Download the example <../examples/web_client_custom_circuit.py>`.
 
@@ -34,9 +43,12 @@ Builds a custom circuit, and then uses `twisted.web.client
 <http://twistedmatrix.com/documents/current/web/howto/client.html>`_
 to download a Web page using the circuit created.
 
+.. literalinclude:: ../examples/web_client_custom_circuit.py
 
-:file:`../examples/web_onion_service.py`
-------------------------------------------------
+
+
+``web_onion_service.py``
+------------------------
 
 :download:`Download the example <../examples/web_onion_service.py>`.
 
@@ -48,9 +60,12 @@ If, instead, you're writing Python code and wish to have more control
 over the endpoint used (and e.g. whether a new Tor instance is
 launched or not) use one of the following examples.
 
+.. literalinclude:: ../examples/web_onion_service.py
 
-:file:`../examples/web_onion_service_ephemeral.py`
-------------------------------------------------
+
+
+``web_onion_service_ephemeral.py``
+----------------------------------
 
 :download:`Download the example <../examples/web_onion_service.py>`.
 
@@ -62,20 +77,8 @@ means, see `the spec
 you know you want to keep the private key for your onion service on
 disk somewhere, see the next example.
 
+.. literalinclude:: ../examples/web_onion_service_ephemeral.py
 
-
-:file:`hello_darkweb.py`
-------------------------
-
-:download:`Download the example <../examples/hello_darkweb.py>`.
-
-This is a minimal (but still working) hidden-service set up using the
-endpoint parsers (these are Twisted ``IPlugin`` implementations; see
-`the documentation
-<https://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.serverFromString.html>`_
-for more).  It even shows Tor's progress messages on the console.
-
-.. literalinclude:: ../examples/hello_darkweb.py
 
 
 .. _disallow_streams_by_port.py:
@@ -89,6 +92,8 @@ very simple and does just what it sounds like: never attaches Streams
 exiting to a port in the "disallowed" list (it also explicitly closes
 them). Note that **Tor already has this feature**; this is just to
 illustrate how to use IStreamAttacher and that you may close streams.
+
+XXX keep this one?
 
 .. literalinclude:: ../examples/disallow_streams_by_port.py
 
