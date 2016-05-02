@@ -8,7 +8,7 @@ from zope.interface import Interface, Attribute, implementer
 from twisted.internet import defer
 from twisted.python import log
 
-from txtorcon.util import find_keywords
+from txtorcon.util import find_keywords, version_at_least
 
 # XXX
 # think: port vs ports: and how do we represent that? i.e. if we
@@ -158,11 +158,36 @@ class FilesystemHiddenService(object):
         config.HiddenServices.append(fhs)
         # we .save() down below, after setting HS_DESC listener
 
+        uploaded = defer.Deferred()
+
+        if not version_at_least(config.tor_protocol.version, 0, 2, 7, 2):
+            if progress:
+                progress(
+                    102, "wait_desctiptor",
+                    "Adding an onion service to Tor requires at least version"
+                )
+                progress(
+                    103, "wait_desctiptor",
+                    "0.2.7.2 so that HS_DESC events work properly and we can"
+                )
+                progress(
+                    104, "wait_desctiptor",
+                    "detect our desctiptor being uploaded."
+                )
+                progress(
+                    105, "wait_desctiptor",
+                    "Your version is '{}'".format(config.tor_protocol.version),
+                )
+                progress(
+                    106, "wait_desctiptor",
+                    "So, we'll just declare it done right now..."
+                )
+                uploaded.callback(None)
+
         # XXX fixme dupe of the other create() methods hs_desc listener
         # we need to wait for confirmation that we've published the
         # descriptor to at least one Directory Authority. This means
         # watching the 'HS_DESC' event.
-        uploaded = defer.Deferred()
         attempted_uploads = set()
         confirmed_uploads = set()
         failed_uploads = set()
