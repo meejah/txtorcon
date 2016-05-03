@@ -5,9 +5,9 @@ Introduction
 
 txtorcon is an implementation of the `control-spec
 <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
-for `Tor <https://www.torproject.org/>`_ using the `Twisted
-<https://twistedmatrix.com/trac/>`_ networking library for `Python
-<http://python.org/>`_.
+for `Tor <https://www.torproject.org/projects/projects.html.en>`_
+using the `Twisted <https://twistedmatrix.com/trac/>`_ networking
+library for `Python <http://python.org/>`_.
 
 With txtorcon you can launch tor; connect to already-running tor
 instances; use tor as a client (via SOCKS5); set up services over tor;

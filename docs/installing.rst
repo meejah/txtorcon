@@ -146,18 +146,24 @@ requirements with e.g. ``pip install txtorcon[dev]``.
   does txtorcon (if you find something broken on Py3 please file a
   bug).
 
+- `ipaddress <https://docs.python.org/3/library/ipaddress.html>`_: a
+  standard module in Python3, but requires installing the backported
+  package on Python2.
+
 - development: `Sphinx <http://sphinx.pocoo.org/>`_ if you want to
   build the documentation. In that case you'll also need something
   called ``python-repoze.sphinx.autointerface`` (at least in Debian)
   to build the Interface-derived docs properly.
 
 - development: `coverage <http://nedbatchelder.com/code/coverage/>`_
-  to run the code-coverage metrics; and `Tox
-  <https://testrun.org/tox/latest/>`_ to run different environments.
+  to run the code-coverage metrics.
 
-- optional: GraphViz is used in the tests (and to generate
-  state-machine diagrams, if you like) but those tests are skipped if
-  "dot" isn't in your path
+- development: `Tox <https://testrun.org/tox/latest/>`_ to run
+  different library revisions.
+
+- optional: `GraphViz <http://www.graphviz.org/>`_ is used in the
+  tests (and to generate state-machine diagrams, if you like) but
+  those tests are skipped if "dot" isn't in your path
 
 .. BEGIN_INSTALL
 
