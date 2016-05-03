@@ -268,10 +268,12 @@ of the available SOCKS ports configured in the Tor it is connected to
 .. note::
 
    Tor supports SOCKS over Unix sockets. So does txtorcon. To take
-   advantage of this, simply configure tor with at least one SOCKS
-   port over a unix-socket (e.g. ``SocksPort unix:/tmp/foo/socks``)
-   and then specify it as the ``socks_endpoint`` argument to either
-   ``web_agent()`` call.
+   advantage of this, simply pass a valid ``SocksPort`` value for unix
+   sockets (e.g. ``unix:/tmp/foo/socks``) as the ``socks_config``
+   argument to either ``web_agent()`` call. If this doesn't already
+   exist in the underlying Tor, it will be added. Tor has particular
+   requirements for the directory in which the socket file is
+   (``0700``).
 
 If you need a stream to go over a specific circuit, see
 ":ref:`circuit_builder`".
@@ -310,8 +312,9 @@ Onion (Hidden) Services
 An "Onion Service" (also called a "Hidden Service") refers to a
 feature of Tor allowing servers (e.g. a Web site) to get additional
 security properties such as: hiding their network location; providing
-end-to-end encryption; or offering authentication. For details of how
-this works, please read `Tor's documentation on Hidden Services
+end-to-end encryption; self-certifying domain-names; or offering
+authentication. For details of how this works, please read `Tor's
+documentation on Hidden Services
 <https://www.torproject.org/docs/hidden-services.html.en>`_.
 
 From an API perspective, here are the parts we care about:
@@ -509,7 +512,8 @@ For one-shot connections, use
 ``IStreamClientEndpoint`` instance. Calling ``connect()`` on this
 endpoint instance causes the resulting stream to go via the particular
 :class:`txtorcon.Circuit` instance. (If the circuit has closed by the
-time you call ``connect()``, the connection will fail).
+time you call ``connect()``, the connection will fail). See
+:ref:`example_custom_circuit`.
 
 Note that Tor doesn't currently allow controllers to attach circuits
 destined for hidden-services (even over an otherwise suitable circuit).

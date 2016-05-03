@@ -176,6 +176,7 @@ class Circuit(object):
             self._when_built.append(d)
         return d
 
+    # XXX use same method for socks_config/endpoint as Tor.web_agent
     def web_agent(self, reactor, socks_endpoint, pool=None):
         """
         :param socks_endpoint: create one with

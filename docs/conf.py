@@ -155,7 +155,7 @@ html_theme_options = {
     'logo_name': 'true',
     'description': 'Control Tor from Twisted',
     'logo_text_align': 'center',
-    'flattr_uri': 'http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub',
+##    'flattr_uri': 'http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub',
     'note_bg': '#ccddcc',
     'note_border': '#839496',
 }

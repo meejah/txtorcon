@@ -9,7 +9,13 @@ for `Tor <https://www.torproject.org/>`_ using the `Twisted
 <https://twistedmatrix.com/trac/>`_ networking library for `Python
 <http://python.org/>`_.
 
-This would be of interest to anyone wishing to write event-based
+With txtorcon you can launch tor; connect to already-running tor
+instances; use tor as a client (via SOCKS5); set up services over tor;
+change all aspects of configuration; track live state (active circuits
+and streams, etc); do DNS via Tor; and query other information from
+the tor daemon.
+
+txtorcon would be of interest to anyone wishing to write event-based
 software in Python that talks to a Tor program. Twisted already
 provides many robust protocol implementations, deployment, logging and
 integration with GTK, Qt and other graphics frameworks -- so txtorcon

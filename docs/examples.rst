@@ -14,14 +14,17 @@ run, usually with defaults designed to work with Tor Browser Bundle
 XXX maybe honour TOR_CONTROL env-var for just examples?
 
 .. contents::
-    :depth: 2
-    :local:
-    :backlinks: none
+   :depth: 2
+   :local:
+   :backlinks: none
+	       
 
+Web: clients
+------------
 
 
 ``web_client.py``
------------------
+~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/web_client.py>`.
 
@@ -32,10 +35,10 @@ circuit Tor chooses.
 
 .. literalinclude:: ../examples/web_client.py
 
-
+.. _example_custom_circuit:		   
 
 ``web_client_custom_circuit.py``
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/web_client_custom_circuit.py>`.
 
@@ -46,9 +49,12 @@ to download a Web page using the circuit created.
 .. literalinclude:: ../examples/web_client_custom_circuit.py
 
 
+Web: servers (services)
+-----------------------		    
+
 
 ``web_onion_service.py``
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/web_onion_service.py>`.
 
@@ -65,9 +71,9 @@ launched or not) use one of the following examples.
 
 
 ``web_onion_service_ephemeral.py``
-----------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:download:`Download the example <../examples/web_onion_service.py>`.
+:download:`Download the example <../examples/web_onion_service_ephemeral.py>`.
 
 
 Set up a `twisted.web.server <>`_ listening as a onion service. This
@@ -81,27 +87,30 @@ disk somewhere, see the next example.
 
 
 
-.. _disallow_streams_by_port.py:
+``web_onion_service_klein.py``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:file:`disallow_streams_by_port.py`
------------------------------------
+:download:`Download the example <../examples/web_onion_service_klein.py>`.
 
-:download:`Download the example <../examples/disallow_streams_by_port.py>`.
-An example using :class:`~txtorcon.torstate.IStreamAttacher` which is
-very simple and does just what it sounds like: never attaches Streams
-exiting to a port in the "disallowed" list (it also explicitly closes
-them). Note that **Tor already has this feature**; this is just to
-illustrate how to use IStreamAttacher and that you may close streams.
 
-XXX keep this one?
+Set up a `twisted.web.server <>`_ listening as a onion service. This
+uses the ``ADD_ONION`` API from Tor. If you don't know what that
+means, see `the spec
+<https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1365>`_. If
+you know you want to keep the private key for your onion service on
+disk somewhere, see the next example.
 
-.. literalinclude:: ../examples/disallow_streams_by_port.py
+.. literalinclude:: ../examples/web_onion_service_klein.py
 
+
+		    
+Starting Tor
+------------
 
 .. _launch_tor.py:
 
 :file:`launch_tor.py`
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/launch_tor.py>`.  Set up
 a tor configuration and launch a slave Tor. This takes care of the
@@ -114,7 +123,7 @@ goes away, so does the running Tor.
 .. _launch_tor_endpoint.py:
 
 :file:`launch_tor_endpoint.py`
-------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example
 <../examples/launch_tor_endpoint.py>`. Using the
@@ -130,7 +139,7 @@ with a hidden service pointed to an
 .. _launch_tor_with_hiddenservice.py:
 
 :file:`launch_tor_with_hiddenservice.py`
-----------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example
 <../examples/launch_tor_with_hiddenservice.py>`. A more complicated
@@ -140,11 +149,31 @@ hidden service configuration pointing to it.
 
 .. literalinclude:: ../examples/launch_tor_with_hiddenservice.py
 
+Circuits and Streams
+--------------------
+
+.. _disallow_streams_by_port.py:
+
+:file:`disallow_streams_by_port.py`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:download:`Download the example <../examples/disallow_streams_by_port.py>`.
+An example using :class:`~txtorcon.torstate.IStreamAttacher` which is
+very simple and does just what it sounds like: never attaches Streams
+exiting to a port in the "disallowed" list (it also explicitly closes
+them). Note that **Tor already has this feature**; this is just to
+illustrate how to use IStreamAttacher and that you may close streams.
+
+XXX keep this one?
+
+.. literalinclude:: ../examples/disallow_streams_by_port.py
+
+
 
 .. _stream_circuit_logger.py:
 
 :file:`stream_circuit_logger.py`
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/stream_circuit_logger.py>`.
 For listening to changes in the Circuit and State objects, this
@@ -157,8 +186,10 @@ see what's going on.
 
 .. _attach_streams_by_country.py:
 
+
+
 :file:`circuit_for_next_stream.py`
-------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example
 <../examples/circuit_for_next_stream.py>`.  This creates a custom
@@ -173,7 +204,7 @@ following example (attach_streams_by_country).
 .. _attach_streams_by_country.py:
 
 :file:`attach_streams_by_country.py`
-------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/attach_streams_by_country.py>`.
 This is one of the more complicated examples. It uses a custom Stream
@@ -191,7 +222,7 @@ correct country, one is created before the Stream is attached.
 .. _schedule_bandwidth.py:
 
 :file:`schedule_bandwidth.py`
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/schedule_bandwidth.py>`.
 This is pretty similar to a feature Tor already has and is basically
@@ -204,11 +235,14 @@ appear in the consensus).
 .. literalinclude:: ../examples/schedule_bandwidth.py
 
 
+Configuration
+-------------
+
 
 .. _dump_config.py:
 
 :file:`dump_config.py`
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/dump_config.py>`.
 Very simple read-only use of :class:`txtorcon.TorConfig`
@@ -216,12 +250,14 @@ Very simple read-only use of :class:`txtorcon.TorConfig`
 .. literalinclude:: ../examples/dump_config.py
 
 
+Events
+------
 
 
 .. _monitor.py:
 
 :file:`monitor.py`
------------------------------
+~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/monitor.py>`.
 
@@ -233,11 +269,14 @@ for logging things INFO, NOTICE, WARN, ERR.
 
 
 
+Miscellaneous
+-------------
+
 
 .. _stem_relay_descriptor.py:
 
 :file:`stem_relay_descriptor.py`
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/stem_relay_descriptor.py>`.
 
@@ -254,7 +293,7 @@ the details.
 .. _circuit_failure_rates.py:
 
 :file:`circuit_failure_rates.py`
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/circuit_failure_rates.py>`.
 
@@ -265,7 +304,7 @@ the details.
 .. _txtorcon.tac:
 
 :file:`txtorcon.tac`
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 :download:`Download the example <../examples/txtorcon.tac>`
 

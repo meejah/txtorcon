@@ -394,6 +394,7 @@ class Tor(object):
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
+        # XXX make this a method, use in Circuit.web_agent
         if socks_config is not None:
             if isinstance(socks_config, six.text_type):
                 socks_config = self.config.socks_endpoint(
