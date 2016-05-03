@@ -19,9 +19,20 @@ dockerbase-wheezy-image: dockerbase-wheezy
 	tar -C dockerbase-wheezy -c . | docker import - dockerbase-wheezy
 	docker run dockerbase-wheezy cat /etc/issue
 
-txtorcon-tester: Dockerfile dockerbase-wheezy-image
+# see also http://docs.docker.io/en/latest/use/baseimages/
+dockerbase-jessie:
+	@echo 'Building a minimal "jessie" system.'
+	@echo "This may take a while...and will consume about 240MB when done."
+	debootstrap jessie dockerbase-jessie
+
+dockerbase-jessie-image: dockerbase-jessie
+	@echo 'Importing dockerbase-jessie into docker'
+	tar -C dockerbase-jessie -c . | docker import - dockerbase-jessie
+	docker run dockerbase-jessie cat /etc/issue
+
+txtorcon-tester: Dockerfile dockerbase-jessie-image
 	@echo "Creating a Docker.io container"
-	docker build -rm -q -t txtorcon-tester ./
+	docker build --rm -q -t txtorcon-tester ./
 
 integration: ## txtorcon-tester
 	python integration/run.py
@@ -72,9 +83,9 @@ clean:
 	-rm MANIFEST
 	-rm `find . -name \*.py[co]`
 	-cd docs && make clean
-	-rm -rf dockerbase-wheezy
+	-rm -rf dockerbase-jessie
 	-docker rmi txtorcon-tester
-	-docker rmi dockerbase-wheezy
+	-docker rmi dockerbase-jessie
 
 counts:
 	ohcount -s txtorcon/*.py
