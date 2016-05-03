@@ -18,7 +18,7 @@ Rendered documentation for the latest release is at
 `txtorcon.readthedocs.org <https://txtorcon.readthedocs.org/en/latest/>`_. What exists for
 release-notes are in ":ref:`releases`".
 
-If you're still using wheezy, ``python-txtorcon`` is also in `wheezy-backports <http://packages.debian.org/source/wheezy-backports/txtorcon>`_.
+If you're still using wheezy, ``python-txtorcon`` is also in `wheezy-backports <http://packages.debian.org/source/wheezy-backports/txtorcon>`_::
 
     echo "deb http://ftp.ca.debian.org/debian/ wheezy-backports main" >> /etc/apt/sources.list
     apt-get update
@@ -71,9 +71,6 @@ recommended)::
    ControlSocketsGroupWritable 1
    ControlSocket /var/run/tor/control
 
-The defaults used by py:meth:`txtorcon.build_local_tor_connection` will
-find a Tor on ``9051`` or ``/var/run/tor/control``
-
 
 Source Code
 -----------
@@ -84,9 +81,7 @@ I sign tags with my public key (:download:`meejah.asc <../meejah.asc>`)
 
 - code: ``git clone https://github.com/meejah/txtorcon.git``
 
-Rendered documentation for the latest release is at
-`txtorcon.readthedocs.org
-<https://txtorcon.readthedocs.org/en/latest/>_`.
+Rendered documentation for the latest release is at `txtorcon.readthedocs.org <https://txtorcon.readthedocs.org/en/latest/>`_.
 
 See :ref:`hacking` if you wish to contribute back to txtorcon :)
 
