@@ -57,10 +57,8 @@ Currently, txtorcon is capable of:
   software via Tor with **no code changes**. It also is the preferred
   way to connect (or listen) in Twisted.
 
-See ":ref:`features`" for more detail.
-
 Comments (positive or negative) appreciated. Even better if they come
-with patches.
+with patches 😉
 
 
 Shell-cast Overview
