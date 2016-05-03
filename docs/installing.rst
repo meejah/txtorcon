@@ -142,20 +142,22 @@ but are listed here for completeness. You can get all the development
 requirements with e.g. ``pip install txtorcon[dev]``.
 
 - `twisted <http://twistedmatrix.com>`_: txtorcon should work with any
-   Twisted 11.1.0 or newer. Twisted 15.4.0+ works with Python3, and so
-   does txtorcon (if you find something broken on Py3 please file a bug).
+  Twisted 11.1.0 or newer. Twisted 15.4.0+ works with Python3, and so
+  does txtorcon (if you find something broken on Py3 please file a
+  bug).
 
--  development: `Sphinx <http://sphinx.pocoo.org/>`_ if you want to build the
-   documentation. In that case you'll also need something called
-   ``python-repoze.sphinx.autointerface`` (at least in Debian) to build
-   the Interface-derived docs properly.
+- development: `Sphinx <http://sphinx.pocoo.org/>`_ if you want to
+  build the documentation. In that case you'll also need something
+  called ``python-repoze.sphinx.autointerface`` (at least in Debian)
+  to build the Interface-derived docs properly.
 
--  development: `coverage <http://nedbatchelder.com/code/coverage/>`_ to
-   run the code-coverage metrics, and Tox
+- development: `coverage <http://nedbatchelder.com/code/coverage/>`_
+  to run the code-coverage metrics; and `Tox
+  <https://testrun.org/tox/latest/>`_ to run different environments.
 
--  optional: GraphViz is used in the tests (and to generate state-machine
-   diagrams, if you like) but those tests are skipped if "dot" isn't
-   in your path
+- optional: GraphViz is used in the tests (and to generate
+  state-machine diagrams, if you like) but those tests are skipped if
+  "dot" isn't in your path
 
 .. BEGIN_INSTALL
 
