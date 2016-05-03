@@ -58,32 +58,23 @@ Web: servers (services)
 
 :download:`Download the example <../examples/web_onion_service.py>`.
 
-XXX call this one "_endpoint.py" and move _ephemeral here i think
-
-This uses a server endpoint string via the `serverFromString` API in Twisted to do "whatever it takes" to set up a new Onion (location-hidden) service. If a Twisted application lets you configure server endpoint strings to listen on, you may get hidden-service support without having to change any code.
-
-If, instead, you're writing Python code and wish to have more control
-over the endpoint used (and e.g. whether a new Tor instance is
-launched or not) use one of the following examples.
+Set up a `twisted.web.server <>`_ listening as a onion service. This uses the ``ADD_ONION`` API from Tor. If you don't know what that means, see `the spec <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1365>`_. If you know you want to keep the private key for your onion service on disk somewhere, see the next example.
 
 .. literalinclude:: ../examples/web_onion_service.py
 
 
 
-``web_onion_service_ephemeral.py``
+``web_onion_service_endpoints.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:download:`Download the example <../examples/web_onion_service_ephemeral.py>`.
+:download:`Download the example <../examples/web_onion_service_endpoints.py>`.
+
+This uses a server endpoint string via the `serverFromString` API in Twisted to do "whatever it takes" to set up a new Onion (location-hidden) service. If a Twisted application lets you configure server endpoint strings to listen on, you may get hidden-service support without having to change any code.
+
+If, instead, you're writing Python code and wish to have more control over the endpoint used (and e.g. whether a new Tor instance is launched or not) use one of the following examples.
 
 
-Set up a `twisted.web.server <>`_ listening as a onion service. This
-uses the ``ADD_ONION`` API from Tor. If you don't know what that
-means, see `the spec
-<https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1365>`_. If
-you know you want to keep the private key for your onion service on
-disk somewhere, see the next example.
-
-.. literalinclude:: ../examples/web_onion_service_ephemeral.py
+.. literalinclude:: ../examples/web_onion_service_endpoints.py
 
 
 
