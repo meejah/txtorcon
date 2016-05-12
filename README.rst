@@ -25,11 +25,11 @@ txtorcon
 - **docs**: https://txtorcon.readthedocs.org or http://timaq4ygg2iegci7.onion
 - **code**: https://github.com/meejah/txtorcon
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
-- MIT-licensed; Python 2.7, PyPy, 3.4+; depends on `Twisted <https://twistedmatrix.com>`_, `ipaddress <https://pypi.python.org/pypi/ipaddress>`_, `txsocksx <https://github.com/habnabit/txsocksx>`_ (optional)
+- MIT-licensed; Python 2.7, PyPy, 3.4+; depends on `Twisted <https://twistedmatrix.com>`_ (`ipaddress <https://pypi.python.org/pypi/ipaddress>`_ for 2.7)
 
 
-Brief Overview
---------------
+Ten Thousand Feet
+-----------------
 
 txtorcon is an implementation of the `control-spec
 <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
