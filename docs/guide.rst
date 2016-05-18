@@ -431,7 +431,7 @@ For non-authenticated services, you want to create a
 
 You can do this via the :meth:`txtorcon.create_onion_service` factory
 function or with :meth:`txtorcon.Tor.create_onion_service`. It's also
-possible to use Twisted's ``clientFromString`` API with the ``onion:``
+possible to use Twisted's ``serverFromString`` API with the ``onion:``
 prefix. (Thus, any program supporting endpoint strings for
 configuration can use Tor Onion Services with *no code changes*).
 
