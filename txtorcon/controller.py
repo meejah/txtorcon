@@ -495,6 +495,7 @@ class Tor(object):
         # probably takes args similar to TorClientEndpoint on master
         raise NotImplemented(__name__)
 
+    # XXX or get_state()? and make there be always 0 or 1 states; cf. convo w/ Warner
     @inlineCallbacks
     def create_state(self):
         """
