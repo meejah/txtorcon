@@ -480,6 +480,7 @@ class TCPHiddenServiceEndpoint(object):
                 self.hidden_service_dir
             )
 
+        # XXX move to constructor? (because it's validation)
         if self.private_key is not None and not self.ephemeral:
             raise RuntimeError("'private_key' only understood for ephemeral services")
 
@@ -690,11 +691,19 @@ class TCPHiddenServiceEndpointParser(object):
     # note that these are all camelCase because Twisted uses them to
     # do magic parsing stuff, and to conform to Twisted's conventions
     # we should use camelCase in the endpoint definitions...
+    
+    # XXX need to be able to pass privateKey too (mutually exclusive with hiddenServiceDir)
     def parseStreamServer(self, reactor, public_port, localPort=None,
-                          controlPort=None, hiddenServiceDir=None):
-        '''
+                          controlPort=None, hiddenServiceDir=None,
+                          privateKey=None):
+        """
         :api:`twisted.internet.interfaces.IStreamServerEndpointStringParser`
-        '''
+        """
+
+        if hiddenServiceDir is not None and privateKey is not None:
+            raise ValueError(
+                "Only one of hiddenServiceDir and privateKey accepted"
+            )
 
         public_port = int(public_port)
 
@@ -718,16 +727,18 @@ class TCPHiddenServiceEndpointParser(object):
             return TCPHiddenServiceEndpoint.system_tor(
                 reactor, ep, public_port,
                 hidden_service_dir=hsd,
+                private_key=privateKey,
                 local_port=localPort,
-                ephemeral=False,
+                ephemeral=(hsd is None),
             )
 
         return TCPHiddenServiceEndpoint.global_tor(
             reactor, public_port,
             hidden_service_dir=hsd,
+            private_key=privateKey,
             local_port=localPort,
             control_port=controlPort,
-            ephemeral=False,
+            ephemeral=(hsd is None),
         )
 
 

@@ -402,6 +402,12 @@ class EphemeralHiddenService(object):
         # we have to keep this as a Deferred for now so that HS_DESC
         # listener gets added before we issue ADD_ONION
         uploaded = _await_descriptor_upload(config, onion, progress)
+
+        # we allow a key to be passed that *doestn'* start with
+        # "RSA1024:" because having to escape the ":" for endpoint
+        # string syntax (which uses ":" as delimeters) is annoying
+        if onion.private_key and not onion.private_key.startswith("RSA1024:"):
+            onion.private_key = "RSA1024:" + onion.private_key
         
         # okay, we're set up to listen, and now we issue the ADD_ONION
         # command. this will set ._hostname and ._private_key properly
@@ -423,10 +429,13 @@ class EphemeralHiddenService(object):
             if discard_key:
                 onion._private_key = None
             else:
-                onion._private_key = res['PrivateKey']
+                # if we specified a private key, it's not echoed back
+                if not onion.private_key:
+                    onion._private_key = res['PrivateKey']
         except KeyError:
             raise RuntimeError(
-                "Expected ADD_ONION to return ServiceID= and PrivateKey= args"
+                "Expected ADD_ONION to return ServiceID= and PrivateKey= args."
+                "Got: {}".format(res)
             )
 
         log.msg("Created '{}', waiting for descriptor uploads.".format(onion.hostname))
