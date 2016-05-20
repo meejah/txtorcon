@@ -63,6 +63,7 @@ To explicitly launch your own Tor instance, use
 options, use ``.config`` to retrieve the :class:`txtorcon.TorConfig`
 instance associated with this tor.
 
+
 .. _guide_style:
 
 A Note On Style
@@ -77,11 +78,6 @@ potentially has to ask Tor for the country, whereas
 :attr:`txtorcon.Router.hex_id` is a plain attribute because it's
 always available.
 
-Now, in some cases, this may have gotten a little out-of-control. For
-example, I'm curious on feedback about whether you like or dislike
-:class:`txtorcon.TorConfig`'s use of attribute-style access for Tor
-config items...
-
 
 .. _guide_configuration:
 
@@ -91,7 +87,9 @@ Tracking and Changing Tor's Configuration
 Instances of the :class:`txtorcon.TorConfig` class represent the
 current, live state of a running Tor. There is a bit of
 attribute-magic to make it possible to simply get and set things
-easily::
+easily:
+
+.. sourcecode:: python
 
     tor = launch(..)
     print("SOCKS ports: {}".format(tor.config.SOCKSPort))
@@ -110,18 +108,26 @@ series of related items. TorConfig handles these cases for you -- you
 just manipulate the configuration, and wait for ``.save()``'s
 ``Deferred`` to fire and the running tor's configuration is updated.
 
-Note that is a tiny window during which the state may appear slightly
-inconsistent: after Tor has acknowledged a ``SETCONF`` command, but
-before a separate ``TorConfig`` instance has gotten all the
-``CONF_CHANGED`` events (because they're hung up in the networking
-stack for some reason). This shouldn't concern most users.
+Note there is a tiny window during which the state may appear slightly
+inconsistent if you have multiple ``TorConfig`` instances: after Tor
+has acknowledged a ``SETCONF`` command, but before a separate
+``TorConfig`` instance has gotten all the ``CONF_CHANGED`` events
+(because they're hung up in the networking stack for some
+reason). This shouldn't concern most users. (I'm not even 100% sure
+this is possible; it may be that Tor doesn't send the OK until after
+all the CONF_CHANGED events)
 
 Since :class:`txtorcon.TorConfig` conforms to the Iterator protocol,
-you can easily find all the config-options that Tor supports::
+you can easily find all the config-options that Tor supports:
 
+.. sourcecode:: python
+	  
     tor = launch(..)
     for config_key in tor.config:
         print("{} has value: {}".format(config_key, getattr(tor.config.config_key)))
+
+.. fixme::  why doesn't dir() work; fix it, or mention it here
+
 
 These come from interrogating tor using ``GETINFO config/names`` and
 so represent the configuration options of the current connected Tor

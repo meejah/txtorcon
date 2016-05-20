@@ -103,10 +103,9 @@ Starting Tor
 :file:`launch_tor.py`
 ~~~~~~~~~~~~~~~~~~~~~
 
-:download:`Download the example <../examples/launch_tor.py>`.  Set up
-a tor configuration and launch a slave Tor. This takes care of the
-setting Tor's notion ownership so that when the control connection
-goes away, so does the running Tor.
+:download:`Download the example <../examples/launch_tor.py>`.  Launch
+a new Tor instance. This takes care of setting Tor's notion ownership
+so that when the control connection goes away the running Tor exits.
 
 .. literalinclude:: ../examples/launch_tor.py
 
@@ -121,24 +120,10 @@ goes away, so does the running Tor.
 :class:`txtorcon.TCP4HiddenServiceEndpoint` class to start up a Tor
 with a hidden service pointed to an
 :api:`twisted.internet.interfaces.IStreamServerEndpoint
-<IStreamServerEndpoint>`; fairly similar to
-:ref:`launch_tor_with_hiddenservice.py` but more things are automated.
+<IStreamServerEndpoint>`.
 
 .. literalinclude:: ../examples/launch_tor_endpoint.py
 
-
-.. _launch_tor_with_hiddenservice.py:
-
-:file:`launch_tor_with_hiddenservice.py`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:download:`Download the example
-<../examples/launch_tor_with_hiddenservice.py>`. A more complicated
-version of the :ref:`launch_tor.py` example where we also set up a
-Twisted Web server in the process and have the slave Tor set up a
-hidden service configuration pointing to it.
-
-.. literalinclude:: ../examples/launch_tor_with_hiddenservice.py
 
 Circuits and Streams
 --------------------
