@@ -1,41 +1,35 @@
-#!/usr/bin/env python
+from __future__ import print_function
 
-# Launch a slave Tor by first making a TorConfig object.
+"""
+Launch a private Tor instance.
+"""
 
-from sys import stdout
+import sys
+import txtorcon
 from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks
-import txtorcon
 
 
 @inlineCallbacks
 def main(reactor):
-    config = txtorcon.TorConfig()
-    config.OrPort = 1234
-    config.SocksPort = 9999
-    try:
-        yield txtorcon.launch_tor(config, reactor, stdout=stdout)
+    tor = yield txtorcon.launch(reactor, stdout=sys.stdout)
+    print("Connected to Tor version '{}'".format(tor.protocol.version))
 
-    except RuntimeError as e:
-        print "Error:", e
-        return
-
-    proto = config.protocol
-    print "Connected to Tor version", proto.version
-
-    state = yield txtorcon.TorState.from_protocol(proto)
-    print "This Tor has PID", state.tor_pid
-    print "This Tor has the following %d Circuits:" % len(state.circuits)
+    state = yield tor.create_state()
+    # or state = yield txtorcon.TorState.from_protocol(tor.protocol)
+    
+    print("This Tor has PID {}".format(state.tor_pid))
+    print("This Tor has the following {} Circuits:".format(len(state.circuits)))
     for c in state.circuits.values():
-        print c
+        print("  {}".format(c))
 
-    print "Changing our config (SOCKSPort=9876)"
-    config.SOCKSPort = 9876
-    yield config.save()
+    print("Changing our config (SOCKSPort=9876)")
+    tor.config.SOCKSPort = [9876, 12345]
+    yield tor.config.save()
 
-    print "Querying to see it changed:"
-    socksport = yield proto.get_conf("SOCKSPort")
-    print "SOCKSPort", socksport
+    print("Querying to see it changed:")
+    socksport = yield tor.protocol.get_conf("SOCKSPort")
+    print("SOCKSPort={}".format(socksport))
 
 
 if __name__ == '__main__':
