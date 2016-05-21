@@ -16,11 +16,12 @@ and streams, etc); do DNS via Tor; and query other information from
 the tor daemon.
 
 txtorcon would be of interest to anyone wishing to write event-based
-software in Python that talks to a Tor program. Twisted already
-provides many robust protocol implementations, deployment, logging and
-integration with GTK, Qt and other graphics frameworks -- so txtorcon
-can be used for command-line or GUI applications or integrate with
-long-lived daemons easily.
+software in Python that uses the Tor network as a client or a service
+(or just wants to display information about a locally running
+tor). Twisted already provides many robust protocol implementations,
+deployment, logging and integration with GTK, Qt and other graphics
+frameworks -- so txtorcon can be used for command-line or GUI
+applications or integrate with long-lived daemons easily.
 
 In fact, due to support for endpoints (adding the ``tor:`` and
 ``onion:`` plugins), many Twisted applications can now integrate with
@@ -41,15 +42,17 @@ Features Overview
 
 Currently, txtorcon is capable of:
 
+- making arbitrary client connections to other services over Tor;
+- configuring `twisted.web.client.Agent <https://twistedmatrix.com/documents/current/web/howto/client.html>`_ instances to do Web requests over Tor;
+- doing both of the above over specific circuits;
+- listening as an Onion service;
 - maintaining up-to-date (live) state information about Tor: Circuits, Streams and Routers (relays);
 - maintaining current (live) configuration information;
 - maintaining representation of Tor's address mappings (with expiry);
 - interrogating initial state of all three of the above;
-- listening for and altering stream-to-circuit mappings;
+- listening for and altering stream -> circuit mappings;
 - building custom circuits;
 - Circuit and Stream state listeners;
-- using `GeoIP <https://www.maxmind.com/app/geolitecity>`_ to provide location and ASN information for Routers;
-- using `psutil <http://code.google.com/p/psutil/>`_ (optional) to locate processes creating Streams;
 - listening for any Tor EVENT;
 - launching and/or controlling a Tor instance (including Tor Browser Bundle);
 - complete Twisted endpoint support (both "onion"/server side and

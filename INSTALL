@@ -4,7 +4,7 @@ See README for more information.
 To just install this as quickly as possible, using a Debian or Ubuntu
 system, run the following as root:
 
-   apt-get install python-setuptools python-twisted python-ipaddress python-geoip python-psutil graphviz
+   apt-get install python-setuptools python-twisted python-ipaddress graphviz
 
    python setup.py install
 

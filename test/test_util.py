@@ -194,15 +194,11 @@ class TestProcessFromUtil(unittest.TestCase):
     def test_internal(self):
         "look up the (Tor_internal) PID"
         pfa = process_from_address('(Tor_internal)', 80, self.fakestate)
-        # depends on whether you have psutil installed or not, and on
-        # whether your system always has a PID 0 process...
         self.assertEqual(pfa, self.fakestate.tor_pid)
 
     def test_internal_no_state(self):
         "look up the (Tor_internal) PID"
         pfa = process_from_address('(Tor_internal)', 80)
-        # depends on whether you have psutil installed or not, and on
-        # whether your system always has a PID 0 process...
         self.assertEqual(pfa, None)
 
     @defer.inlineCallbacks

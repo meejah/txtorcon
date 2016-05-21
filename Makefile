@@ -38,7 +38,7 @@ integration: ## txtorcon-tester
 	python integration/run.py
 
 install:
-	sudo apt-get install python-setuptools python-twisted python-ipaddr python-geoip python-psutil graphviz
+	sudo apt-get install python-setuptools python-twisted python-ipaddress graphviz
 	python setup.py install
 
 doc: docs/*.rst
