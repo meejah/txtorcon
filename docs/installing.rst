@@ -18,11 +18,13 @@ Rendered documentation for the latest release is at
 `txtorcon.readthedocs.org <https://txtorcon.readthedocs.org/en/latest/>`_. What exists for
 release-notes are in ":ref:`releases`".
 
-If you're still using wheezy, ``python-txtorcon`` is also in `wheezy-backports <http://packages.debian.org/source/wheezy-backports/txtorcon>`_::
+If you're still using wheezy, ``python-txtorcon`` is also in `wheezy-backports <http://packages.debian.org/source/wheezy-backports/txtorcon>`_. To install, do this as root:
 
-    echo "deb http://ftp.ca.debian.org/debian/ wheezy-backports main" >> /etc/apt/sources.list
-    apt-get update
-    apt-get install python-txtorcon
+.. sourcecode:: shell-session
+
+    # echo "deb http://ftp.ca.debian.org/debian/ wheezy-backports main" >> /etc/apt/sources.list
+    # apt-get update
+    # apt-get install python-txtorcon
 
 It also `appears txtorcon is in Gentoo
 <http://packages.gentoo.org/package/net-libs/txtorcon>`_ but I don't
@@ -94,7 +96,7 @@ I like to set up my Python development like this:
 .. code-block:: shell-session
 
     $ git clone https://github.com/meejah/txtorcon.git
-    # if you later clone it on github, do this:
+    $ echo "if you later clone it on github, do this:"
     $ git remote add -f github git+ssh://git@github.com/<your github handle>/txtorcon.git
     $ cd txtorcon
     $ virtualenv venv
@@ -168,23 +170,27 @@ requirements with e.g. ``pip install txtorcon[dev]``.
 .. BEGIN_INSTALL
 
 In any case, on a `Debian <http://www.debian.org/>`_ wheezy, squeeze or
-Ubuntu system, this should work::
+Ubuntu system, this should work (as root):
 
-    apt-get install -y python-setuptools python-twisted python-ipaddress graphviz tor
-    apt-get install -y python-sphinx python-repoze.sphinx.autointerface python-coverage # for development
+.. sourcecode:: shell-session
+
+  # apt-get install -y python-setuptools python-twisted python-ipaddress graphviz tor
+  # echo "for development:"
+  # apt-get install -y python-sphinx python-repoze.sphinx.autointerface python-coverage
 
 .. END_INSTALL
 
-Using pip this would be::
+Using pip this would be:
 
-    pip install Twisted ipaddress pygeoip
-    pip install GeoIP Sphinx repoze.sphinx.autointerface coverage  # for development
+.. sourcecode:: shell-session 
 
-or::
+  $ pip install --user Twisted ipaddress pygeoip
+  $ echo "for development:"
+  $ pip install --user GeoIP Sphinx repoze.sphinx.autointerface coverage
 
-    pip install -r requirements.txt
-    pip install -r dev-requirements.txt
+or:
 
-or for the bare minimum::
-
-    pip install Twisted  # will install zope.interface too
+.. sourcecode:: shell-session
+		
+    $ pip install -r requirements.txt
+    $ pip install -r dev-requirements.txt
