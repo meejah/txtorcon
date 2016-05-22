@@ -696,6 +696,7 @@ class TorConfig(object):
             if not inst:
                 raise RuntimeError("Don't have a parser for: " + value)
             v = yield self.protocol.get_conf(name)
+            v = v[name]
 
             rn = self._find_real_name(name)
             self.parsers[rn] = inst

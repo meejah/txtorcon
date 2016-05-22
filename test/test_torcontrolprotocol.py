@@ -848,7 +848,8 @@ platform Tor 0.2.5.0-alpha-dev on Linux
             stdoutdata = sys.stdout.getvalue()
             sys.stdout, sys.stderr = orig
 
-        self.assertIn('print_stack', stderrdata)
+        # why was I looking for "print_stack"?!
+        # self.assertIn('print_stack', stderrdata)
         self.assertIn('foooo!', stderrdata)
 
     def test_remove_eventlistener(self):

@@ -74,7 +74,8 @@ class EndpointTests(unittest.TestCase):
             'config/names=\nHiddenServiceOptions Virtual\nControlPort Integer'
         )
         self.protocol.answers.append('HiddenServiceOptions')
-        self.protocol.answers.append('37337')
+        # why do i have to pass a dict for this V but not this ^
+        self.protocol.answers.append({'ControlPort': '37337'})
         self.config.bootstrap()
         self.patcher = patch(
             'txtorcon.controller.find_tor_binary',
@@ -248,37 +249,25 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.onion_private_key, None)
         return ep
 
+    @defer.inlineCallbacks
     def test_multiple_listen(self):
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.tor, 123, ephemeral=False)
-        d0 = ep.listen(NoOpProtocolFactory())
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, ephemeral=False)
+        port0 = yield ep.listen(NoOpProtocolFactory())
+        self.assertEqual(3, len(self.protocol.sets))
+        responses = ['UPLOAD s3aoqcldyhju7dic X X X', 'UPLOADED s3aoqcldyhju7dic X X X']
+        def add_event_listener(evt, cb):
+            if evt == 'HS_DESC' and len(responses):
+                cb(responses.pop())
+        self.protocol.add_event_listener = add_event_listener
 
-        @defer.inlineCallbacks
-        def more_listen(arg):
-            yield arg.stopListening()
-            d1 = ep.listen(NoOpProtocolFactory())
-            self.assertEqual(2, len(self.protocol.commands))
-            self.protocol.commands[1][1].callback(mock_add_onion_response)
+        yield port0.stopListening()
+        port1 = yield ep.listen(NoOpProtocolFactory())
 
-            def foo(arg):
-                return arg
-            d1.addBoth(foo)
-            defer.returnValue(arg)
-            return
-        d0.addBoth(more_listen)
-        self.config.bootstrap()
+        self.assertEqual(port0.getHost().onion_port, port1.getHost().onion_port)
+        self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
+        self.assertEqual(len(self.config.HiddenServices), 1)
 
-        self.assertEqual(1, len(self.protocol.sets))
-        self.protocol.commands[0][1].callback(mock_add_onion_response)
-        self.protocol.events['HS_DESC']('UPLOAD s3aoqcldyhju7dic X X X')
-        self.protocol.events['HS_DESC']('UPLOADED s3aoqcldyhju7dic X X X')
-
-        def check(arg):
-            self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
-            self.assertEqual(len(self.config.HiddenServices), 1)
-        d0.addCallback(check).addErrback(self.fail)
-        return d0
-
-    def test_multiple_listen(self):
+    def _test_multiple_listen(self):
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, ephemeral=False)
         d0 = ep.listen(NoOpProtocolFactory())
 

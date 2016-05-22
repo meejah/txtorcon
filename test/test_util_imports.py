@@ -15,7 +15,7 @@ def fake_import(orig, name, *args, **kw):
 class TestImports(unittest.TestCase):
 
     @skipIf('pypy' in sys.version.lower() or '3' in sys.version.lower(), "Doesn't work in PYPY, Py3")
-    def test_no_GeoIP(self):
+    def _test_no_GeoIP(self):
         """
         Make sure we don't explode if there's no GeoIP module
         """

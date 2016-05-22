@@ -91,14 +91,18 @@ def get_global_tor(reactor, control_port=None,
             _global_tor = yield _tor_launcher(reactor, progress_updates=progress_updates)
 
         else:
-            already_port = _global_tor.config.ControlPort
-            if control_port is not None and control_port != already_port:
-                raise RuntimeError(
-                    "ControlPort is already '{}', but you wanted '{}'",
-                    already_port,
-                    control_port,
-                )
-
+            try:
+                already_port = _global_tor.config.ControlPort
+                if control_port is not None and control_port != already_port:
+                    raise RuntimeError(
+                        "ControlPort is already '{}', but you wanted '{}'",
+                        already_port,
+                        control_port,
+                    )
+            except KeyError:
+                # XXX i think just from tests?
+                print("No ControlPort -- weird, but we'll let it go")
+                
         defer.returnValue(_global_tor)
     finally:
         _global_tor_lock.release()
@@ -563,12 +567,15 @@ class TorOnionAddress(FancyEqMixin, object):
 
     def __init__(self, port, hs):
         self.onion_port = port
-        self.onion_key = hs.private_key
         try:
             self.onion_uri = hs.hostname
         except IOError:
             self.onion_uri = None
         self._hiddenservice = hs
+
+    @property
+    def onion_key(self):
+        return self._hiddenservice.private_key
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self.onion_uri)

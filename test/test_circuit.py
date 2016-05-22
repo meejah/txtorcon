@@ -380,4 +380,4 @@ class CircuitTests(unittest.TestCase):
         circuit = Circuit(tor)
         reactor = Mock()
 
-        ep = circuit.stream_via(reactor, config, 'torproject.org', 443, use_tls=True)
+        ep = circuit.stream_via(reactor, 'torproject.org', 443, None, use_tls=True)
