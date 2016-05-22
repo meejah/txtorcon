@@ -615,7 +615,7 @@ class AuthenticatedHiddenService(object):
             for expected in self._expected_clients:
                 if expected not in self._clients:
                     raise RuntimeError(
-                        "Didn't find xpected client '{}'".format(expected)
+                        "Didn't find expected client '{}'".format(expected)
                     )
 
     def config_attributes(self):

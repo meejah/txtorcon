@@ -831,7 +831,7 @@ platform Tor 0.2.5.0-alpha-dev on Linux
         self.protocol.add_event_listener('STREAM', listener)
 
         import sys
-        from StringIO import StringIO
+        from six import StringIO
         orig = sys.stdout, sys.stderr
         sys.stderr = StringIO()
         sys.stdout = StringIO()

@@ -81,20 +81,21 @@ def get_global_tor(reactor, control_port=None,
     yield _global_tor_lock.acquire()
 
     if _tor_launcher is None:
-        # XXX :( mutual dependencies...
+        # XXX :( mutual dependencies...really get_global_tor should be
+        # in controller.py if it's going to return a Tor instance.
         from .controller import launch
         _tor_launcher = launch
 
     try:
         if _global_tor is None:
-            _global_tor = yield _tor_launcher(reactor, progress_updates)
+            _global_tor = yield _tor_launcher(reactor, progress_updates=progress_updates)
 
         else:
-            cp = _global_tor.config.ControlPort
-            if control_port is not None and control_port != cp:
+            already_port = _global_tor.config.ControlPort
+            if control_port is not None and control_port != already_port:
                 raise RuntimeError(
                     "ControlPort is already '{}', but you wanted '{}'",
-                    cp,
+                    already_port,
                     control_port,
                 )
 
@@ -216,6 +217,7 @@ class TCPHiddenServiceEndpoint(object):
 
         from txtorcon.controller import connect
         tor = connect(reactor, control_endpoint)
+        tor.addCallback(lambda t: t.config)
         # tor is a Deferred
         return TCPHiddenServiceEndpoint(
             reactor, tor, public_port,
@@ -318,7 +320,7 @@ class TCPHiddenServiceEndpoint(object):
             progress=None):
         pass
 
-    def __init__(self, reactor, tor, public_port,
+    def __init__(self, reactor, config, public_port,
                  hidden_service_dir=None,
                  local_port=None,
                  stealth_auth=None,
@@ -328,8 +330,8 @@ class TCPHiddenServiceEndpoint(object):
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
 
-        :param tor:
-            :class:`txtorcon.Tor` instance.
+        :param config:
+            :class:`txtorcon.TorConfig` instance.
 
         :param public_port:
             The port number we will advertise in the hidden serivces
@@ -375,7 +377,7 @@ class TCPHiddenServiceEndpoint(object):
             )
 
         self.reactor = reactor
-        self._tor = defer.maybeDeferred(lambda: tor)
+        self._config = defer.maybeDeferred(lambda: config)
         self.public_port = public_port
         self.local_port = local_port
         self.stealth_auth = stealth_auth
@@ -456,8 +458,12 @@ class TCPHiddenServiceEndpoint(object):
 
         self.protocolfactory = protocolfactory
 
-        # self._tor is always a Deferred; see __init__
-        self._tor = yield self._tor
+        # XXX we only use .config from this, and the "old code" always
+        # sent a TorConfig ... leave it like that? Otherwise *all*
+        # endpoints then demand the "high-level API only" :/
+
+        # _config is always a Deferred; see __init__
+        self._config = yield self._config
 
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would
@@ -492,7 +498,7 @@ class TCPHiddenServiceEndpoint(object):
         # see if the hidden-serivce instance we want is already in the
         # config; for non-ephemeral services, the directory is unique;
         # for ephemeral services, the key should exist and be unique.
-        hs_dirs = [hs.dir for hs in self._tor.config.HiddenServices if hasattr(hs, 'dir')]
+        hs_dirs = [hs.dir for hs in self._config.HiddenServices if hasattr(hs, 'dir')]
         if self.hidden_service_dir not in hs_dirs:
             authlines = []
             if self.stealth_auth:
@@ -501,7 +507,7 @@ class TCPHiddenServiceEndpoint(object):
             if self.ephemeral:
                 # this waits for descriptor upload .. so needs the progress stuff?
                 self.hiddenservice = yield EphemeralHiddenService.create(
-                    self._tor.config,
+                    self._config,
                     ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                     private_key=self.private_key,
                     detach=False,
@@ -512,14 +518,14 @@ class TCPHiddenServiceEndpoint(object):
                 # XXX should be a .create() call
                 # -> also, should wait for descriptor upload...
                 self.hiddenservice = yield FilesystemHiddenService.create(
-                    self._tor.config,
+                    self._config,
                     self.hidden_service_dir,
                     ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                     auth=authlines,
                     progress=self._tor_progress_update,
                 )
         else:
-            for hs in self._tor.config.HiddenServices:
+            for hs in self._config.HiddenServices:
                 if hs.dir == self.hidden_service_dir:
                     self.hiddenservice = hs
 
@@ -535,7 +541,7 @@ class TCPHiddenServiceEndpoint(object):
                 self.tcp_listening_port,
                 self.public_port,
                 self.hiddenservice,
-                self._tor.config,
+                self._config,
             )
         )
 

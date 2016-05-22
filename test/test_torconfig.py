@@ -70,6 +70,7 @@ class FakeControlProtocol:
         self.pending_events = {}  #: event type -> list
         self.is_owned = -1
         self.commands = []
+        self.version = "0.2.8.0"
 
     def queue_command(self, cmd):
         d = defer.Deferred()
@@ -961,7 +962,7 @@ Z2Tur2c8UP8zxIoWfSVAi0Ahx+Ou8yKrlCGxYuFiRw==
         conf._setup_hidden_services('''HiddenServiceDir={}
 HiddenServicePort=80 127.0.0.1:1234
 HiddenServiceVersion=2
-HiddenServiceAuthorizeClient=basic
+HiddenServiceAuthorizeClient=basic foo
 HiddenServiceDir=/some/other/fake/path
 HiddenServicePort=80 127.0.0.1:1234
 HiddenServicePort=90 127.0.0.1:2345'''.format(d))

@@ -21,6 +21,7 @@ from twisted.internet.interfaces import IProtocol
 from twisted.internet.interfaces import IReactorTCP
 from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IAddress
+from twisted.internet.interfaces import IStreamClientEndpoint
 
 from txtorcon import TorControlProtocol
 from txtorcon import ITorControlProtocol
@@ -35,6 +36,7 @@ from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory, py3k
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import EphemeralHiddenServiceClient
+from txtorcon.controller import Tor
 
 from . import util
 
@@ -56,6 +58,7 @@ class EndpointTests(unittest.TestCase):
     def setUp(self):
         from txtorcon import endpoints
         endpoints._global_tor_config = None
+        endpoints._global_tor = None
         del endpoints._global_tor_lock
         endpoints._global_tor_lock = defer.DeferredLock()
         self.reactor = FakeReactorTcp(self)
@@ -68,14 +71,17 @@ class EndpointTests(unittest.TestCase):
         )
         self.config = TorConfig(self.protocol)
         self.protocol.answers.append(
-            'config/names=\nHiddenServiceOptions Virtual'
+            'config/names=\nHiddenServiceOptions Virtual\nControlPort Integer'
         )
         self.protocol.answers.append('HiddenServiceOptions')
+        self.protocol.answers.append('37337')
+        self.config.bootstrap()
         self.patcher = patch(
             'txtorcon.controller.find_tor_binary',
             return_value='/not/tor'
         )
         self.patcher.start()
+        return self.config.post_bootstrap
 
     def tearDown(self):
         from txtorcon import endpoints
@@ -86,27 +92,34 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_global_tor(self):
-        config = yield get_global_tor(
+        """
+        XXX what does this really test?
+        just 'testing' the happy-path?
+        """
+        tor = yield get_global_tor(
             Mock(),
-            _tor_launcher=lambda x, y, z: True
+            _tor_launcher=lambda reactor, **kw: Tor(reactor, self.config),
         )
-        self.assertEqual(0, config.SOCKSPort)
+        self.assertIs(tor.config, self.config)
 
     @defer.inlineCallbacks
     def test_global_tor_error(self):
         config0 = yield get_global_tor(
             Mock(),
-            _tor_launcher=lambda x, y, z: True
+            _tor_launcher=lambda reactor, **kw: Tor(reactor, self.config),
         )
         # now if we specify a control_port it should be an error since
         # the above should have launched one.
         try:
-            config1 = yield get_global_tor(Mock(), control_port=111,
-                                           _tor_launcher=lambda x, y, z: True)
+            config1 = yield get_global_tor(
+                Mock(), control_port=111,
+                _tor_launcher=lambda reactor, **kw: Tor(reactor, self.config),
+            )
             self.fail()
         except RuntimeError as e:
             # should be an error
             pass
+
 
     @defer.inlineCallbacks
     def test_endpoint_properties(self):
@@ -140,37 +153,34 @@ class EndpointTests(unittest.TestCase):
     def test_system_tor(self):
         from .test_torconfig import FakeControlProtocol
 
-        def boom(*args):
-            # why does the new_callable thing need a callable that
-            # returns a callable? Feels like I must be doing something
-            # wrong somewhere...
-            def bam(*args, **kw):
-                return self.protocol
-            return bam
-        with patch('txtorcon.controller.launch') as launch_mock:
-            with patch('txtorcon.endpoints.build_tor_connection', new_callable=boom) as btc:
-                client = clientFromString(
-                    self.reactor,
-                    "tcp:host=localhost:port=9050"
-                )
-                ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
-                                                               client, 80)
-                d = ep.listen(NoOpProtocolFactory())
-                self.assertEqual(1, len(self.protocol.commands))
-                self.protocol.commands[0][1].callback(mock_add_onion_response)
-                self.protocol.event_happened('HS_DESC', 'UPLOAD s3aoqcldyhju7dic x random_hs_dir')
-                self.protocol.event_happened('HS_DESC', 'UPLOADED s3aoqcldyhju7dic x random_hs_dir')
-                port = yield d
+        config_patch = patch.object(
+            TorConfig, 'from_protocol',
+            MagicMock(return_value=self.config)
+        )
+        with patch('txtorcon.controller.launch') as launch_mock, config_patch:
+            @implementer(IStreamClientEndpoint)
+            class MockEndpoint(object):
+                def connect(this, factory):
+                    return self.protocol
+            client = MockEndpoint()
+            ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
+                                                           client, 80)
+            d = ep.listen(NoOpProtocolFactory())
+            self.assertEqual(1, len(self.protocol.commands))
+            self.protocol.commands[0][1].callback(mock_add_onion_response)
+            self.protocol.event_happened('HS_DESC', 'UPLOAD s3aoqcldyhju7dic x random_hs_dir')
+            self.protocol.event_happened('HS_DESC', 'UPLOADED s3aoqcldyhju7dic x random_hs_dir')
+            port = yield d
 
-                toa = port.getHost()
+            toa = port.getHost()
 #                self.assertTrue(hasattr(toa, 'clients'))
 #                self.assertTrue(hasattr(toa, 'onion_port'))
-                port.startListening()
-                str(port)
-                port.tor_config
-                # system_tor should be connecting to a running one,
-                # *not* launching a new one.
-                self.assertFalse(launch_mock.called)
+            port.startListening()
+            str(port)
+            port.tor_config
+            # system_tor should be connecting to a running one,
+            # *not* launching a new one.
+            self.assertFalse(launch_mock.called)
 
     @defer.inlineCallbacks
     def test_basic(self):
@@ -180,8 +190,6 @@ class EndpointTests(unittest.TestCase):
         reactor.addSystemEventTrigger = Mock()
 
         ep = TCPHiddenServiceEndpoint(reactor, self.config, 123)
-        self.config.bootstrap()
-        yield self.config.post_bootstrap
         self.assertTrue(IProgressProvider.providedBy(ep))
 
         try:
@@ -241,7 +249,7 @@ class EndpointTests(unittest.TestCase):
         return ep
 
     def test_multiple_listen(self):
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, ephemeral=False)
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.tor, 123, ephemeral=False)
         d0 = ep.listen(NoOpProtocolFactory())
 
         @defer.inlineCallbacks
@@ -313,7 +321,7 @@ class EndpointTests(unittest.TestCase):
             defer.returnValue(arg)
             return
         d0.addBoth(more_listen)
-        self.config.bootstrap()
+        d1 = self.config.bootstrap()
 
         self.protocol.commands[0][1].callback(mock_add_onion_response)
         self.protocol.events['HS_DESC']('UPLOAD s3aoqcldyhju7dic X X X')
@@ -342,6 +350,8 @@ class EndpointTests(unittest.TestCase):
         try:
             with open(os.path.join(tmpdir, 'hostname'), 'w') as f:
                 f.write('public')
+            with open(os.path.join(tmpdir, 'private_key'), 'w') as f:
+                f.write('I am a fake private key blob')
 
             config = TorConfig(self.protocol)
             ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, tmpdir)
@@ -383,7 +393,7 @@ class EndpointTests(unittest.TestCase):
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, prog: defer.succeed(config)
+            _tor_launcher=lambda reactor, **kw: defer.succeed(Tor(reactor, config)),
         )
         ep = serverFromString(
             self.reactor,
@@ -405,7 +415,7 @@ class EndpointTests(unittest.TestCase):
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, prog: defer.succeed(config)
+            _tor_launcher=lambda reactor, **kw: defer.succeed(Tor(reactor, config)),
         )
         ep = serverFromString(
             self.reactor,
@@ -431,7 +441,7 @@ class EndpointTests(unittest.TestCase):
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, prog: defer.succeed(config)
+            _tor_launcher=lambda reactor, **kw: defer.succeed(Tor(reactor, config)),
         )
 
         orig = os.path.realpath('.')
