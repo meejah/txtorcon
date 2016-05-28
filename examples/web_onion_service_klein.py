@@ -15,7 +15,7 @@ from __future__ import print_function
 import sys
 
 from twisted.internet import defer, task, endpoints
-from twisted.web import server, static, resource
+from twisted.web import server
 
 import txtorcon
 
@@ -28,6 +28,7 @@ except ImportError:
 
 
 app = Klein()
+
 
 @app.route('/')
 def home(request):

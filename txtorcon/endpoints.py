@@ -32,9 +32,9 @@ from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
-from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.endpoints import UNIXClientEndpoint
-from twisted.internet import error
+# from twisted.internet.endpoints import TCP4ClientEndpoint
+# from twisted.internet.endpoints import UNIXClientEndpoint
+# from twisted.internet import error
 from twisted.plugin import IPlugin
 from twisted.python.util import FancyEqMixin
 
@@ -43,7 +43,6 @@ from zope.interface import Interface, Attribute
 
 from .onion import FilesystemHiddenService, EphemeralHiddenService
 from .torconfig import TorConfig
-from .torstate import build_tor_connection
 
 
 _global_tor = None  # instance of txtorcon.controller.Tor
@@ -704,7 +703,7 @@ class TCPHiddenServiceEndpointParser(object):
     # note that these are all camelCase because Twisted uses them to
     # do magic parsing stuff, and to conform to Twisted's conventions
     # we should use camelCase in the endpoint definitions...
-    
+
     # XXX need to be able to pass privateKey too (mutually exclusive with hiddenServiceDir)
     def parseStreamServer(self, reactor, public_port, localPort=None,
                           controlPort=None, hiddenServiceDir=None,

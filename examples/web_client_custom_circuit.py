@@ -3,14 +3,10 @@
 
 from __future__ import print_function
 
-from urlparse import urlparse
-
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import react
-from twisted.internet.endpoints import TCP4ClientEndpoint, HostnameEndpoint
-from twisted.web.iweb import IAgentEndpointFactory
-from twisted.web.client import Agent, readBody
-from zope.interface import implementer
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.web.client import readBody
 
 import txtorcon
 

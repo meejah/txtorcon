@@ -2,7 +2,6 @@ from __future__ import print_function
 # a "simple" example, using the highest-level protocol the
 # "controller" stuff.
 
-import os
 import sys
 from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks, Deferred
@@ -28,4 +27,3 @@ def main(reactor):
 
 if __name__ == '__main__':
     react(main)
-

@@ -50,9 +50,12 @@ from txtorcon.interface import (
     ICircuitContainer, ICircuitListener, CircuitListenerMixin,
     IRouterContainer, IAddrListener,
 )
-HiddenService = FilesystemHiddenService  # backwards-compat; plz deprecate!
 
 from txtorcon.web import agent_for_socks_port
+
+
+HiddenService = FilesystemHiddenService  # backwards-compat; plz deprecate!
+
 
 __all__ = [
     "Router",
@@ -86,6 +89,9 @@ __all__ = [
     # new onion + ephemeral API
     "IOnionService", "IAuthenticatedOnionService",
     "EphemeralOnionService",
+
+    # web stuff
+    "agent_for_socks_port",
 
     "__version__", "__author__", "__contact__",
     "__license__", "__copyright__", "__url__",

@@ -5,7 +5,6 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import os
-import re
 import functools
 import warnings
 from io import StringIO
@@ -16,11 +15,10 @@ from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.torcontrolprotocol import TorProtocolError
-from txtorcon.util import find_keywords, py3k
+from txtorcon.util import py3k
 from txtorcon.interface import ITorControlProtocol
-from .onion import *
-
-from zope.interface import Interface, Attribute, implementer
+from txtorcon.onion import FilesystemHiddenService, IOnionClient
+from txtorcon.onion import AuthenticatedHiddenService, EphemeralHiddenService
 
 
 class TorConfigType(object):

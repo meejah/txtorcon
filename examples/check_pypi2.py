@@ -3,13 +3,10 @@
 
 from __future__ import print_function
 
-from urlparse import urlparse
-
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import react
-from twisted.internet.endpoints import UNIXClientEndpoint, HostnameEndpoint, TCP4ClientEndpoint
+from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.web.iweb import IAgentEndpointFactory
-from twisted.web.client import Agent, readBody
 from zope.interface import implementer
 
 import txtorcon
@@ -25,7 +22,7 @@ class AgentEndpointFactoryForCircuit(object):
     def endpointForURI(self, uri):
         """IAgentEndpointFactory API"""
         print("URI", uri, uri.host, uri.port)
-##        return txtorcon.TorClientEndpoint(uri.host, uri.port)
+        # return txtorcon.TorClientEndpoint(uri.host, uri.port)
         # XXX host will be *!@#F#$ bytes on py3
         return self._circ.stream_via(self._reactor, uri.host, uri.port, use_tls=True)
 
@@ -48,18 +45,16 @@ def main(reactor):
     tor = yield txtorcon.connect(reactor, ep)
     print("Connected:", tor)
 
-    #agent = yield txtorcon.agent_for_socks_port(reactor, tor.config, 'unix:/tmp/torsocks/socks', True)
-    #agent = yield txtorcon.agent_for_socks_port(reactor, tor.config, '9875')
+    # agent = yield txtorcon.agent_for_socks_port(reactor, tor.config, 'unix:/tmp/torsocks/socks', True)
+    # agent = yield txtorcon.agent_for_socks_port(reactor, tor.config, '9875')
     agent = tor.web_agent('9875')
-    #uri = 'https://www.torproject.org:80'
+    # uri = 'https://www.torproject.org:80'
     uri = 'https://www.torproject.org:443'
-    #uri = 'http://check.torproject.org/api/ip'
+    # uri = 'http://check.torproject.org/api/ip'
     import treq
     resp = yield treq.get(uri, agent=agent)
     print("Retrieving {} bytes".format(resp.length))
     data = yield resp.text()
     print("Got {} bytes:\n{}\n[...]{}".format(len(data), data[:120], data[-120:]))
-
-# XXX WOOOOoo000t this works to :)
 
 react(main)

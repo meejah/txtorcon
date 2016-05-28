@@ -8,20 +8,19 @@ from __future__ import print_function
 
 import struct
 from socket import inet_aton, inet_ntoa
-from ipaddress import ip_address
+# from ipaddress import ip_address
 
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
-from twisted.internet.interfaces import IProtocolFactory
+# from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.address import IPv4Address
 from twisted.protocols import portforward
 from twisted.protocols import tls
-from twisted.internet.endpoints import TCP4ClientEndpoint
+# from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
 from txtorcon.spaghetti import FSM, State, Transition
-
 
 
 @inlineCallbacks
@@ -30,7 +29,7 @@ def resolve(tor_endpoint, hostname):
     factory = Factory.forProtocol(
         lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE', None, None)
     )
-    proto = yield tor_endpoint.connect(factory)
+    yield tor_endpoint.connect(factory)
     result = yield done
     returnValue(result)
 
@@ -41,7 +40,7 @@ def resolve_ptr(tor_endpoint, hostname):
     factory = Factory.forProtocol(
         lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE_PTR', None, None)
     )
-    proto = yield tor_endpoint.connect(factory)
+    yield tor_endpoint.connect(factory)
     result = yield done
     returnValue(result)
 
@@ -84,7 +83,8 @@ class TorSocksEndpoint(object):
         else:
             proxy_ep = self._proxy_ep
 
-        socks_proto = yield proxy_ep.connect(socks_factory)
+        # socks_proto = yield proxy_ep.connect(socks_factory)
+        yield proxy_ep.connect(socks_factory)
         wrapped_proto = yield done
         if self._tls:
             returnValue(wrapped_proto.wrappedProtocol)
@@ -122,9 +122,9 @@ class _TorSocksProtocol(Protocol):
         assert port >= 0 and port < 2 ** 16
         self._auth_method = 0x02  # "USERNAME/PASSWORD"
         methods = {
-            'CONNECT':     0x01,
-            'RESOLVE':     0xf0,
-            'RESOLVE_PTR': 0xf1,
+            'CONNECT': 0x01,      # plain SOCKS5
+            'RESOLVE': 0xf0,      # Tor-only extension
+            'RESOLVE_PTR': 0xf1,  # Tor-only extension
         }
         assert socks_method in methods
         self._socks_method = methods[socks_method]
@@ -171,7 +171,6 @@ class _TorSocksProtocol(Protocol):
         self._sender = sender
         returnValue(sender)
 
-
     def _error(self, msg):
         reply = struct.unpack('B', msg[1:2])[0]
         print("error; aborting SOCKS:", self.error_code_to_string[reply])
@@ -193,12 +192,12 @@ class _TorSocksProtocol(Protocol):
 
     def _parse_response(self, msg):
         (version, reply, _, typ) = struct.unpack('BBBB', msg[:4])
-        if typ == 0x01: # IPv4
+        if typ == 0x01:         # IPv4
             addr = inet_ntoa(msg[4:8])
-        elif typ == 0x03:  # DOMAINNAME
+        elif typ == 0x03:       # DOMAINNAME
             addrlen = struct.unpack('B', msg[4:5])[0]
             addr = msg[5:5 + addrlen]
-        elif typ == 0x04:  # IPv6
+        elif typ == 0x04:       # IPv6
             addr = msg[4:20]
         else:
             raise Exception("logic error")
@@ -240,26 +239,25 @@ class _TorSocksProtocol(Protocol):
         if self._socks_method == 0xf1:
             data = struct.pack(
                 '!BBBB4sH',
-                5,                  # version
-                self._socks_method, # command
-                0x00,               # reserved
-                0x01,               # IPv4 address
+                5,                   # version
+                self._socks_method,  # command
+                0x00,                # reserved
+                0x01,                # IPv4 address
                 inet_aton(self._host),
                 self._port,
             )
         else:
             data = struct.pack(
                 '!BBBBB{}sH'.format(len(self._host)),
-                5,                  # version
-                self._socks_method, # command
-                0x00,               # reserved
-                0x03,               # DOMAINNAME
+                5,                   # version
+                self._socks_method,  # command
+                0x00,                # reserved
+                0x03,                # DOMAINNAME
                 len(self._host),
                 self._host,
                 self._port,
             )
         self.transport.write(data)
-
 
     def connectionMade(self):
         # print("connectionMade", self.transport.getHost())

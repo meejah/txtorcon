@@ -17,7 +17,7 @@ def main(reactor):
 
     state = yield tor.create_state()
     # or state = yield txtorcon.TorState.from_protocol(tor.protocol)
-    
+
     print("This Tor has PID {}".format(state.tor_pid))
     print("This Tor has the following {} Circuits:".format(len(state.circuits)))
     for c in state.circuits.values():

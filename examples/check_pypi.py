@@ -3,14 +3,10 @@
 
 from __future__ import print_function
 
-from urlparse import urlparse
-
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import react
-from twisted.internet.endpoints import UNIXClientEndpoint, HostnameEndpoint
-from twisted.web.iweb import IAgentEndpointFactory
-from twisted.web.client import Agent, readBody
-from zope.interface import implementer
+from twisted.internet.endpoints import UNIXClientEndpoint
+from twisted.web.client import readBody
 
 import txtorcon
 
@@ -25,7 +21,7 @@ def main(reactor):
     print("State:", state)
 
     # only new tors
-    #socks = tor.config.socks_endpoint("unix:/tmp/foo/socks")
+    # socks = tor.config.socks_endpoint("unix:/tmp/foo/socks")
     socks = tor.config.socks_endpoint(reactor, "9998")
 
     circ = yield state.build_circuit()
@@ -36,7 +32,7 @@ def main(reactor):
         agent = tor.web_agent('unix:/tmp/foo/socks')
     else:
         # this very circuit we created
-        #agent = yield circ.web_agent(reactor, tor.config, 'unix:/tmp/foo/socks')
+        # agent = yield circ.web_agent(reactor, tor.config, 'unix:/tmp/foo/socks')
         agent = circ.web_agent(reactor, socks)
     print("agent", agent)
     resp = yield agent.request('GET', 'https://www.torproject.org')

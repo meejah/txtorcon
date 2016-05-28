@@ -13,8 +13,9 @@
 
 from __future__ import print_function
 from twisted.internet import defer, task, endpoints
-from twisted.web import server, static, resource
+from twisted.web import server, resource
 import txtorcon
+
 
 class Simple(resource.Resource):
     """
@@ -33,7 +34,7 @@ def main(reactor):
     # "controlPort=9051" for example, to connect to a system Tor
     # (accepts paths, too, e.g. "controlPort=/var/run/tor/control")
     # ep = endpoints.serverFromString(reactor, "onion:80:controlPort=9151")
-    
+
     # to re-create a previous hidden-service, pass the private key
     # blob you retrieved earler via port.getHost().onion_key like so:
     # ep = endpoints.serverFromString(reactor, "onion:80:privateKey=<keyblob>")

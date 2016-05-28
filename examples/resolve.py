@@ -6,6 +6,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.endpoints import TCP4ClientEndpoint
 import txtorcon
 
+
 @inlineCallbacks
 def main(reactor):
     ep = TCP4ClientEndpoint(reactor, "localhost", 9051)

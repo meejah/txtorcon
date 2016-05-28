@@ -4,7 +4,7 @@
 # and adds a new hidden service configuration to it.
 
 from twisted.internet import defer
-from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
+from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.web import server, resource
 from twisted.internet.task import react
 

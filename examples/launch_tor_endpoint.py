@@ -27,24 +27,25 @@ class Simple(resource.Resource):
 def main(reactor):
     # several ways to proceed here and what they mean:
     #
-    # ep0:
+    # "onion:80":
     #    launch a new Tor instance, configure a hidden service on some
     #    port and pubish descriptor for port 80
-    # ep1:
+    #
+    # "onion:80:controlPort=9051:localPort=8080:socksPort=9089:hiddenServiceDir=/home/human/src/txtorcon/hidserv":
     #    connect to existing Tor via control-port 9051, configure a hidden
     #    service listening locally on 8080, publish a descriptor for port
     #    80 and use an explicit hiddenServiceDir (where "hostname" and
     #    "private_key" files are put by Tor). We set SOCKS port
     #    explicitly, too.
-    # ep2:
-    #    all the same as ep1, except we launch a new Tor (because no
-    #    "controlPort=9051")
     #
+    # "onion:80:localPort=8080:socksPort=9089:hiddenServiceDir=/home/human/src/txtorcon/hidserv":
+    #    all the same as above, except we launch a new Tor (because no
+    #    "controlPort=9051")
 
-    ep0 = "onion:80"
-    ep1 = "onion:80:controlPort=9051:localPort=8080:socksPort=9089:hiddenServiceDir=/home/human/src/txtorcon/hidserv"
-    ep2 = "onion:80:localPort=8080:socksPort=9089:hiddenServiceDir=/home/human/src/txtorcon/hidserv"
-    hs_endpoint = serverFromString(reactor, ep0)
+    ep = "onion:80:controlPort=9051:localPort=8080:socksPort=9089:hiddenServiceDir=/home/human/src/txtorcon/hidserv"
+    ep = "onion:80:localPort=8080:socksPort=9089:hiddenServiceDir=/home/human/src/txtorcon/hidserv"
+    ep = "onion:80"
+    hs_endpoint = serverFromString(reactor, ep)
 
     def progress(percent, tag, message):
         bar = int(percent / 10)

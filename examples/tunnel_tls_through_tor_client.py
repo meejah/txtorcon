@@ -1,10 +1,6 @@
 
-from twisted.internet.task import react
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.python.filepath import FilePath
-from twisted.internet import ssl, task, protocol, endpoints, defer
-from twisted.python.modules import getModule
+from twisted.internet import ssl, task, protocol, defer
 from txsocksx.tls import TLSWrapClientEndpoint
 import txtorcon
 
@@ -19,6 +15,8 @@ def main(reactor):
     ca_cert = ssl.Certificate.loadPEM(ca_data)
     client_key = ssl.PrivateCertificate.loadPEM(client_data)
     options = ssl.optionsForClientTLS(u'the-authority', ca_cert, client_key)
+    # XXX FIXME what was/is 'ip' supposed to be? ultimate endpoint?
+    ip = 'FIXME'
     exampleEndpoint = txtorcon.TorClientEndpoint(ip, 8966, socks_hostname="127.0.0.1")
     tlsEndpoint = TLSWrapClientEndpoint(options, exampleEndpoint)
     deferred = yield tlsEndpoint.connect(factory)

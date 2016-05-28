@@ -365,7 +365,6 @@ def _await_descriptor_upload(config, onion, progress):
     yield config.tor_protocol.add_event_listener('HS_DESC', hs_desc)
     yield uploaded
     yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
-    
 
 
 @implementer(IOnionService)
@@ -408,7 +407,7 @@ class EphemeralHiddenService(object):
         # string syntax (which uses ":" as delimeters) is annoying
         if onion.private_key and not onion.private_key.startswith("RSA1024:"):
             onion.private_key = "RSA1024:" + onion.private_key
-        
+
         # okay, we're set up to listen, and now we issue the ADD_ONION
         # command. this will set ._hostname and ._private_key properly
         cmd = 'ADD_ONION {}'.format(onion.private_key or 'NEW:BEST')
@@ -634,7 +633,7 @@ class AuthenticatedHiddenService(object):
         rtn.append((
             'HiddenServiceAuthorizeClient',
             "{} {}".format(self._auth_type, ','.join(self.client_names()))
-         ))
+        ))
         return rtn
 
 
@@ -912,4 +911,3 @@ def create_ephemeral_onion_service(
         raise NotImplementedError()
     elif auth_type == 'stealth':
         raise NotImplementedError()
-

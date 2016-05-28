@@ -42,6 +42,7 @@ else:
     py3k = False
     basestring = basestring
 
+
 def version_at_least(version_string, major, minor, micro, patch):
     """
     This returns True if the version_string represents a Tor version
@@ -140,7 +141,7 @@ def maybe_ip_addr(addr):
 
     try:
         return ipaddress.ip_address(addr)
-    except ValueError as e:
+    except ValueError:
         pass
     return str(addr)
 
