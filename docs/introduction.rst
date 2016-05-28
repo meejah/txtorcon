@@ -37,6 +37,8 @@ directory over an onion service:
 txtorcon strives to provide sane and **safe** defaults.
 
 
+.. _features:
+
 Features Overview
 -----------------
 
@@ -75,6 +77,8 @@ from asciinema.org:
 
 :raw-html:`<script type="text/javascript" src="https://asciinema.org/a/eh2gxfz3rc1ztgapkcol47d6o.js" id="asciicast-eh2gxfz3rc1ztgapkcol47d6o" async></script>`
 
+
+.. _known_users:
 
 Known Users
 -----------

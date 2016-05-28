@@ -55,6 +55,8 @@ txtorcon runs all tests cleanly under Python2, Python3 and PyPy on:
   -  **Reports from other OSes appreciated.**
 
 
+.. _configure_tor:
+
 Tor Configuration
 -----------------
 
@@ -136,6 +138,8 @@ the checkout will work (the first commands ultimately runs
 ``debootstrap`` and some ``apt`` commands besides ``docker`` things).
 
 
+.. _dependencies:
+
 Dependencies / Requirements
 ---------------------------
 
@@ -152,18 +156,18 @@ requirements with e.g. ``pip install txtorcon[dev]``.
   standard module in Python3, but requires installing the backported
   package on Python2.
 
-- development: `Sphinx <http://sphinx.pocoo.org/>`_ if you want to
+- **dev only**: `Sphinx <http://sphinx.pocoo.org/>`_ if you want to
   build the documentation. In that case you'll also need something
   called ``python-repoze.sphinx.autointerface`` (at least in Debian)
   to build the Interface-derived docs properly.
 
-- development: `coverage <http://nedbatchelder.com/code/coverage/>`_
+- **dev only**: `coverage <http://nedbatchelder.com/code/coverage/>`_
   to run the code-coverage metrics.
 
-- development: `Tox <https://testrun.org/tox/latest/>`_ to run
+- **dev only**: `Tox <https://testrun.org/tox/latest/>`_ to run
   different library revisions.
 
-- optional: `GraphViz <http://www.graphviz.org/>`_ is used in the
+- **dev optional**: `GraphViz <http://www.graphviz.org/>`_ is used in the
   tests (and to generate state-machine diagrams, if you like) but
   those tests are skipped if "dot" isn't in your path
 

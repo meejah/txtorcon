@@ -252,7 +252,7 @@ class TCPHiddenServiceEndpoint(object):
         unless you have a specific need to.
 
         You can also access this global txtorcon instance via
-        :method:`txtorcon.get_global_tor` (which is precisely what
+        :meth:`txtorcon.get_global_tor` (which is precisely what
         this method uses to get it).
 
         All keyword options have defaults (e.g. random ports, or

@@ -4,9 +4,10 @@
 Contributions
 =============
 
-You can help contribute to txtorcon by filing bugs, reporting success
-stories or by adding a feature or fixing a bug. Even asking that
-"silly" question helps me with documentation writing.
+You can help contribute to txtorcon by reporting bugs, sending success
+stories, by adding a feature or fixing a bug. Even asking that "silly"
+question helps me with documentation writing.
+
 
 .. _contact info:
 
@@ -25,6 +26,7 @@ Discussing txtorcon is welcome in the following places:
  - bugs: use `txtorcon's issues
    <https://github.com/meejah/txtorcon/issues>`_ tracker on GitHub.
  - `@txtorcon <https://twitter.com/txtorcon>`_ on Twitter (announcements only)
+
 
 Public Key
 ----------

@@ -43,10 +43,11 @@ sockets. See ":ref:`configure_tor`" for information on how to configure
 tor to work with txtorcon. By default, "COOKIE" authentication is
 used; only if that is not available do we try password authentication.
 
-To connect, use :meth:`txtorcon.Tor.connect` which returns a Deferred
+To connect, use :meth:`txtorcon.connect` which returns a Deferred
 that will fire with a :class:`txtorcon.Tor` instance. If you need
 access to the :class:`txtorcon.TorControlProtocol` instance, it's
-available via the ``.protocol`` property.
+available via the ``.protocol`` property (there is always exactly one
+of these per :class:`txtorcon.Tor` instance).
 
 
 Launching a New Tor
@@ -54,14 +55,16 @@ Launching a New Tor
 
 It's also possible to launch your own Tor instance. txtorcon keeps a
 "global" tor available for use by e.g. the ``.global_tor`` endpoint
-factory functions. You can access it via
-:meth:`txtorcon.get_global_tor`.
+factory functions (like
+:meth:`txtorcon.TCPHiddenSeviceEndpoint.global_tor`). You can access
+it via :meth:`txtorcon.get_global_tor`. There is exactly zero or one
+of these *per Python process* that uses ``txtorcon``.
 
 To explicitly launch your own Tor instance, use
-:meth:`txtorcon.Tor.launch`. You can pass a couple of minimal options
+:meth:`txtorcon.launch`. You can pass a couple of minimal options
 (``data_directory`` being recommended). If you need to set other Tor
 options, use ``.config`` to retrieve the :class:`txtorcon.TorConfig`
-instance associated with this tor.
+instance associated with this tor and change configuration afterwards.
 
 
 .. _guide_style:
