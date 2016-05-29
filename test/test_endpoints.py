@@ -37,6 +37,7 @@ from txtorcon.util import NoOpProtocolFactory, py3k
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import EphemeralHiddenServiceClient
 from txtorcon.controller import Tor
+from txtorcon.socks import _TorSocksFactory
 
 from . import util
 
@@ -761,7 +762,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         self.assertEqual(ep._socks_username, 'foo')
         self.assertEqual(ep._socks_password, 'bar')
 
-    @patch('txtorcon.socks._TorSocksProtocol', FakeSocksProto)
+    @patch.object(_TorSocksFactory, "protocol", FakeSocksProto)
     @defer.inlineCallbacks
     def test_happy_path(self):
         """

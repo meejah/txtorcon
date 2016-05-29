@@ -26,8 +26,8 @@ from txtorcon.spaghetti import FSM, State, Transition
 @inlineCallbacks
 def resolve(tor_endpoint, hostname):
     done = Deferred()
-    factory = Factory.forProtocol(
-        lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE', None, None)
+    factory = _TorSocksFactory(
+        done, hostname, 0, 'RESOLVE', None, None,
     )
     yield tor_endpoint.connect(factory)
     result = yield done
@@ -37,8 +37,8 @@ def resolve(tor_endpoint, hostname):
 @inlineCallbacks
 def resolve_ptr(tor_endpoint, hostname):
     done = Deferred()
-    factory = Factory.forProtocol(
-        lambda: _TorSocksProtocol(done, hostname, 0, 'RESOLVE_PTR', None, None)
+    factory = _TorSocksFactory(
+        done, hostname, 0, 'RESOLVE_PTR', None, None,
     )
     yield tor_endpoint.connect(factory)
     result = yield done
@@ -70,12 +70,12 @@ class TorSocksEndpoint(object):
             from twisted.internet.ssl import optionsForClientTLS
             context = optionsForClientTLS(unicode(self._host))
             tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
-            socks_factory = Factory.forProtocol(
-                lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', tls_factory, self._got_source_port)
+            socks_factory = _TorSocksFactory(
+                done, self._host, self._port, 'CONNECT', tls_factory, self._got_source_port,
             )
         else:
-            socks_factory = Factory.forProtocol(
-                lambda: _TorSocksProtocol(done, self._host, self._port, 'CONNECT', factory, self._got_source_port)
+            socks_factory = _TorSocksFactory(
+                done, self._host, self._port, 'CONNECT', factory, self._got_source_port,
             )
 
         if isinstance(self._proxy_ep, Deferred):
@@ -281,3 +281,19 @@ class _TorSocksProtocol(Protocol):
         # print("dataReceived({} bytes)".format(len(d)))
         self._fsm.process(d)
         return
+
+
+class _TorSocksFactory(Factory):
+    """
+    Darn, this is only here because Factory.forProtocol doesn't exist
+    in older Twisteds that we care about (for Debian wheezy, jessie).
+    """
+    protocol = _TorSocksProtocol
+    def __init__(self, *args, **kw):
+        self._args = args
+        self._kw = kw
+
+    def buildProtocol(self, addr):
+        p = self.protocol(*self._args, **self._kw)
+        p.factory = self
+        return p
