@@ -41,6 +41,12 @@ class _AgentEndpointFactoryForCircuit(object):
 
     def endpointForURI(self, uri):
         """IAgentEndpointFactory API"""
+
+        # we wire up got_source_port here, between TorSocksEndpoint
+        # and TorCircuitEndpoint, because this endpointForURI method
+        # can't return a Deferred. We need that because we must await
+        # knowing the source-port of the stream we're interested in --
+        # but the only async method we have available to use is
         got_source_port = Deferred()
         torsocks = TorSocksEndpoint(
             self._socks_ep,
