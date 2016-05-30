@@ -261,7 +261,7 @@ class TorState(object):
         self._cleanup = None
 
         class die(object):
-            __name__ = 'die'  # FIXME? just to ease spagetti.py:82's pain
+            __name__ = 'die'  # FIXME? just to ease spagetti.py:'dotty' pain
 
             def __init__(self, msg):
                 self.msg = msg

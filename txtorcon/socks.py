@@ -309,6 +309,9 @@ class _TorSocksProtocol(Protocol):
             self._sender.connectionLost(reason)
         if not self._done.called:
             self._done.callback(reason)
+        # XXX right? ...but actually we should .errback here
+        if self._got_source_port and not self._got_source_port.is_called():
+            self._got_source_port.callback(self.transport.getHost())
 
     def dataReceived(self, d):
         # print("dataReceived({} bytes)".format(len(d)))

@@ -8,6 +8,7 @@ import os
 import functools
 import warnings
 from io import StringIO
+from collections import OrderedDict
 
 from twisted.python import log
 from twisted.internet import defer
@@ -281,7 +282,7 @@ class TorConfig(object):
         else:
             self._protocol = ITorControlProtocol(control)
 
-        self.unsaved = {}
+        self.unsaved = OrderedDict()
         '''Configuration that has been changed since last save().'''
 
         self.parsers = {}
