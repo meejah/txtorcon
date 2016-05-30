@@ -4,10 +4,10 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
-from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 from twisted.web.iweb import IAgentEndpointFactory
 from twisted.web.client import Agent
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
 from zope.interface import implementer
 
@@ -28,7 +28,7 @@ class _AgentEndpointFactoryUsingTor(object):
             self._proxy_ep,
             uri.host,
             uri.port,
-            uri.scheme == 'https',
+            tls=(uri.scheme == 'https'),
         )
 
 

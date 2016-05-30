@@ -21,6 +21,7 @@ from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.endpoints import serverFromString
 
 from zope.interface import implementer
+from zope.interface import Interface
 
 try:
     import GeoIP as _GeoIP
