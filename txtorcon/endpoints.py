@@ -269,8 +269,10 @@ class TCPHiddenServiceEndpoint(object):
             control_port=control_port,
             progress_updates=progress
         )
-        # tor is a Deferred here, but endpoint resolves it in
-        # the listen() call
+        # tor is a Deferred here, but endpoint resolves it in the
+        # listen() call. Also, we want it to resolve to a TorConfig,
+        # not a Tor
+        tor.addCallback(lambda tor: tor.config)
         r = TCPHiddenServiceEndpoint(
             reactor, tor, public_port,
             hidden_service_dir=hidden_service_dir,
