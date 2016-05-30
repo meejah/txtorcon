@@ -14,7 +14,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 # from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.address import IPv4Address
-from twisted.protocols import portforward
+# from twisted.protocols import portforward
 from twisted.protocols import tls
 # from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
@@ -163,7 +163,8 @@ class _TorSocksProtocol(Protocol):
         sender = yield self._factory.buildProtocol(addr)
         # portforward.ProxyClient is going to call setPeer but this
         # probably doesn't have it...
-        client_proxy = portforward.ProxyClient()
+        # client_proxy = portforward.ProxyClient()
+        client_proxy = ProxyClient()
         sender.makeConnection(self.transport)
 
         setattr(sender, 'setPeer', lambda _: None)
@@ -289,6 +290,7 @@ class _TorSocksFactory(Factory):
     in older Twisteds that we care about (for Debian wheezy, jessie).
     """
     protocol = _TorSocksProtocol
+
     def __init__(self, *args, **kw):
         self._args = args
         self._kw = kw

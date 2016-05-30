@@ -101,7 +101,7 @@ def get_global_tor(reactor, control_port=None,
             except KeyError:
                 # XXX i think just from tests?
                 print("No ControlPort -- weird, but we'll let it go")
-                
+
         defer.returnValue(_global_tor)
     finally:
         _global_tor_lock.release()
