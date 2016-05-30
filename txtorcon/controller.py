@@ -26,8 +26,7 @@ from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TCPHiddenServiceEndpoint
-from txtorcon import socks
-from txtorcon import web
+from . import socks
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
@@ -394,6 +393,9 @@ class Tor(object):
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
+        # local import since not all platforms have this
+        from txtorcon import web
+
         # XXX make this a method, use in Circuit.web_agent
         if socks_config is not None:
             if isinstance(socks_config, six.text_type):

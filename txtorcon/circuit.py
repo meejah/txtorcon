@@ -17,7 +17,6 @@ from zope.interface import Interface, implementer  # XXX FIXME
 
 from .interface import IRouterContainer, IStreamAttacher
 from txtorcon.util import find_keywords, maybe_ip_addr
-from txtorcon import web
 
 
 # look like "2014-01-25T02:12:14.593772"
@@ -184,6 +183,10 @@ class Circuit(object):
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
+        # local import because there isn't Agent stuff on some
+        # platforms we support, so this will only error if you try
+        # this on the wrong platform (pypy [??] and old-twisted)
+        from txtorcon import web
         return web.tor_agent(
             reactor,
             socks_endpoint,

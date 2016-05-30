@@ -51,7 +51,11 @@ from txtorcon.interface import (
     IRouterContainer, IAddrListener,
 )
 
-from txtorcon.web import agent_for_socks_port
+try:
+    from txtorcon.web import agent_for_socks_port
+except ImportError as e:
+    def agent_for_socks_port(*args, **kw):
+        raise RuntimeError("Couldn't import {}, so no web-agent available".format(e))
 
 
 HiddenService = FilesystemHiddenService  # backwards-compat; plz deprecate!
