@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.join(os.path.split(__file__)[0], '_themes'))
 
 #keep_warnings = True
 pygments_style = 'monokai'
+pygments_style = 'solarized_dark256'
 
 ## trying to set t his somewhere...
 autodoc_member_order = 'bysource'
@@ -103,7 +104,7 @@ exclude_patterns = ['_build']
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+#pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
