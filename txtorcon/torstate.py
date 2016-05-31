@@ -219,6 +219,26 @@ class TorState(object):
         :class:`txtorcon.interface.IStreamAttacher` to attach new
         streams we hear about."""
 
+        # XXX FIXME just playin' around
+        from txtorcon.util import _ListenerCollection
+        self._circuit_listeners = _ListenerCollection([
+            'new',       # see ICircuitListener.circuit_new
+            'launched',  # see ICircuitListener.circuit_launched
+            'extend',    # ...etc
+            'built',
+            'closed',
+            'failed',
+        ])
+
+        self._stream_listeners = _ListenerCollection([
+            'new',        # see IStreamListener.stream_new
+            'succeeded',  # see IStreamListener.stream_succeeded
+            'attach',     # ...etc
+            'detach',
+            'closed',
+            'failed',
+        ])
+
         self.tor_binary = 'tor'
 
         self.circuit_listeners = []
@@ -572,6 +592,63 @@ class TorState(object):
         return self.protocol.queue_command(
             'CLOSECIRCUIT %s%s' % (circid, flags)
         )
+
+    # Playing with adding a second different "listen for circuit
+    # events" API here: existing one is to implement ICircuitListener
+    # or subclass ICircuitListenerMixIn, and the new one is to use
+    # on_circuit_*() to add individual listeners. Handy when you just
+    # want one?
+
+    # XXX "too magic" if we just make this so that you do
+    # "state.on_circuit.built(callback)" instead of
+    # "state.on_circuit_built" etc?
+    def on_circuit_new(self, callback):
+        """
+        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_new`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.new.add(callback)
+
+    def on_circuit_launched(self, callback):
+        """
+        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_launched`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.launched.add(callback)
+
+    def on_circuit_extend(self, callback):
+        """
+        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_extend`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.extend.add(callback)
+
+    def on_circuit_built(self, callback):
+        """
+        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_built`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.built.add(callback)
+
+    def on_circuit_closed(self, callback):
+        """
+        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_closed`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.closed.add(callback)
+
+    def on_circuit_failed(self, callback):
+        """
+        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_failed`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.failed.add(callback)
 
     def add_circuit_listener(self, icircuitlistener):
         listen = ICircuitListener(icircuitlistener)
@@ -947,10 +1024,12 @@ class TorState(object):
         "ICircuitListener API"
         txtorlog.msg("circuit_launched", circuit)
         self.circuits[circuit.id] = circuit
+        self._circuit_listeners.launched.notify(circuit)
 
     def circuit_extend(self, circuit, router):
         "ICircuitListener API"
         txtorlog.msg("circuit_extend:", circuit.id, router)
+        self._circuit_listeners.extend.notify(circuit, router)
 
     def circuit_built(self, circuit):
         "ICircuitListener API"
@@ -959,11 +1038,13 @@ class TorState(object):
             "->".join("%s.%s" % (x.name, x.location.countrycode) for x in circuit.path),
             circuit.streams
         )
+        self._circuit_listeners.built.notify(circuit)
 
     def circuit_new(self, circuit):
         "ICircuitListener API"
         txtorlog.msg("circuit_new:", circuit.id)
         self.circuits[circuit.id] = circuit
+        self._circuit_listeners.new.notify(circuit)
 
     def circuit_destroy(self, circuit):
         "Used by circuit_closed and circuit_failed (below)"
@@ -976,8 +1057,10 @@ class TorState(object):
         "ICircuitListener API"
         txtorlog.msg("circuit_closed", circuit)
         self.circuit_destroy(circuit)
+        self._circuit_listeners.closed.notify(circuit, **kw)
 
     def circuit_failed(self, circuit, **kw):
         "ICircuitListener API"
         txtorlog.msg("circuit_failed", circuit, str(kw))
         self.circuit_destroy(circuit)
+        self._circuit_listeners.failed.notify(circuit, **kw)

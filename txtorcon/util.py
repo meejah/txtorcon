@@ -338,3 +338,88 @@ def unescape_quoted_string(string):
         # XXX hmmm?
         return bytes(string, 'ascii').decode('unicode-escape')
     return string.decode('string-escape')
+
+
+class IListener(Interface):
+    def add(callback):
+        """
+        Add a listener. The arguments to the callback are determined by whomever calls notify()
+        """
+
+    def remove(callback):
+        """
+        Add a listener. The arguments to the callback are determined by whomever calls notify()
+        """
+
+    def notify(*args, **kw):
+        """
+        Calls every listener with the given args and keyword-args.
+
+        XXX errors? just log?
+        """
+
+
+@implementer(IListener)
+class _Listener(object):
+    """
+    Internal helper.
+    """
+
+    def __init__(self):
+        self._listeners = set()
+
+    def add(self, callback):
+        """
+        Add a callback to this listener
+        """
+        self._listeners.add(callback)
+
+    __call__ = add  #: alias for "add"
+
+    def remove(self, callback):
+        """
+        Remove a callback from this listener
+        """
+        self._listeners.remove(callback)
+
+    def notify(self, *args, **kw):
+        """
+        Calls all listeners with the specified args.
+
+        Returns a Deferred which callbacks when all the listeners
+        which return Deferreds have themselves completed.
+        """
+        calls = []
+
+        def failed(fail):
+            # XXX use logger
+            fail.printTraceback()
+
+        for cb in self._listeners:
+            d = defer.maybeDeferred(cb, *args, **kw)
+            d.addErrback(failed)
+            calls.append(d)
+        return defer.DeferredList(calls)
+
+
+class _ListenerCollection(object):
+    """
+    Internal helper.
+
+    This collects all your valid event listeners together in one
+    object if you want.
+    """
+    def __init__(self, valid_events):
+        self._valid_events = valid_events
+        for e in valid_events:
+            setattr(self, e, _Listener())
+
+    def __call__(self, event, callback):
+        if event not in self._valid_events:
+            raise Exception("Invalid event '{}'".format(event))
+        getattr(self, event).add(callback)
+
+    def remove(self, event, callback):
+        if event not in self._valid_events:
+            raise Exception("Invalid event '{}'".format(event))
+        getattr(self, event).remove(callback)
