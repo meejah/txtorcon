@@ -16,6 +16,7 @@ from twisted.internet import defer, task, endpoints
 from twisted.web import server, static, resource
 import txtorcon
 
+
 @defer.inlineCallbacks
 def main(reactor):
     # a simple Web site; could be any other listening service of course
