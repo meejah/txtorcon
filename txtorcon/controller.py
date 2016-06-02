@@ -501,7 +501,7 @@ class Tor(object):
         # users should use this or another factory-method to
         # instantiate them...
         return TCPHiddenServiceEndpoint(
-            self._reactor, self, port,
+            self._reactor, self.config, port,
             hidden_service_dir=None,
             local_port=None,
             ephemeral=True,
@@ -510,7 +510,7 @@ class Tor(object):
 
     def create_onion_disk_endpoint(self, port, hs_dir=None):
         return TCPHiddenServiceEndpoint(
-            self._reactor, self, port,
+            self._reactor, self.config, port,
             hidden_service_dir=hs_dir,
             local_port=None,
             ephemeral=False,

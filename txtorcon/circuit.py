@@ -234,6 +234,7 @@ class Circuit(object):
             tls=use_tls,
             got_source_port=got_source_port,
         )
+        # XXX FIXME got_source_port is silly
         return TorCircuitEndpoint(reactor, self._torstate, self, ep, got_source_port)
 
     @property
