@@ -6,11 +6,12 @@ from __future__ import with_statement
 
 import os
 import sys
+import six
 import shlex
 import tempfile
 import functools
+import ipaddress
 from io import StringIO
-import six
 
 from twisted.python import log
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
@@ -442,10 +443,38 @@ class Tor(object):
         """
         return socks.resolve_ptr(self._socks_endpoint, ip)
 
-    def stream_via(self, target_endpoint):
+    # XXX maybe use this, stolen from magic-wormhole?
+    def _is_non_public_numeric_address(self, host):
+        # for numeric hostnames, skip RFC1918 addresses, since no Tor exit
+        # node will be able to reach those. Likewise ignore IPv6 addresses.
+        try:
+            a = ipaddress.ip_address(host)
+        except ValueError:
+            return False # non-numeric, let Tor try it
+        if a.version != 4:
+            return True # IPv6 gets ignored
+        if (a.is_loopback or a.is_multicast or a.is_private or a.is_reserved
+            or a.is_unspecified):
+            return True # too weird, don't connect
+        return False
+
+    def stream_via(self, host, port, use_tls=False, socks_port=None):
         """
         XXX FIXME something to create client-side endpoints
+
+        The socks_port thing .. hmm... XXX (would make it more like web_agent() ...)
         """
+        if self._is_non_public_numeric_address(host):
+            raise ValueError("'{}' isn't going to work over Tor".format(host))
+
+        from .endpoints import TorClientEndpoint
+        socks_endpoint = self.config.socks_endpoint
+        return TorClientEndpoint(
+            self._reactor, host, port,
+            self._socks_endpoint,
+            tls=use_tls,
+#            got_source_port=got_source_port,
+        )
 
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
