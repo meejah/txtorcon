@@ -592,11 +592,13 @@ class TorConfig(object):
         for (key, value) in self.unsaved.items():
             if key == 'HiddenServices':
                 self.config['HiddenServices'] = value
-                services = set()
+                services = list()
                 # authenticated services get flattened into the HiddenServices list...
                 for hs in value:
                     if IOnionClient.providedBy(hs):
-                        services.add(IOnionClient(hs).parent)
+                        parent = IOnionClient(hs).parent
+                        if parent not in services:
+                            services.append(parent)
                     elif isinstance(hs, EphemeralHiddenService):
                         raise ValueError(
                             "Only txtorcon.HiddenService instances may be added"
@@ -604,7 +606,8 @@ class TorConfig(object):
                             " must be created with 'create_onion_service'."
                         )
                     else:
-                        services.add(hs)
+                        if hs not in services:
+                            services.append(hs)
 
                 for hs in services:
                     for (k, v) in hs.config_attributes():
