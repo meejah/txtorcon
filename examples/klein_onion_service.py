@@ -4,12 +4,13 @@
 # https://klein.readthedocs.org/en/latest/
 
 from __future__ import print_function
-from twisted.internet import defer, task, endpoints, reactor
-from twisted.web import server, static
+from twisted.internet import defer, task, endpoints
+from twisted.web import server
 import txtorcon
 
 from klein import Klein
 app = Klein()
+
 
 @app.route('/')
 def home(request):

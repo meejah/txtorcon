@@ -16,6 +16,7 @@ from twisted.internet import defer, task, endpoints
 from twisted.web import server, static, resource
 import txtorcon
 
+
 @defer.inlineCallbacks
 def main(reactor):
     # a simple Web site; could be any other listening service of course
@@ -27,7 +28,7 @@ def main(reactor):
     # "controlPort=9051" for example, to connect to a system Tor
     # (accepts paths, too, e.g. "controlPort=/var/run/tor/control")
     ep = endpoints.serverFromString(reactor, "onion:80:controlPort=9151")
-    #ep = endpoints.serverFromString(reactor, "onion:80")
+    # ep = endpoints.serverFromString(reactor, "onion:80")
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
