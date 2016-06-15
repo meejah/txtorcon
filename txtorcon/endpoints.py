@@ -469,6 +469,14 @@ class TCPHiddenServiceEndpoint(object):
 
         # _config is always a Deferred; see __init__
         self._config = yield self._config
+        if not isinstance(self._config, TorConfig):
+            raise RuntimeError(
+                'Expected a TorConfig instance but '
+                'got "{}.{}" instead.'.format(
+                    self._config.__class__.__module__,
+                    self._config.__class__.__name__,
+                )
+            )
 
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would

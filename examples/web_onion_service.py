@@ -21,7 +21,7 @@ import txtorcon
 def main(reactor):
     tor = yield txtorcon.connect(
         reactor,
-        endpoints.TCP4ClientEndpoint(reactor, '127.0.0.1', 9251),
+        endpoints.TCP4ClientEndpoint(reactor, '127.0.0.1', 9151),
         # endpoints.UNIXClientEndpoint(reactor, "/var/run/tor/control"),
     )
     ep = tor.create_onion_endpoint(80)
