@@ -148,6 +148,8 @@ class _TorSocksProtocol(Protocol):
         """
         self._done = done
         self._host = host[:255]
+        if isinstance(self._host, unicode):
+            self._host = self._host.encode('ascii')
         self._port = port
         self._got_source_port = got_source_port
         assert port == int(port)

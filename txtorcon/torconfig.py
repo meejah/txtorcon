@@ -592,6 +592,9 @@ class TorConfig(object):
         for (key, value) in self.unsaved.items():
             if key == 'HiddenServices':
                 self.config['HiddenServices'] = value
+                # using a list here because at least one unit-test
+                # cares about order -- and conceivably order *could*
+                # matter here, to Tor...
                 services = list()
                 # authenticated services get flattened into the HiddenServices list...
                 for hs in value:
