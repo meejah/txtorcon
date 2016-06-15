@@ -3,8 +3,10 @@
 
 
 
+
 .. _NOTE: see docs/index.rst for the starting-point
 .. _ALSO: https://txtorcon.readthedocs.org for rendered docs
+
 
 
 
@@ -18,6 +20,7 @@
 
 .. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
     :target: http://codecov.io/github/meejah/txtorcon?branch=master
+
 
 txtorcon
 ========
@@ -40,13 +43,14 @@ for `Tor <https://www.torproject.org/>`_ using the `Twisted
 This is useful for writing utilities to control or make use of Tor in
 event-based Python programs. If your Twisted program supports
 endpoints (like ``twistd`` does) your server or client can make use of
-Tor immediately, with no code changes.
+Tor immediately, with no code changes (just install txtorcon).
 
 
 Try It Now On Debian/Ubuntu
 ---------------------------
 
-For example, serve some files via hidden service:
+For example, serve some files via an onion service (*aka* hidden
+service):
 
 .. code-block:: shell-session
 
