@@ -8,7 +8,9 @@ Latest Release
 
 txtorcon is on PyPI and in Debian since `jessie
 <https://packages.debian.org/jessie/python-txtorcon>`_ (thanks to
-Lunar!). So, one of these should work:
+Lunar and now `irl
+<https://qa.debian.org/developer.php?login=irl@debian.org>`_!). So,
+one of these should work:
 
 - install latest release: ``pip install txtorcon``
 - Debian or Ubuntu: ``apt-get install python-txtorcon``
