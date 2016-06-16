@@ -21,7 +21,7 @@ import txtorcon
 def main(reactor):
     # a simple Web site; could be any other listening service of course
     res = resource.Resource()
-    res.putChild('/', static.Data("<html>Hello, onion-service world!</html>", 'text/html'))
+    res.putChild(b'', static.Data("<html>Hello, onion-service world!</html>", 'text/html'))
 
     # "onion:" is for Tor Onion Services, and the only required
     # argument is the public port we advertise. You can pass

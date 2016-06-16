@@ -26,7 +26,7 @@ def main(reactor):
     )
     ep = tor.create_onion_endpoint(80)
     res = resource.Resource()
-    res.putChild('/', static.Data("<html>Hello, onion-service world!</html>", 'text/html'))
+    res.putChild(b'', static.Data("<html>Hello, onion-service world!</html>", 'text/html'))
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
