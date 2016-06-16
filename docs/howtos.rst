@@ -24,7 +24,7 @@ Install txtorcon On Debian
 --------------------------
 
 Thanks to work by `Lunar
-<http://qa.debian.org/developer.php?login=lunar@debian.org>`_,
+<http://qa.debian.org/developer.php?login=lunar@debian.org>`_ and subsequently `irl <https://qa.debian.org/developer.php?login=irl@debian.org>`_,
 txtorcon is usually rapidly packaged into Debian. This means that it
 gets into `stretch
 <https://packages.debian.org/stretch/python-txtorcon>`_ fairly quickly,
