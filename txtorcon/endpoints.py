@@ -18,10 +18,10 @@ from txtorcon.socks import TorSocksEndpoint
 # class (and the parse() doesn't provide a 'reactor' argument).
 try:
     from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
-    _HAVE_TX_14 = True
+    _TX_CLIENT_ENDPOINT_REACTOR = True
 except ImportError:
     from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor
-    _HAVE_TX_14 = False
+    _TX_CLIENT_ENDPOINT_REACTOR = False
 
 from twisted.internet import defer
 from twisted.python import log
@@ -875,7 +875,7 @@ class TorClientEndpointStringParser(object):
     def parseStreamClient(self, *args, **kwargs):
         # for Twisted 14 and 15 (and more) the first argument is
         # 'reactor', for older Twisteds it's not
-        if _HAVE_TX_14:
+        if _TX_CLIENT_ENDPOINT_REACTOR:
             return self._parseClient(*args, **kwargs)
         else:
             from twisted.internet import reactor
