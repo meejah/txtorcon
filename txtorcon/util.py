@@ -340,6 +340,21 @@ def unescape_quoted_string(string):
     return string.decode('string-escape')
 
 
+def default_control_port():
+    """
+    This returns a default control port, which respects an environment
+    variable `TX_CONTROL_PORT`. Without the environment variable, this
+    returns 9151 (the Tor Browser Bundle default).
+
+    You shouldn't use this in "normal" code, this is a convenience for
+    the examples.
+    """
+    try:
+        return int(os.environ['TX_CONTROL_PORT'])
+    except KeyError:
+        return 9151
+
+
 class IListener(Interface):
     def add(callback):
         """

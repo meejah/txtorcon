@@ -9,6 +9,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.web.client import readBody
 
 import txtorcon
+from txtorcon.util import default_control_port
 
 
 @inlineCallbacks
@@ -16,7 +17,7 @@ def main(reactor):
     # use port 9051 for system tor instances, or:
     # ep = UNIXClientEndpoint(reactor, '/var/run/tor/control')
     # ep = UNIXClientEndpoint(reactor, '/var/run/tor/control')
-    ep = TCP4ClientEndpoint(reactor, '127.0.0.1', 9151)
+    ep = TCP4ClientEndpoint(reactor, '127.0.0.1', default_control_port())
     tor = yield txtorcon.connect(reactor, ep)
     print("Connected:", tor)
 

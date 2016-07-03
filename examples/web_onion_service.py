@@ -14,14 +14,16 @@
 from __future__ import print_function
 from twisted.internet import defer, task, endpoints
 from twisted.web import server, static, resource
+
 import txtorcon
+from txtorcon.util import default_control_port
 
 
 @defer.inlineCallbacks
 def main(reactor):
     tor = yield txtorcon.connect(
         reactor,
-        endpoints.TCP4ClientEndpoint(reactor, '127.0.0.1', 9151),
+        endpoints.TCP4ClientEndpoint(reactor, '127.0.0.1', default_control_port()),
         # endpoints.UNIXClientEndpoint(reactor, "/var/run/tor/control"),
     )
     ep = tor.create_onion_endpoint(80)
