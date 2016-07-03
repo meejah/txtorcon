@@ -398,7 +398,10 @@ class Tor(object):
         from txtorcon import web
 
         # XXX make this a method, use in Circuit.web_agent
-        if socks_config is not None:
+        if socks_config is None:
+            socks_config = self.config.socks_endpoint(self._reactor, None)
+
+        else:
             if isinstance(socks_config, six.text_type):
                 socks_config = self.config.socks_endpoint(
                     self._reactor,
