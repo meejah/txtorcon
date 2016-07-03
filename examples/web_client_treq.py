@@ -5,11 +5,12 @@ from __future__ import print_function
 
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import react
-from twisted.internet.endpoints import UNIXClientEndpoint
+from twisted.internet.endpoints import UNIXClientEndpoint, TCP4ClientEndpoint
 from twisted.web.iweb import IAgentEndpointFactory
 from zope.interface import implementer
 
 import txtorcon
+from txtorcon.util import default_control_port
 
 try:
     import treq
@@ -21,13 +22,15 @@ except ImportError:
 
 @inlineCallbacks
 def main(reactor):
-    ep = UNIXClientEndpoint(reactor, '/var/run/tor/control')
+    ep = TCP4ClientEndpoint(reactor, '127.0.0.1', default_control_port())
+    # ep = UNIXClientEndpoint(reactor, '/var/run/tor/control')
     tor = yield txtorcon.connect(reactor, ep)
     print("Connected:", tor)
 
-    agent = tor.web_agent('9875')
-    uri = 'https://www.torproject.org:443'
-    resp = yield treq.get(uri, agent=agent)
+    resp = yield treq.get(
+        'https://www.torproject.org:443',
+        agent=tor.web_agent(),
+    )
 
     print("Retrieving {} bytes".format(resp.length))
     data = yield resp.text()
