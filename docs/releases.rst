@@ -11,6 +11,8 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.15.0*
 
+ * added support for NULL control-port-authentication which is often
+   appropriate when used with a UNIX domain socket
  * switched to `ipaddress
    <https://docs.python.org/3/library/ipaddress.html>`_ instead of
    Google's ``ipaddr``; the API should be the same from a user
