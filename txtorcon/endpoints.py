@@ -559,6 +559,10 @@ class TCPHiddenServiceEndpoint(object):
         )
 
 
+# XXX hmm, why don't we just declare that HiddenService et
+# al. instances actually implement IAddress -- then getHost() just
+# returns one of these things (e.g. an IOnionService-implementing
+# object)...
 @implementer(IAddress)
 class TorOnionAddress(FancyEqMixin, object):
     """
