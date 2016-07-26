@@ -399,7 +399,6 @@ VERSION Tor="0.2.2.35"
 OK''' % unexisting_file)
         self.assertEqual(self.transport.value(), 'AUTHENTICATE %s\r\n' % "foo".encode("hex"))
 
-
     def test_authenticate_password_when_safecookie_unavailable(self):
         unexisting_file = __file__ + "-unexisting"
         self.protocol.password_function = lambda: 'foo'

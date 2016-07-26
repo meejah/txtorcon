@@ -24,6 +24,7 @@ import base64
 
 DEFAULT_VALUE = 'DEFAULT'
 
+
 @defer.inlineCallbacks
 def connect(endpoint, password_function=lambda: None):
     """
@@ -55,6 +56,7 @@ def connect(endpoint, password_function=lambda: None):
     proto = yield endpoint.connect(factory)
     yield proto.post_bootstrap
     defer.returnValue(proto)
+
 
 class TorProtocolError(RuntimeError):
     """

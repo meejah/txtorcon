@@ -754,6 +754,7 @@ class EventTests(unittest.TestCase):
         else:
             self.fail("No excpetion thrown")
 
+
 class CreateTorrcTests(unittest.TestCase):
 
     def test_create_torrc(self):

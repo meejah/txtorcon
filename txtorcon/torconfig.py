@@ -12,8 +12,6 @@ import tempfile
 import warnings
 from io import StringIO
 import shlex
-if sys.platform in ('linux2', 'darwin'):
-    import pwd
 
 from twisted.python import log
 from twisted.internet import defer, error, protocol
@@ -24,6 +22,8 @@ from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory, DEFA
 from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
 from txtorcon.log import txtorlog
 from txtorcon.interface import ITorControlProtocol
+if sys.platform in ('linux2', 'darwin'):
+    import pwd
 
 
 class TorNotFound(RuntimeError):
