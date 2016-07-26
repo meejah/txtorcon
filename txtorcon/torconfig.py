@@ -465,7 +465,7 @@ def launch_tor(config, reactor,
             tor_binary,
             args=args,
             env={'HOME': data_directory},
-            path=data_directory
+            path=data_directory if os.path.exists(data_directory) else None,
         )
         # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
         transport.closeStdin()

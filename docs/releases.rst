@@ -39,6 +39,7 @@ unreleased
  * both TorState and TorConfig now have a ``.from_protocol`` class-method.
  * spec-compliant string-un-escaping from `coffeemakr <https://github.com/coffeemakr>`_
  * a proposed new API: :meth:`txtorcon.connect`
+ * fix `issue 176 <https://github.com/meejah/txtorcon/issues/176>`_
 
 
 v0.14.1
