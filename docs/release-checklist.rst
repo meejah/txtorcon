@@ -3,8 +3,7 @@ Release Checklist
 
 * double-check version updated, sadly in a few places:
    * Makefile
-   * setup.py
-   * txtorcon/__init__.py
+   * txtorcon/_metadata.py
 
 * run all tests, on all configurations
    * "tox"
