@@ -14,21 +14,24 @@ Release Checklist
    * blindly make links to the signatures
    * update heading, date
 
-* "make dist" and "make dist-sig" (if on signing machine)
+* on both signing-machine and build-machine shells:
+   * export VERSION=v0.15.0
+
+* (if on signing machine) "make dist" and "make dist-sig"
    * creates:
-     dist/txtorcon-X.Y.Z.tar.gz.asc
-     dist/txtorcon-X.Y.Z-py2-none-any.whl.asc
+     dist/txtorcon-${VERSION}.tar.gz.asc
+     dist/txtorcon-${VERSION}-py2-none-any.whl.asc
    * add the signatures to "signatues/"
    * add ALL FOUR files to dist/ (OR fix twine commands)
 
 * (if not on signing machine) do "make dist"
-  * scp dist/txtorcon-X.Y.Z.tar.gz dist/txtorcon-X.Y.Z-py2-none-any.whl signingmachine:
+  * scp dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2-none-any.whl signingmachine:
   * sign both, with .asc detached signatures (see Makefile for command)
   * copy signatures back to build machine, in dist/
   * double-check that they validate
 
 * generate sha256sum for each:
-     sha256sum dist/txtorcon-X.Y.Z.tar.gz dist/txtorcon-X.Y.Z-py2-none-any.whl
+     sha256sum dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2-none-any.whl
 
 * copy signature files to <root of dist>/signatures and commit them
   along with the above changes for versions, etc.
@@ -74,7 +77,7 @@ Release Checklist
 * copy release announcement to signing machine, update code
 
 * create signed tag
-   * git tag -s -u meejah@meejah.ca -F path/to/release-announcement-X-Y-Z vX.Y.Z
+   * git tag -s -u meejah@meejah.ca -F path/to/release-announcement-X-Y-Z v${VERSION}
 
 * copy dist/* files + signatures to hidden-service machine
 * copy them to the HTML build directory! (docs/_build/html/)
