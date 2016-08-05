@@ -36,6 +36,7 @@ from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory, py3k
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import EphemeralHiddenServiceClient
+from txtorcon.circuit import TorCircuitEndpoint
 from txtorcon.controller import Tor
 from txtorcon.socks import _TorSocksFactory
 
@@ -697,6 +698,40 @@ class FakeSocksProto(object):
         proto = self.factory.buildProtocol('socks5 addr')
         print("DiNG", proto)
         self.done.callback(proto)
+
+
+class TestTorCircuitEndpoint(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_circuit_failure(self):
+        """
+        If the circuit fails the error propagates
+        """
+        reactor = Mock()
+        torstate = Mock()
+        target = Mock()
+        target.connect = Mock(return_value=defer.succeed(None))
+        circ = Mock()
+        circ.state = 'FAILED'
+        src_addr = Mock()
+        src_addr.host = 'host'
+        src_addr.port = 1234
+        stream = Mock()
+        stream.source_port = 1234
+        stream.source_addr = 'host'
+
+        # okay, so we fire up our circuit-endpoint with mostly mocked
+        # things, and a circuit that's already in 'FAILED' state.
+        ep = TorCircuitEndpoint(reactor, torstate, circ, target, defer.succeed(src_addr))
+
+        # should get a Failure from the connect()
+        d = ep.connect(Mock())
+        yield ep.attach_stream(stream, [circ])
+        try:
+            yield d
+            self.fail("Should get exception")
+        except RuntimeError as e:
+            assert "unusable" in str(e)
 
 
 class TestTorClientEndpoint(unittest.TestCase):

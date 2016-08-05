@@ -37,7 +37,8 @@ class TorCircuitEndpoint(object):
         self._socks_config = socks_config
 
     def attach_stream_failure(self, stream, fail):
-        print("failed:", fail)
+        if not self._attach.called:
+            self._attached.errback(fail)
         return None
 
     @defer.inlineCallbacks
@@ -52,13 +53,20 @@ class TorCircuitEndpoint(object):
         if stream.source_addr == real_host and \
            stream.source_port == real_addr.port:
 
-            # XXX note to self: we'll want to listen for "circuit_failed"
-            # etc. on just this one circuit, so that we can .errback()
-            # attached if the circuit fails before we get to do
-            # this-here...
-            # XXX could check target_host, target_port to be sure...?
-            self._attached.callback(None)
-            defer.returnValue(self._circuit)
+            if self._circuit.state in ['FAILED', 'CLOSED', 'DETACHED']:
+                self._attached.errback(
+                    Failure(
+                        RuntimeError(
+                            "Circuit {circuit.id} unusable for our stream.".format(
+                                circuit=self._circuit,
+                            )
+                        )
+                    )
+                )
+            else:
+                # XXX could check target_host, target_port to be sure...?
+                self._attached.callback(None)
+                defer.returnValue(self._circuit)
 
     @defer.inlineCallbacks
     def connect(self, protocol_factory):

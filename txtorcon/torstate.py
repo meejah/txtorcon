@@ -472,9 +472,9 @@ class TorState(object):
 
     # XXX still not completely sold on this API-change -- I think
     # perhaps set_attacher() was the right API, but then the
-    # circuit.stream_to() stuff messes with that. So we might just
+    # circuit.stream_via() stuff messes with that. So we might just
     # need to "always" set ourselves up as stream-attacher ("in case"
-    # someone calls stream_to()) if only so we don't keep toggling it
+    # someone calls stream_via()) if only so we don't keep toggling it
     # on/off ...?
     def add_attacher(self, attacher, myreactor):
         """
