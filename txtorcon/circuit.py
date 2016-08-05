@@ -37,7 +37,7 @@ class TorCircuitEndpoint(object):
         self._socks_config = socks_config
 
     def attach_stream_failure(self, stream, fail):
-        if not self._attach.called:
+        if not self._attached.called:
             self._attached.errback(fail)
         return None
 

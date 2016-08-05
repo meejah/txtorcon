@@ -734,6 +734,66 @@ class TestTorCircuitEndpoint(unittest.TestCase):
             assert "unusable" in str(e)
 
 
+    @defer.inlineCallbacks
+    def test_circuit_stream_failure(self):
+        """
+        If the stream-attach fails the error propagates
+        """
+        reactor = Mock()
+        torstate = Mock()
+        target = Mock()
+        target.connect = Mock(return_value=defer.succeed(None))
+        circ = Mock()
+        circ.state = 'FAILED'
+        src_addr = Mock()
+        src_addr.host = 'host'
+        src_addr.port = 1234
+        stream = Mock()
+        stream.source_port = 1234
+        stream.source_addr = 'host'
+
+        # okay, so we fire up our circuit-endpoint with mostly mocked
+        # things, and a circuit that's already in 'FAILED' state.
+        ep = TorCircuitEndpoint(reactor, torstate, circ, target, defer.succeed(src_addr))
+
+        # should get a Failure from the connect()
+        d = ep.connect(Mock())
+        ep.attach_stream_failure(stream, RuntimeError("a bad thing"))
+        try:
+            yield d
+            self.fail("Should get exception")
+        except RuntimeError as e:
+            self.assertEqual("a bad thing", str(e))
+
+    @defer.inlineCallbacks
+    def test_success(self):
+        """
+        Connect a stream via a circuit
+        """
+        reactor = Mock()
+        torstate = Mock()
+        target = Mock()
+        target.connect = Mock(return_value=defer.succeed('fake proto'))
+        circ = Mock()
+        circ.state = 'NEW'
+        src_addr = Mock()
+        src_addr.host = 'host'
+        src_addr.port = 1234
+        stream = Mock()
+        stream.source_port = 1234
+        stream.source_addr = 'host'
+
+        # okay, so we fire up our circuit-endpoint with mostly mocked
+        # things, and a circuit that's already in 'FAILED' state.
+        ep = TorCircuitEndpoint(reactor, torstate, circ, target, defer.succeed(src_addr))
+
+        # should get a Failure from the connect()
+        d = ep.connect(Mock())
+        yield ep.attach_stream(stream, [circ])
+        proto = yield d
+        self.assertEqual(proto, 'fake proto')
+
+
 class TestTorClientEndpoint(unittest.TestCase):
 
     @patch('txtorcon.endpoints.get_global_tor')
