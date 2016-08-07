@@ -56,19 +56,29 @@ def main(reactor):
     # actual launching of (or connecting to) tor.
     site = server.Site(Simple())
     port = yield hs_endpoint.listen(site)
+    hs = port.onion_service
 
-    # the port we get back will implement this (as well as IListeningPort)
-    port = txtorcon.IHiddenService(port)
+    # "port" is an IAddress implementor, in this case TorOnionAddress
+    # so you can get most useful information from it -- but you can
+    # also access .onion_service (see below)
     print(
         "I have set up a hidden service, advertised at:\n"
         "http://{host}:{port}\n"
-        "locally listening on {local_port}\n"
+        "locally listening on {local_address}\n"
         "Will stop in 60 seconds...".format(
-            host=port.getHost().onion_uri,
-            port=port.getHost().onion_port,
-            local_port=port.local_address.getHost(),
+            host=port.getHost().onion_uri,  # or hs.hostname
+            port=port.public_port,
+            # port.local_address will be a twisted.internet.tcp.Port
+            # or a twisted.internet.unix.Port -- both have .getHost()
+            local_address=port.local_address.getHost(),
         )
     )
+
+    # if you prefer, hs (port.onion_service) is an instance providing
+    # IOnionService (there's no way to do authenticated services via
+    # endpoints yet, but if there was then this would implement
+    # IOnionClients instead)
+    print("private key:\n{}".format(hs.private_key))
 
     def sleep(s):
         return deferLater(reactor, s, lambda: None)
@@ -77,4 +87,5 @@ def main(reactor):
     for i in range(10):
         print("Stopping in {}...".format(10 - i))
         yield sleep(1)
+
 react(main)
