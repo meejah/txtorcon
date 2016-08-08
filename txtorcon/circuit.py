@@ -39,16 +39,12 @@ class Circuit(object):
 
     :ivar state:
         contains a string from Tor describing the current state of the
-        stream. From control-spec.txt section 4.1.2, these are:
-            - NEW: New request to connect
-            - NEWRESOLVE: New request to resolve an address
-            - REMAP: Address re-mapped to another
-            - SENTCONNECT: Sent a connect cell along a circuit
-            - SENTRESOLVE: Sent a resolve cell along a circuit
-            - SUCCEEDED: Received a reply; stream established
-            - FAILED: Stream failed and not retriable
-            - CLOSED: Stream closed
-            - DETACHED: Detached from circuit; still retriable
+        stream. From control-spec.txt section 4.1.1, these are:
+           - LAUNCHED: circuit ID assigned to new circuit
+           - BUILT: all hops finished, can now accept streams
+           - EXTENDED: one more hop has been completed
+           - FAILED: circuit closed (was not built)
+           - CLOSED: circuit closed (was built)
 
     :ivar purpose:
         The reason this circuit was built. Values can currently be one
