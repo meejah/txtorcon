@@ -15,7 +15,7 @@ Release Checklist
    * update heading, date
 
 * on both signing-machine and build-machine shells:
-   * export VERSION=v0.15.0
+   * export VERSION=0.15.1
 
 * (if on signing machine) "make dist" and "make dist-sig"
    * creates:

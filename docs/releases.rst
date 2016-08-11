@@ -21,6 +21,10 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.16.0*
 
+v0.15.1
+-------
+
+ * `txtorcon-0.15.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.15.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.15.1>`_ (:download:`local-sig </../signatues/txtorcon-0.15.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.15.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.15.1.tar.gz>`_)
  * fix `issue 179 <https://github.com/meejah/txtorcon/issues/179>`_ with `Circuit.age`.
 
 
