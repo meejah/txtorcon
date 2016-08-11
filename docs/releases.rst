@@ -21,6 +21,8 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.16.0*
 
+ * fix `issue 179 <https://github.com/meejah/txtorcon/issues/179>`_ with `Circuit.age`.
+
 
 v0.15.0
 -------
