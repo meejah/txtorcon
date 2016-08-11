@@ -4,6 +4,7 @@ from twisted.trial import unittest
 from twisted.internet import defer, task
 from twisted.python.failure import Failure
 from zope.interface import implements
+from mock import patch
 
 from txtorcon import Circuit
 from txtorcon import build_timeout_circuit
@@ -103,6 +104,22 @@ class CircuitTests(unittest.TestCase):
         circuit.update(update.split())
         diff = circuit.age(now=now)
         self.assertEquals(diff, 0)
+        self.assertTrue(circuit.time_created is not None)
+
+    @patch('txtorcon.circuit.datetime')
+    def test_age_default(self, fake_datetime):
+        """
+        age() w/ defaults works properly
+        """
+        from datetime import datetime
+        now = datetime.fromtimestamp(60.0)
+        fake_datetime.return_value = now
+        fake_datetime.utcnow = Mock(return_value=now)
+        tor = FakeTorController()
+
+        circuit = Circuit(tor)
+        circuit._time_created = datetime.fromtimestamp(0.0)
+        self.assertEquals(circuit.age(), 60)
         self.assertTrue(circuit.time_created is not None)
 
     def test_no_age_yet(self):
