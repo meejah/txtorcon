@@ -115,6 +115,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self._setup_complete = False
         self._did_timeout = False
         self._timeout_delayed_call = None
+        self._on_exit = []  # Deferred's we owe a call/errback to when we exit
         if timeout:
             if not ireactortime:
                 raise RuntimeError(
@@ -123,6 +124,30 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             ireactortime = IReactorTime(ireactortime)
             self._timeout_delayed_call = ireactortime.callLater(
                 timeout, self.timeout_expired)
+
+    def quit(self):
+        """
+        This will terminate (with SIGTERM) the underlying Tor process.
+
+        :returns: a Deferred that callback()'s (with None) when the
+            process has actually exited.
+        """
+
+        try:
+            self.transport.signalProcess('TERM')
+            d = defer.Deferred()
+            self._on_exit.append(d)
+
+        except error.ProcessExitedAlready:
+            self.transport.loseConnection()
+            d = defer.succeed(None)
+        return d
+
+    def _signal_on_exit(self, reason):
+        to_notify = self._on_exit
+        self._on_exit = []
+        for d in to_notify:
+            d.callback(None)
 
     def outReceived(self, data):
         """
@@ -179,6 +204,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         all([delete_file_or_tree(f) for f in self.to_delete])
         self.to_delete = []
 
+    def processExited(self, reason):
+        self._signal_on_exit(reason)
+
     def processEnded(self, status):
         """
         :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
@@ -201,6 +229,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         if self.connected_cb:
             self.connected_cb.errback(err)
             self.connected_cb = None
+        self._signal_on_exit(status)
 
     def progress(self, percent, tag, summary):
         """
