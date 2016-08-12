@@ -21,6 +21,9 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.16.0*
 
+ * `issue 172 <https://github.com/meejah/txtorcon/issues/172>`_: give `TorProcessProtocol` a `.quit` method
+
+
 v0.15.1
 -------
 
