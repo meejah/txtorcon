@@ -453,12 +453,12 @@ class Tor(object):
         try:
             a = ipaddress.ip_address(host)
         except ValueError:
-            return False # non-numeric, let Tor try it
+            return False        # non-numeric, let Tor try it
         if a.version != 4:
-            return True # IPv6 gets ignored
-        if (a.is_loopback or a.is_multicast or a.is_private or a.is_reserved
-            or a.is_unspecified):
-            return True # too weird, don't connect
+            return True         # IPv6 gets ignored
+        if a.is_loopback or a.is_multicast or a.is_private or a.is_reserved \
+           or a.is_unspecified:
+            return True         # too weird, don't connect
         return False
 
     def stream_via(self, host, port, use_tls=False, socks_port=None):
@@ -471,13 +471,13 @@ class Tor(object):
             raise ValueError("'{}' isn't going to work over Tor".format(host))
 
         from .endpoints import TorClientEndpoint
-        socks_endpoint = self.config.socks_endpoint
+#        socks_endpoint = self.config.socks_endpoint
         return TorClientEndpoint(
             self._reactor, host, port,
             self._socks_endpoint,
             tls=use_tls,
-#            got_source_port=got_source_port,
         )
+#            got_source_port=got_source_port,
 
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
