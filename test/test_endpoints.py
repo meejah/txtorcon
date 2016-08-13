@@ -33,7 +33,7 @@ from txtorcon import TorNotFound
 from txtorcon import TCPHiddenServiceEndpointParser
 from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
-from txtorcon.util import NoOpProtocolFactory, py3k
+from txtorcon.util import NoOpProtocolFactory
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import EphemeralHiddenServiceClient
 from txtorcon.circuit import TorCircuitEndpoint

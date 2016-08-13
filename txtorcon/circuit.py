@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import six
 import time
 import datetime
 import random
@@ -45,7 +46,7 @@ class TorCircuitEndpoint(object):
     def attach_stream(self, stream, circuits):
         real_addr = yield self._got_source_port
         # joy oh joy, ipaddress wants unicode, Twisted gives us bytes...
-        real_host = maybe_ip_addr(unicode(real_addr.host))
+        real_host = maybe_ip_addr(six.text_type(real_addr.host))
 
         # Note: matching via source port/addr is way better than
         # target because multiple streams may be headed at the same

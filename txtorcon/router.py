@@ -5,9 +5,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import six
 from datetime import datetime
 from .util import NetLocation
-from .util import basestring
 from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
@@ -167,7 +167,7 @@ class Router(object):
         There is some current work in Twisted for open-ended constants
         (enums) support however, it seems.
         """
-        if isinstance(flags, basestring):
+        if isinstance(flags, (six.text_type, str)):
             flags = flags.split()
         self._flags = [x.lower() for x in flags]
         self.name_is_unique = 'named' in self._flags

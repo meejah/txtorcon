@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import os
+import six
 import functools
 import warnings
 from io import StringIO
@@ -16,7 +17,6 @@ from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.torcontrolprotocol import TorProtocolError
-from txtorcon.util import py3k
 from txtorcon.interface import ITorControlProtocol
 from txtorcon.onion import FilesystemHiddenService, IOnionClient
 from txtorcon.onion import AuthenticatedHiddenService, EphemeralHiddenService
@@ -206,7 +206,7 @@ class _ListWrapper(list):
     def __repr__(self):
         return '_ListWrapper' + super(_ListWrapper, self).__repr__()
 
-if not py3k:
+if six.PY2:
     setattr(_ListWrapper, '__setslice__', _wrapture(list.__setslice__))
 
 

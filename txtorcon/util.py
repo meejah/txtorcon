@@ -14,6 +14,7 @@ import subprocess
 import ipaddress
 import struct
 import re
+import six
 
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
@@ -32,17 +33,6 @@ except ImportError:
 city = None
 country = None
 asn = None
-
-# XXX probably better to depend on and use "six" for py2/3 stuff?
-try:
-    unicode
-except NameError:
-    py3k = True
-    basestring = str
-else:
-    py3k = False
-    basestring = basestring
-
 
 def version_at_least(version_string, major, minor, micro, patch):
     """
@@ -334,7 +324,7 @@ def unescape_quoted_string(string):
     # handeled as escape codes by string.decode('string-escape').
     # This is needed so e.g. '\x00' is not unescaped as '\0'
     string = re.sub(r'((?:^|[^\\])(?:\\\\)*)\\([^ntr0-7\\])', r'\1\2', string)
-    if py3k:
+    if six.PY3:
         # XXX hmmm?
         return bytes(string, 'ascii').decode('unicode-escape')
     return string.decode('string-escape')
