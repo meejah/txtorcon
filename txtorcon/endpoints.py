@@ -799,7 +799,6 @@ class TorClientEndpoint(object):
                  host, port,
                  socks_endpoint,  # can be Deferred
                  tls=False,
-                 got_source_port=None,
 
                  # XXX our custom SOCKS stuff doesn't support auth (yet?)
                  socks_username=None, socks_password=None):
@@ -811,7 +810,6 @@ class TorClientEndpoint(object):
         self._tls = tls
         self._socks_endpoint = socks_endpoint
         self._reactor = reactor
-        self._got_source_port = got_source_port
 
         # XXX think, do we want to expose these like this? Or some
         # other way (because they're for stream-isolation, not actual
@@ -819,13 +817,14 @@ class TorClientEndpoint(object):
         self._socks_username = socks_username
         self._socks_password = socks_password
 
-    @defer.inlineCallbacks
-    def connect(self, protocolfactory):
-        tor_socks_ep = TorSocksEndpoint(
-            self._socks_endpoint, self.host, self.port, self._tls, self._got_source_port,
+        # FIXME playing
+        self.tor_socks_ep = TorSocksEndpoint(
+            self._socks_endpoint, self.host, self.port, self._tls,
         )
 
-        proto = yield tor_socks_ep.connect(protocolfactory)
+    @defer.inlineCallbacks
+    def connect(self, protocolfactory):
+        proto = yield self.tor_socks_ep.connect(protocolfactory)
         defer.returnValue(proto)
 
 

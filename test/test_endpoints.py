@@ -690,7 +690,7 @@ class FakeTorSocksEndpoint(object):
 
 
 class FakeSocksProto(object):
-    def __init__(self, done, host, port, method, factory, got_source_port):
+    def __init__(self, done, host, port, method, factory):
         self.done = done
         self.factory = factory
 
@@ -716,13 +716,14 @@ class TestTorCircuitEndpoint(unittest.TestCase):
         src_addr = Mock()
         src_addr.host = 'host'
         src_addr.port = 1234
+        target.when_connected = Mock(return_value=defer.succeed(src_addr))
         stream = Mock()
         stream.source_port = 1234
         stream.source_addr = 'host'
 
         # okay, so we fire up our circuit-endpoint with mostly mocked
         # things, and a circuit that's already in 'FAILED' state.
-        ep = TorCircuitEndpoint(reactor, torstate, circ, target, defer.succeed(src_addr))
+        ep = TorCircuitEndpoint(reactor, torstate, circ, target)
 
         # should get a Failure from the connect()
         d = ep.connect(Mock())
@@ -748,13 +749,14 @@ class TestTorCircuitEndpoint(unittest.TestCase):
         src_addr = Mock()
         src_addr.host = 'host'
         src_addr.port = 1234
+        target.when_connected = Mock(return_value=defer.succeed(src_addr))
         stream = Mock()
         stream.source_port = 1234
         stream.source_addr = 'host'
 
         # okay, so we fire up our circuit-endpoint with mostly mocked
         # things, and a circuit that's already in 'FAILED' state.
-        ep = TorCircuitEndpoint(reactor, torstate, circ, target, defer.succeed(src_addr))
+        ep = TorCircuitEndpoint(reactor, torstate, circ, target)
 
         # should get a Failure from the connect()
         d = ep.connect(Mock())
@@ -779,13 +781,14 @@ class TestTorCircuitEndpoint(unittest.TestCase):
         src_addr = Mock()
         src_addr.host = 'host'
         src_addr.port = 1234
+        target.when_connected = Mock(return_value=defer.succeed(src_addr))
         stream = Mock()
         stream.source_port = 1234
         stream.source_addr = 'host'
 
         # okay, so we fire up our circuit-endpoint with mostly mocked
         # things, and a circuit that's already in 'FAILED' state.
-        ep = TorCircuitEndpoint(reactor, torstate, circ, target, defer.succeed(src_addr))
+        ep = TorCircuitEndpoint(reactor, torstate, circ, target)
 
         # should get a Failure from the connect()
         d = ep.connect(Mock())

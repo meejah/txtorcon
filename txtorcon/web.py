@@ -47,16 +47,16 @@ class _AgentEndpointFactoryForCircuit(object):
         # can't return a Deferred. We need that because we must await
         # knowing the source-port of the stream we're interested in --
         # but the only async method we have available to use is
-        got_source_port = Deferred()
+#        got_source_port = Deferred()
         torsocks = TorSocksEndpoint(
             self._socks_ep,
             uri.host, uri.port,
             tls=uri.scheme == 'https',
-            got_source_port=got_source_port,
+#            got_source_port=got_source_port,
         )
         from txtorcon.circuit import TorCircuitEndpoint
         return TorCircuitEndpoint(
-            self._reactor, self._circ._torstate, self._circ, torsocks, got_source_port,
+            self._reactor, self._circ._torstate, self._circ, torsocks,# got_source_port,
         )
 
 

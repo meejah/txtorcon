@@ -27,14 +27,13 @@ TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 @implementer(IStreamClientEndpoint)
 @implementer(IStreamAttacher)
 class TorCircuitEndpoint(object):
-    def __init__(self, reactor, torstate, circuit, target_endpoint, got_source_port,
+    def __init__(self, reactor, torstate, circuit, target_endpoint,
                  socks_config=None):
         self._reactor = reactor
         self._state = torstate
-        self._target_endpoint = target_endpoint
+        self._target_endpoint = target_endpoint  # a TorClientEndpoint
         self._circuit = circuit
         self._attached = defer.Deferred()
-        self._got_source_port = got_source_port
         self._socks_config = socks_config
 
     def attach_stream_failure(self, stream, fail):
@@ -44,7 +43,7 @@ class TorCircuitEndpoint(object):
 
     @defer.inlineCallbacks
     def attach_stream(self, stream, circuits):
-        real_addr = yield self._got_source_port
+        real_addr = yield self._target_endpoint.when_connected()
         # joy oh joy, ipaddress wants unicode, Twisted gives us bytes...
         real_host = maybe_ip_addr(six.text_type(real_addr.host))
 
@@ -232,15 +231,12 @@ class Circuit(object):
             IStreamClientEndpoint already).
         """
         from .endpoints import TorClientEndpoint
-        got_source_port = defer.Deferred()
         ep = TorClientEndpoint(
             reactor, host, port,
             socks_endpoint,
             tls=use_tls,
-            got_source_port=got_source_port,
         )
-        # XXX FIXME got_source_port is silly
-        return TorCircuitEndpoint(reactor, self._torstate, self, ep, got_source_port)
+        return TorCircuitEndpoint(reactor, self._torstate, self, ep)
 
     @property
     def time_created(self):

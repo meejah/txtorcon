@@ -59,7 +59,7 @@ class ProxyClient(Protocol):
 def resolve(tor_endpoint, hostname):
     done = Deferred()
     factory = _TorSocksFactory(
-        done, hostname, 0, 'RESOLVE', None, None,
+        done, hostname, 0, 'RESOLVE', None,
     )
     yield tor_endpoint.connect(factory)
     result = yield done
@@ -70,7 +70,7 @@ def resolve(tor_endpoint, hostname):
 def resolve_ptr(tor_endpoint, hostname):
     done = Deferred()
     factory = _TorSocksFactory(
-        done, hostname, 0, 'RESOLVE_PTR', None, None,
+        done, hostname, 0, 'RESOLVE_PTR', None,
     )
     yield tor_endpoint.connect(factory)
     result = yield done
@@ -85,12 +85,19 @@ class TorSocksEndpoint(object):
     These should usually not be instantiated directly, instead use
     :meth:`txtorcon.TorConfig.socks_endpoint`.
     """
-    def __init__(self, socks_endpoint, host, port, tls=False, got_source_port=None):
+    def __init__(self, socks_endpoint, host, port, tls=False):
         self._proxy_ep = socks_endpoint  # can be Deferred
         self._host = host
         self._port = port
         self._tls = tls
-        self._got_source_port = got_source_port
+
+    def when_connected(self):
+        """
+        Returns a Deferred that fires with the source IAddress of the
+        underlying SOCKS connection (i.e. usually a
+        twisted.internet.address.IPv4Address)
+        """
+        return self._socks_factory.when_connected()
 
     @inlineCallbacks
     def connect(self, factory):
@@ -103,13 +110,14 @@ class TorSocksEndpoint(object):
             context = optionsForClientTLS(unicode(self._host))
             tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
             socks_factory = _TorSocksFactory(
-                done, self._host, self._port, 'CONNECT', tls_factory, self._got_source_port,
+                done, self._host, self._port, 'CONNECT', tls_factory,
             )
         else:
             socks_factory = _TorSocksFactory(
-                done, self._host, self._port, 'CONNECT', factory, self._got_source_port,
+                done, self._host, self._port, 'CONNECT', factory,
             )
 
+        self._socks_factory = socks_factory
         if isinstance(self._proxy_ep, Deferred):
             proxy_ep = yield self._proxy_ep
         else:
@@ -137,7 +145,7 @@ class _TorSocksProtocol(Protocol):
         0x08: 'Address type not supported',
     }
 
-    def __init__(self, done, host, port, socks_method, factory, got_source_port):
+    def __init__(self, done, host, port, socks_method, factory):
         """
         Private implementation detail -- do not instantiate directly. Use
         one of: resolve(), resolve_ptr() or TorSocksEndpoint
@@ -151,7 +159,6 @@ class _TorSocksProtocol(Protocol):
         if isinstance(self._host, unicode):
             self._host = self._host.encode('ascii')
         self._port = port
-        self._got_source_port = got_source_port
         assert port == int(port)
         assert port >= 0 and port < 2 ** 16
         self._auth_method = 0x02  # "USERNAME/PASSWORD"
@@ -295,9 +302,11 @@ class _TorSocksProtocol(Protocol):
         self.transport.write(data)
 
     def connectionMade(self):
-        # print("connectionMade", self.transport.getHost())
-        if self._got_source_port:
-            self._got_source_port.callback(self.transport.getHost())
+        # Ultimately, we need to funnel the source-port through to the
+        # TorCircuitEndpoint and friends -- so we do so via
+        # when_connected/did_connect on the factory (happy to
+        # entertain better ideas).
+        self.factory.did_connect(self.transport.getHost())
         self._fsm.state = self._fsm.states[0]  # SENT_VERSION
         # ask for 2 methods: 0 (anonymous) and 2 (authenticated)
         data = struct.pack('BBBB', 5, 2, 0, 2)
@@ -311,9 +320,6 @@ class _TorSocksProtocol(Protocol):
             self._sender.connectionLost(reason)
         if not self._done.called:
             self._done.callback(reason)
-        # XXX right? ...but actually we should .errback here
-        if self._got_source_port and not self._got_source_port.called:
-            self._got_source_port.callback(self.transport.getHost())
 
     def dataReceived(self, d):
         # print("dataReceived({} bytes)".format(len(d)))
@@ -322,15 +328,33 @@ class _TorSocksProtocol(Protocol):
 
 
 class _TorSocksFactory(Factory):
-    """
-    Darn, this is only here because Factory.forProtocol doesn't exist
-    in older Twisteds that we care about (for Debian wheezy, jessie).
-    """
     protocol = _TorSocksProtocol
 
     def __init__(self, *args, **kw):
         self._args = args
         self._kw = kw
+        self._connected_d = []
+        self._host = None
+
+    def when_connected(self):
+        """
+        Returns a Deferred that fires with the IAddress from the transport
+        when this SOCKS protocol becomes connected.
+
+        XXX should just be called get_host() or similar??
+        """
+        d = Deferred()
+        if self._host:
+            d.callback(self._host)
+        else:
+            self._connected_d.append(d)
+        return d
+
+    def did_connect(self, host):
+        self._host = host
+        for d in self._connected_d:
+            d.callback(host)
+        self._connected_d = None
 
     def buildProtocol(self, addr):
         p = self.protocol(*self._args, **self._kw)
