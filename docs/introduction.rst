@@ -94,4 +94,6 @@ Known Users
 - `torweb <https://github.com/coffeemakr/torweb>`_ web-based Tor controller/monitor
 - `potator <https://github.com/mixxorz/potator>`_ "A Tor-based Decentralized Virtual Private Network Application"
 - `carml <https://github.com/meejah/carml>`_ command-line utilities for Tor
+- `foolscap <https://github.com/warner/foolscap/>`_ RPC system inspired by Twisted's built-in "Perspective Broker" package.
 - (in progress) `magic-wormhole <https://github.com/warner/magic-wormhole>`_ "get things from one computer to another, safely"
+- (in progress) `Tahoe-LAFS <https://tahoe-lafs.org>`_ a Free and Open encrypted distributed storage system
