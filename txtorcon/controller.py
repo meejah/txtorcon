@@ -14,6 +14,7 @@ import ipaddress
 from io import StringIO
 
 from twisted.python import log
+from twisted.python.failure import Failure
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet import protocol, error
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -219,6 +220,10 @@ def launch(reactor,
         config_args.append(k)
         config_args.append(v)
 
+    # XXX nicer API would probably be .when_connected() on
+    # TorProcessProtocol (and then it can handle multiple ones too if
+    # need-be). ...but also TorProcessProtocol should be "internal
+    # only", right?
     connected_cb = Deferred()
     process_protocol = TorProcessProtocol(
         connection_creator,
@@ -609,6 +614,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         :param stderr:
             Anything subprocess writes to stderr is sent to .write() on this
 
+        # XXX this is silly; use .when_connected() method
         :param connected_cb:
             Pass a Deferred in here if you want to be notified when
             we've successfully connected to the underlying Tor process
@@ -630,6 +636,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             self.connection_creator = connection_creator
         else:
             self.connection_creator = None
+        # XXX .when_connected() please!
         self._connected_cb = connected_cb
 
         self.attempted_connect = False
@@ -764,25 +771,21 @@ class TorProcessProtocol(protocol.ProcessProtocol):
                 self._connected_cb.callback(self)
                 self._connected_cb = None
 
+    @inlineCallbacks
     def tor_connected(self, proto):
         txtorlog.msg("tor_connected %s" % proto)
 
         self.tor_protocol = proto
-        if self.config is not None:
-            self.config._update_proto(proto)
         self.tor_protocol.is_owned = self.transport.pid
-        self.tor_protocol.post_bootstrap.addCallback(
-            self.protocol_bootstrapped).addErrback(
-                self.tor_connection_failed)
 
-    @inlineCallbacks
-    def protocol_bootstrapped(self, proto):
-        txtorlog.msg("Protocol is bootstrapped")
+        try:
+            yield self.tor_protocol.post_bootstrap
+            txtorlog.msg("Protocol is bootstrapped")
+            yield proto.add_event_listener('STATUS_CLIENT', self.status_client)
+            yield self.tor_protocol.queue_command('TAKEOWNERSHIP')
+            yield self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
+            if self.config is not None:
+                yield self.config.attach_protocol(proto)
 
-        self.tor_protocol.add_event_listener(
-            'STATUS_CLIENT', self.status_client)
-
-        # FIXME: should really listen for these to complete as well
-        # as bootstrap etc. For now, we'll be optimistic.
-        yield self.tor_protocol.queue_command('TAKEOWNERSHIP')
-        yield self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
+        except Exception:
+            self.tor_connection_failed(Failure())
