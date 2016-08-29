@@ -668,7 +668,7 @@ class TorClientEndpoint(object):
 
     def __init__(self, host, port,
                  socks_endpoint=None,
-                 socks_username=None, socks_password=None):
+                 socks_username=None, socks_password=None, **kw):
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
@@ -677,6 +677,15 @@ class TorClientEndpoint(object):
         self.socks_endpoint = socks_endpoint
         self.socks_username = socks_username
         self.socks_password = socks_password
+
+        # backwards-compatibility: you used to specify a TCP SOCKS
+        # endpoint via socks_host= and socks_port= kwargs
+        if self.socks_endpoint is None:
+            try:
+                self.socks_endpoint = TCP4ClientEndpoint(reactor, kw['socks_host'], kw['socks_port'])
+                # XXX should deprecation-warn here
+            except KeyError:
+                pass
 
         if self.socks_endpoint is None:
             self._socks_port_iter = iter(self.socks_ports_to_try)
