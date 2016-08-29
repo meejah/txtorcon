@@ -32,7 +32,6 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet import error
 from twisted.plugin import IPlugin
 from twisted.python.util import FancyEqMixin
@@ -668,7 +667,7 @@ class TorClientEndpoint(object):
     socks_ports_to_try = [9050, 9150]
 
     def __init__(self, host, port,
-                 socks_socket=None,
+                 socks_endpoint=None,
                  socks_hostname=None, socks_port=None,
                  socks_username=None, socks_password=None,
                  _proxy_endpoint_generator=default_tcp4_endpoint_generator):
@@ -678,7 +677,7 @@ class TorClientEndpoint(object):
         self.host = host
         self.port = int(port)
         self._proxy_endpoint_generator = _proxy_endpoint_generator
-        self.socks_socket = socks_socket
+        self.socks_endpoint = socks_endpoint
         self.socks_hostname = socks_hostname
         self.socks_port = int(socks_port) if socks_port is not None else None
         self.socks_username = socks_username
@@ -694,9 +693,8 @@ class TorClientEndpoint(object):
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
         last_error = None
-        if self.socks_socket is not None:
-            tor_ep = UNIXClientEndpoint(reactor, self.socks_socket)
-            args = (self.host, self.port, tor_ep)
+        if self.socks_endpoint is not None:
+            args = (self.host, self.port, self.socks_endpoint)
             kwargs = dict()
             socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
             proto = yield socks_ep.connect(protocolfactory)
