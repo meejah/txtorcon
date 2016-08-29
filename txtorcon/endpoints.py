@@ -668,39 +668,30 @@ class TorClientEndpoint(object):
 
     def __init__(self, host, port,
                  socks_endpoint=None,
-                 socks_hostname=None, socks_port=None,
-                 socks_username=None, socks_password=None,
-                 _proxy_endpoint_generator=default_tcp4_endpoint_generator):
+                 socks_username=None, socks_password=None):
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
         self.host = host
         self.port = int(port)
-        self._proxy_endpoint_generator = _proxy_endpoint_generator
         self.socks_endpoint = socks_endpoint
-        self.socks_hostname = socks_hostname
-        self.socks_port = int(socks_port) if socks_port is not None else None
         self.socks_username = socks_username
         self.socks_password = socks_password
 
-        if self.socks_port is None:
+        if self.socks_endpoint is None:
             self._socks_port_iter = iter(self.socks_ports_to_try)
             self._socks_guessing_enabled = True
         else:
-            self._socks_port_iter = [socks_port]
             self._socks_guessing_enabled = False
 
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
         last_error = None
-
         kwargs = dict()
         if self.socks_username is not None and self.socks_password is not None:
             kwargs['methods'] = dict(
                 login=(self.socks_username, self.socks_password),
             )
-
-
         if self.socks_endpoint is not None:
             args = (self.host, self.port, self.socks_endpoint)
             socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
@@ -708,11 +699,10 @@ class TorClientEndpoint(object):
             defer.returnValue(proto)
         else:
             for socks_port in self._socks_port_iter:
-                self.socks_port = socks_port
-                tor_ep = self._proxy_endpoint_generator(
+                tor_ep = TCP4ClientEndpoint(
                     reactor,
-                    self.socks_hostname,
-                    self.socks_port,
+                    "127.0.0.1",
+                    socks_port,
                 )
                 args = (self.host, self.port, tor_ep)
                 socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
