@@ -693,9 +693,16 @@ class TorClientEndpoint(object):
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
         last_error = None
+
+        kwargs = dict()
+        if self.socks_username is not None and self.socks_password is not None:
+            kwargs['methods'] = dict(
+                login=(self.socks_username, self.socks_password),
+            )
+
+
         if self.socks_endpoint is not None:
             args = (self.host, self.port, self.socks_endpoint)
-            kwargs = dict()
             socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
             proto = yield socks_ep.connect(protocolfactory)
             defer.returnValue(proto)
@@ -707,14 +714,7 @@ class TorClientEndpoint(object):
                     self.socks_hostname,
                     self.socks_port,
                 )
-
                 args = (self.host, self.port, tor_ep)
-                kwargs = dict()
-                if self.socks_username is not None and self.socks_password is not None:
-                    kwargs['methods'] = dict(
-                        login=(self.socks_username, self.socks_password),
-                    )
-
                 socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
 
                 try:
