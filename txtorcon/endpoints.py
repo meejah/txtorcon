@@ -770,10 +770,14 @@ class TorClientEndpointStringParser(object):
         if socksPort is not None:
             socksPort = int(socksPort)
 
+        ep = None
+        if socksPort is not None:
+            ep = TCP4ClientEndpoint(reactor, socksHostname, socksPort)
         return TorClientEndpoint(
             host, port,
-            socks_hostname=socksHostname, socks_port=socksPort,
-            socks_username=socksUsername, socks_password=socksPassword
+            socks_endpoint=ep,
+            socks_username=socksUsername,
+            socks_password=socksPassword,
         )
 
     def parseStreamClient(self, *args, **kwargs):
