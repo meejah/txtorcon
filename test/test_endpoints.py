@@ -626,7 +626,8 @@ class TestTorClientEndpoint(unittest.TestCase):
 
         self.assertEqual(ep.host, 'timaq4ygg2iegci7.onion')
         self.assertEqual(ep.port, 80)
-        self.assertEqual(ep.socks_port, 9050)
+        # XXX what's "the Twisted way" to get the port out here?
+        self.assertEqual(ep.socks_endpoint._port, 9050)
 
     def test_parser_user_password(self):
         epstring = 'tor:host=torproject.org:port=443' + \
