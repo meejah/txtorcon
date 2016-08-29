@@ -633,14 +633,6 @@ class TCPHiddenServiceEndpointParser(object):
                                                    control_port=controlPort)
 
 
-def default_tcp4_endpoint_generator(*args, **kw):
-    """
-    Default generator used to create client-side TCP4ClientEndpoint
-    instances.  We do this to make the unit tests work...
-    """
-    return TCP4ClientEndpoint(*args, **kw)
-
-
 @implementer(IStreamClientEndpoint)
 class TorClientEndpoint(object):
     """
