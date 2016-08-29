@@ -673,12 +673,13 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         success_ports = TorClientEndpoint.socks_ports_to_try
         for port in success_ports:
-            args = "fakehost"
-            kw = dict()
-            kw['accept_port'] = port
-            kw['failure'] = Failure(ConnectionRefusedError())
-            tor_endpoint = FakeTorSocksEndpoint(*args, **kw)
-            endpoint = TorClientEndpoint('', 0)
+            tor_endpoint = FakeTorSocksEndpoint(
+                "fakehost", "127.0.0.1", port,
+                accept_port=port,
+                failure=Failure(ConnectionRefusedError()),
+            )
+
+            endpoint = TorClientEndpoint('', 0, socks_endpoint=tor_endpoint)
             endpoint.connect(None)
             self.assertEqual(tor_endpoint.transport.value(), '\x05\x01\x00')
 
