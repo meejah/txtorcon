@@ -249,6 +249,9 @@ def launch(reactor,
 
     log.msg('Spawning tor process with DataDirectory', data_directory)
     args = [tor_binary] + config_args
+    # XXX note to self; we create data_directory above, so when this
+    # is master we can close
+    # https://github.com/meejah/txtorcon/issues/178
     transport = reactor.spawnProcess(
         process_protocol,
         tor_binary,
@@ -271,6 +274,10 @@ def launch(reactor,
         )
     )
 
+
+# XXX
+# what about control_endpoint_or_endpoints? (i.e. allow a list to try?)
+# what about if it's None (default?) and we try some candidates?
 
 @inlineCallbacks
 def connect(reactor, control_endpoint, password_function=None):
@@ -672,7 +679,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         # its first output we're good-to-go. If this fails, we'll
         # reset and try again at the next output (see this class'
         # tor_connection_failed)
-
         txtorlog.msg(data)
         if not self.attempted_connect and self.connection_creator \
                 and 'Bootstrap' in data:

@@ -371,6 +371,8 @@ class TCPHiddenServiceEndpoint(object):
                 ephemeral = False
 
         if stealth_auth and ephemeral:
+            # this is a Tor limitation (at some point, this should be
+            # supported)
             raise ValueError(
                 "'ephemeral=True' onion services don't support stealth_auth"
             )
@@ -482,14 +484,17 @@ class TCPHiddenServiceEndpoint(object):
         # descriptor and make this one the default? Then would
         # probably want to check for "is a local interface or not" and
         # at *least* warn if it's not local...
-        self.tcp_endpoint = serverFromString(self.reactor,
-                                             'tcp:0:interface=127.0.0.1')
+        self.tcp_endpoint = serverFromString(
+            self._reactor,
+            'tcp:0:interface=127.0.0.1',
+        )
         d = self.tcp_endpoint.listen(self.protocolfactory)
         self.tcp_listening_port = yield d
         self.local_port = self.tcp_listening_port.getHost().port
 
-        # NOTE at some point, we can support unix sockets here
-        # once Tor does. See bug #XXX
+        # XXX can we detect if tor supports Unix sockets here? I guess
+        # we could try "unix:/tmp/blarg", and if it fails, try
+        # "tcp:0:interface=127.0.0.1" ...?
 
         # specifically NOT creating the hidden-service dir; letting
         # Tor do it will more-likely result in a usable situation...
@@ -518,7 +523,6 @@ class TCPHiddenServiceEndpoint(object):
                 # like "stealth name0,name1"
                 authlines = ['stealth ' + ','.join(self.stealth_auth)]
             if self.ephemeral:
-                # this waits for descriptor upload .. so needs the progress stuff?
                 self.hiddenservice = yield EphemeralHiddenService.create(
                     self._config,
                     ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
@@ -528,8 +532,6 @@ class TCPHiddenServiceEndpoint(object):
                     progress=self._tor_progress_update,
                 )
             else:
-                # XXX should be a .create() call
-                # -> also, should wait for descriptor upload...
                 self.hiddenservice = yield FilesystemHiddenService.create(
                     self._config,
                     self.hidden_service_dir,

@@ -406,6 +406,11 @@ class Circuit(object):
                                                 self.purpose)
 
 
+#
+# This stuff is experimental and essentially just
+# proof-of-concept. API may change at any time.
+#
+
 class ICircuitBuilder(Interface):
     def create(timeout=None):
         """
