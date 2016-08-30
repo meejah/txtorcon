@@ -4,7 +4,7 @@ dist: precise
 
 install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install -r requirements.txt && pip install -r dev-requirements.txt"
 env:
-  - TOX_ENV=twisted-debian-squeeze
+###  - TOX_ENV=twisted-debian-squeeze
   - TOX_ENV=twisted-debian-wheezy
   - TOX_ENV=twisted-latest-12
   - TOX_ENV=twisted-latest-13
