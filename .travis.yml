@@ -10,6 +10,7 @@ env:
   - TOX_ENV=twisted-latest-13
   - TOX_ENV=twisted-latest-14
   - TOX_ENV=twisted-latest-15
+  - TOX_ENV=twisted-latest-16
   - TOX_ENV=pypy
 
 script:
