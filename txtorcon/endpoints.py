@@ -677,7 +677,6 @@ class TorClientEndpoint(object):
             except KeyError:
                 pass
 
-        if self.socks_endpoint is None:
             self._socks_port_iter = iter(self.socks_ports_to_try)
             self._socks_guessing_enabled = True
         else:
