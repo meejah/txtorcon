@@ -737,3 +737,54 @@ class TestTorClientEndpoint(unittest.TestCase):
         endpoint = TorClientEndpoint('', 0)
         p2 = yield endpoint.connect(None)
         self.assertTrue(proto is p2)
+
+    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @defer.inlineCallbacks
+    def test_tls_socks_no_endpoint(self, ep_mock):
+
+        class FakeWrappedProto(object):
+            wrappedProtocol = object()
+
+        wrap = FakeWrappedProto()
+        proto = defer.succeed(wrap)
+        class FakeSocks5(object):
+
+            def __init__(self, *args, **kw):
+                pass
+
+            def connect(self, *args, **kw):
+                return proto
+
+        ep_mock.side_effect = FakeSocks5
+        endpoint = TorClientEndpoint('torproject.org', 0, tls=True)
+        p2 = yield endpoint.connect(None)
+        self.assertTrue(wrap.wrappedProtocol is p2)
+
+    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @defer.inlineCallbacks
+    def test_tls_socks_with_endpoint(self, ep_mock):
+        """
+        Same as above, except we provide an explicit endpoint
+        """
+
+        class FakeWrappedProto(object):
+            wrappedProtocol = object()
+
+        wrap = FakeWrappedProto()
+        proto = defer.succeed(wrap)
+        class FakeSocks5(object):
+
+            def __init__(self, *args, **kw):
+                pass
+
+            def connect(self, *args, **kw):
+                return proto
+
+        ep_mock.side_effect = FakeSocks5
+        endpoint = TorClientEndpoint(
+            'torproject.org', 0,
+            socks_endpoint=clientFromString(Mock(), "tcp:localhost:9050"),
+            tls=True,
+        )
+        p2 = yield endpoint.connect(None)
+        self.assertTrue(wrap.wrappedProtocol is p2)
