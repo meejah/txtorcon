@@ -11,6 +11,7 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error, task, tcp
 from twisted.internet.endpoints import TCP4ServerEndpoint
+from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.python.failure import Failure
@@ -788,3 +789,24 @@ class TestTorClientEndpoint(unittest.TestCase):
         )
         p2 = yield endpoint.connect(None)
         self.assertTrue(wrap.wrappedProtocol is p2)
+
+    @patch('txtorcon.endpoints.reactor')  # FIXME should be passing reactor to TorClientEndpoint :/
+    def test_client_endpoint_old_api(self, reactor):
+        """
+        Test the old API of passing socks_host, socks_port
+        """
+
+        endpoint = TorClientEndpoint(
+            'torproject.org', 0,
+            socks_host='localhost',
+            socks_port=9050,
+        )
+        self.assertTrue(isinstance(endpoint.socks_endpoint, TCP4ClientEndpoint))
+
+        d = endpoint.connect(Mock())
+        calls = reactor.mock_calls
+        self.assertEqual(1, len(calls))
+        name, args, kw = calls[0]
+        self.assertEqual("connectTCP", name)
+        self.assertEqual("localhost", args[0])
+        self.assertEqual(9050, args[1])
