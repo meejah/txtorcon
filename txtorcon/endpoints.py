@@ -41,7 +41,6 @@ from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
 from txsocksx.client import SOCKS5ClientEndpoint
-from txsocksx.tls import TLSWrapClientEndpoint
 
 from .torconfig import TorConfig, launch_tor, HiddenService
 from .torstate import build_tor_connection
@@ -699,6 +698,7 @@ class TorClientEndpoint(object):
             args = (self.host, self.port, self.socks_endpoint)
             socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
             if self.tls:
+                from txsocksx.tls import TLSWrapClientEndpoint
                 context = optionsForClientTLS(unicode(self.host))
                 socks_ep = TLSWrapClientEndpoint(context, socks_ep)
             proto = yield socks_ep.connect(protocolfactory)
@@ -713,6 +713,7 @@ class TorClientEndpoint(object):
                 args = (self.host, self.port, tor_ep)
                 socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
                 if self.tls:
+                    from txsocksx.tls import TLSWrapClientEndpoint
                     # XXX only twisted 14+
                     context = optionsForClientTLS(unicode(self.host))
                     socks_ep = TLSWrapClientEndpoint(context, socks_ep)
