@@ -17,11 +17,18 @@ from txtorcon.util import available_tcp_port
 # class (and the parse() doesn't provide a 'reactor' argument).
 try:
     from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
-    from twisted.internet.ssl import optionsForClientTLS
     _HAVE_TX_14 = True
 except ImportError:
     from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor
     _HAVE_TX_14 = False
+
+try:
+    from twisted.internet.ssl import optionsForClientTLS
+    from txsocksx.tls import TLSWrapClientEndpoint
+    _HAVE_TLS = True
+except ImportError:
+    _HAVE_TLS = False
+
 
 from twisted.internet import defer, reactor
 from twisted.python import log
@@ -667,6 +674,11 @@ class TorClientEndpoint(object):
         self.socks_password = socks_password
         self.tls = tls
 
+        if self.tls and not _HAVE_TLS:
+            raise ValueError(
+                "'tls=True' but we don't have TLS support"
+            )
+
         # backwards-compatibility: you used to specify a TCP SOCKS
         # endpoint via socks_host= and socks_port= kwargs
         if self.socks_endpoint is None:
@@ -698,7 +710,6 @@ class TorClientEndpoint(object):
             args = (self.host, self.port, self.socks_endpoint)
             socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
             if self.tls:
-                from txsocksx.tls import TLSWrapClientEndpoint
                 context = optionsForClientTLS(unicode(self.host))
                 socks_ep = TLSWrapClientEndpoint(context, socks_ep)
             proto = yield socks_ep.connect(protocolfactory)
@@ -713,7 +724,6 @@ class TorClientEndpoint(object):
                 args = (self.host, self.port, tor_ep)
                 socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
                 if self.tls:
-                    from txsocksx.tls import TLSWrapClientEndpoint
                     # XXX only twisted 14+
                     context = optionsForClientTLS(unicode(self.host))
                     socks_ep = TLSWrapClientEndpoint(context, socks_ep)
