@@ -17,6 +17,7 @@ from txtorcon.util import available_tcp_port
 # class (and the parse() doesn't provide a 'reactor' argument).
 try:
     from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
+    from twisted.internet.ssl import optionsForClientTLS
     _HAVE_TX_14 = True
 except ImportError:
     from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor
@@ -40,6 +41,7 @@ from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
 from txsocksx.client import SOCKS5ClientEndpoint
+from txsocksx.tls import TLSWrapClientEndpoint
 
 from .torconfig import TorConfig, launch_tor, HiddenService
 from .torstate import build_tor_connection
@@ -637,22 +639,16 @@ class TCPHiddenServiceEndpointParser(object):
 class TorClientEndpoint(object):
     """
     I am an endpoint class who attempts to establish a SOCKS5
-    connection with the system tor process. Either the user must pass
-    a SOCKS port into my constructor OR I will attempt to guess the
-    Tor SOCKS port by iterating over a list of ports that tor is
-    likely to be listening on.
+    connection with the system tor process. If no socks_endpoint is
+    given, I will try TCP4 to localhost on ports 9050 then 9150.
 
-    :param host:
-        The hostname to connect to. This of course can be a Tor Hidden
-        Service onion address.
+    :param socks_endpoint:
+        An IStreamClientEndpoint that will connect to a SOCKS5
+        port. Tor can speak SOCKS5 over either TCP4 or Unix sockets.
 
-    :param port: The tcp port or Tor Hidden Service port.
-
-    :param _proxy_endpoint_generator: This is used for unit tests.
-
-    :param socks_port:
-       This optional argument lets the user specify which Tor SOCKS
-       port should be used.
+    :param tls:
+        If True, we will attemp TLS negotiation after the SOCKS forwarding
+        is set up.
     """
     # XXX should get these via the control connection, i.e. ask Tor
     # via GETINFO net/listeners/socks or whatever
@@ -660,7 +656,8 @@ class TorClientEndpoint(object):
 
     def __init__(self, host, port,
                  socks_endpoint=None,
-                 socks_username=None, socks_password=None, **kw):
+                 socks_username=None, socks_password=None,
+                 tls=False, **kw):
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
@@ -669,6 +666,7 @@ class TorClientEndpoint(object):
         self.socks_endpoint = socks_endpoint
         self.socks_username = socks_username
         self.socks_password = socks_password
+        self.tls = tls
 
         # backwards-compatibility: you used to specify a TCP SOCKS
         # endpoint via socks_host= and socks_port= kwargs
@@ -696,6 +694,9 @@ class TorClientEndpoint(object):
         if self.socks_endpoint is not None:
             args = (self.host, self.port, self.socks_endpoint)
             socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
+            if self.tls:
+                context = optionsForClientTLS(unicode(self.host))
+                socks_ep = TLSWrapClientEndpoint(context, socks_ep)
             proto = yield socks_ep.connect(protocolfactory)
             defer.returnValue(proto)
         else:
@@ -707,6 +708,10 @@ class TorClientEndpoint(object):
                 )
                 args = (self.host, self.port, tor_ep)
                 socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
+                if self.tls:
+                    # XXX only twisted 14+
+                    context = optionsForClientTLS(unicode(self.host))
+                    socks_ep = TLSWrapClientEndpoint(context, socks_ep)
 
                 try:
                     proto = yield socks_ep.connect(protocolfactory)
