@@ -22,6 +22,7 @@ unreleased
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.16.0*
 
  * `issue 172 <https://github.com/meejah/txtorcon/issues/172>`_: give `TorProcessProtocol` a `.quit` method
+ * `issue 181 <https://github.com/meejah/txtorcon/issues/181>`_: enable SOCKS5-over-unix-sockets for TorClientEndpoint (thanks to `david415 <https://github.com/david415>`_
 
 
 v0.15.1
