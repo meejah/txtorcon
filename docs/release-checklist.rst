@@ -83,9 +83,12 @@ Release Checklist
            meejah
 
 * copy release announcement to signing machine, update code
+   * (from dev machine: "git push pangea")
+   * git checkout master
+   * git pull
 
 * create signed tag
-   * git tag -s -u meejah@meejah.ca -F path/to/release-announcement-X-Y-Z v${VERSION}
+   * git tag -s -u meejah@meejah.ca -F release-announce-${VERSION} v${VERSION}
 
 * copy dist/* files + signatures to hidden-service machine
 * copy them to the HTML build directory! (docs/_build/html/)
