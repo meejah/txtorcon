@@ -19,7 +19,7 @@ Release Checklist
    * update heading, date
 
 * on both signing-machine and build-machine shells:
-   * export VERSION=0.15.1
+   * export VERSION=0.16.1
 
 * (if on signing machine) "make dist" and "make dist-sig"
    * creates:
@@ -30,9 +30,13 @@ Release Checklist
 
 * (if not on signing machine) do "make dist"
   * scp dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2-none-any.whl signingmachine:
-  * sign both, with .asc detached signatures (see Makefile for command)
+  * sign both, with .asc detached signatures
+     * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}-py2-none-any.whl
+     * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}.tar.gz
   * copy signatures back to build machine, in dist/
   * double-check that they validate
+     * gpg --verify dist/txtorcon-${VERSION}-py2-none-any.whl
+     * gpg --verify dist/txtorcon-${VERSION}.tar.gz
 
 * generate sha256sum for each:
      sha256sum dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2-none-any.whl

@@ -19,10 +19,23 @@ Rendered docs on `txtorcon.readthedocs <http://txtorcon.readthedocs.io/en/releas
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.16.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.17.0*
 
+
+v0.16.1
+-------
+
+*August 31, 2016*
+
+ * `txtorcon-0.16.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.16.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.16.1>`_ (:download:`local-sig </../signatues/txtorcon-0.16.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.16.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.16.1.tar.gz>`_)
  * `issue 172 <https://github.com/meejah/txtorcon/issues/172>`_: give `TorProcessProtocol` a `.quit` method
  * `issue 181 <https://github.com/meejah/txtorcon/issues/181>`_: enable SOCKS5-over-unix-sockets for TorClientEndpoint (thanks to `david415 <https://github.com/david415>`_
+
+
+v0.16.0
+-------
+
+ * there wasn't one, `because reasons <https://github.com/meejah/txtorcon/commit/e4291c01ff223d3cb7774437cafa2f06ca195bcf>`_.
 
 
 v0.15.1
