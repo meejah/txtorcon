@@ -1,6 +1,10 @@
 Release Checklist
 =================
 
+* ensure local copy is on master, up-to-date:
+   * git checkout master
+   * git pull
+
 * double-check version updated, sadly in a few places:
    * Makefile
    * txtorcon/_metadata.py
