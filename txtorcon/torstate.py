@@ -788,10 +788,11 @@ class TorState(object):
         stream_id = int(args[0])
         wasnew = False
         if stream_id not in self.streams:
-            stream = self.stream_factory(self)
+            stream = self.stream_factory(self, self.addrmap)
             self.streams[stream_id] = stream
             stream.listen(self)
-            [stream.listen(x) for x in self.stream_listeners]
+            for x in self.stream_listeners:
+                stream.listen(x)
             wasnew = True
         self.streams[stream_id].update(args)
 

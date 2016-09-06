@@ -58,7 +58,7 @@ class Stream(object):
         The ID of this stream, a number (or None if unset).
     """
 
-    def __init__(self, circuitcontainer):
+    def __init__(self, circuitcontainer, addrmap=None):
         """
         :param circuitcontainer: an object which implements
         :class:`interface.ICircuitContainer`
@@ -95,7 +95,7 @@ class Stream(object):
 
         self.listeners = []
         """A list of all connected
-        :class:`txtorcon.interface.ICircuitListener` instances."""
+        :class:`txtorcon.interface.IStreamListener` instances."""
 
         self.source_addr = None
         """If available, the address from which this Stream originated
@@ -111,6 +111,8 @@ class Stream(object):
         self._closing_deferred = None
         """Internal. Holds Deferred that will callback when this
         stream is CLOSED, FAILED (or DETACHED??)"""
+
+        self._addrmap = addrmap
 
     def listen(self, listen):
         """
@@ -191,6 +193,15 @@ class Stream(object):
                 last_colon = args[3].rfind(':')
                 self.target_host = args[3][:last_colon]
                 self.target_port = int(args[3][last_colon + 1:])
+                # target_host is often an IP address (newer tors? did
+                # this change?) so we attempt to look it up in our
+                # AddrMap and make it a name no matter what.
+                if self._addrmap:
+                    try:
+                        h = self._addrmap.find(self.target_host)
+                        self.target_host = h.name
+                    except KeyError:
+                        pass
 
             self.target_port = int(self.target_port)
             if self.state == 'NEW':
