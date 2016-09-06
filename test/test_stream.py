@@ -7,6 +7,7 @@ from txtorcon import Stream
 from txtorcon import IStreamListener
 from txtorcon import ICircuitContainer
 from txtorcon import StreamListenerMixin
+from txtorcon import AddrMap
 
 
 class FakeCircuit:
@@ -135,6 +136,13 @@ class StreamTests(unittest.TestCase):
         errors = self.flushLoggedErrors()
         self.assertEqual(1, len(errors))
         self.assertEqual(errors[0].value, exc)
+
+    def test_stream_addrmap_remap(self):
+        addrmap = AddrMap()
+        addrmap.update('meejah.ca 1.2.3.4 never')
+        stream = Stream(self, addrmap)
+        stream.update("1604 NEW 0 1.2.3.4:0 PURPOSE=DNS_REQUEST".split())
+        self.assertEqual(stream.target_host, "meejah.ca")
 
     def test_circuit_already_valid_in_new(self):
         stream = Stream(self)
