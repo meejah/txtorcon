@@ -17,6 +17,7 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 from twisted.python import log
+from twisted.python.failure import Failure
 from twisted.internet import defer
 from txtorcon.interface import ICircuitContainer, IStreamListener
 from txtorcon.util import find_keywords, maybe_ip_addr
@@ -195,9 +196,9 @@ class Stream(object):
             if self.state == 'NEW':
                 if self.circuit is not None:
                     log.err(RuntimeError("Weird: circuit valid in NEW"))
-                [x.stream_new(self) for x in self.listeners]
+                self._notify('stream_new', self)
             else:
-                [x.stream_succeeded(self) for x in self.listeners]
+                self._notify('stream_succeeded', self)
 
         elif self.state == 'REMAP':
             self.target_addr = maybe_ip_addr(args[3][:args[3].rfind(':')])
@@ -208,7 +209,7 @@ class Stream(object):
             self.circuit = None
             self.maybe_call_closing_deferred()
             flags = self._create_flags(kw)
-            [x.stream_closed(self, **flags) for x in self.listeners]
+            self._notify('stream_closed', self, **flags)
 
         elif self.state == 'FAILED':
             if self.circuit:
@@ -217,7 +218,7 @@ class Stream(object):
             self.maybe_call_closing_deferred()
             # build lower-case version of all flags
             flags = self._create_flags(kw)
-            [x.stream_failed(self, **flags) for x in self.listeners]
+            self._notify('stream_failed', self, **flags)
 
         elif self.state == 'SENTCONNECT':
             pass  # print 'SENTCONNECT',self,args
@@ -230,7 +231,7 @@ class Stream(object):
             # FIXME does this count as closed?
             # self.maybe_call_closing_deferred()
             flags = self._create_flags(kw)
-            [x.stream_detach(self, **flags) for x in self.listeners]
+            self._notify('stream_detach', self, **flags)
 
         elif self.state in ['NEWRESOLVE', 'SENTRESOLVE']:
             pass  # print self.state, self, args
@@ -253,8 +254,7 @@ class Stream(object):
                     self.circuit = self.circuit_container.find_circuit(cid)
                     if self not in self.circuit.streams:
                         self.circuit.streams.append(self)
-                        for x in self.listeners:
-                            x.stream_attach(self, self.circuit)
+                        self._notify('stream_attach', self, self.circuit)
 
                 else:
                     if self.circuit.id != cid:
@@ -264,6 +264,18 @@ class Stream(object):
                                 (self.circuit.id, cid)
                             )
                         )
+
+    def _notify(self, func, *args, **kw):
+        """
+        Internal helper. Calls the IStreamListener function 'func' with
+        the given args, guarding around errors.
+        """
+        for x in self.listeners:
+            try:
+                getattr(x, func)(*args, **kw)
+            except Exception:
+                f = Failure()
+                print("Error calling '{}' on '{}': {}".format(func, x, f.getBriefTraceback()))
 
     def maybe_call_closing_deferred(self):
         """
