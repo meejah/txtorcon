@@ -285,8 +285,7 @@ class Stream(object):
             try:
                 getattr(x, func)(*args, **kw)
             except Exception:
-                f = Failure()
-                print("Error calling '{}' on '{}': {}".format(func, x, f.getBriefTraceback()))
+                log.err()
 
     def maybe_call_closing_deferred(self):
         """

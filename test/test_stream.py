@@ -119,6 +119,23 @@ class StreamTests(unittest.TestCase):
             args = [None] * len(desc.positional)
             method(*args)
 
+    def test_listener_exception(self):
+        """A listener throws an exception during notify"""
+
+        exc = Exception("the bad stuff happened")
+        class Bad(StreamListenerMixin):
+            def stream_new(*args, **kw):
+                raise exc
+        listener = Bad()
+
+        stream = Stream(self)
+        stream.listen(listener)
+        stream.update("1 NEW 0 94.23.164.42.$43ED8310EB968746970896E8835C2F1991E50B69.exit:9001 SOURCE_ADDR=(Tor_internal):0 PURPOSE=DIR_FETCH".split())
+
+        errors = self.flushLoggedErrors()
+        self.assertEqual(1, len(errors))
+        self.assertEqual(errors[0].value, exc)
+
     def test_circuit_already_valid_in_new(self):
         stream = Stream(self)
         stream.circuit = FakeCircuit(1)
