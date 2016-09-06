@@ -100,7 +100,7 @@ class CircuitTests(unittest.TestCase):
 
         circuit = Circuit(tor)
         now = datetime.datetime.now()
-        update = '1 LAUNCHED PURPOSE=GENERAL TIME_CREATED=%s' % time.strftime('%Y-%m-%dT%H:%M:%S')
+        update = '1 LAUNCHED PURPOSE=GENERAL TIME_CREATED=%s' % now.strftime('%Y-%m-%dT%H:%M:%S')
         circuit.update(update.split())
         diff = circuit.age(now=now)
         self.assertEquals(diff, 0)
