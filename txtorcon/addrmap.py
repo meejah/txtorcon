@@ -124,7 +124,9 @@ class AddrMap(object):
 
         else:
             a = Addr(self)
+            # add both name and IP address
             self.addr[params[0]] = a
+            self.addr[params[1]] = a
             a.update(*params)
             self.notify("addrmap_added", *[a], **{})
 
