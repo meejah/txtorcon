@@ -17,7 +17,6 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 from twisted.python import log
-from twisted.python.failure import Failure
 from twisted.internet import defer
 from txtorcon.interface import ICircuitContainer, IStreamListener
 from txtorcon.util import find_keywords, maybe_ip_addr
