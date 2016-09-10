@@ -767,6 +767,7 @@ class EventTests(unittest.TestCase):
         else:
             self.fail("No excpetion thrown")
 
+
 class CreateTorrcTests(unittest.TestCase):
 
     def test_create_torrc(self):
@@ -1654,6 +1655,37 @@ class LaunchTorTests(unittest.TestCase):
         process = TorProcessProtocol(None, confirm_progress)
         process.progress(10, 'tag', 'summary')
         self.assertTrue(self.got_progress)
+
+    def test_quit_process(self):
+        process = TorProcessProtocol(None)
+        process.transport = Mock()
+
+        d = process.quit()
+        self.assertFalse(d.called)
+
+        process.processExited(Failure(error.ProcessTerminated(exitCode=15)))
+        self.assertTrue(d.called)
+        process.processEnded(Failure(error.ProcessDone(None)))
+        self.assertTrue(d.called)
+        errs = self.flushLoggedErrors()
+        self.assertEqual(1, len(errs))
+        self.assertTrue("Tor exited with error-code" in str(errs[0]))
+
+    def test_quit_process_already(self):
+        process = TorProcessProtocol(None)
+        process.transport = Mock()
+
+        def boom(sig):
+            self.assertEqual(sig, 'TERM')
+            raise error.ProcessExitedAlready()
+        process.transport.signalProcess = Mock(side_effect=boom)
+
+        d = process.quit()
+        process.processEnded(Failure(error.ProcessDone(None)))
+        self.assertTrue(d.called)
+        errs = self.flushLoggedErrors()
+        self.assertEqual(1, len(errs))
+        self.assertTrue("Tor exited with error-code" in str(errs[0]))
 
     def test_status_updates(self):
         process = TorProcessProtocol(None)

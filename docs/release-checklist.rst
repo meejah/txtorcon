@@ -1,102 +1,115 @@
 Release Checklist
 =================
 
- * double-check version updated, sadly in a few places:
-    * Makefile
-    * setup.py
-    * txtorcon/__init__.py
+* ensure local copy is on master, up-to-date:
+   * git checkout master
+   * git pull
 
- * run all tests, on all configurations
-    * "tox"
+* double-check version updated, sadly in a few places:
+   * Makefile
+   * txtorcon/_metadata.py
 
- * "make pep8" should run cleanly (ideally)
+* run all tests, on all configurations
+   * "tox"
 
- * update docs/releases.rst to reflect upcoming reality
-    * blindly make links to the signatures
-    * update heading, date
+* "make pep8" should run cleanly (ideally)
 
- * "make dist" and "make dist-sig" (if on signing machine)
-    * creates:
-      dist/txtorcon-X.Y.Z.tar.gz.asc
-      dist/txtorcon-X.Y.Z-py2-none-any.whl.asc
-    * add the signatures to "signatues/"
-    * add ALL FOUR files to dist/ (OR fix twine commands)
+* update docs/releases.rst to reflect upcoming reality
+   * blindly make links to the signatures
+   * update heading, date
 
- * (if not on signing machine) do "make dist"
-   * scp dist/txtorcon-X.Y.Z.tar.gz dist/txtorcon-X.Y.Z-py2-none-any.whl signingmachine:
-   * sign both, with .asc detached signatures (see Makefile for command)
-   * copy signatures back to build machine, in dist/
-   * double-check that they validate
+* on both signing-machine and build-machine shells:
+   * export VERSION=0.16.1
 
- * generate sha256sum for each:
-      sha256sum dist/txtorcon-X.Y.Z.tar.gz dist/txtorcon-X.Y.Z-py2-none-any.whl
+* (if on signing machine) "make dist" and "make dist-sig"
+   * creates:
+     dist/txtorcon-${VERSION}.tar.gz.asc
+     dist/txtorcon-${VERSION}-py2-none-any.whl.asc
+   * add the signatures to "signatues/"
+   * add ALL FOUR files to dist/ (OR fix twine commands)
 
- * copy signature files to <root of dist>/signatures and commit them
-   along with the above changes for versions, etc.
+* (if not on signing machine) do "make dist"
+  * scp dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2-none-any.whl signingmachine:
+  * sign both, with .asc detached signatures
+     * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}-py2-none-any.whl
+     * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}.tar.gz
+  * copy signatures back to build machine, in dist/
+  * double-check that they validate
+     * gpg --verify dist/txtorcon-${VERSION}-py2-none-any.whl
+     * gpg --verify dist/txtorcon-${VERSION}.tar.gz
 
- * draft email to tor-dev (and probably twisted-python):
-    * example: https://lists.torproject.org/pipermail/tor-dev/2014-January/006111.html
-    * example: https://lists.torproject.org/pipermail/tor-dev/2014-June/007006.html
-    * copy-paste release notes, un-rst-format them
-    * include above sha256sums
-    * clear-sign the announcement
-    * gpg --armor --clearsign -u meejah@meejah.ca path/to/release-announcement-X-Y-Z
-    * Example boilerplate:
+* generate sha256sum for each:
+     sha256sum dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2-none-any.whl
 
-            I'm [adjective] to announce txtorcon 0.10.0. This adds
-            several amazing features, including levitation. Full list
-            of improvements:
+* copy signature files to <root of dist>/signatures and commit them
+  along with the above changes for versions, etc.
 
-               * take from releases.rst
-               * ...but un-rST them
+* draft email to tor-dev (and probably twisted-python):
+   * example: https://lists.torproject.org/pipermail/tor-dev/2014-January/006111.html
+   * example: https://lists.torproject.org/pipermail/tor-dev/2014-June/007006.html
+   * copy-paste release notes, un-rst-format them
+   * include above sha256sums
+   * clear-sign the announcement
+   * gpg --armor --clearsign -u meejah@meejah.ca path/to/release-announcement-X-Y-Z
+   * Example boilerplate:
 
-            You can download the release from PyPI or GitHub (or of
-            course "pip install txtorcon"):
+           I'm [adjective] to announce txtorcon 0.10.0. This adds
+           several amazing features, including levitation. Full list
+           of improvements:
 
-               https://pypi.python.org/pypi/txtorcon/0.10.0
-               https://github.com/meejah/txtorcon/releases/tag/v0.10.0
+              * take from releases.rst
+              * ...but un-rST them
 
-            Releases are also available from the hidden service:
+           You can download the release from PyPI or GitHub (or of
+           course "pip install txtorcon"):
 
-               http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz
-               http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz.asc
+              https://pypi.python.org/pypi/txtorcon/0.10.0
+              https://github.com/meejah/txtorcon/releases/tag/v0.10.0
 
-            You can verify the sha256sum of both by running the following 4 lines
-            in a shell wherever you have the files downloaded:
+           Releases are also available from the hidden service:
 
-            cat <<EOF | sha256sum --check
-            910ff3216035de0a779cfc167c0545266ff1f26687b163fc4655f298aca52d74  txtorcon-0.10.0-py2-none-any.whl
-            c93f3d0f21d53c6b4c1521fc8d9dc2c9aff4a9f60497becea207d1738fa78279  txtorcon-0.10.0.tar.gz
-            EOF
+              http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz
+              http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz.asc
 
-            thanks,
-            meejah
+           You can verify the sha256sum of both by running the following 4 lines
+           in a shell wherever you have the files downloaded:
 
- * copy release announcement to signing machine, update code
+           cat <<EOF | sha256sum --check
+           910ff3216035de0a779cfc167c0545266ff1f26687b163fc4655f298aca52d74  txtorcon-0.10.0-py2-none-any.whl
+           c93f3d0f21d53c6b4c1521fc8d9dc2c9aff4a9f60497becea207d1738fa78279  txtorcon-0.10.0.tar.gz
+           EOF
 
- * create signed tag
-    * git tag -s -u meejah@meejah.ca -F path/to/release-announcement-X-Y-Z vX.Y.Z
+           thanks,
+           meejah
 
- * copy dist/* files + signatures to hidden-service machine
- * copy them to the HTML build directory! (docs/_build/html/)
+* copy release announcement to signing machine, update code
+   * (from dev machine: "git push pangea")
+   * git checkout master
+   * git pull
 
- * git pull and build docs there
-    * FIXME: why aren't all the dist files copied as part of doc build (only .tar.gz)
+* create signed tag
+   * git tag -s -u meejah@meejah.ca -F release-announce-${VERSION} v${VERSION}
 
- * download both distributions + signatures from hidden-service
-    * verify sigs
-    * verify sha256sums versus announcement text
-    * verify tag (git tag -v v0.9.2) on machine other than signing-machine
+* copy dist/* files + signatures to hidden-service machine
+* copy them to the HTML build directory! (docs/_build/html/)
 
- * upload release
-    * to PyPI: "make release" (which uses twine so this isn't the same step as "sign the release")
-       * make sure BOTH the .tar.gz and .tar.gz.asc (ditto for .whl) are in the dist/ directory first!!)
-       * ls dist/txtorcon-${VERSION}*
-       * note this depends on a ~/.pypirc file with [server-login] section containing "username:" and "password:"
-    * git push --tags github master
-    * to github: use web-upload interface to upload the 4 files (both dists, both signature)
+* git pull and build docs there
+   * FIXME: why aren't all the dist files copied as part of doc build (only .tar.gz)
 
- * make announcement
-    * post to tor-dev@ the clear-signed release announcement
-    * post to twisted-python@ the clear-signed release announcement
-    * tell #tor-dev??
+* download both distributions + signatures from hidden-service
+   * verify sigs
+   * verify sha256sums versus announcement text
+   * verify tag (git tag -v v0.9.2) on machine other than signing-machine
+
+* upload release
+   * to PyPI: "make release" (which uses twine so this isn't the same step as "sign the release")
+      * make sure BOTH the .tar.gz and .tar.gz.asc (ditto for .whl) are in the dist/ directory first!!)
+      * ls dist/txtorcon-${VERSION}*
+      * note this depends on a ~/.pypirc file with [server-login] section containing "username:" and "password:"
+   * git push --tags github master
+   * to github: use web-upload interface to upload the 4 files (both dists, both signature)
+
+* make announcement
+   * post to tor-dev@ the clear-signed release announcement
+   * post to twisted-python@ the clear-signed release announcement
+   * tell #tor-dev??

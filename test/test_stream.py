@@ -7,6 +7,7 @@ from txtorcon import Stream
 from txtorcon import IStreamListener
 from txtorcon import ICircuitContainer
 from txtorcon import StreamListenerMixin
+from txtorcon import AddrMap
 
 
 class FakeCircuit:
@@ -117,6 +118,30 @@ class StreamTests(unittest.TestCase):
             method = getattr(listener, methodname)
             args = [None] * len(desc.positional)
             method(*args)
+
+    def test_listener_exception(self):
+        """A listener throws an exception during notify"""
+
+        exc = Exception("the bad stuff happened")
+        class Bad(StreamListenerMixin):
+            def stream_new(*args, **kw):
+                raise exc
+        listener = Bad()
+
+        stream = Stream(self)
+        stream.listen(listener)
+        stream.update("1 NEW 0 94.23.164.42.$43ED8310EB968746970896E8835C2F1991E50B69.exit:9001 SOURCE_ADDR=(Tor_internal):0 PURPOSE=DIR_FETCH".split())
+
+        errors = self.flushLoggedErrors()
+        self.assertEqual(1, len(errors))
+        self.assertEqual(errors[0].value, exc)
+
+    def test_stream_addrmap_remap(self):
+        addrmap = AddrMap()
+        addrmap.update('meejah.ca 1.2.3.4 never')
+        stream = Stream(self, addrmap)
+        stream.update("1604 NEW 0 1.2.3.4:0 PURPOSE=DNS_REQUEST".split())
+        self.assertEqual(stream.target_host, "meejah.ca")
 
     def test_circuit_already_valid_in_new(self):
         stream = Stream(self)

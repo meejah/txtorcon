@@ -109,6 +109,17 @@ class AuthenticationTests(unittest.TestCase):
             b'AUTHENTICATE ' + b2a_hex(b'foo') + b'\r\n'
         )
 
+    def test_authenticate_null(self):
+        self.protocol.makeConnection(self.transport)
+        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
+        self.transport.clear()
+        self.send('250-PROTOCOLINFO 1')
+        self.send('250-AUTH METHODS=NULL')
+        self.send('250-VERSION Tor="0.2.2.34"')
+        self.send('250 OK')
+
+        self.assertEqual(self.transport.value(), 'AUTHENTICATE\r\n')
+
     def test_authenticate_password_deferred(self):
         d = defer.Deferred()
         self.protocol.password_function = lambda: d

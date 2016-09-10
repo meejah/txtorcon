@@ -744,6 +744,12 @@ class TorControlProtocol(LineOnlyReceiver):
             d.addErrback(self._auth_failed)
             return
 
+        if 'NULL' in methods:
+            d = self.queue_command('AUTHENTICATE')
+            d.addCallback(self._bootstrap)
+            d.addErrback(self._auth_failed)
+            return
+
         raise RuntimeError(
             "The Tor I connected to doesn't support SAFECOOKIE nor COOKIE"
             " authentication and I have no password_function specified."

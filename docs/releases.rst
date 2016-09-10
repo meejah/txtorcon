@@ -42,11 +42,53 @@ will be kept.
  * dropped GeoIP dependency entirely (no GeoIP support).
 
 
+release-1.x
+-----------
+
+A branch is in development fixing, updating and/or breaking some APIs
+and adding a new object to represent the running tor instance and a
+completel documentation re-write. This is not ready for release quite
+yet, but feedback appreciated, especially on the documentation!
+Rendered docs on `txtorcon.readthedocs <http://txtorcon.readthedocs.io/en/release-1.x/>`_.
+
+
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.15.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.17.0*
 
+
+v0.16.1
+-------
+
+*August 31, 2016*
+
+ * `txtorcon-0.16.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.16.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.16.1>`_ (:download:`local-sig </../signatues/txtorcon-0.16.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.16.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.16.1.tar.gz>`_)
+ * `issue 172 <https://github.com/meejah/txtorcon/issues/172>`_: give `TorProcessProtocol` a `.quit` method
+ * `issue 181 <https://github.com/meejah/txtorcon/issues/181>`_: enable SOCKS5-over-unix-sockets for TorClientEndpoint (thanks to `david415 <https://github.com/david415>`_
+
+
+v0.16.0
+-------
+
+ * there wasn't one, `because reasons <https://github.com/meejah/txtorcon/commit/e4291c01ff223d3cb7774437cafa2f06ca195bcf>`_.
+
+
+v0.15.1
+-------
+
+ * `txtorcon-0.15.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.15.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.15.1>`_ (:download:`local-sig </../signatues/txtorcon-0.15.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.15.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.15.1.tar.gz>`_)
+ * fix `issue 179 <https://github.com/meejah/txtorcon/issues/179>`_ with `Circuit.age`.
+
+
+v0.15.0
+-------
+
+*July 26, 2016*
+
+ * `txtorcon-0.15.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.15.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.15.0>`_ (:download:`local-sig </../signatues/txtorcon-0.15.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.15.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.15.0.tar.gz>`_)
+ * added support for NULL control-port-authentication which is often
+   appropriate when used with a UNIX domain socket
  * switched to `ipaddress
    <https://docs.python.org/3/library/ipaddress.html>`_ instead of
    Google's ``ipaddr``; the API should be the same from a user
@@ -73,6 +115,7 @@ unreleased
  * both TorState and TorConfig now have a ``.from_protocol`` class-method.
  * spec-compliant string-un-escaping from `coffeemakr <https://github.com/coffeemakr>`_
  * a proposed new API: :meth:`txtorcon.connect`
+ * fix `issue 176 <https://github.com/meejah/txtorcon/issues/176>`_
 
 
 v0.14.1

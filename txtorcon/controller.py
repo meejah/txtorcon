@@ -15,7 +15,7 @@ from io import StringIO
 
 from twisted.python import log
 from twisted.python.failure import Failure
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred, succeed
 from twisted.internet import protocol, error
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IReactorTime, IReactorCore
@@ -246,6 +246,10 @@ def launch(reactor,
     # ones this method created.
     if not user_set_data_directory:
         process_protocol.to_delete = [data_directory]
+        reactor.addSystemEventTrigger(
+            'before', 'shutdown',
+            functools.partial(delete_file_or_tree, data_directory)
+        )
 
     log.msg('Spawning tor process with DataDirectory', data_directory)
     args = [tor_binary] + config_args
@@ -257,7 +261,7 @@ def launch(reactor,
         tor_binary,
         args=args,
         env={'HOME': data_directory},
-        path=data_directory
+        path=data_directory if os.path.exists(data_directory) else None,  # XXX error if it doesn't exist?
     )
     # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
     transport.closeStdin()
@@ -656,6 +660,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self._setup_complete = False
         self._did_timeout = False
         self._timeout_delayed_call = None
+        self._on_exit = []  # Deferred's we owe a call/errback to when we exit
         if timeout:
             if not ireactortime:
                 raise RuntimeError(
@@ -664,6 +669,30 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             ireactortime = IReactorTime(ireactortime)
             self._timeout_delayed_call = ireactortime.callLater(
                 timeout, self.timeout_expired)
+
+    def quit(self):
+        """
+        This will terminate (with SIGTERM) the underlying Tor process.
+
+        :returns: a Deferred that callback()'s (with None) when the
+            process has actually exited.
+        """
+
+        try:
+            self.transport.signalProcess('TERM')
+            d = Deferred()
+            self._on_exit.append(d)
+
+        except error.ProcessExitedAlready:
+            self.transport.loseConnection()
+            d = succeed(None)
+        return d
+
+    def _signal_on_exit(self, reason):
+        to_notify = self._on_exit
+        self._on_exit = []
+        for d in to_notify:
+            d.callback(None)
 
     def outReceived(self, data):
         """
@@ -717,6 +746,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
         all([delete_file_or_tree(f) for f in self.to_delete])
         self.to_delete = []
+
+    def processExited(self, reason):
+        self._signal_on_exit(reason)
 
     def processEnded(self, status):
         """

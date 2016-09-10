@@ -437,9 +437,15 @@ class StateTests(unittest.TestCase):
 
         self.send(b"250 OK")
 
-        self.assertEqual(len(self.state.addrmap.addr), 2)
+        self.assertEqual(len(self.state.addrmap.addr), 4)
         self.assertTrue('www.example.com' in self.state.addrmap.addr)
         self.assertTrue('subdomain.example.com' in self.state.addrmap.addr)
+        self.assertTrue('10.0.0.0' in self.state.addrmap.addr)
+        self.assertTrue('127.0.0.1' in self.state.addrmap.addr)
+        self.assertEqual('127.0.0.1', self.state.addrmap.find('www.example.com').ip)
+        self.assertEqual('www.example.com', self.state.addrmap.find('127.0.0.1').name)
+        self.assertEqual('10.0.0.0', self.state.addrmap.find('subdomain.example.com').ip)
+        self.assertEqual('subdomain.example.com', self.state.addrmap.find('10.0.0.0').name)
 
         return d
 
@@ -1166,6 +1172,7 @@ s Fast Guard Running Stable Valid
 
         d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=True)
         clock.advance(10)
+
         def check_for_timeout_error(f):
             self.assertTrue(isinstance(f.type(), CircuitBuildTimedOutError))
         d.addErrback(check_for_timeout_error)

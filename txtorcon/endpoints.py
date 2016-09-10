@@ -23,6 +23,13 @@ except ImportError:
     from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor
     _TX_CLIENT_ENDPOINT_REACTOR = False
 
+try:
+    from twisted.internet.ssl import optionsForClientTLS
+    from txsocksx.tls import TLSWrapClientEndpoint
+    _HAVE_TLS = True
+except ImportError:
+    _HAVE_TLS = False
+
 from twisted.internet import defer
 from twisted.python import log
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
@@ -791,9 +798,7 @@ class TorClientEndpoint(object):
 
     :param tls: Can be False or True (to get default Browser-like
         hostname verification) or the result of calling
-        optionsForClientTLS() yourself.
-
-    :param _proxy_endpoint_generator: This is used for unit tests.
+        optionsForClientTLS() yourself. Default is True.
     """
 
     def __init__(self,
@@ -809,6 +814,7 @@ class TorClientEndpoint(object):
 
         self.host = host
         self.port = int(port)
+
         self._tls = tls
         self._socks_endpoint = socks_endpoint
         self._reactor = reactor
@@ -828,6 +834,77 @@ class TorClientEndpoint(object):
     def connect(self, protocolfactory):
         proto = yield self.tor_socks_ep.connect(protocolfactory)
         defer.returnValue(proto)
+
+    ## this is the one from the "original" release-1.x branch, i think?
+    def __old_connect(self, protocolfactory):
+        self.socks_endpoint = socks_endpoint
+        self.socks_username = socks_username
+        self.socks_password = socks_password
+        self.tls = tls
+
+        if self.tls and not _HAVE_TLS:
+            raise ValueError(
+                "'tls=True' but we don't have TLS support"
+            )
+
+        # backwards-compatibility: you used to specify a TCP SOCKS
+        # endpoint via socks_host= and socks_port= kwargs
+        if self.socks_endpoint is None:
+            try:
+                self.socks_endpoint = TCP4ClientEndpoint(reactor, kw['socks_host'], kw['socks_port'])
+                # XXX should deprecation-warn here
+            except KeyError:
+                pass
+
+        # this is a separate "if" from above in case socks_endpoint
+        # was None but the user specified the (old)
+        # socks_host/socks_port (in which case we do NOT want
+        # guessing_enabled
+        if self.socks_endpoint is None:
+            self._socks_port_iter = iter(self.socks_ports_to_try)
+            self._socks_guessing_enabled = True
+        else:
+            self._socks_guessing_enabled = False
+
+    # this one too, but it conflicted as well
+    @defer.inlineCallbacks
+    def __other_old_connect(self, protocolfactory):
+        last_error = None
+        kwargs = dict()
+        if self.socks_username is not None and self.socks_password is not None:
+            kwargs['methods'] = dict(
+                login=(self.socks_username, self.socks_password),
+            )
+        if self.socks_endpoint is not None:
+            args = (self.host, self.port, self.socks_endpoint)
+            socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
+            if self.tls:
+                context = optionsForClientTLS(unicode(self.host))
+                socks_ep = TLSWrapClientEndpoint(context, socks_ep)
+            proto = yield socks_ep.connect(protocolfactory)
+            defer.returnValue(proto)
+        else:
+            for socks_port in self._socks_port_iter:
+                tor_ep = TCP4ClientEndpoint(
+                    reactor,
+                    "127.0.0.1",
+                    socks_port,
+                )
+                args = (self.host, self.port, tor_ep)
+                socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
+                if self.tls:
+                    # XXX only twisted 14+
+                    context = optionsForClientTLS(unicode(self.host))
+                    socks_ep = TLSWrapClientEndpoint(context, socks_ep)
+
+                try:
+                    proto = yield socks_ep.connect(protocolfactory)
+                    defer.returnValue(proto)
+
+                except error.ConnectError as e0:
+                    last_error = e0
+            if last_error is not None:
+                raise last_error
 
 
 @implementer(IPlugin, IStreamClientEndpointStringParserWithReactor)
@@ -869,12 +946,15 @@ class TorClientEndpointStringParser(object):
         if port is not None:
             port = int(port)
 
+        ep = None
+        if socksPort is not None:
+            ep = TCP4ClientEndpoint(reactor, socksHostname, socksPort)
         return TorClientEndpoint(
             reactor,
             host, port,
-            socks_endpoint=None,
+            socks_endpoint=ep,
             socks_username=socksUsername,
-            socks_password=socksPassword
+            socks_password=socksPassword,
         )
 
     def parseStreamClient(self, *args, **kwargs):

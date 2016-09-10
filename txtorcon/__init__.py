@@ -26,6 +26,7 @@ from txtorcon.torstate import TorState
 from txtorcon.torstate import build_tor_connection
 from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
+from txtorcon.onion import EphemeralHiddenService
 from txtorcon.onion import FilesystemHiddenService
 from txtorcon.onion import AuthenticatedHiddenService
 # from txtorcon.onion import create_onion_service
@@ -73,7 +74,7 @@ __all__ = [
     "launch_tor",  # XXX deprecate?
     "create_onion_service",
     "TorNotFound", "TorConfig",
-    "FilesystemHiddenService", "HiddenService", "AuthenticatedHiddenService",  # XXX FIXME
+    "EphemeralHiddenService", "FilesystemHiddenService", "HiddenService", "AuthenticatedHiddenService",  # XXX FIXME
     "TorProcessProtocol",
     "TorInfo",
     "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",

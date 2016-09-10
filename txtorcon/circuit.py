@@ -7,7 +7,7 @@ from __future__ import with_statement
 
 import six
 import time
-import datetime
+from datetime import datetime
 import random
 
 from twisted.python.failure import Failure
@@ -246,7 +246,7 @@ class Circuit(object):
             # strip off milliseconds
             t = self.flags['TIME_CREATED'].split('.')[0]
             tstruct = time.strptime(t, TIME_FORMAT)
-            self._time_created = datetime.datetime(*tstruct[:7])
+            self._time_created = datetime(*tstruct[:7])
         return self._time_created
 
     def listen(self, listener):
@@ -280,7 +280,7 @@ class Circuit(object):
         d.addCallback(close_command_is_queued)
         return self._closing_deferred
 
-    def age(self, now=datetime.datetime.utcnow()):
+    def age(self, now=None):
         """
         Returns an integer which is the difference in seconds from
         'now' to when this circuit was created.
@@ -289,6 +289,8 @@ class Circuit(object):
         """
         if not self.time_created:
             return None
+        if now is None:
+            now = datetime.utcnow()
         return (now - self.time_created).seconds
 
     def _create_flags(self, kw):

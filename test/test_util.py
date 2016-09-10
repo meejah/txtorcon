@@ -326,13 +326,12 @@ class TestUnescapeQuotedString(unittest.TestCase):
             msg = msg.format(escaped=escaped, result=repr(result), expected=repr(expected))
             self.assertEquals(result, expected, msg=msg)
 
-
     def test_invalid_string_unescaping(self):
         invalid_escaped = [
-            '"""',      # "     - unescaped quote
-            '"\\"',     # \     - unescaped backslash
-            '"\\\\\\"', # \\\   - uneven backslashes
-            '"\\\\""',  # \\"   - quotes not escaped
+            '"""',       # "     - unescaped quote
+            '"\\"',      # \     - unescaped backslash
+            '"\\\\\\"',  # \\\   - uneven backslashes
+            '"\\\\""',   # \\"   - quotes not escaped
         ]
 
         for invalid_string in invalid_escaped:
