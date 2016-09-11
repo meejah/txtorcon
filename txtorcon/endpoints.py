@@ -680,17 +680,21 @@ class TorClientEndpoint(object):
             )
 
         # backwards-compatibility: you used to specify a TCP SOCKS
-        # endpoint via socks_host= and socks_port= kwargs
+        # endpoint via socks_hostname= and socks_port= kwargs
         if self.socks_endpoint is None:
             try:
-                self.socks_endpoint = TCP4ClientEndpoint(reactor, kw['socks_host'], kw['socks_port'])
+                self.socks_endpoint = TCP4ClientEndpoint(
+                    reactor,
+                    kw['socks_hostname'],
+                    kw['socks_port'],
+                )
                 # XXX should deprecation-warn here
             except KeyError:
                 pass
 
         # this is a separate "if" from above in case socks_endpoint
         # was None but the user specified the (old)
-        # socks_host/socks_port (in which case we do NOT want
+        # socks_hostname/socks_port (in which case we do NOT want
         # guessing_enabled
         if self.socks_endpoint is None:
             self._socks_port_iter = iter(self.socks_ports_to_try)

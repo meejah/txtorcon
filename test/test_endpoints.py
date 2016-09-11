@@ -807,7 +807,7 @@ class TestTorClientEndpoint(unittest.TestCase):
 
         endpoint = TorClientEndpoint(
             'torproject.org', 0,
-            socks_host='localhost',
+            socks_hostname='localhost',
             socks_port=9050,
         )
         self.assertTrue(isinstance(endpoint.socks_endpoint, TCP4ClientEndpoint))
