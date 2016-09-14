@@ -694,6 +694,9 @@ class FakeTorSocksEndpoint(object):
 class FakeSocksProto(object):
     def __init__(self, done, host, port, method, factory):
         self.done = done
+        self.host = host
+        self.port = port
+        self.method = method
         self.factory = factory
 
     def makeConnection(self, transport):
@@ -807,11 +810,12 @@ class TestTorClientEndpoint(unittest.TestCase):
         This test is equivalent to txsocksx's
         TestSOCKS4ClientEndpoint.test_clientConnectionFailed
         """
-        args = "host123"
-        kw = dict()
-        kw['failure'] = Failure(ConnectionRefusedError())
-        tor_endpoint = FakeTorSocksEndpoint(*args, **kw)
-        endpoint = TorClientEndpoint('', 0, socks_endpoint=tor_endpoint)
+        tor_endpoint = FakeTorSocksEndpoint(
+            None, "host123", 9050,
+            failure=Failure(ConnectionRefusedError()),
+        )
+        reactor = Mock()
+        endpoint = TorClientEndpoint(reactor, '', 0, socks_endpoint=tor_endpoint)
         d = endpoint.connect(None)
         return self.assertFailure(d, ConnectionRefusedError)
 
@@ -819,12 +823,13 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         Same as above, but with a username/password.
         """
-        args = "fakehost"
-        kw = dict()
-        kw['failure'] = Failure(ConnectionRefusedError())
-        tor_endpoint = FakeTorSocksEndpoint(*args, **kw)
+        tor_endpoint = FakeTorSocksEndpoint(
+            None, "fakehose", 9050,
+            failure=Failure(ConnectionRefusedError()),
+        )
+        reactor = Mock()
         endpoint = TorClientEndpoint(
-            'invalid host', 0,
+            reactor, 'invalid host', 0,
             socks_username='billy', socks_password='s333cure',
             socks_endpoint = tor_endpoint)
         d = endpoint.connect(None)
@@ -842,7 +847,8 @@ class TestTorClientEndpoint(unittest.TestCase):
         self.assertEqual(ep.host, 'timaq4ygg2iegci7.onion')
         self.assertEqual(ep.port, 80)
         # XXX what's "the Twisted way" to get the port out here?
-        self.assertEqual(ep.socks_endpoint._port, 9050)
+        # XXX actually, why was this set to 9050 before? should do the guessing-thing...
+        self.assertEqual(ep._socks_endpoint, None)
 
     def test_parser_user_password(self):
         epstring = 'tor:host=torproject.org:port=443' + \
@@ -859,37 +865,22 @@ class TestTorClientEndpoint(unittest.TestCase):
         This test is equivalent to txsocksx's TestSOCKS5ClientEndpoint.test_defaultFactory
         """
 
-        args = "fakehost"
-        kw = dict()
-        tor_endpoint = FakeTorSocksEndpoint(*args, **kw)
-        endpoint = TorClientEndpoint('', 0, socks_endpoint=tor_endpoint)
+        tor_endpoint = FakeTorSocksEndpoint(None, "fakehost", 9050)
+        reactor = Mock()
+        endpoint = TorClientEndpoint(reactor, '', 0, socks_endpoint=tor_endpoint)
         endpoint.connect(Mock)
         self.assertEqual(tor_endpoint.transport.value(), '\x05\x01\x00')
 
-    @patch.object(_TorSocksFactory, "protocol", FakeSocksProto)
     @defer.inlineCallbacks
-    def test_happy_path(self):
-        """
-        We can actually connect.
-        """
-        fake_ep = FakeTorSocksEndpoint(Mock(), '127.0.0.1', 9050)
-        ep = TorClientEndpoint(Mock(), 'torproject.org', 443,
-                               socks_endpoint=fake_ep)
-
-        proto = yield ep.connect(Mock())
-        self.assertTrue(proto is not None)
-
-    def test_success(self, socks5_factory):
-        ep = MagicMock()
-        gold_proto = object()
-        ep.connect = MagicMock(return_value=gold_proto)
-        socks5_factory.return_value = ep
-        args = "fakehost"
-        kw = dict()
-        tor_endpoint = FakeTorSocksEndpoint(*args, **kw)
-        endpoint = TorClientEndpoint('', 0, socks_endpoint = tor_endpoint)
-        other_proto = yield endpoint.connect(MagicMock())
-        self.assertEqual(other_proto, gold_proto)
+    def test_success(self):
+        with patch.object(_TorSocksFactory, "protocol", FakeSocksProto) as socks5_factory:
+            tor_endpoint = FakeTorSocksEndpoint(Mock(), "fakehost", 9050)
+            endpoint = TorClientEndpoint(Mock(), 'meejah.ca', 443, socks_endpoint=tor_endpoint)
+            proto = yield endpoint.connect(MagicMock())
+            self.assertTrue(isinstance(proto, FakeSocksProto))
+            self.assertEqual("meejah.ca", proto.host)
+            self.assertEqual(443, proto.port)
+            self.assertEqual('CONNECT', proto.method)
 
     def test_good_port_retry(self):
         """
@@ -898,6 +889,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         unless the connecting port matches. We attempt to connect with the
         proxy endpoint for each port that the Tor client endpoint will try.
         """
+        reactor = Mock()
         success_ports = TorClientEndpoint.socks_ports_to_try
         for port in success_ports:
             tor_endpoint = FakeTorSocksEndpoint(
@@ -906,8 +898,8 @@ class TestTorClientEndpoint(unittest.TestCase):
                 failure=Failure(ConnectionRefusedError()),
             )
 
-            endpoint = TorClientEndpoint('', 0, socks_endpoint=tor_endpoint)
-            endpoint.connect(None)
+            endpoint = TorClientEndpoint(reactor, '', 0, socks_endpoint=tor_endpoint)
+            endpoint.connect(Mock())
             self.assertEqual(tor_endpoint.transport.value(), '\x05\x01\x00')
 
     def test_bad_port_retry(self):
@@ -915,17 +907,18 @@ class TestTorClientEndpoint(unittest.TestCase):
         This tests failure to connect to the ports on the "try" list.
         """
         fail_ports = [1984, 666]
+        reactor = Mock()
         for port in fail_ports:
             ep = FakeTorSocksEndpoint(
                 '', '', 0,
                 accept_port=port,
                 failure=Failure(ConnectionRefusedError()),
             )
-            endpoint = TorClientEndpoint('', 0, socks_endpoint=ep)
+            endpoint = TorClientEndpoint(reactor, '', 0, socks_endpoint=ep)
             d = endpoint.connect(None)
             return self.assertFailure(d, ConnectionRefusedError)
 
-    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @patch('txtorcon.endpoints.TorSocksEndpoint')
     def test_default_socks_ports_fails(self, ep_mock):
         """
         Ensure we iterate over the default socks ports
@@ -940,11 +933,12 @@ class TestTorClientEndpoint(unittest.TestCase):
                 raise ConnectionRefusedError()
 
         ep_mock.side_effect = FakeSocks5
-        endpoint = TorClientEndpoint('', 0)#, socks_endpoint=ep)
-        d = endpoint.connect(None)
+        reactor = Mock()
+        endpoint = TorClientEndpoint(reactor, '', 0)#, socks_endpoint=ep)
+        d = endpoint.connect(Mock())
         self.assertFailure(d, ConnectionRefusedError)
 
-    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
     def test_default_socks_ports_happy(self, ep_mock):
         """
@@ -961,11 +955,12 @@ class TestTorClientEndpoint(unittest.TestCase):
                 return proto
 
         ep_mock.side_effect = FakeSocks5
-        endpoint = TorClientEndpoint('', 0)
+        reactor = Mock()
+        endpoint = TorClientEndpoint(reactor, '', 0)
         p2 = yield endpoint.connect(None)
         self.assertTrue(proto is p2)
 
-    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
     def test_tls_socks_no_endpoint(self, ep_mock):
 
@@ -987,11 +982,12 @@ class TestTorClientEndpoint(unittest.TestCase):
                 return proto
 
         ep_mock.side_effect = FakeSocks5
-        endpoint = TorClientEndpoint('torproject.org', 0, tls=True)
+        reactor = Mock()
+        endpoint = TorClientEndpoint(reactor, 'torproject.org', 0, tls=True)
         p2 = yield endpoint.connect(None)
         self.assertTrue(wrap.wrappedProtocol is p2)
 
-    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
     def test_tls_socks_with_endpoint(self, ep_mock):
         """
@@ -1015,8 +1011,10 @@ class TestTorClientEndpoint(unittest.TestCase):
             def connect(self, *args, **kw):
                 return proto
 
+        reactor = Mock()
         ep_mock.side_effect = FakeSocks5
         endpoint = TorClientEndpoint(
+            reactor,
             'torproject.org', 0,
             socks_endpoint=clientFromString(Mock(), "tcp:localhost:9050"),
             tls=True,
@@ -1024,18 +1022,18 @@ class TestTorClientEndpoint(unittest.TestCase):
         p2 = yield endpoint.connect(None)
         self.assertTrue(wrap.wrappedProtocol is p2)
 
-    @patch('txtorcon.endpoints.reactor')  # FIXME should be passing reactor to TorClientEndpoint :/
-    def test_client_endpoint_old_api(self, reactor):
+    def test_client_endpoint_old_api(self):
         """
         Test the old API of passing socks_host, socks_port
         """
 
+        reactor = Mock()
         endpoint = TorClientEndpoint(
-            'torproject.org', 0,
-            socks_host='localhost',
+            reactor, 'torproject.org', 0,
+            socks_hostname='localhost',
             socks_port=9050,
         )
-        self.assertTrue(isinstance(endpoint.socks_endpoint, TCP4ClientEndpoint))
+        self.assertTrue(isinstance(endpoint._socks_endpoint, TCP4ClientEndpoint))
 
         d = endpoint.connect(Mock())
         calls = reactor.mock_calls
