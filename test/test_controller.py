@@ -14,6 +14,7 @@ from zope.interface import implementer
 
 import functools
 from mock import Mock, patch
+from StringIO import StringIO
 
 
 class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
@@ -299,11 +300,7 @@ class LaunchTorTests(unittest.TestCase):
         self.assertTrue(res.protocol == self.protocol)
 
     @defer.inlineCallbacks
-    def _test_tor_produces_stderr_output(self):
-        config = TorConfig()
-        config.OrPort = 1234
-        config.SocksPort = 9999
-
+    def test_tor_produces_stderr_output(self):
         def connector(proto, trans):
             proto._set_valid_events('STATUS_CLIENT')
             proto.makeConnection(trans)
@@ -314,10 +311,10 @@ class LaunchTorTests(unittest.TestCase):
             proto.errReceived('Something went horribly wrong!\n')
 
         trans = FakeProcessTransport()
-        trans.protocol = self.protocol
+        trans.protocol = Mock()
         fakeout = StringIO()
         fakeerr = StringIO()
-        creator = functools.partial(connector, self.protocol, self.transport)
+        creator = functools.partial(connector, Mock(), Mock())
         try:
             res = yield launch(
                 FakeReactor(self, trans, on_protocol, [1234, 9052]),
