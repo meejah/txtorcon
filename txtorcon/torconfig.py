@@ -313,21 +313,94 @@ class TorConfig(object):
 
         self.__dict__['_setup_'] = None
 
+    def socks_endpoint(self, reactor, port=None):
+        """
+        Returns a TorSocksEndpoint configured to use an already-configured
+        SOCKSPort from the Tor we're connected to. By default, this
+        will be the very first SOCKSPort.
+
+        :param port: an int, the SOCKSPort to use. You get an
+           Exception if that port isn't currently configured
+
+        If you need to use a particular port that may or may not
+        already be configured, see the async method
+        :meth:`txtorcon.TorConfig.create_socks_endpoint`
+        """
+        if len(self.SocksPort) == 0:
+            raise RuntimeError(
+                "No SOCKS ports configured"
+            )
+
+        socks_config = None
+        if port is None:
+            socks_config = self.SocksPort[0]
+        else:
+            try:
+                port = int(port)
+            except ValueError:
+                raise ValueError("'port' must be an int")
+
+            for idx, port_config in enumerate(self.SocksPort):
+                # "SOCKSPort" is a gnarly beast that can have a bunch
+                # of options appended, so we have to split off the
+                # first thing which *should* be the port
+                if int(port_config.split()[0]) == port:
+                    socks_config = port_config
+                    break
+        if socks_config is None:
+            raise RuntimeError(
+                "No SOCKSPort configured for port {}".format(port)
+            )
+
+        return self._endpoint_from_socksport_line(reactor, socks_config)
+
+    def _endpoint_from_socksport_line(self, reactor, socks_config):
+        """
+        Internal helper. Returns an IStreamClientEndpoint for the give
+        config, which is of the same format expected by the SOCKSPort
+        option in Tor.
+        """
+        if socks_config.startswith('unix:'):
+            # XXX wait, can SOCKSPort lines with "unix:/path" still
+            # include options afterwards? What about if the path has a
+            # space in it?
+            return UNIXClientEndpoint(reactor, socks_config[5:])
+
+        # options like KeepAliveIsolateSOCKSAuth can be appended
+        # to a SocksPort line...
+        if ' ' in socks_config:
+            socks_config = socks_config.split()[0]
+        if ':' in socks_config:
+            host, port = socks_config.split(':', 1)
+            port = int(port)
+        else:
+            host = '127.0.0.1'
+            port = int(socks_config)
+        return TCP4ClientEndpoint(reactor, host, port)
+
     @defer.inlineCallbacks
-    def socks_endpoint(self, reactor, socks_config):
+    def create_socks_endpoint(self, reactor, socks_config):
         """
         Creates a new TorSocksEndpoint instance given a valid
         configuration line for ``SocksPort``; if this configuration
         isn't already in the underlying tor, we add it. Note that this
         method may call :meth:`txtorcon.TorConfig.save()` on this instance.
 
+        Note that calling this with `socks_config=None` is equivalent
+        to calling `.socks_endpoint` (which is not async).
+
         XXX socks_config should be .. i dunno, but there's fucking
         options and craziness, e.g. default Tor Browser Bundle is:
         ['9150 IPv6Traffic PreferIPv6 KeepAliveIsolateSOCKSAuth',
         '9155']
 
+        XXX maybe we should say "socks_port" as the 3rd arg, insist
+        it's an int, and then allow/support all the other options
+        (e.g. via kwargs)
+
         XXX we could avoid the "maybe call .save()" thing; worth it?
         """
+
         yield self.post_bootstrap
 
         if socks_config is None:
@@ -356,21 +429,9 @@ class TorConfig(object):
                         )
                     )
 
-        if socks_config.startswith('unix:'):
-            socks_ep = UNIXClientEndpoint(reactor, socks_config[5:])
-        else:
-            # options like KeepAliveIsolateSOCKSAuth can be appended
-            # to a SocksPort line...
-            if ' ' in socks_config:
-                socks_config = socks_config.split()[0]
-            if ':' in socks_config:
-                host, port = socks_config.split(':', 1)
-                port = int(port)
-            else:
-                host = '127.0.0.1'
-                port = int(socks_config)
-            socks_ep = TCP4ClientEndpoint(reactor, host, port)
-        defer.returnValue(socks_ep)
+        defer.returnValue(
+            self._endpoint_from_socksport_line(reactor, socks_config)
+        )
 
     def onion_create(self, ports, auth=None, directory=None, private_key=None):
         """

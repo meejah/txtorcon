@@ -21,7 +21,7 @@ def main(reactor):
     print("Connected:", tor)
 
     state = yield tor.create_state()
-    socks = tor.config.socks_endpoint(reactor, u"9150")
+    socks = tor.config.socks_endpoint(reactor)
 
     # create a custom circuit; in this case we're just letting Tor
     # decide the path -- but this could be done several other ways
