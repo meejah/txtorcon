@@ -5,16 +5,23 @@ Documentation at https://txtorcon.readthedocs.org
 
 .. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
     :target: https://www.travis-ci.org/meejah/txtorcon
+    :alt: travis
 
 .. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
     :target: https://coveralls.io/r/meejah/txtorcon
+    :alt: coveralls
 
 .. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
     :target: http://codecov.io/github/meejah/txtorcon?branch=master
+    :alt: codecov
 
 .. image:: http://api.flattr.com/button/flattr-badge-large.png
     :target: http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub
+    :alt: flattr
 
+.. image:: https://landscape.io/github/meejah/txtorcon/master/landscape.svg?style=flat
+    :target: https://landscape.io/github/meejah/txtorcon/master
+    :alt: Code Health
 
 quick start
 -----------
