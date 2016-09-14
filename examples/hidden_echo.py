@@ -9,6 +9,9 @@ from twisted.internet import protocol, reactor, endpoints
 
 
 class Echo(protocol.Protocol):
+    def connectionMade(self):
+        print("Connection from {}".format(self.transport.getHost()))
+
     def dataReceived(self, data):
         self.transport.write(data)
 

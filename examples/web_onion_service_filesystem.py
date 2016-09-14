@@ -1,16 +1,5 @@
 #!/usr/bin/env python
 
-# This shows how to leverage the endpoints API to get a new hidden
-# service up and running quickly. You can pass along this API to your
-# users by accepting endpoint strings as per Twisted recommendations.
-#
-# http://twistedmatrix.com/documents/current/core/howto/endpoints.html#maximizing-the-return-on-your-endpoint-investment
-#
-# note that only the progress-updates needs the "import txtorcon" --
-# you do still need it installed so that Twisted finds the endpoint
-# parser plugin but code without knowledge of txtorcon can still
-# launch a Tor instance using it. cool!
-
 from __future__ import print_function
 from twisted.internet import defer, task, endpoints
 from twisted.web import server, static, resource
@@ -25,20 +14,25 @@ def main(reactor):
     res = resource.Resource()
     res.putChild(b'', static.Data("<html>Hello, onion-service world!</html>", 'text/html'))
 
-    # "onion:" is for Tor Onion Services, and the only required
-    # argument is the public port we advertise. You can pass
-    # "controlPort=9051" for example, to connect to a system Tor
-    # (accepts paths, too, e.g. "controlPort=/var/run/tor/control")
-    ep = endpoints.serverFromString(reactor, "onion:80:controlPort={port}".format(port=default_control_port()))
-    # ep = endpoints.serverFromString(reactor, "onion:80")
+    # if we don't provide a control-endpoint, this will try some default ones
+    tor = yield txtorcon.connect(reactor)
+
+    # an endpoint that'll listen on port 80, and put the hostname +
+    # private_key files in './hidden_service_dir'
+    hs_dir = './hidden_service_dir'
+    print("Creating hidden-service, keys in: {}".format(hs_dir))
+    ep = tor.create_onion_disk_endpoint(80, hs_dir=hs_dir)
+
+    print("Note: descriptor upload can take several minutes")
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
     txtorcon.IProgressProvider(ep).add_progress_listener(on_progress)
-    print("Note: descriptor upload can take several minutes")
 
     port = yield ep.listen(server.Site(res))
-    print("Site listening: {}".format(port.getHost()))
     print("Private key:\n{}".format(port.getHost().onion_key))
+    print("Site listening: {}".format(port.getHost()))
     yield defer.Deferred()  # wait forever
-task.react(main)
+
+if __name__ == '__main__':
+    task.react(main)
