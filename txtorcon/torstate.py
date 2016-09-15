@@ -793,10 +793,14 @@ class TorState(object):
                     "Can only attach to BUILT circuits; %d is in %s." %
                     (circ.id, circ.state)
                 )
-            # we've got a valid Circuit instance; issue the command
-            yield self.protocol.queue_command(
-                "ATTACHSTREAM %d %d" % (stream.id, circ.id)
-            )
+
+            try:
+                # we've got a valid Circuit instance; issue the command
+                yield self.protocol.queue_command(
+                    "ATTACHSTREAM %d %d" % (stream.id, circ.id)
+                )
+            except Exception:
+                self._attacher_error(stream, Failure())
 
     def _attacher_error(self, stream, fail):
         """
