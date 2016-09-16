@@ -24,6 +24,7 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
         self.process_protocol.processEnded(
             Failure(error.ProcessTerminated(signal=signame))
         )
+
     def closeStdin(self):
         return
 
@@ -93,13 +94,24 @@ class LaunchTorTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_launch_fails(self):
         trans = FakeProcessTransport()
-        reactor = FakeReactor(self, trans, lambda p: None)
+
+        def on_proto(protocol):
+            protocol.processEnded(
+                Failure(error.ProcessTerminated(12, None, 'statusFIXME'))
+            )
+        reactor = FakeReactor(self, trans, on_proto, [1234, 9052])
 
         try:
             tor = yield launch(reactor)
             self.fail("Should fail")
-        except Exception as e:
-            print("XXXX", e)       
+        except RuntimeError as e:
+            pass
+
+        errs = self.flushLoggedErrors(RuntimeError)
+        self.assertEqual(1, len(errs))
+        self.assertTrue(
+            "Tor exited with error-code 12" in str(errs[0])
+        )
 
     @defer.inlineCallbacks
     def test_launch_no_ireactorcore(self):
@@ -250,7 +262,6 @@ class LaunchTorTests(unittest.TestCase):
             res = yield d
             self.fail()
         except RuntimeError as e:
-            print("BOOM", e)
             self.assertTrue(
                 'Tor was killed (TERM).' in str(e)
             )
