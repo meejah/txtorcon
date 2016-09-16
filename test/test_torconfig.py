@@ -8,7 +8,7 @@ from six import StringIO
 
 from mock import Mock, patch
 
-from zope.interface import implementer
+from zope.interface import implementer, directlyProvides
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error, task, tcp
@@ -1070,81 +1070,6 @@ class FakePort(object):
         return IPv4Address('TCP', "127.0.0.1", self._port)
 
 
-@implementer(IReactorCore)
-class FakeReactor(task.Clock):
-
-    def __init__(self, test, trans, on_protocol, listen_ports=[]):
-        super(FakeReactor, self).__init__()
-        self.test = test
-        self.transport = trans
-        self.on_protocol = on_protocol
-        self.listen_ports = listen_ports
-
-    def spawnProcess(self, processprotocol, bin, args, env, path,
-                     uid=None, gid=None, usePTY=None, childFDs=None):
-        self.protocol = processprotocol
-        self.protocol.makeConnection(self.transport)
-        self.transport.process_protocol = processprotocol
-        self.on_protocol(self.protocol)
-        return self.transport
-
-    def addSystemEventTrigger(self, *args):
-        self.test.assertEqual(args[0], 'before')
-        self.test.assertEqual(args[1], 'shutdown')
-        # we know this is just for the temporary file cleanup, so we
-        # nuke it right away to avoid polluting /tmp by calling the
-        # callback now.
-        args[2]()
-
-    def removeSystemEventTrigger(self, id):
-        pass
-
-    def listenTCP(self, *args, **kw):
-        port = self.listen_ports.pop()
-        return FakePort(port)
-
-
-class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
-
-    pid = -1
-
-    def signalProcess(self, signame):
-        self.process_protocol.processEnded(
-            Failure(error.ProcessTerminated(signal=signame))
-        )
-
-    def closeStdin(self):
-        self.protocol.dataReceived(b'250 OK\r\n')
-        self.protocol.dataReceived(b'250 OK\r\n')
-        self.protocol.dataReceived(b'250 OK\r\n')
-        self.protocol.dataReceived(
-            b'650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=90 '
-            b'TAG=circuit_create SUMMARY="Establishing a Tor circuit"\r\n'
-        )
-        self.protocol.dataReceived(
-            b'650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=100 '
-            b'TAG=done SUMMARY="Done"\r\n'
-        )
-
-
-class FakeProcessTransportNeverBootstraps(FakeProcessTransport):
-
-    pid = -1
-
-    def closeStdin(self):
-        self.protocol.dataReceived(b'250 OK\r\n')
-        self.protocol.dataReceived(b'250 OK\r\n')
-        self.protocol.dataReceived(b'250 OK\r\n')
-        self.protocol.dataReceived(
-            b'650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=90 TAG=circuit_create '
-            b'SUMMARY="Establishing a Tor circuit"\r\n')
-
-
-class FakeProcessTransportNoProtocol(FakeProcessTransport):
-    def closeStdin(self):
-        pass
-
-
 class IteratorTests(unittest.TestCase):
     def test_iterate_torconfig(self):
         cfg = TorConfig()
@@ -1173,12 +1098,14 @@ class ErrorTests(unittest.TestCase):
                 return proto.post_bootstrap
 
         self.protocol = FakeControlProtocol([])
-        trans = FakeProcessTransport()
+        trans = Mock()
         trans.protocol = self.protocol
         creator = functools.partial(Connector(), self.protocol, self.transport)
+        reactor = Mock()
+        directlyProvides(reactor, IReactorCore)
         try:
             yield launch(
-                FakeReactor(self, trans, lambda x: None),
+                reactor,
                 connection_creator=creator
             )
             self.fail()

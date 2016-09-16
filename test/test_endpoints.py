@@ -611,13 +611,11 @@ def port_generator():
         yield x
 
 
-from .test_torconfig import FakeReactor  # FIXME put in util or something?
-from .test_torconfig import FakeProcessTransport  # FIXME importing from other test sucks
 from .test_torconfig import FakeControlProtocol  # FIXME
 
 
 @implementer(IReactorTCP, IReactorCore)
-class FakeReactorTcp(FakeReactor):
+class FakeReactorTcp(object):#FakeReactor):
 
     failures = 0
     _port_generator = port_generator()
@@ -626,14 +624,28 @@ class FakeReactorTcp(FakeReactor):
         self.protocol = TorControlProtocol()
         self.protocol.connectionMade = lambda: None
         self.transport = proto_helpers.StringTransport()
-        self.transport = FakeProcessTransport()
         self.transport.protocol = self.protocol
 
         def blam():
             self.protocol.outReceived("Bootstrap")
         self.transport.closeStdin = blam
         self.protocol.makeConnection(self.transport)
-        FakeReactor.__init__(self, test, self.transport, lambda x: None)
+        self.test = test
+
+    def spawnProcess(self, processprotocol, bin, args, env, path,
+                     uid=None, gid=None, usePTY=None, childFDs=None):
+        self.protocol = processprotocol
+        self.protocol.makeConnection(self.transport)
+        self.transport.process_protocol = processprotocol
+        return self.transport
+
+    def addSystemEventTrigger(self, *args):
+        self.test.assertEqual(args[0], 'before')
+        self.test.assertEqual(args[1], 'shutdown')
+        # we know this is just for the temporary file cleanup, so we
+        # nuke it right away to avoid polluting /tmp by calling the
+        # callback now.
+        args[2]()
 
     def listenTCP(self, port, factory, **kwargs):
         '''returns IListeningPort'''
