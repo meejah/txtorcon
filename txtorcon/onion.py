@@ -394,7 +394,9 @@ class EphemeralHiddenService(object):
             detach=detach,
             discard_key=discard_key,
         )
-        # XXX just use sets for this instead of lists?
+
+        # XXX more thinking req'd
+        # config.HiddenServices.append(onion)
         if onion not in config.EphemeralOnionServices:
             config.EphemeralOnionServices.append(onion)
 
@@ -405,8 +407,11 @@ class EphemeralHiddenService(object):
         # we allow a key to be passed that *doestn'* start with
         # "RSA1024:" because having to escape the ":" for endpoint
         # string syntax (which uses ":" as delimeters) is annoying
+        # XXX rethink ^^? what do we do when the type is upgraded?
+        # maybe just a magic-character that's different from ":", or
+        # force people to escape them?
         if onion.private_key and not onion.private_key.startswith("RSA1024:"):
-            onion.private_key = "RSA1024:" + onion.private_key
+            onion._private_key = "RSA1024:" + onion.private_key
 
         # okay, we're set up to listen, and now we issue the ADD_ONION
         # command. this will set ._hostname and ._private_key properly
@@ -440,13 +445,7 @@ class EphemeralHiddenService(object):
         log.msg("Created '{}', waiting for descriptor uploads.".format(onion.hostname))
         yield uploaded
 
-        # XXX more thinking req'd
-        # config.HiddenServices.append(onion)
-        if onion not in config.EphemeralOnionServices:
-            config.EphemeralOnionServices.append(onion)
-
         defer.returnValue(onion)
-        return
 
     def __init__(self, config, ports, hostname=None, private_key=None, auth=[], ver=2,
                  detach=False, discard_key=False):
