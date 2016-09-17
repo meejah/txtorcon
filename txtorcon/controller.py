@@ -146,7 +146,13 @@ def launch(reactor,
     # config validation.
 
     if not IReactorCore.providedBy(reactor):
-        raise ValueError("'reactor' argument must provide IReactorCore (got '{}': {})".format(type(reactor).__class__.__name__, repr(reactor)))
+        raise ValueError(
+            "'reactor' argument must provide IReactorCore"
+            " (got '{}': {})".format(
+                type(reactor).__class__.__name__,
+                repr(reactor)
+            )
+        )
 
     if tor_binary is None:
         tor_binary = find_tor_binary()

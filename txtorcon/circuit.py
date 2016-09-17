@@ -545,7 +545,7 @@ class CircuitBuilder(object):
                 # XXX should be a DeferredList with a deferLater() in
                 # it along with the circuit-build, but only-if we've
                 # got a timeout
-                print("Creating circuit: {}".format([x.id_hex for x in path]))
+                # print("Creating circuit: {}".format([x.id_hex for x in path]))
                 circ = yield self._state.build_circuit(routers=path)
             except Exception:
                 # log warning?
