@@ -18,6 +18,7 @@ from twisted.python.failure import Failure
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred, succeed
 from twisted.internet import protocol, error
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.interfaces import IReactorTime, IReactorCore
 from twisted.internet.interfaces import IStreamClientEndpoint
 
@@ -290,7 +291,7 @@ def launch(reactor,
 # what about if it's None (default?) and we try some candidates?
 
 @inlineCallbacks
-def connect(reactor, control_endpoint, password_function=None):
+def connect(reactor, control_endpoint=None, password_function=None):
     """
     Creates a :class:`txtorcon.Tor` instance by connecting to an
     already-running tor's control port. For example, a common default
@@ -323,17 +324,47 @@ def connect(reactor, control_endpoint, password_function=None):
         a Deferred that fires with a :class:`txtorcon.Tor` instance
     """
 
-    if not IStreamClientEndpoint.providedBy(control_endpoint):
-        raise ValueError("control_endpoint must provide IStreamClientEndpoint")
 
-    proto = yield control_endpoint.connect(
-        TorProtocolFactory(
-            password_function=password_function
+    @inlineCallbacks
+    def try_endpoint(control_ep):
+        if not IStreamClientEndpoint.providedBy(control_ep):
+            raise ValueError("control_endpoint must provide IStreamClientEndpoint")
+
+        proto = yield control_ep.connect(
+            TorProtocolFactory(
+                password_function=password_function
+            )
+        )
+        config = yield TorConfig.from_protocol(proto)
+        tor = Tor(reactor, config)
+        returnValue(tor)
+
+    if control_endpoint is None:
+        to_try = [
+            UNIXClientEndpoint(reactor, '/var/run/tor/control'),
+            TCP4ClientEndpoint(reactor, '127.0.0.1', 9051),
+            TCP4ClientEndpoint(reactor, '127.0.0.1', 9151),
+        ]
+    else:
+        to_try = [control_endpoint]
+
+    errors = []
+    for idx, ep in enumerate(to_try):
+        try:
+            tor = yield try_endpoint(ep)
+            txtorlog.msg("Connected via '{}'".format(ep))
+            returnValue(tor)
+        except Exception as e:
+            errors.append(e)
+    if len(errors) == 1:
+        raise errors[0]
+    raise RuntimeError(
+        'Failed to connect to: {}'.format(
+            ', '.join(
+                '{}: {}'.format(ep, err) for ep, err in zip(to_try, errors)
+            )
         )
     )
-    config = yield TorConfig.from_protocol(proto)
-    tor = Tor(reactor, config)
-    returnValue(tor)
 
 
 class Tor(object):
