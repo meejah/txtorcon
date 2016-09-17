@@ -674,6 +674,11 @@ class FakeReactorTcp(object):#FakeReactor):
 
 
 class FakeTorSocksEndpoint(object):
+    """
+    This ctor signature matches TorSocksEndpoint even though we don't
+    use it in the tests.
+    """
+
     def __init__(self, socks_endpoint, host, port, tls=False, **kw):
         self.host = host
         self.port = port
