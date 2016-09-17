@@ -30,7 +30,7 @@ try:
 except ImportError:
     _HAVE_TLS = False
 
-from twisted.internet import defer
+from twisted.internet import defer, error
 from twisted.python import log
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamServerEndpoint
@@ -39,7 +39,7 @@ from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
-# from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import TCP4ClientEndpoint
 # from twisted.internet.endpoints import UNIXClientEndpoint
 # from twisted.internet import error
 from twisted.plugin import IPlugin
@@ -390,7 +390,7 @@ class TCPHiddenServiceEndpoint(object):
                 " with 'ephemeral=True'"
             )
 
-        self.reactor = reactor
+        self._reactor = reactor
         self._config = defer.maybeDeferred(lambda: config)
         self.public_port = public_port
         self.local_port = local_port
@@ -411,7 +411,7 @@ class TCPHiddenServiceEndpoint(object):
             self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
             log.msg('Will delete "%s" at shutdown.' % self.hidden_service_dir)
             delete = functools.partial(shutil.rmtree, self.hidden_service_dir)
-            reactor.addSystemEventTrigger('before', 'shutdown', delete)
+            self._reactor.addSystemEventTrigger('before', 'shutdown', delete)
 
     @property
     def onion_uri(self):
@@ -452,22 +452,15 @@ class TCPHiddenServiceEndpoint(object):
         Returns a Deferred that delivers an
         :api:`twisted.internet.interfaces.IListeningPort` implementation.
 
-        This port can also be adapted to
-        :class:`txtorcon.IHiddenService` so you can get the
-        `onion_uri` and `onion_private_key` members (these correspond
-        to "hostname" and "private_key" from the HiddenServiceDir Tor
-        is using).
+        This port instance can also be adapted to
+        :class:`txtorcon.IOnionService`, which provides all details of
+        the service (e.g. `.private_key`, `.hostname`, `.ports`)
 
         At this point, Tor will have fully started up and successfully
-        accepted the hidden service's config.
-
-        FIXME TODO: also listen for an INFO-level Tor message (does
-        exist, #tor-dev says) that indicates the hidden service's
-        descriptor is published.
-
-        It is "connection_dir_client_reached_eof(): Uploaded
-        rendezvous descriptor (status 200 ("Service descriptor (v2)
-        stored"))" at INFO level.
+        accepted the hidden service's config. Also, at least one
+        Hidden Service Directory will have successfully received the
+        Descriptor so the service should be reachable by other Tor
+        clients.
         """
 
         self.protocolfactory = protocolfactory
@@ -809,11 +802,11 @@ class TorClientEndpoint(object):
     def __init__(self,
                  reactor,
                  host, port,
-                 socks_endpoint,  # can be Deferred
+                 socks_endpoint=None,  # can be Deferred
                  tls=False,
 
                  # XXX our custom SOCKS stuff doesn't support auth (yet?)
-                 socks_username=None, socks_password=None):
+                 socks_username=None, socks_password=None, **kw):
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
@@ -824,66 +817,65 @@ class TorClientEndpoint(object):
         self._socks_endpoint = socks_endpoint
         self._reactor = reactor
 
-        # XXX think, do we want to expose these like this? Or some
-        # other way (because they're for stream-isolation, not actual
-        # auth)
-        self._socks_username = socks_username
-        self._socks_password = socks_password
-
-        # FIXME playing
-        self.tor_socks_ep = TorSocksEndpoint(
-            self._socks_endpoint, self.host, self.port, self._tls,
-        )
-
-    @defer.inlineCallbacks
-    def connect(self, protocolfactory):
-        proto = yield self.tor_socks_ep.connect(protocolfactory)
-        defer.returnValue(proto)
-
-    ## this is the one from the "original" release-1.x branch, i think?
-    def __old_connect(self, protocolfactory):
-        self.socks_endpoint = socks_endpoint
-        self.socks_username = socks_username
-        self.socks_password = socks_password
-        self.tls = tls
-
-        if self.tls and not _HAVE_TLS:
+        if self._tls and not _HAVE_TLS:
             raise ValueError(
                 "'tls=True' but we don't have TLS support"
             )
 
         # backwards-compatibility: you used to specify a TCP SOCKS
         # endpoint via socks_host= and socks_port= kwargs
-        if self.socks_endpoint is None:
+        if self._socks_endpoint is None:
             try:
-                self.socks_endpoint = TCP4ClientEndpoint(reactor, kw['socks_host'], kw['socks_port'])
+                self._socks_endpoint = TCP4ClientEndpoint(
+                    reactor,
+                    kw['socks_hostname'],
+                    kw['socks_port'],
+                )
                 # XXX should deprecation-warn here
             except KeyError:
                 pass
 
         # this is a separate "if" from above in case socks_endpoint
         # was None but the user specified the (old)
-        # socks_host/socks_port (in which case we do NOT want
+        # socks_hostname/socks_port (in which case we do NOT want
         # guessing_enabled
-        if self.socks_endpoint is None:
+        if self._socks_endpoint is None:
             self._socks_port_iter = iter(self.socks_ports_to_try)
             self._socks_guessing_enabled = True
         else:
             self._socks_guessing_enabled = False
 
-    # this one too, but it conflicted as well
+        # XXX think, do we want to expose these like this? Or some
+        # other way (because they're for stream-isolation, not actual
+        # auth)
+        self._socks_username = socks_username
+        self._socks_password = socks_password
+
+        # what if we make a "try a bunch of things" endpoint, and just
+        # set it here -- so that *our* .connect() can just be the
+        # 2-line thing I have here before.
+
+        # FIXME playing
+        self.tor_socks_ep = TorSocksEndpoint(
+            self._socks_endpoint, self.host, self.port, self._tls,
+        )
+
+    ## this is the one from the "original" release-1.x branch, i think?
     @defer.inlineCallbacks
-    def __other_old_connect(self, protocolfactory):
+    def connect(self, protocolfactory):
         last_error = None
         kwargs = dict()
-        if self.socks_username is not None and self.socks_password is not None:
+        if self._socks_username is not None and self._socks_password is not None:
             kwargs['methods'] = dict(
-                login=(self.socks_username, self.socks_password),
+                login=(self._socks_username, self._socks_password),
             )
-        if self.socks_endpoint is not None:
-            args = (self.host, self.port, self.socks_endpoint)
-            socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
-            if self.tls:
+        if self._socks_endpoint is not None:
+            socks_ep = TorSocksEndpoint(
+                self._socks_endpoint,
+                self.host, self.port,
+                self._tls,
+            )
+            if self._tls:
                 context = optionsForClientTLS(unicode(self.host))
                 socks_ep = TLSWrapClientEndpoint(context, socks_ep)
             proto = yield socks_ep.connect(protocolfactory)
@@ -891,13 +883,12 @@ class TorClientEndpoint(object):
         else:
             for socks_port in self._socks_port_iter:
                 tor_ep = TCP4ClientEndpoint(
-                    reactor,
-                    "127.0.0.1",
+                    self._reactor,
+                    "127.0.0.1",  # XXX socks_hostname, no?
                     socks_port,
                 )
-                args = (self.host, self.port, tor_ep)
-                socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
-                if self.tls:
+                socks_ep = TorSocksEndpoint(tor_ep, self.host, self.port, self._tls)
+                if self._tls:
                     # XXX only twisted 14+
                     context = optionsForClientTLS(unicode(self.host))
                     socks_ep = TLSWrapClientEndpoint(context, socks_ep)
@@ -947,7 +938,7 @@ class TorClientEndpointStringParser(object):
 
     def _parseClient(self, reactor,
                      host=None, port=None,
-                     socksUsername=None, socksPassword=None):
+                     socksPort=None, socksUsername=None, socksPassword=None):
         if port is not None:
             port = int(port)
 
