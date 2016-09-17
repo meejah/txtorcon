@@ -458,6 +458,7 @@ class TorControlProtocol(LineOnlyReceiver):
             raise RuntimeError("Invalid signal " + nm)
         return self.queue_command('SIGNAL %s' % nm)
 
+    # XXX FIXME this should have been async all along :/
     def add_event_listener(self, evt, callback):
         """:param evt: event name, see also
         :var:`txtorcon.TorControlProtocol.events` .keys()
@@ -494,9 +495,11 @@ class TorControlProtocol(LineOnlyReceiver):
 
         if evt.name not in self.events:
             self.events[evt.name] = evt
-            self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+            d = self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+        else:
+            d = defer.succeed(None)
         evt.listen(callback)
-        return None
+        return d
 
     def remove_event_listener(self, evt, cb):
         if evt not in self.valid_events.values():
