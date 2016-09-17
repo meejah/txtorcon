@@ -457,13 +457,13 @@ class Tor(object):
 
         else:
             if isinstance(socks_config, six.text_type):
-                socks_config = self.config.socks_endpoint(
+                socks_config = self.config.create_socks_endpoint(
                     self._reactor,
                     socks_config,
                 )
             elif isinstance(socks_config, str):
                 # play nice(r) on python2
-                socks_config = self.config.socks_endpoint(
+                socks_config = self.config.create_socks_endpoint(
                     self._reactor,
                     six.text_type(socks_config),
                 )
