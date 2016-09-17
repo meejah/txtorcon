@@ -486,7 +486,6 @@ class TorControlProtocol(LineOnlyReceiver):
             show how to tie in Stem parsing if you want
 
         """
-
         if evt not in self.valid_events.values():
             try:
                 evt = self.valid_events[evt]
@@ -634,7 +633,6 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Errback if authentication fails.
         """
-
         # XXX FIXME if post_bootstrap is already callback()'d, this
         # goes into the aether; should be logged in that case...
         # print("authentication failed", fail)
@@ -777,7 +775,6 @@ class TorControlProtocol(LineOnlyReceiver):
         finally exits, we're set up and do the post_bootstrap
         callback.
         """
-
         try:
             self.valid_signals = yield self.get_info('signal/names')
         except TorProtocolError:

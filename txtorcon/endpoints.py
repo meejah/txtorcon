@@ -648,9 +648,10 @@ class EphemeralHiddenServiceClient(object):
         self.private_key = private_key
 
 
-# XXX should implement IOnionService
+# XXX should implement IOnionService?
 # ...so what shall implement IOnionClients etc? need multiple TorOnionListeningPort impls?
-@implementer(IListeningPort, IHiddenService)
+# --> no, you'll have to get at .service (or .onion_serivce?) from this ...
+@implementer(IListeningPort)
 class TorOnionListeningPort(object):
     """
     Our TCPHiddenServiceEndpoint's `listen` method will return a deferred
@@ -667,11 +668,12 @@ class TorOnionListeningPort(object):
     """
 
     def __init__(self, listening_port, public_port, hiddenservice, tor_config):
+        # XXX can get these from the service
         self.local_address = listening_port
         self.public_port = public_port
         # XXX should this be a weakref too? is there circ-ref here?
-        self._hiddenservice = hiddenservice
-        # XXX why is this a weakref? circ-ref?
+        self._service = hiddenservice
+        # XXX why is this a weakref? circ-ref? (also, can get from the service anyway, no?)
         self._config_ref = weakref.ref(tor_config)
         self._address = TorOnionAddress(public_port, hiddenservice)
 
@@ -690,11 +692,14 @@ class TorOnionListeningPort(object):
     def __str__(self):
         return '<TorOnionListeningPort %s:%d>' % (self._address.onion_uri, self._address.onion_port)
 
-    # local_address IHiddenService API fulfilled in ctor
-    # hidden_service_dir IHiddenService API fulfilled in ctor
+    # XXX actually, can get this via the onion_service if req'd?
     @property
     def tor_config(self):
         return self._config_ref()  # None if ref dead
+
+    @property
+    def onion_service(self):
+        return self._service
 
 
 @implementer(IStreamServerEndpointStringParser, IPlugin)

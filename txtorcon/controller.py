@@ -403,6 +403,7 @@ class Tor(object):
         self._reactor = reactor
         # this only passed/set when we launch()
         self._process_protocol = _process_proto
+
         # cache our preferred socks port
         # XXX FIXME
         self._socks_endpoint = TCP4ClientEndpoint(reactor, '127.0.0.1', 9050)

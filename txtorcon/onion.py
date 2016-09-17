@@ -48,8 +48,8 @@ class IOnionService(Interface):
     """
     Encapsulates a single, ephemeral onion service.
 
-    If this happens to be a filesystem-based service (instead of
-    ephemeral), it shall implement IFilesystemOnionService as well
+    If this instance happens to be a filesystem-based service (instead
+    of ephemeral), it shall implement IFilesystemOnionService as well
     (which is a subclass of this).
 
     If this object happens to represent an authenticated service, it
@@ -80,29 +80,11 @@ class IFilesystemOnionService(IOnionService):
     group_readable = Attribute("set HiddenServiceGroupReadable if true")
 
 
-# XXX
-class IAuthenticatedService(Interface):
-    name = Attribute("which client is this")
-    auth_token = Attribute("the keyz!!!")
-
-
-@implementer(IFilesystemOnionService)
-@implementer(IAuthenticatedService)
-class AuthenticatedFilesystemOnionService(object):
-    pass
-
-
-@implementer(IFilesystemOnionService)
-class FilesystemOnionService(object):
-    pass
-
-
 # XXX bad name? why isn't it something collection-releated
 # e.g. IOnionServiceCollection ... or whatever bikeshed color
 # just having "OnionSerivce" in this class name smells real bad, because it doesn't implement IOnionService
 # maybe: IOnionClients? IOnionClientCollection?
 # class IAuthenticatedOnionService(Interface):
-
 class IOnionClients(Interface):
     """
     This encapsulates both 'stealth' and 'basic' authenticated Onion
@@ -511,8 +493,10 @@ class AuthenticatedHiddenServiceClient(object):
         return self._parent.group_readable
 
 
+# XXX this can't provide IOnionService or IFilesystemOnionService at all!
 @implementer(IFilesystemOnionService)
-@implementer(IAuthenticatedService)
+#@implementer(IAuthenticatedOnionService)
+@implementer(IOnionClients)
 class AuthenticatedHiddenService(object):
     """
     Corresponds to::

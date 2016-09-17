@@ -807,7 +807,7 @@ class TorState(object):
         Note that tests monkey-patch this to reduce spew
         """
         if not self._attachers:
-            print("Failure while attaching stream, and not attachers:", fail)
+            print("Failure while attaching stream, and no attachers:", fail)
         for attacher in self._attachers:
             attacher.attach_stream_failure(stream, fail)
         return fail

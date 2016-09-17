@@ -49,7 +49,6 @@ class FSM(object):
         self.states = states
 
     def process(self, data):
-        # print("PROCESS", self.state, data)
         if self.state is None:
             raise RuntimeError("There is no initial state.")
         next_state = self.state.process(data)

@@ -28,12 +28,16 @@ from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
 from txtorcon.onion import EphemeralHiddenService
 from txtorcon.onion import FilesystemHiddenService
+from txtorcon.onion import EphemeralHiddenService
 from txtorcon.onion import AuthenticatedHiddenService
 # from txtorcon.onion import create_onion_service
 # from txtorcon.onion import launch_tor # XXX backwards-compat: (put back??)
-# from txtorcon.onion import IOnionService
-# from txtorcon.onion import IAuthenticatedOnionService
-# from txtorcon.onion import OnionService, EphemeralOnionService
+
+from txtorcon.onion import IOnionService
+#from txtorcon.onion import IAuthenticatedOnionService
+from txtorcon.onion import OnionService
+#from txtorcon.onion import FilesystemOnionService
+
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress
@@ -93,7 +97,7 @@ __all__ = [
 
     # new onion + ephemeral API
     "IOnionService", "IAuthenticatedOnionService",
-    "EphemeralOnionService",
+    "EphemeralHiddenService",
 
     # web stuff
     "agent_for_socks_port",
