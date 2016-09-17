@@ -683,10 +683,6 @@ class FakeTorSocksEndpoint(object):
         self.accept_port = kw.get('accept_port', None)
 
     def connect(self, fac):
-        print("fake-connect", fac)
-        if self.failure is not None:
-            return self.failure
-
         self.factory = fac
         if self.accept_port:
             if self.port != self.accept_port:
@@ -695,11 +691,9 @@ class FakeTorSocksEndpoint(object):
             if self.failure:
                 return defer.fail(self.failure)
         self.proto = fac.buildProtocol(None)
-        print("proto", self.proto)
         transport = proto_helpers.StringTransportWithDisconnection()
         self.proto.makeConnection(transport)
         self.transport = transport
-        print("trans", self.transport)
         return defer.succeed(self.proto)
 
 
@@ -713,7 +707,6 @@ class FakeSocksProto(object):
 
     def makeConnection(self, transport):
         proto = self.factory.buildProtocol('socks5 addr')
-        print("DiNG", proto)
         self.done.callback(proto)
 
 
