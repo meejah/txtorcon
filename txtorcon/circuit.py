@@ -180,10 +180,11 @@ class Circuit(object):
         return d
 
     # XXX use same method for socks_config/endpoint as Tor.web_agent
-    def web_agent(self, reactor, socks_endpoint, pool=None):
+    def web_agent(self, reactor, socks_endpoint=None, pool=None):
         """
         :param socks_endpoint: create one with
-            :meth:`txtorcon.TorState.socks_endpoint`. Can be a Deferred.
+            :meth:`txtorcon.TorState.socks_endpoint`. Can be a
+            Deferred. Can be None for a default one.
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
