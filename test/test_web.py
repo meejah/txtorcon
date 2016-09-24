@@ -18,6 +18,21 @@ class WebAgentTests(unittest.TestCase):
         config.SocksPort = ['1234']
         agent = agent_for_socks_port(reactor, config, '1234')
 
+    @defer.inlineCallbacks
+    def test_socks_agent_error_saving(self):
+        reactor = Mock()
+        config = Mock()
+        config.SocksPort = []
+
+        def boom(*args, **kw):
+            raise RuntimeError("sad times at ridgemont high")
+        config.save = boom
+        try:
+            agent = yield agent_for_socks_port(reactor, config, '1234')
+            self.fail("Should get an error")
+        except RuntimeError as e:
+            self.assertTrue("sad times at ridgemont high" in str(e))
+
     def test_socks_agent_unix(self):
         reactor = Mock()
         config = Mock()
