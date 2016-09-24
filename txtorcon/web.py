@@ -60,9 +60,6 @@ class _AgentEndpointFactoryForCircuit(object):
         )
 
 
-# XXX FIXME okay, this seems silly -- lotsa args to make this work,
-# should just ditch tor_agent() and it *only* works via Circuit or Tor
-# (and they create tor._Agent* instances)
 def tor_agent(reactor, socks_endpoint, circuit=None, pool=None):
     """
     This is the low-level method used by
@@ -96,7 +93,7 @@ def tor_agent(reactor, socks_endpoint, circuit=None, pool=None):
 
 
 @inlineCallbacks
-def agent_for_socks_port(reactor, torconfig, socks_config):
+def agent_for_socks_port(reactor, torconfig, socks_config, pool=None):
     """
     This returns a Deferred that fires with an object that implements
     :class:`twisted.web.iweb.IAgent` and is thus suitable for passing
@@ -149,5 +146,6 @@ def agent_for_socks_port(reactor, torconfig, socks_config):
         Agent.usingEndpointFactory(
             reactor,
             _AgentEndpointFactoryUsingTor(reactor, socks_ep),
+            pool=pool,
         )
     )
