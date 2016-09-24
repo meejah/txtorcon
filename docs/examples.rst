@@ -58,7 +58,7 @@ Web: servers (services)
 
 :download:`Download the example <../examples/web_onion_service.py>`.
 
-Set up a `twisted.web.server <>`_ listening as a onion service. This uses the ``ADD_ONION`` API from Tor. If you don't know what that means, see `the spec <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1365>`_. If you know you want to keep the private key for your onion service on disk somewhere, see the next example.
+Set up a `twisted.web.server <https://twistedmatrix.com/FIXME>`_ listening as a onion service. This uses the ``ADD_ONION`` API from Tor. If you don't know what that means, see `the spec <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1365>`_. If you know you want to keep the private key for your onion service on disk somewhere, see the next example.
 
 .. literalinclude:: ../examples/web_onion_service.py
 
@@ -159,22 +159,6 @@ see what's going on.
 
 .. literalinclude:: ../examples/stream_circuit_logger.py
 
-
-.. _attach_streams_by_country.py:
-
-
-
-:file:`circuit_for_next_stream.py`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:download:`Download the example
-<../examples/circuit_for_next_stream.py>`.  This creates a custom
-stream specified via router names on the command-line and then
-attaches the next new stream the controller sees to this circuit and
-exits. A decent custom-circuit example, and a little simpler than the
-following example (attach_streams_by_country).
-
-.. literalinclude:: ../examples/circuit_for_next_stream.py
 
 
 .. _attach_streams_by_country.py:
