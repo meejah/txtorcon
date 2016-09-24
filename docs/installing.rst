@@ -31,7 +31,8 @@ If you're still using wheezy, ``python-txtorcon`` is also in `wheezy-backports <
 It also `appears txtorcon is in Gentoo
 <http://packages.gentoo.org/package/net-libs/txtorcon>`_ but I don't
 use Gentoo (if anyone has a shell-snippet that installs it, send a
-pull-request).
+pull-request). I am told this package also needs a maintainer;
+see XXX.
 
 **Installing the wheel files** requires a recent pip and
 setuptools. At least on Debian, it is important to upgrade setuptools
@@ -72,7 +73,8 @@ your ``torrc``::
 
 Note that "Tor BrowserBundle" is configured this way by default, on
 port 9151.  If you want to use unix sockets to speak to tor (highly
-recommended)::
+recommended) add this to your config (Debian is already set up like
+this)::
 
    ControlSocketsGroupWritable 1
    ControlSocket /var/run/tor/control
@@ -85,7 +87,8 @@ Most people will use the code from https://github.com/meejah/txtorcon
 The canonical URI is http://timaq4ygg2iegci7.onion
 I sign tags with my public key (:download:`meejah.asc <../meejah.asc>`)
 
-- code: ``git clone https://github.com/meejah/txtorcon.git``
+- ``git clone https://github.com/meejah/txtorcon.git``
+- ``torsocks git clone git://timaq4ygg2iegci7.onion/meejah/txtorcon.git``
 
 Rendered documentation for the latest release is at `txtorcon.readthedocs.org <https://txtorcon.readthedocs.org/en/latest/>`_.
 
@@ -111,10 +114,11 @@ I like to set up my Python development like this:
     (venv)$ tox  # run all tests, in all supported configs
 
 You can now edit code in the repository as normal. To submit a patch,
-the easiest way is to "clone" the txtxtcon project, and add a remote
-called "github" (``git remote add -f github git+ssh://git@github.com/<my
-github handle>/txtorcon.git``). The ``-f`` is so you don't have to
-``git fetch`` right after.
+the easiest way is to "clone" the txtorcon project, then "fork" on
+github and add a remote called "github" with your copy of the code to
+which you can push (``git remote add -f github
+git+ssh://git@github.com/<your github handle>/txtorcon.git``). The
+``-f`` is so you don't have to run ``git fetch`` right after.
 
 Now, you can push a new branch you've made to GitHub with ``git push
 github branch-name`` and then examine it and open a pull-request. This
@@ -122,7 +126,7 @@ will trigger Travis to run the tests, after which coverage will be
 produced (and a bot comments on the pull-request). If you require any
 more changes, the easiest thing to do is just commit them and push
 them. (If you know how, re-basing/re-arranging/squashing etc is nice
-to do too).
+to do too). See :ref:`hacking` for more.
 
 
 Integration Tests
