@@ -238,8 +238,8 @@ Events
 :download:`Download the example <../examples/monitor.py>`.
 
 Use a plain :class:`txtorcon.TorControlProtocol` instance to listen
-for SETEVNET updates. In this case marginally useful, as it listens
-for logging things INFO, NOTICE, WARN, ERR.
+for some simple events -- in this case marginally useful, as it
+listens for logging at level ``INFO``, ``NOTICE``, ``WARN`` and ``ERR``.
 
 .. literalinclude:: ../examples/monitor.py
 
