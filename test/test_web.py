@@ -16,6 +16,12 @@ class WebAgentTests(unittest.TestCase):
         config.SocksPort = ['1234']
         agent = agent_for_socks_port(reactor, config, '1234')
 
+    def test_socks_agent_unix(self):
+        reactor = Mock()
+        config = Mock()
+        config.SocksPort = []
+        agent = agent_for_socks_port(reactor, config, 'unix:/foo')
+
     @defer.inlineCallbacks
     def test_socks_agent_tcp_host_port(self):
         reactor = Mock()
@@ -40,11 +46,3 @@ class WebAgentTests(unittest.TestCase):
         # apart from the getConnection asserts...
         res = yield agent.request(b'GET', b'https://meejah.ca')
         self.assertIs(res, gold)
-
-        
-    def test_socks_agent_unix(self):
-        reactor = Mock()
-        config = Mock()
-        config.SocksPort = []
-        agent = agent_for_socks_port(reactor, config, 'unix:/foo')
-        
