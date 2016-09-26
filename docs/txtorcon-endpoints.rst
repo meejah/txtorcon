@@ -7,6 +7,9 @@ TCPHiddenServiceEndpoint
 .. autoclass:: txtorcon.TCPHiddenServiceEndpoint
 
 
+.. autofunction:: txtorcon.get_global_tor
+
+
 TCPHiddenServiceEndpointParser
 ------------------------------
 

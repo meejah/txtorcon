@@ -14,9 +14,9 @@ API Stability
 -------------
 
 In general, any method or class prefixed with an underscore (like
-`_method` or `_ClassName`) is private, and the API may change at any
-time. You SHOULD NOT use these. Any method in an interface class
-(which all begin with `I`, like `IAnInterface`) are stable, public
+``_method`` or ``_ClassName``) is private, and the API may change at
+any time. You SHOULD NOT use these. Any method in an interface class
+(which all begin with ``I``, like ``IAnInterface``) are stable, public
 APIs and will maintain backwards-compatibility between releases.
 
 There is **one exception to this** at the moment: the hidden- / onion-
@@ -75,8 +75,8 @@ Launching a New Tor
 It's also possible to launch your own Tor instance. txtorcon keeps a
 "global" tor available for use by e.g. the ``.global_tor`` endpoint
 factory functions (like
-:meth:`txtorcon.TCPHiddenSeviceEndpoint.global_tor`). You can access
-it via :meth:`txtorcon.get_global_tor`. There is exactly zero or one
+:func:`txtorcon.TCPHiddenServiceEndpoint.global_tor`). You can access
+it via :func:`txtorcon.get_global_tor`. There is exactly zero or one
 of these *per Python process* that uses ``txtorcon``.
 
 To explicitly launch your own Tor instance, use
