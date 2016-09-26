@@ -13,6 +13,7 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error, task, tcp
 from twisted.internet.endpoints import TCP4ServerEndpoint, serverFromString
+from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.python.failure import Failure
 from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IReactorTime
@@ -150,10 +151,6 @@ class CheckAnswer:
 
 
 class ConfigTests(unittest.TestCase):
-    """
-    FIXME hmm, this all seems a little convoluted to test errors?
-    Maybe not that bad.
-    """
 
     def setUp(self):
         self.protocol = FakeControlProtocol([])
@@ -790,6 +787,61 @@ HiddenServiceVersion 2
 Log 80 127.0.0.1:80
 Log 90 127.0.0.1:90
 SocksPort 1234''')
+
+
+class SocksEndpointTests(unittest.TestCase):
+
+    def setUp(self):
+        self.reactor = Mock()
+        self.config = TorConfig()
+        self.config.SocksPort = []
+
+    def test_nothing_configurd(self):
+        with self.assertRaises(Exception) as ctx:
+            self.config.socks_endpoint(self.reactor, '1234')
+        self.assertTrue('No SOCKS ports configured' in str(ctx.exception))
+
+    def test_default(self):
+        self.config.SocksPort = ['1234', '4321']
+        ep = self.config.socks_endpoint(self.reactor)
+
+        factory = Mock()
+        ep.connect(factory)
+        self.assertEqual(1, len(self.reactor.mock_calls))
+        call = self.reactor.mock_calls[0]
+        self.assertEqual('connectTCP', call[0])
+        self.assertEqual('127.0.0.1', call[1][0])
+        self.assertEqual(1234, call[1][1])
+
+    def test_something_not_configured(self):
+        self.config.SocksPort = ['1234', '4321']
+        with self.assertRaises(Exception) as ctx:
+            self.config.socks_endpoint(self.reactor, '1111')
+        self.assertTrue('No SOCKSPort configured' in str(ctx.exception))
+
+    def test_unix_socks(self):
+        self.config.SocksPort = ['unix:/foo']
+        self.config.socks_endpoint(self.reactor, 'unix:/foo')
+
+    def test_with_options(self):
+        self.config.SocksPort = ['9150 IPv6Traffic PreferIPv6 KeepAliveIsolateSOCKSAuth']
+        ep = self.config.socks_endpoint(self.reactor, 9150)
+
+        factory = Mock()
+        ep.connect(factory)
+        self.assertEqual(1, len(self.reactor.mock_calls))
+        call = self.reactor.mock_calls[0]
+        self.assertEqual('connectTCP', call[0])
+        self.assertEqual('127.0.0.1', call[1][0])
+        self.assertEqual(9150, call[1][1])
+
+    def test_with_options_in_ask(self):
+        self.config.SocksPort = ['9150 IPv6Traffic PreferIPv6 KeepAliveIsolateSOCKSAuth']
+
+        with self.assertRaises(Exception) as ctx:
+            self.config.socks_endpoint(self.reactor,
+                                       '9150 KeepAliveIsolateSOCKSAuth')
+        self.assertTrue("Can't specify options" in str(ctx.exception))
 
 
 class HiddenServiceTests(unittest.TestCase):
