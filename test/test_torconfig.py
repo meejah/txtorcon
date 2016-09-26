@@ -813,6 +813,18 @@ class SocksEndpointTests(unittest.TestCase):
         self.assertEqual('127.0.0.1', call[1][0])
         self.assertEqual(1234, call[1][1])
 
+    def test_explicit_host(self):
+        self.config.SocksPort = ['127.0.0.20:1234']
+        ep = self.config.socks_endpoint(self.reactor)
+
+        factory = Mock()
+        ep.connect(factory)
+        self.assertEqual(1, len(self.reactor.mock_calls))
+        call = self.reactor.mock_calls[0]
+        self.assertEqual('connectTCP', call[0])
+        self.assertEqual('127.0.0.20', call[1][0])
+        self.assertEqual(1234, call[1][1])
+
     def test_something_not_configured(self):
         self.config.SocksPort = ['1234', '4321']
         with self.assertRaises(Exception) as ctx:
