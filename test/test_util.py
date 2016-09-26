@@ -20,6 +20,7 @@ from txtorcon.util import unescape_quoted_string
 from txtorcon.util import available_tcp_port
 from txtorcon.util import version_at_least
 from txtorcon.util import default_control_port
+from txtorcon.util import _Listener, _ListenerCollection
 
 
 class FakeState:
@@ -372,3 +373,77 @@ class TestDefaultPort(unittest.TestCase):
         fake_os.environ = dict(TX_CONTROL_PORT=1234)
         p = default_control_port()
         self.assertEqual(p, 1234)
+
+
+class TestListeners(unittest.TestCase):
+
+    def test_add_remove(self):
+        listener = _Listener()
+        calls = []
+
+        def cb(*args, **kw):
+            calls.append((args, kw))
+
+        listener.add(cb)
+        listener.notify('foo', 'bar', quux='zing')
+        listener.remove(cb)
+        listener.notify('foo', 'bar', quux='zing')
+
+        self.assertEqual(1, len(calls))
+        self.assertEqual(('foo', 'bar'), calls[0][0])
+        self.assertEqual(dict(quux='zing'), calls[0][1])
+
+    def test_notify_with_exception(self):
+        listener = _Listener()
+        calls = []
+
+        def cb(*args, **kw):
+            calls.append((args, kw))
+
+        def bad_cb(*args, **kw):
+            raise Exception("sadness")
+
+        listener.add(bad_cb)
+        listener.add(cb)
+        listener.notify('foo', 'bar', quux='zing')
+
+        self.assertEqual(1, len(calls))
+        self.assertEqual(('foo', 'bar'), calls[0][0])
+        self.assertEqual(dict(quux='zing'), calls[0][1])
+
+    def test_collection_invalid_event(self):
+        collection = _ListenerCollection(['event0', 'event1'])
+
+        with self.assertRaises(Exception) as ctx:
+            collection('bad', lambda: None)
+        self.assertTrue('Invalid event' in str(ctx.exception))
+
+    def test_collection_invalid_event_notify(self):
+        collection = _ListenerCollection(['event0', 'event1'])
+
+        with self.assertRaises(Exception) as ctx:
+            collection.notify('bad', lambda: None)
+        self.assertTrue('Invalid event' in str(ctx.exception))
+
+    def test_collection_invalid_event_remove(self):
+        collection = _ListenerCollection(['event0', 'event1'])
+
+        with self.assertRaises(Exception) as ctx:
+            collection.remove('bad', lambda: None)
+        self.assertTrue('Invalid event' in str(ctx.exception))
+
+    def test_collection(self):
+        collection = _ListenerCollection(['event0', 'event1'])
+        calls = []
+
+        def cb(*args, **kw):
+            calls.append((args, kw))
+
+        collection('event0', cb)
+        collection.notify('event0', 'foo', 'bar', quux='zing')
+        collection.remove('event0', cb)
+        collection.notify('event0', 'foo', 'bar', quux='zing')
+
+        self.assertEqual(1, len(calls))
+        self.assertEqual(calls[0][0], ('foo', 'bar'))
+        self.assertEqual(calls[0][1], dict(quux='zing'))

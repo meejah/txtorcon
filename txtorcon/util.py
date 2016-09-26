@@ -428,3 +428,8 @@ class _ListenerCollection(object):
         if event not in self._valid_events:
             raise Exception("Invalid event '{}'".format(event))
         getattr(self, event).remove(callback)
+
+    def notify(self, event, *args, **kw):
+        if event not in self._valid_events:
+            raise Exception("Invalid event '{}'".format(event))
+        getattr(self, event).notify(*args, **kw)
