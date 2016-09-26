@@ -319,13 +319,15 @@ class TorConfig(object):
         SOCKSPort from the Tor we're connected to. By default, this
         will be the very first SOCKSPort.
 
-        :param port: an int, the SOCKSPort to use. You get an
-           Exception if that port isn't currently configured
+        :param port: a str, the first part of the SOCKSPort line (that
+            is, a port like "9151" or a Unix socket config like
+            "unix:/path". You may also specify a port as an int.
 
         If you need to use a particular port that may or may not
         already be configured, see the async method
         :meth:`txtorcon.TorConfig.create_socks_endpoint`
         """
+
         if len(self.SocksPort) == 0:
             raise RuntimeError(
                 "No SOCKS ports configured"
@@ -335,16 +337,18 @@ class TorConfig(object):
         if port is None:
             socks_config = self.SocksPort[0]
         else:
-            try:
-                port = int(port)
-            except ValueError:
-                raise ValueError("'port' must be an int")
+            port = str(port)  # in case e.g. an int passed in
+            if ' ' in port:
+                raise ValueError(
+                    "Can't specify options; use create_socks_endpoint instead"
+                )
 
             for idx, port_config in enumerate(self.SocksPort):
                 # "SOCKSPort" is a gnarly beast that can have a bunch
                 # of options appended, so we have to split off the
-                # first thing which *should* be the port
-                if int(port_config.split()[0]) == port:
+                # first thing which *should* be the port (or can be a
+                # string like 'unix:')
+                if port_config.split()[0] == port:
                     socks_config = port_config
                     break
         if socks_config is None:
@@ -399,6 +403,7 @@ class TorConfig(object):
         (e.g. via kwargs)
 
         XXX we could avoid the "maybe call .save()" thing; worth it?
+        (actually, no we can't or the Tor won't have it config'd)
         """
 
         yield self.post_bootstrap
@@ -420,7 +425,7 @@ class TorConfig(object):
                     if socks_config.startswith('unix:'):
                         # XXX so why don't we check this for the
                         # caller, earlier on?
-                        extra = '\nNote Tor has specific ownship/permissions ' +\
+                        extra = '\nNote Tor has specific ownership/permissions ' +\
                                 'requirements for unix sockets and parent dir.'
                     raise RuntimeError(
                         "While configuring SOCKSPort to '{}', error from"

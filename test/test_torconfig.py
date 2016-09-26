@@ -25,6 +25,7 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.address import IPv4Address
 
 from txtorcon import TorControlProtocol
+from txtorcon import TorProtocolError
 from txtorcon import ITorControlProtocol
 from txtorcon import TorConfig
 from txtorcon import DEFAULT_VALUE
@@ -854,6 +855,62 @@ class SocksEndpointTests(unittest.TestCase):
             self.config.socks_endpoint(self.reactor,
                                        '9150 KeepAliveIsolateSOCKSAuth')
         self.assertTrue("Can't specify options" in str(ctx.exception))
+
+
+class CreateSocksEndpointTests(unittest.TestCase):
+
+    def setUp(self):
+        self.reactor = Mock()
+        self.config = TorConfig()
+        self.config.SocksPort = []
+        self.config.bootstrap = defer.succeed(self.config)
+
+    @defer.inlineCallbacks
+    def test_create_default_no_ports(self):
+        with self.assertRaises(Exception) as ctx:
+            yield self.config.create_socks_endpoint(self.reactor, None)
+        self.assertTrue('no SocksPorts configured' in str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_create_default(self):
+        self.config.SocksPort = ['9150']
+        ep = yield self.config.create_socks_endpoint(self.reactor, None)
+
+        factory = Mock()
+        ep.connect(factory)
+        self.assertEqual(1, len(self.reactor.mock_calls))
+        call = self.reactor.mock_calls[0]
+        self.assertEqual('connectTCP', call[0])
+        self.assertEqual('127.0.0.1', call[1][0])
+        self.assertEqual(9150, call[1][1])
+
+    @defer.inlineCallbacks
+    def test_create_tcp(self):
+        ep = yield self.config.create_socks_endpoint(
+            self.reactor, "9050",
+        )
+
+        factory = Mock()
+        ep.connect(factory)
+        self.assertEqual(1, len(self.reactor.mock_calls))
+        call = self.reactor.mock_calls[0]
+        self.assertEqual('connectTCP', call[0])
+        self.assertEqual('127.0.0.1', call[1][0])
+        self.assertEqual(9050, call[1][1])
+
+    @defer.inlineCallbacks
+    def test_create_error_on_save(self):
+        self.config.SocksPort = []
+
+        def boom(*args, **kw):
+            raise TorProtocolError(551, "Something bad happened")
+
+        with patch.object(TorConfig, 'save', boom):
+            with self.assertRaises(Exception) as ctx:
+                yield self.config.create_socks_endpoint(self.reactor, 'unix:/foo')
+        err = str(ctx.exception)
+        self.assertTrue('error from Tor' in err)
+        self.assertTrue('specific ownership/permissions requirements' in err)
 
 
 class HiddenServiceTests(unittest.TestCase):
