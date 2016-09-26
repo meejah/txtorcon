@@ -19,6 +19,7 @@ from txtorcon.util import maybe_ip_addr
 from txtorcon.util import unescape_quoted_string
 from txtorcon.util import available_tcp_port
 from txtorcon.util import version_at_least
+from txtorcon.util import default_control_port
 
 
 class FakeState:
@@ -358,3 +359,16 @@ class TestVersions(unittest.TestCase):
         self.assertTrue(
             version_at_least("2.1.1.1", 2, 0, 0, 0)
         )
+
+
+class TestDefaultPort(unittest.TestCase):
+
+    def test_no_env_var(self):
+        p = default_control_port()
+        self.assertEqual(p, 9151)
+
+    @patch('txtorcon.util.os')
+    def test_env_var(self, fake_os):
+        fake_os.environ = dict(TX_CONTROL_PORT=1234)
+        p = default_control_port()
+        self.assertEqual(p, 1234)
