@@ -8,6 +8,25 @@ Programming Guide
     :local:
     :backlinks: none
 
+.. _api_stability:
+
+API Stability
+-------------
+
+In general, any method or class prefixed with an underscore (like
+`_method` or `_ClassName`) is private, and the API may change at any
+time. You SHOULD NOT use these. Any method in an interface class
+(which all begin with `I`, like `IAnInterface`) are stable, public
+APIs and will maintain backwards-compatibility between releases.
+
+There is **one exception to this** at the moment: the hidden- / onion-
+services APIs are NOT yet considered stable, and may still change
+somewhat.
+
+Any APIs that will go away will first be deprecated for at least one
+major release before being removed.
+
+
 .. _get_tor_instance:
 
 
