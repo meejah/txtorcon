@@ -579,6 +579,15 @@ OK'''.format(unexisting_file))
         d.addCallback(lambda _: functools.partial(self.incremental_check, "bar"))
         return d
 
+    @defer.inlineCallbacks
+    def test_getinfo_multiple_keys(self):
+        d = self.protocol.get_info("zoo", "aardvark")
+        self.send(b'250-aardvark=foo')
+        self.send(b'250-zoo=bar')
+        self.send(b'250 OK')
+        answers = yield d
+        self.assertEqual(answers, ['bar', 'foo'])
+
     def test_getconf(self):
         d = self.protocol.get_conf("SOCKSPORT ORPORT")
         d.addCallback(CallbackChecker({'SocksPort': '9050', 'ORPort': '0'}))
