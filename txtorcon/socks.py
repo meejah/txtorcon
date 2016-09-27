@@ -11,7 +11,6 @@ from socket import inet_aton, inet_ntoa
 # from ipaddress import ip_address
 
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
-# from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.address import IPv4Address
 # from twisted.protocols import portforward
@@ -57,6 +56,13 @@ class ProxyClient(Protocol):
 
 @inlineCallbacks
 def resolve(tor_endpoint, hostname):
+    """
+    This is easier to use via :meth:`txtorcon.Tor.dns_resolve`
+
+    :param tor_endpoint: the Tor SOCKS endpoint to use.
+
+    :param hostname: the hostname to look up.
+    """
     done = Deferred()
     factory = _TorSocksFactory(
         done, hostname, 0, 'RESOLVE', None,
@@ -215,6 +221,7 @@ class _TorSocksProtocol(Protocol):
 
     def _error(self, msg):
         reply = struct.unpack('B', msg[1:2])[0]
+        # surely we can do better here!
         print("error; aborting SOCKS:", self.error_code_to_string[reply])
         self.transport.loseConnection()
         # connectionLost will errback on self._done
@@ -322,7 +329,7 @@ class _TorSocksProtocol(Protocol):
             self._done.callback(reason)
 
     def dataReceived(self, d):
-        # print("dataReceived({} bytes)".format(len(d)))
+        # print("dataReceived({} bytes): {}".format(len(d), repr(d)))
         self._fsm.process(d)
         return
 
