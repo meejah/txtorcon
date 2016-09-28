@@ -446,6 +446,10 @@ class EphemeralHiddenService(object):
         self._version = ver
 
     @property
+    def ports(self):
+        return set(self._ports)
+
+    @property
     def hostname(self):
         return self._hostname
 

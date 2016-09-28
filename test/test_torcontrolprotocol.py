@@ -109,6 +109,35 @@ class AuthenticationTests(unittest.TestCase):
             b'AUTHENTICATE ' + b2a_hex(b'foo') + b'\r\n'
         )
 
+    def test_authenticate_password_not_bytes(self):
+        self.protocol.password_function = lambda: u'foo'
+        self.protocol.makeConnection(self.transport)
+        self.assertEqual(self.transport.value(), b'PROTOCOLINFO 1\r\n')
+        self.transport.clear()
+        self.send(b'250-PROTOCOLINFO 1')
+        self.send(b'250-AUTH METHODS=HASHEDPASSWORD')
+        self.send(b'250-VERSION Tor="0.2.2.34"')
+        self.send(b'250 OK')
+
+        self.assertEqual(
+            self.transport.value(),
+            b'AUTHENTICATE ' + b2a_hex(b'foo') + b'\r\n'
+        )
+
+    def test_response_no_command(self):
+        self.protocol.makeConnection(self.transport)
+        # a PROTOCOLINFO gets issues upon connect
+        self.send(b'250-PROTOCOLINFO 1')
+        self.send(b'250-AUTH METHODS=HASHEDPASSWORD')
+        self.send(b'250-VERSION Tor="0.2.2.34"')
+        self.send(b'250 OK')
+        # nothing issued this comand:
+
+        with self.assertRaises(Exception) as ctx:
+            self.send(b'250-foobar')
+            self.send(b'250 OK')
+        self.assertTrue("didn't issue a command" in str(ctx.exception))
+
     def test_authenticate_null(self):
         self.protocol.makeConnection(self.transport)
         self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')

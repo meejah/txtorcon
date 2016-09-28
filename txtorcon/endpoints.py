@@ -546,11 +546,21 @@ class TCPHiddenServiceEndpoint(object):
 
         assert self.hiddenservice is not None, "internal error"
 
+        # note: _tor_progress_update is pro-rating the progress to give
+        # us more range (as tor itself uses [0->100])
         self._tor_progress_update(110.0, 'wait_descriptor',
                                   'At least one descriptor uploaded')
 
         log.msg('Started hidden service on %s:%d' % (self.onion_uri, self.public_port))
 
+        # XXX should just return self.hiddenservice here??
+        # -> no, don't think so for a couple reasons:
+
+        # 1. it's "ports" in the services, so "TorOnionListeningPort"
+        # is the only thing that knows there's just one in this one
+        # (so can provide .local_port -> shoujld be local_endpoint I
+        # guess actually...)
+        # 2. anyway, can provide access to the "real" hs anyway if we want
         defer.returnValue(
             TorOnionListeningPort(
                 self.tcp_listening_port,
@@ -799,6 +809,9 @@ class TorClientEndpoint(object):
         optionsForClientTLS() yourself. Default is True.
     """
 
+    socks_ports_to_try = [9050, 9150]
+
+    # XXX FIXME broke backwards compat in this branch
     def __init__(self,
                  reactor,
                  host, port,
