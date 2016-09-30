@@ -12,6 +12,7 @@ import tempfile
 import functools
 import ipaddress
 from io import StringIO
+from collections import Sequence
 
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -317,13 +318,16 @@ def connect(reactor, control_endpoint=None, password_function=None):
             for circuit in state.circuits:
                 print(circuit)
 
+    :param control_endpoint: None, an IStreamClientEndpoint to connect
+        to, or a Sequence of IStreamClientEndpoint instances to connect
+        to. If None, a list of defaults are tried.
+
     :param password_function:
         See :class:`txtorcon.TorControlProtocol`
 
     :return:
         a Deferred that fires with a :class:`txtorcon.Tor` instance
     """
-
 
     @inlineCallbacks
     def try_endpoint(control_ep):
@@ -345,6 +349,8 @@ def connect(reactor, control_endpoint=None, password_function=None):
             TCP4ClientEndpoint(reactor, '127.0.0.1', 9051),
             TCP4ClientEndpoint(reactor, '127.0.0.1', 9151),
         ]
+    elif isinstance(control_endpoint, Sequence):
+        to_try = control_endpoint
     else:
         to_try = [control_endpoint]
 

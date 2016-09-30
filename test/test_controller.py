@@ -1,5 +1,6 @@
 from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IListeningPort
+from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.address import IPv4Address
 from twisted.internet import defer, error, task, tcp
 from twisted.python.failure import Failure
@@ -9,8 +10,9 @@ from twisted.test import proto_helpers
 from txtorcon import Tor
 from txtorcon import TorControlProtocol
 from txtorcon import launch
+from txtorcon import connect
 
-from zope.interface import implementer
+from zope.interface import implementer, directlyProvides
 
 import functools
 from mock import Mock, patch
@@ -585,6 +587,59 @@ class LaunchTorTests(unittest.TestCase):
         )
         res = yield tor_d
         self.assertEqual(res._process_protocol, self.process_proto)
+
+
+def create_endpoint(*args, **kw):
+    ep = Mock()
+    directlyProvides(ep, IStreamClientEndpoint)
+    return ep
+
+
+def create_endpoint_fails(*args, **kw):
+    print("making a boom-one")
+    def go_boom(*args, **kw):
+        print("go boom")
+        raise RuntimeError("boom")
+
+    ep = Mock(side_effect=go_boom)
+    directlyProvides(ep, IStreamClientEndpoint)
+    return ep
+
+
+class ConnectTorTests(unittest.TestCase):
+
+    @patch('txtorcon.controller.TorConfig')
+    @patch('txtorcon.controller.UNIXClientEndpoint', side_effect=create_endpoint)
+    @patch('txtorcon.controller.TCP4ClientEndpoint', side_effect=create_endpoint)
+    @defer.inlineCallbacks
+    def test_connect_defaults(self, fake_cfg, fake_unix, fake_tcp):
+        """
+        happy-path test, ensuring there are no exceptions
+        """
+        transport = Mock()
+        reactor = FakeReactor(self, transport, lambda: None)
+        tor = yield connect(reactor)
+
+    @patch('txtorcon.controller.TorConfig')
+    @defer.inlineCallbacks
+    def test_connect_provide_endpoint(self, fake_cfg):
+        transport = Mock()
+        reactor = FakeReactor(self, transport, lambda: None)
+        ep = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            yield connect(reactor, ep)
+        self.assertTrue('IStreamClientEndpoint' in str(ctx.exception))
+
+    @patch('txtorcon.controller.TorConfig')
+    @defer.inlineCallbacks
+    def test_connect_provide_multiple_endpoints(self, fake_cfg):
+        transport = Mock()
+        reactor = FakeReactor(self, transport, lambda: None)
+        ep0 = Mock()
+        ep1 = Mock()
+        with self.assertRaises(RuntimeError) as ctx:
+            yield connect(reactor, [ep0, ep1])
+        self.assertTrue('IStreamClientEndpoint' in str(ctx.exception))
 
 
 class IteratorTests(unittest.TestCase):
