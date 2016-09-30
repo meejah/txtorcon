@@ -475,7 +475,7 @@ class Tor(object):
                 )
             else:
                 if not isinstance(socks_config, Deferred):
-                    if not isinstance(socks_config, IStreamClientEndpoint):
+                    if not IStreamClientEndpoint.providedBy(socks_config):
                         raise ValueError(
                             "'socks_config' should be text, a Deferred or an "
                             "IStreamClientEndpoint (got '{}')".format(type(socks_config))

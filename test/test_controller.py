@@ -642,6 +642,90 @@ class ConnectTorTests(unittest.TestCase):
         self.assertTrue('IStreamClientEndpoint' in str(ctx.exception))
 
 
+def boom(*args, **kw):
+    print("OHAI!")
+    raise ImportError("boom")
+
+
+class WebAgentTests(unittest.TestCase):
+
+    def setUp(self):
+        proto = Mock()
+        self.pool = Mock()
+        self.expected_response = object()
+        proto.request = Mock(return_value=defer.succeed(self.expected_response))
+        self.pool.getConnection = Mock(return_value=defer.succeed(proto))
+
+    @defer.inlineCallbacks
+    def test_web_agent_defaults(self):
+        reactor = Mock()
+        cfg = Mock()
+
+        tor = Tor(reactor, cfg)
+        agent = tor.web_agent(pool=self.pool)
+
+        resp = yield agent.request('GET', 'meejah.ca')
+        self.assertEqual(self.expected_response, resp)
+
+    @defer.inlineCallbacks
+    def test_web_agent_text(self):
+        reactor = Mock()
+        cfg = Mock()
+
+        tor = Tor(reactor, cfg)
+        agent = tor.web_agent("9151", pool=self.pool)
+
+        resp = yield agent.request('GET', 'meejah.ca')
+        self.assertEqual(self.expected_response, resp)
+
+    @defer.inlineCallbacks
+    def test_web_agent_deferred(self):
+        socks_d = defer.succeed("9151")
+        reactor = Mock()
+        cfg = Mock()
+
+        tor = Tor(reactor, cfg)
+        agent = tor.web_agent(socks_d, pool=self.pool)
+
+        resp = yield agent.request('GET', 'meejah.ca')
+        self.assertEqual(self.expected_response, resp)
+
+    @defer.inlineCallbacks
+    def test_web_agent_unicode(self):
+        reactor = Mock()
+        cfg = Mock()
+
+        tor = Tor(reactor, cfg)
+        agent = tor.web_agent(u"9151", pool=self.pool)
+
+        resp = yield agent.request('GET', 'meejah.ca')
+        self.assertEqual(self.expected_response, resp)
+
+    @defer.inlineCallbacks
+    def test_web_agent_endpoint(self):
+        socks = Mock()
+        directlyProvides(socks, IStreamClientEndpoint)
+        reactor = Mock()
+        cfg = Mock()
+
+        tor = Tor(reactor, cfg)
+        agent = tor.web_agent(socks, pool=self.pool)
+
+        resp = yield agent.request('GET', 'meejah.ca')
+        self.assertEqual(self.expected_response, resp)
+
+    @defer.inlineCallbacks
+    def test_web_agent_error(self):
+        reactor = Mock()
+        cfg = Mock()
+
+        tor = Tor(reactor, cfg)
+        with self.assertRaises(ValueError) as ctx:
+            agent = tor.web_agent(object(), pool=self.pool)
+            resp = yield agent.request('GET', 'meejah.ca')
+        self.assertTrue('socks_config' in str(ctx.exception))
+
+
 class IteratorTests(unittest.TestCase):
     def XXXtest_iterate_torconfig(self):
         cfg = TorConfig()
