@@ -726,6 +726,67 @@ class WebAgentTests(unittest.TestCase):
         self.assertTrue('socks_config' in str(ctx.exception))
 
 
+class TorAttributeTests(unittest.TestCase):
+
+    def setUp(self):
+        reactor = Mock()
+        self.cfg = Mock()
+        self.tor = Tor(reactor, self.cfg)
+
+    def test_process(self):
+        with self.assertRaises(Exception) as ctx:
+            x = self.tor.process
+        self.assertTrue('not launched by us' in str(ctx.exception))
+
+    def test_process_exists(self):
+        gold = object()
+        self.tor._process_protocol = gold
+        self.assertEqual(gold, self.tor.process)
+
+    def test_protocol_exists(self):
+        self.tor.protocol
+
+    def test_config_exists(self):
+        self.assertEqual(self.cfg, self.tor.config)
+
+
+class TorStreamTests(unittest.TestCase):
+
+    def setUp(self):
+        reactor = Mock()
+        self.cfg = Mock()
+        self.tor = Tor(reactor, self.cfg)
+
+    def test_sanity(self):
+        self.assertTrue(self.tor._is_non_public_numeric_address(u'10.0.0.0'))
+        self.assertTrue(self.tor._is_non_public_numeric_address(u'::1'))
+
+    def test_v6(self):
+        import ipaddress
+        ip = ipaddress.ip_address(u'2603:3023:807:3d00:21e:52ff:fe71:a4ce')
+
+    def test_stream_private_ip(self):
+        with self.assertRaises(Exception) as ctx:
+            ep = self.tor.stream_via('10.0.0.1', '1234')
+        self.assertTrue("isn't going to work over Tor", str(ctx.exception))
+
+    def test_stream_v6(self):
+        with self.assertRaises(Exception) as ctx:
+            ep = self.tor.stream_via(u'::1', '1234')
+        self.assertTrue("isn't going to work over Tor", str(ctx.exception))
+
+    def test_public_v6(self):
+        # should not be an error
+        self.tor.stream_via(u'2603:3023:807:3d00:21e:52ff:fe71:a4ce', '4321')
+
+    def test_public_v4(self):
+        # should not be an error
+        self.tor.stream_via(u'8.8.8.8', '4321')
+
+    def test_stream_host(self):
+        self.tor.stream_via('meejah.ca', '1234')
+
+
 class IteratorTests(unittest.TestCase):
     def XXXtest_iterate_torconfig(self):
         cfg = TorConfig()
