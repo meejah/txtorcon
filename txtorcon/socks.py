@@ -97,13 +97,13 @@ class TorSocksEndpoint(object):
         self._port = port
         self._tls = tls
 
-    def when_connected(self):
+    def get_address(self):
         """
         Returns a Deferred that fires with the source IAddress of the
         underlying SOCKS connection (i.e. usually a
         twisted.internet.address.IPv4Address)
         """
-        return self._socks_factory.when_connected()
+        return self._socks_factory.get_address()
 
     @inlineCallbacks
     def connect(self, factory):
@@ -311,8 +311,8 @@ class _TorSocksProtocol(Protocol):
     def connectionMade(self):
         # Ultimately, we need to funnel the source-port through to the
         # TorCircuitEndpoint and friends -- so we do so via
-        # when_connected/did_connect on the factory (happy to
-        # entertain better ideas).
+        # get_address / did_connect on the factory (happy to entertain
+        # better ideas).
         self.factory.did_connect(self.transport.getHost())
         self._fsm.state = self._fsm.states[0]  # SENT_VERSION
         # ask for 2 methods: 0 (anonymous) and 2 (authenticated)
@@ -343,12 +343,10 @@ class _TorSocksFactory(Factory):
         self._connected_d = []
         self._host = None
 
-    def when_connected(self):
+    def get_address(self):
         """
         Returns a Deferred that fires with the IAddress from the transport
         when this SOCKS protocol becomes connected.
-
-        XXX should just be called get_host() or similar??
         """
         d = Deferred()
         if self._host:

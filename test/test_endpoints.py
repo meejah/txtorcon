@@ -731,7 +731,7 @@ class TestTorCircuitEndpoint(unittest.TestCase):
         src_addr = Mock()
         src_addr.host = 'host'
         src_addr.port = 1234
-        target.when_connected = Mock(return_value=defer.succeed(src_addr))
+        target.get_address = Mock(return_value=defer.succeed(src_addr))
         stream = Mock()
         stream.source_port = 1234
         stream.source_addr = 'host'
@@ -764,7 +764,7 @@ class TestTorCircuitEndpoint(unittest.TestCase):
         src_addr = Mock()
         src_addr.host = 'host'
         src_addr.port = 1234
-        target.when_connected = Mock(return_value=defer.succeed(src_addr))
+        target.get_address = Mock(return_value=defer.succeed(src_addr))
         stream = Mock()
         stream.source_port = 1234
         stream.source_addr = 'host'
@@ -796,7 +796,7 @@ class TestTorCircuitEndpoint(unittest.TestCase):
         src_addr = Mock()
         src_addr.host = 'host'
         src_addr.port = 1234
-        target.when_connected = Mock(return_value=defer.succeed(src_addr))
+        target.get_address = Mock(return_value=defer.succeed(src_addr))
         stream = Mock()
         stream.source_port = 1234
         stream.source_addr = 'host'

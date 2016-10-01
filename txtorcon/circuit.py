@@ -43,7 +43,7 @@ class TorCircuitEndpoint(object):
 
     @defer.inlineCallbacks
     def attach_stream(self, stream, circuits):
-        real_addr = yield self._target_endpoint.when_connected()
+        real_addr = yield self._target_endpoint.get_address()
         # joy oh joy, ipaddress wants unicode, Twisted gives us bytes...
         real_host = maybe_ip_addr(six.text_type(real_addr.host))
 

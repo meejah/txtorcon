@@ -620,7 +620,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     def __init__(self, connection_creator, progress_updates=None, config=None,
                  ireactortime=None, timeout=None, kill_on_stderr=True,
-                 stdout=None, stderr=None, connected_cb=None):
+                 stdout=None, stderr=None):
         """
         This will read the output from a Tor process and attempt a
         connection to its control port when it sees any 'Bootstrapped'
