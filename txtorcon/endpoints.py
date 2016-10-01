@@ -10,7 +10,6 @@ import weakref
 import tempfile
 import functools
 
-from txtorcon.util import available_tcp_port
 from txtorcon.socks import TorSocksEndpoint
 
 # backwards-compatibility dance: we "should" be using the
@@ -112,19 +111,6 @@ def get_global_tor(reactor, control_port=None,
         defer.returnValue(_global_tor)
     finally:
         _global_tor_lock.release()
-
-
-@defer.inlineCallbacks
-def _create_default_config(reactor, control_port=None):
-    """
-    Internal method to create a new TorConfig instance with defaults.
-    """
-    config = TorConfig()
-    if control_port is None:
-        control_port = yield available_tcp_port(reactor)
-    config.ControlPort = control_port
-    config.SOCKSPort = 0
-    defer.returnValue(config)
 
 
 class IProgressProvider(Interface):
