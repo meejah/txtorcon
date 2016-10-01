@@ -510,11 +510,11 @@ class Tor(object):
         # for numeric hostnames, skip RFC1918 addresses, since no Tor exit
         # node will be able to reach those. Likewise ignore IPv6 addresses.
         try:
-            a = ipaddress.ip_address(host)
+            a = ipaddress.ip_address(six.text_type(host))
         except ValueError:
             return False        # non-numeric, let Tor try it
-        if a.version != 4:
-            return True         # IPv6 gets ignored
+#        if a.version != 4:
+#            return True         # IPv6 gets ignored
         if a.is_loopback or a.is_multicast or a.is_private or a.is_reserved \
            or a.is_unspecified:
             return True         # too weird, don't connect
