@@ -52,6 +52,25 @@ class SocksConnectTests(unittest.TestCase):
         proto = yield ep.connect(factory)
         self.assertEqual(proto, protocol)
 
+    @defer.inlineCallbacks
+    def test_get_address(self):
+        # normally, .get_address is only called via the
+        # attach_stream() method on Circuit
+        addr = object()
+        factory = socks._TorSocksFactory()
+        d = factory.get_address()
+        self.assertFalse(d.called)
+        factory.did_connect(addr)
+
+        maybe_addr = yield d
+
+        self.assertEqual(addr, maybe_addr)
+
+        # if we do it a second time, should be immediate
+        d = factory.get_address()
+        self.assertTrue(d.called)
+        self.assertEqual(d.result, addr)
+
 
 class SocksResolveTests(unittest.TestCase):
 
