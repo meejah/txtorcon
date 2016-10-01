@@ -232,7 +232,6 @@ def launch(reactor,
     # TorProcessProtocol (and then it can handle multiple ones too if
     # need-be). ...but also TorProcessProtocol should be "internal
     # only", right?
-    connected_cb = Deferred()
     process_protocol = TorProcessProtocol(
         connection_creator,
         progress_updates,
@@ -241,8 +240,8 @@ def launch(reactor,
         kill_on_stderr,
         stdout,
         stderr,
-        connected_cb=connected_cb,
     )
+    connected_cb = process_protocol.when_connected()
 
     # we set both to_delete and the shutdown events because this
     # process might be shut down way before the reactor, but if the
@@ -669,16 +668,12 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         :param stderr:
             Anything subprocess writes to stderr is sent to .write() on this
 
-        # XXX this is silly; use .when_connected() method
-        :param connected_cb:
-            Pass a Deferred in here if you want to be notified when
-            we've successfully connected to the underlying Tor process
-            (errback()s on timeouts)
-
         :ivar tor_protocol: The TorControlProtocol instance connected
-            to the Tor this :api:`twisted.internet.protocol.ProcessProtocol
-            <ProcessProtocol>`` is speaking to. Will be valid
-            when the `connected_cb` callback runs.
+            to the Tor this
+            :api:`twisted.internet.protocol.ProcessProtocol
+            <ProcessProtocol>`` is speaking to. Will be valid after
+            the Deferred returned from
+            :meth:`TorProcessProtocol.when_connected` is triggered.
         """
 
         self.config = config
@@ -692,7 +687,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         else:
             self.connection_creator = None
         # XXX .when_connected() please!
-        self._connected_cb = connected_cb
+        self._connected_listeners = []  # list of Deferred (None when we're connected)
 
         self.attempted_connect = False
         self.to_delete = []
@@ -713,6 +708,13 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             ireactortime = IReactorTime(ireactortime)
             self._timeout_delayed_call = ireactortime.callLater(
                 timeout, self.timeout_expired)
+
+    def when_connected(self):
+        if self._connected_listeners is None:
+            return succeed(self)
+        d = Deferred()
+        self._connected_listeners.append(d)
+        return d
 
     def quit(self):
         """
@@ -812,9 +814,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
                 "Tor exited with error-code %d" % status.value.exitCode)
 
         log.err(err)
-        if self._connected_cb:
-            self._connected_cb.errback(err)
-            self._connected_cb = None
+        for d in self._connected_listeners:
+            d.errback(err)
+        self._connected_listeners = None
 
     def progress(self, percent, tag, summary):
         """
@@ -849,9 +851,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             if self._timeout_delayed_call:
                 self._timeout_delayed_call.cancel()
                 self._timeout_delayed_call = None
-            if self._connected_cb:
-                self._connected_cb.callback(self)
-                self._connected_cb = None
+            for d in self._connected_listeners:
+                d.callback(self)
+            self._connected_listeners = None
 
     @inlineCallbacks
     def tor_connected(self, proto):

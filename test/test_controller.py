@@ -130,9 +130,9 @@ class LaunchTorTests(unittest.TestCase):
         reactor = FakeReactor(self, trans, lambda p: None, [1, 2, 3])
 
         def foo(*args, **kw):
-            cb = kw['connected_cb']
-            cb.callback('foo')
-            return Mock()
+            rtn = Mock()
+            rtn.when_connected = Mock(return_value=defer.succeed(rtn))
+            return rtn
         tpp.side_effect=foo
 
         tor = yield launch(reactor)
