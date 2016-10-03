@@ -17,6 +17,7 @@ from twisted.python import log
 from twisted.internet import defer, error, protocol
 from twisted.internet.interfaces import IReactorTime
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import UNIXClientEndpoint
 
 from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory, DEFAULT_VALUE
 from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
@@ -442,10 +443,16 @@ def launch_tor(config, reactor,
         config.CookieAuthentication = 1
         config.__OwningControllerProcess = os.getpid()
         if connection_creator is None:
-            connection_creator = functools.partial(
-                TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
-                TorProtocolFactory()
-            )
+            if str(control_port).startswith('unix:'):
+                connection_creator = functools.partial(
+                    UNIXClientEndpoint(reactor, control_port[5:]).connect,
+                    TorProtocolFactory()
+                )
+            else:
+                connection_creator = functools.partial(
+                    TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
+                    TorProtocolFactory()
+                )
     else:
         connection_creator = None
 
