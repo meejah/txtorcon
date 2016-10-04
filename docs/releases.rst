@@ -21,6 +21,10 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.17.0*
 
+ * `issue 187 <https://github.com/meejah/txtorcon/issues/187>`_: fix unix-socket control endpoints
+ * sometimes mapping streams to hostnames wasn't working properly
+ * backwards-compatibility API for `socks_hostname` was incorrectly named
+
 
 v0.16.1
 -------
