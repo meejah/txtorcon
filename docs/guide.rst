@@ -345,6 +345,10 @@ authentication. For details of how this works, please read `Tor's
 documentation on Hidden Services
 <https://www.torproject.org/docs/hidden-services.html.en>`_.
 
+For more background, the `RiseUp Onion service best-practices guide
+<https://riseup.net/en/security/network-security/tor/onionservices-best-practices>`_
+is a good read as well.
+
 From an API perspective, here are the parts we care about:
 
  - each service has a secret, private key (with a corresponding public
