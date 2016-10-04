@@ -47,7 +47,8 @@ doc: docs/*.rst
 
 coverage:
 	coverage run --source=txtorcon `which trial` test
-	coverage report --show-missing
+#-coverage report --show-missing
+	-cuv graph
 
 htmlcoverage:
 	coverage run --source=txtorcon `which trial` test
