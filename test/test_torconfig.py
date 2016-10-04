@@ -1203,6 +1203,42 @@ class LaunchTorTests(unittest.TestCase):
         # cancel the errback chain, we wanted this
         return None
 
+    @defer.inlineCallbacks
+    def test_launch_tor_unix_controlport(self):
+        config = TorConfig()
+        config.ControlPort = "unix:/dev/null"
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        fakeout = StringIO()
+        fakeerr = StringIO()
+
+        def connector(proto, trans):
+            proto._set_valid_events('STATUS_CLIENT')
+            proto.makeConnection(trans)
+            proto.post_bootstrap.callback(proto)
+            return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+
+        reactor = FakeReactor(self, trans, on_protocol)
+        reactor.connectUNIX = Mock()
+        try:
+            yield launch_tor(
+                config,
+                reactor,
+                tor_binary='/bin/echo',
+                stdout=fakeout,
+                stderr=fakeerr
+            )
+        except Exception:
+            pass
+        self.assertTrue(reactor.connectUNIX.called)
+        self.assertEqual(
+            '/dev/null',
+            reactor.connectUNIX.mock_calls[0][1][0],
+        )
+
     def test_launch_tor_fails(self):
         config = TorConfig()
         config.OrPort = 1234
