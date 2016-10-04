@@ -413,8 +413,17 @@ class Tor(object):
         # XXX FIXME
         self._socks_endpoint = TCP4ClientEndpoint(reactor, '127.0.0.1', 9050)
 
-    # XXX this shold probasbly include access to the "process
-    # protocol" instance, too...bikeshed on this name?
+    @inlineCallbacks
+    def quit(self):
+        """
+        Closes the control connection, and if we launched this Tor
+        instance we'll send it a TERM and wait until it exits.
+        """
+        yield self._protocol.quit()
+        if self._process_protocol:
+            yield self._process_protocol.quit()
+
+    # XXX bikeshed on this name?
     @property
     def process(self):
         if self._process_protocol:
