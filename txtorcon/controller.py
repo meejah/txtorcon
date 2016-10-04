@@ -30,6 +30,7 @@ from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TCPHiddenServiceEndpoint
+from txtorcon.endpoints import TorClientEndpoint
 from . import socks
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
@@ -531,21 +532,26 @@ class Tor(object):
 
     def stream_via(self, host, port, use_tls=False, socks_port=None):
         """
-        XXX FIXME something to create client-side endpoints
+        This returns an IStreamClientEndpoint instance that will use this
+        Tor (via SOCKS) to visit the host, port indicated. If
+        "use_tls" is True, it will wrap it in an endpoint that does
+        TLS.
 
-        The socks_port thing .. hmm... XXX (would make it more like web_agent() ...)
+        You SHOULD pass host-names to this and NOT turn them into IP
+        addresses yourself (unless, e.g., you save IPs in your app's
+        configuration or similar).
+
+        The socks_port thing .. hmm... 
+        XXX (would make it more like web_agent() ...)
         """
         if self._is_non_public_numeric_address(host):
             raise ValueError("'{}' isn't going to work over Tor".format(host))
 
-        from .endpoints import TorClientEndpoint
-#        socks_endpoint = self.config.socks_endpoint
         return TorClientEndpoint(
             self._reactor, host, port,
             self._socks_endpoint,
             tls=use_tls,
         )
-#            got_source_port=got_source_port,
 
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
@@ -588,6 +594,9 @@ class Tor(object):
             private_key=None,
         )
 
+    # XXX either delete this, or make it the same as .stream_via (that
+    # is, pick one of the two names for "the thing that makes
+    # TorClientEndpoint instances for you)
     def create_client_endpoint(self, host, port):
         """
         returns an IStreamClientEndpoint instance that will connect via
