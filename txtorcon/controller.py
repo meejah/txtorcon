@@ -40,6 +40,7 @@ if sys.platform in ('linux', 'linux2', 'darwin'):
 @inlineCallbacks
 def launch(reactor,
            progress_updates=None,
+           control_port=None,
            data_directory=None,
            socks_port=None,
            stdout=None,
@@ -205,9 +206,15 @@ def launch(reactor,
             if sys.platform in ('linux2', 'darwin') and os.geteuid() == 0:
                 os.chown(data_directory, pwd.getpwnam(user).pw_uid, -1)
 
-    # XXX would be better, on supported platforms, to use a
-    # unix-socket inside the data-directory?
-    control_port = yield available_tcp_port(reactor)
+    # XXX untested -- but need to let user pass in unix/tcp ports for
+    # control-socket
+    if control_port is None:
+        if sys.platform in ('linux2', 'darwin'):
+            control_port = 'unix:{}'.format(
+                os.path.join(data_directory, 'control.socket')
+            )
+        else:
+            control_port = yield available_tcp_port(reactor)
     config.ControlPort = control_port
 
     config.CookieAuthentication = 1
@@ -353,10 +360,16 @@ def connect(reactor, control_endpoint=None, password_function=None):
         to_try = [control_endpoint]
     elif isinstance(control_endpoint, Sequence):
         to_try = control_endpoint
+        for ep in control_endpoint:
+            if not IStreamClientEndpoint.providedBy(control_endpoint):
+                raise ValueError(
+                    "For control_endpoint=, '{}' must provide"
+                    " IStreamClientEndpoint".format(ep)
+                )
     else:
         raise ValueError(
-            "control_endpoint= should provide IStreamClientEndpoint "
-            "(or a list of same). Instead got '{}'".format(control_endpoint)
+            "For control_endpoint=, '{}' must provide"
+            " IStreamClientEndpoint".format(control_endpoint)
         )
 
     errors = []
