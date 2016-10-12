@@ -5,16 +5,19 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import os
+import six
 import shutil
 import weakref
 import tempfile
 import functools
 
 from txtorcon.socks import TorSocksEndpoint
+from zope.interface import implementer
 
 # backwards-compatibility dance: we "should" be using the
 # ...WithReactor class, but in Twisted prior to 14, there is no such
 # class (and the parse() doesn't provide a 'reactor' argument).
+from twisted.internet.interfaces import IStreamClientEndpoint
 try:
     from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
     _TX_CLIENT_ENDPOINT_REACTOR = True
@@ -24,7 +27,7 @@ except ImportError:
 
 try:
     from twisted.internet.ssl import optionsForClientTLS
-    from txsocksx.tls import TLSWrapClientEndpoint
+    from twisted.protocols import tls
     _HAVE_TLS = True
 except ImportError:
     _HAVE_TLS = False
@@ -55,6 +58,44 @@ _global_tor = None  # instance of txtorcon.controller.Tor
 _global_tor_lock = defer.DeferredLock()
 # we need the lock because we (potentially) yield several times while
 # "creating" the TorConfig instance
+
+
+# XXX straight out of txsocksx
+@implementer(IStreamClientEndpoint)
+class TLSWrapClientEndpoint(object):
+    """An endpoint which automatically starts TLS.
+
+    :param contextFactory: A `ContextFactory`__ instance.
+    :param wrappedEndpoint: The endpoint to wrap.
+
+    __ http://twistedmatrix.com/documents/current/api/twisted.internet.protocol.ClientFactory.html
+
+    """
+
+    _wrapper = tls.TLSMemoryBIOFactory
+
+    def __init__(self, contextFactory, wrappedEndpoint):
+        self.contextFactory = contextFactory
+        self.wrappedEndpoint = wrappedEndpoint
+
+    def connect(self, fac):
+        """Connect to the wrapped endpoint, then start TLS.
+
+        The TLS negotiation is done by way of wrapping the provided factory
+        with `TLSMemoryBIOFactory`__ during connection.
+
+        :returns: A ``Deferred`` which fires with the same ``Protocol`` as
+            ``wrappedEndpoint.connect(fac)`` fires with. If that ``Deferred``
+            errbacks, so will the returned deferred.
+
+        __ http://twistedmatrix.com/documents/current/api/twisted.protocols.tls.html
+
+        """
+        fac = self._wrapper(self.contextFactory, True, fac)
+        return self.wrappedEndpoint.connect(fac).addCallback(self._unwrapProtocol)
+
+    def _unwrapProtocol(self, proto):
+        return proto.wrappedProtocol
 
 
 @defer.inlineCallbacks
