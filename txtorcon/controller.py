@@ -349,10 +349,15 @@ def connect(reactor, control_endpoint=None, password_function=None):
             TCP4ClientEndpoint(reactor, '127.0.0.1', 9051),
             TCP4ClientEndpoint(reactor, '127.0.0.1', 9151),
         ]
+    elif IStreamClientEndpoint.providedBy(control_endpoint):
+        to_try = [control_endpoint]
     elif isinstance(control_endpoint, Sequence):
         to_try = control_endpoint
     else:
-        to_try = [control_endpoint]
+        raise ValueError(
+            "control_endpoint= should provide IStreamClientEndpoint "
+            "(or a list of same). Instead got '{}'".format(control_endpoint)
+        )
 
     errors = []
     for idx, ep in enumerate(to_try):
