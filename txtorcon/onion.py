@@ -445,6 +445,16 @@ class EphemeralHiddenService(object):
             )
         self._version = ver
 
+    @defer.inlineCallbacks
+    def remove(self):
+        """
+        Issues a DEL_ONION call to our tor, removing this service.
+        """
+        cmd = 'DEL_ONION {}'.format(self._hostname[:-len('.onion')])
+        res = yield self._config.tor_protocol.queue_command(cmd)
+        if res.strip() != "OK":
+            raise RuntimeError("Failed to remove service")
+
     @property
     def ports(self):
         return set(self._ports)
