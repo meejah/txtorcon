@@ -4,13 +4,18 @@ from mock import Mock
 from twisted.trial import unittest
 from twisted.internet import defer
 
-from txtorcon.web import agent_for_socks_port
-from txtorcon.web import tor_agent
+try:
+    from txtorcon.web import agent_for_socks_port
+    from txtorcon.web import tor_agent
+    _HAVE_WEB = True
+except ImportError:
+    _HAVE_WEB = False
 from txtorcon.socks import TorSocksEndpoint
 from txtorcon.circuit import TorCircuitEndpoint
 
 
 class WebAgentTests(unittest.TestCase):
+    skip = not _HAVE_WEB
 
     def test_socks_agent_tcp_port(self):
         reactor = Mock()

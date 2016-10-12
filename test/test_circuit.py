@@ -21,6 +21,7 @@ from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
 from txtorcon.interface import CircuitListenerMixin
 from txtorcon.interface import ITorControlProtocol
+from txtorcon.endpoints import _HAVE_TLS
 
 from mock import Mock
 
@@ -421,4 +422,4 @@ class CircuitTests(unittest.TestCase):
         circuit = Circuit(tor)
         reactor = Mock()
 
-        ep = circuit.stream_via(reactor, 'torproject.org', 443, None, use_tls=True)
+        ep = circuit.stream_via(reactor, 'torproject.org', 443, None, use_tls=_HAVE_TLS)

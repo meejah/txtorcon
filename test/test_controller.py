@@ -662,7 +662,12 @@ class WebAgentTests(unittest.TestCase):
         cfg = Mock()
 
         tor = Tor(reactor, cfg)
-        agent = tor.web_agent(pool=self.pool)
+        try:
+            agent = tor.web_agent(pool=self.pool)
+        except ImportError as e:
+            if 'IAgentEndpointFactory' in str(e):
+                print("Skipping; appears we don't have web support")
+                return
 
         resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
