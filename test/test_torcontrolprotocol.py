@@ -140,14 +140,14 @@ class AuthenticationTests(unittest.TestCase):
 
     def test_authenticate_null(self):
         self.protocol.makeConnection(self.transport)
-        self.assertEqual(self.transport.value(), 'PROTOCOLINFO 1\r\n')
+        self.assertEqual(self.transport.value(), b'PROTOCOLINFO 1\r\n')
         self.transport.clear()
-        self.send('250-PROTOCOLINFO 1')
-        self.send('250-AUTH METHODS=NULL')
-        self.send('250-VERSION Tor="0.2.2.34"')
-        self.send('250 OK')
+        self.send(b'250-PROTOCOLINFO 1')
+        self.send(b'250-AUTH METHODS=NULL')
+        self.send(b'250-VERSION Tor="0.2.2.34"')
+        self.send(b'250 OK')
 
-        self.assertEqual(self.transport.value(), 'AUTHENTICATE\r\n')
+        self.assertEqual(self.transport.value(), b'AUTHENTICATE\r\n')
 
     def test_authenticate_password_deferred(self):
         d = defer.Deferred()

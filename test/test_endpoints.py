@@ -879,16 +879,16 @@ class TestTorClientEndpoint(unittest.TestCase):
         reactor = Mock()
         endpoint = TorClientEndpoint(reactor, '', 0, socks_endpoint=tor_endpoint)
         endpoint.connect(Mock)
-        self.assertEqual(tor_endpoint.transport.value(), '\x05\x01\x00')
+        self.assertEqual(tor_endpoint.transport.value(), b'\x05\x01\x00')
 
     @defer.inlineCallbacks
     def test_success(self):
         with patch.object(_TorSocksFactory, "protocol", FakeSocksProto) as socks5_factory:
             tor_endpoint = FakeTorSocksEndpoint(Mock(), "fakehost", 9050)
-            endpoint = TorClientEndpoint(Mock(), 'meejah.ca', 443, socks_endpoint=tor_endpoint)
+            endpoint = TorClientEndpoint(Mock(), b'meejah.ca', 443, socks_endpoint=tor_endpoint)
             proto = yield endpoint.connect(MagicMock())
             self.assertTrue(isinstance(proto, FakeSocksProto))
-            self.assertEqual("meejah.ca", proto.host)
+            self.assertEqual(b"meejah.ca", proto.host)
             self.assertEqual(443, proto.port)
             self.assertEqual('CONNECT', proto.method)
 
@@ -903,14 +903,14 @@ class TestTorClientEndpoint(unittest.TestCase):
         success_ports = TorClientEndpoint.socks_ports_to_try
         for port in success_ports:
             tor_endpoint = FakeTorSocksEndpoint(
-                "fakehost", "127.0.0.1", port,
+                b"fakehost", "127.0.0.1", port,
                 accept_port=port,
                 failure=Failure(ConnectionRefusedError()),
             )
 
             endpoint = TorClientEndpoint(reactor, '', 0, socks_endpoint=tor_endpoint)
             endpoint.connect(Mock())
-            self.assertEqual(tor_endpoint.transport.value(), '\x05\x01\x00')
+            self.assertEqual(tor_endpoint.transport.value(), b'\x05\x01\x00')
 
     def test_bad_port_retry(self):
         """

@@ -442,9 +442,9 @@ class StateTests(unittest.TestCase):
         self.assertTrue('subdomain.example.com' in self.state.addrmap.addr)
         self.assertTrue('10.0.0.0' in self.state.addrmap.addr)
         self.assertTrue('127.0.0.1' in self.state.addrmap.addr)
-        self.assertEqual('127.0.0.1', self.state.addrmap.find('www.example.com').ip)
+        self.assertEqual('127.0.0.1', str(self.state.addrmap.find('www.example.com').ip))
         self.assertEqual('www.example.com', self.state.addrmap.find('127.0.0.1').name)
-        self.assertEqual('10.0.0.0', self.state.addrmap.find('subdomain.example.com').ip)
+        self.assertEqual('10.0.0.0', str(self.state.addrmap.find('subdomain.example.com').ip))
         self.assertEqual('subdomain.example.com', self.state.addrmap.find('10.0.0.0').name)
 
         return d

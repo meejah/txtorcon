@@ -28,7 +28,7 @@ class _AgentEndpointFactoryUsingTor(object):
             self._proxy_ep,
             uri.host,
             uri.port,
-            tls=(uri.scheme == 'https'),
+            tls=(uri.scheme == b'https'),
         )
 
 
@@ -51,7 +51,7 @@ class _AgentEndpointFactoryForCircuit(object):
         torsocks = TorSocksEndpoint(
             self._socks_ep,
             uri.host, uri.port,
-            tls=uri.scheme == 'https',
+            tls=uri.scheme == b'https',
 #            got_source_port=got_source_port,
         )
         from txtorcon.circuit import TorCircuitEndpoint

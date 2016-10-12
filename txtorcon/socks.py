@@ -6,6 +6,7 @@
 
 from __future__ import print_function
 
+import six
 import struct
 from socket import inet_aton, inet_ntoa
 # from ipaddress import ip_address
@@ -113,7 +114,7 @@ class TorSocksEndpoint(object):
         if self._tls:
             # XXX requires Twisted 14+
             from twisted.internet.ssl import optionsForClientTLS
-            context = optionsForClientTLS(unicode(self._host))
+            context = optionsForClientTLS(six.text_type(self._host))
             tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
             socks_factory = _TorSocksFactory(
                 done, self._host, self._port, 'CONNECT', tls_factory,
@@ -162,7 +163,7 @@ class _TorSocksProtocol(Protocol):
         """
         self._done = done
         self._host = host[:255]
-        if isinstance(self._host, unicode):
+        if isinstance(self._host, six.text_type):
             self._host = self._host.encode('ascii')
         self._port = port
         assert port == int(port)

@@ -16,7 +16,7 @@ from zope.interface import implementer, directlyProvides
 
 import functools
 from mock import Mock, patch
-from StringIO import StringIO
+from six.moves import StringIO
 
 
 class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
@@ -664,7 +664,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, cfg)
         agent = tor.web_agent(pool=self.pool)
 
-        resp = yield agent.request('GET', 'meejah.ca')
+        resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
 
     @defer.inlineCallbacks
@@ -675,7 +675,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, cfg)
         agent = tor.web_agent("9151", pool=self.pool)
 
-        resp = yield agent.request('GET', 'meejah.ca')
+        resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
 
     @defer.inlineCallbacks
@@ -687,7 +687,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, cfg)
         agent = tor.web_agent(socks_d, pool=self.pool)
 
-        resp = yield agent.request('GET', 'meejah.ca')
+        resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
 
     @defer.inlineCallbacks
@@ -698,7 +698,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, cfg)
         agent = tor.web_agent(u"9151", pool=self.pool)
 
-        resp = yield agent.request('GET', 'meejah.ca')
+        resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
 
     @defer.inlineCallbacks
@@ -711,7 +711,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, cfg)
         agent = tor.web_agent(socks, pool=self.pool)
 
-        resp = yield agent.request('GET', 'meejah.ca')
+        resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
 
     @defer.inlineCallbacks
@@ -722,7 +722,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, cfg)
         with self.assertRaises(ValueError) as ctx:
             agent = tor.web_agent(object(), pool=self.pool)
-            resp = yield agent.request('GET', 'meejah.ca')
+            resp = yield agent.request('GET', b'meejah.ca')
         self.assertTrue('socks_config' in str(ctx.exception))
 
 
@@ -784,7 +784,7 @@ class TorStreamTests(unittest.TestCase):
         self.tor.stream_via(u'8.8.8.8', '4321')
 
     def test_stream_host(self):
-        self.tor.stream_via('meejah.ca', '1234')
+        self.tor.stream_via(b'meejah.ca', '1234')
 
 
 class IteratorTests(unittest.TestCase):

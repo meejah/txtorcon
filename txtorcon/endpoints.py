@@ -875,7 +875,7 @@ class TorClientEndpoint(object):
                 self._tls,
             )
             if self._tls:
-                context = optionsForClientTLS(unicode(self.host))
+                context = optionsForClientTLS(six.text_type(self.host))
                 socks_ep = TLSWrapClientEndpoint(context, socks_ep)
             proto = yield socks_ep.connect(protocolfactory)
             defer.returnValue(proto)
@@ -889,7 +889,7 @@ class TorClientEndpoint(object):
                 socks_ep = TorSocksEndpoint(tor_ep, self.host, self.port, self._tls)
                 if self._tls:
                     # XXX only twisted 14+
-                    context = optionsForClientTLS(unicode(self.host))
+                    context = optionsForClientTLS(six.text_type(self.host))
                     socks_ep = TLSWrapClientEndpoint(context, socks_ep)
 
                 try:
