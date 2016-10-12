@@ -637,7 +637,7 @@ class ConnectTorTests(unittest.TestCase):
         reactor = FakeReactor(self, transport, lambda: None)
         ep0 = Mock()
         ep1 = Mock()
-        with self.assertRaises(RuntimeError) as ctx:
+        with self.assertRaises(ValueError) as ctx:
             yield connect(reactor, [ep0, ep1])
         self.assertTrue('IStreamClientEndpoint' in str(ctx.exception))
 
