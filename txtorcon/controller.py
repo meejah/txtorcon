@@ -559,7 +559,7 @@ class Tor(object):
         addresses yourself (unless, e.g., you save IPs in your app's
         configuration or similar).
 
-        The socks_port thing .. hmm... 
+        The socks_port thing .. hmm...
         XXX (would make it more like web_agent() ...)
         """
         if self._is_non_public_numeric_address(host):

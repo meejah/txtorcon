@@ -12,12 +12,10 @@ import tempfile
 import functools
 
 from txtorcon.socks import TorSocksEndpoint
-from zope.interface import implementer
 
 # backwards-compatibility dance: we "should" be using the
 # ...WithReactor class, but in Twisted prior to 14, there is no such
 # class (and the parse() doesn't provide a 'reactor' argument).
-from twisted.internet.interfaces import IStreamClientEndpoint
 try:
     from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
     _TX_CLIENT_ENDPOINT_REACTOR = True
@@ -60,42 +58,43 @@ _global_tor_lock = defer.DeferredLock()
 # "creating" the TorConfig instance
 
 
-# XXX straight out of txsocksx
-@implementer(IStreamClientEndpoint)
-class TLSWrapClientEndpoint(object):
-    """An endpoint which automatically starts TLS.
+if _HAVE_TLS:
+    # XXX straight out of txsocksx
+    @implementer(IStreamClientEndpoint)
+    class TLSWrapClientEndpoint(object):
+        """An endpoint which automatically starts TLS.
 
-    :param contextFactory: A `ContextFactory`__ instance.
-    :param wrappedEndpoint: The endpoint to wrap.
+        :param contextFactory: A `ContextFactory`__ instance.
+        :param wrappedEndpoint: The endpoint to wrap.
 
-    __ http://twistedmatrix.com/documents/current/api/twisted.internet.protocol.ClientFactory.html
-
-    """
-
-    _wrapper = tls.TLSMemoryBIOFactory
-
-    def __init__(self, contextFactory, wrappedEndpoint):
-        self.contextFactory = contextFactory
-        self.wrappedEndpoint = wrappedEndpoint
-
-    def connect(self, fac):
-        """Connect to the wrapped endpoint, then start TLS.
-
-        The TLS negotiation is done by way of wrapping the provided factory
-        with `TLSMemoryBIOFactory`__ during connection.
-
-        :returns: A ``Deferred`` which fires with the same ``Protocol`` as
-            ``wrappedEndpoint.connect(fac)`` fires with. If that ``Deferred``
-            errbacks, so will the returned deferred.
-
-        __ http://twistedmatrix.com/documents/current/api/twisted.protocols.tls.html
+        __ http://twistedmatrix.com/documents/current/api/twisted.internet.protocol.ClientFactory.html
 
         """
-        fac = self._wrapper(self.contextFactory, True, fac)
-        return self.wrappedEndpoint.connect(fac).addCallback(self._unwrapProtocol)
 
-    def _unwrapProtocol(self, proto):
-        return proto.wrappedProtocol
+        _wrapper = tls.TLSMemoryBIOFactory
+
+        def __init__(self, contextFactory, wrappedEndpoint):
+            self.contextFactory = contextFactory
+            self.wrappedEndpoint = wrappedEndpoint
+
+        def connect(self, fac):
+            """Connect to the wrapped endpoint, then start TLS.
+
+            The TLS negotiation is done by way of wrapping the provided factory
+            with `TLSMemoryBIOFactory`__ during connection.
+
+            :returns: A ``Deferred`` which fires with the same ``Protocol`` as
+                ``wrappedEndpoint.connect(fac)`` fires with. If that ``Deferred``
+                errbacks, so will the returned deferred.
+
+            __ http://twistedmatrix.com/documents/current/api/twisted.protocols.tls.html
+
+            """
+            fac = self._wrapper(self.contextFactory, True, fac)
+            return self.wrappedEndpoint.connect(fac).addCallback(self._unwrapProtocol)
+
+        def _unwrapProtocol(self, proto):
+            return proto.wrappedProtocol
 
 
 @defer.inlineCallbacks
@@ -978,7 +977,8 @@ class TorClientEndpointStringParser(object):
 
     def _parseClient(self, reactor,
                      host=None, port=None,
-                     socksPort=None, socksUsername=None, socksPassword=None):
+                     socksHostname=None, socksPort=None,
+                     socksUsername=None, socksPassword=None):
         if port is not None:
             port = int(port)
 

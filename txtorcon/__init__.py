@@ -28,7 +28,6 @@ from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
 from txtorcon.onion import EphemeralHiddenService
 from txtorcon.onion import FilesystemHiddenService
-from txtorcon.onion import EphemeralHiddenService
 from txtorcon.onion import AuthenticatedHiddenService
 # from txtorcon.onion import create_onion_service
 # from txtorcon.onion import launch_tor # XXX backwards-compat: (put back??)

@@ -508,7 +508,7 @@ class AuthenticatedHiddenServiceClient(object):
 
 
 # XXX this can't provide IOnionService or IFilesystemOnionService at all!
-@implementer(IFilesystemOnionService)
+#@implementer(IFilesystemOnionService)
 #@implementer(IAuthenticatedOnionService)
 @implementer(IOnionClients)
 class AuthenticatedHiddenService(object):
@@ -790,7 +790,7 @@ _THROW_AWAY = object()
 def create_authenticated_ephemeral_onion_service():
     pass
 
-
+# XXX i don't think i've ever used this?
 @defer.inlineCallbacks
 def create_ephemeral_onion_service(
         reactor, torconfig, ports,
@@ -814,14 +814,6 @@ def create_ephemeral_onion_service(
         (honoring ``$TMPDIR``, if set)
     :type directory: str
 
-    :param ephemeral: If True, uses ADD_ONION command; otherwise, uses
-    the HiddenServiceDir configuration option (and creates/uses a
-        temporary or permanent directory to pass private keys to/from
-        Tor.  Note that ADD_ONION doesn't yet allow passing any
-        authentication options, so this is only allowed if auth_type
-        == "none"
-    :type ephemeral: bool
-
     :param auth_type: 'basic' (the default) or 'stealth'
     :type auth_type: str
 
@@ -831,80 +823,17 @@ def create_ephemeral_onion_service(
         descriptors are uploaded.
     :type await_upload: bool
     """
+
+    # XXX this is untested and un-called -- can we just make use of
+    # whatever other APIs there are? and/or make this one call those?
+    
     # validate args
-    acceptable_auth = ['none', 'basic', 'stealth']
-    if auth_type not in acceptable_auth:
-        raise ValueError(
-            "auth_type must be one of: {}".format(
-                ", ".join(acceptable_auth),
-            )
-        )
-    if auth_type != "none" and ephemeral:
-        raise ValueError(
-            "ephemeral onion services only work with auth_type='none'"
-        )
+    detach = bool(detach)  # False by default
+    discard_key = bool(discard_key)  # False by default
 
-    if ephemeral:
-        detach = bool(detach)  # False by default
-        discard_key = bool(discard_key)  # False by default
-    else:
-        if detach is not None:
-            raise ValueError(
-                "'detach' can only be specified for ephemeral services"
-            )
-        if discard_key is not None:
-            raise ValueError(
-                "'discard_key' can only be specified for ephemeral services"
-            )
-
-    # there are the following types of hidden/onion services we can
-    # create:
-    # ephemeral:
-    #   - no auth -> EphemeralHiddenService instance
-    # filesystem:
-    #   - no auth -> HiddenService instance
-    #   - basic auth -> AuthenticatedHiddenService instance
-    #   - stealth auth -> AuthenticatdHiddenService instance
-    # So, "onion" wil be one of the above after this "case" statement
-
-    if auth_type == 'none':
-        if ephemeral:
-            hs = yield EphemeralHiddenService.create(
-                torconfig, ports,
-                detach=detach,
-                discard_key=discard_key,
-            )
-            defer.returnValue(hs)
-            return
-
-        else:
-            if directory is None:
-                # XXX when to delete this?
-                directory = tempfile.mkdtemp()
-
-            # XXX should be a .create() call
-            hs = FilesystemHiddenService(
-                torconfig, directory, ports,
-            )
-            torconfig.HiddenServices.append(hs)
-            # listen for the descriptor upload event
-            info_callback = defer.Deferred()
-
-            def info_event(msg):
-                # XXX giant hack here; Right Thing would be to implement a
-                # "real" event in Tor and listen for that.
-                if 'Service descriptor (v2) stored' in msg:
-                    info_callback.callback(None)
-            torconfig.protocol.add_event_listener('INFO', info_event)
-
-            yield torconfig.save()
-            yield info_callback  # awaits an INFO log-line from Tor .. sketchy
-            torconfig.protocol.remove_event_listener('INFO', info_event)
-
-            defer.returnValue(hs)
-            return
-
-    elif auth_type == 'basic':
-        raise NotImplementedError()
-    elif auth_type == 'stealth':
-        raise NotImplementedError()
+    d = EphemeralHiddenService.create(
+        torconfig, ports,
+        detach=detach,
+        discard_key=discard_key,
+    )
+    return d

@@ -34,6 +34,7 @@ city = None
 country = None
 asn = None
 
+
 def version_at_least(version_string, major, minor, micro, patch):
     """
     This returns True if the version_string represents a Tor version

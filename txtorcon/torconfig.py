@@ -8,7 +8,6 @@ import os
 import six
 import functools
 import warnings
-import shlex
 from io import StringIO
 from collections import OrderedDict
 

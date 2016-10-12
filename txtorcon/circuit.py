@@ -8,13 +8,12 @@ from __future__ import with_statement
 import six
 import time
 from datetime import datetime
-import random
 
 from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
-from twisted.internet.interfaces import IReactorTime, IStreamClientEndpoint
-from zope.interface import Interface, implementer  # XXX FIXME
+from twisted.internet.interfaces import IStreamClientEndpoint
+from zope.interface import implementer
 
 from .interface import IRouterContainer, IStreamAttacher
 from txtorcon.util import find_keywords, maybe_ip_addr
