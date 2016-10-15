@@ -698,11 +698,6 @@ class ConnectTorTests(unittest.TestCase):
         self.assertEqual(ans.protocol, proto)
 
 
-def boom(*args, **kw):
-    print("OHAI!")
-    raise ImportError("boom")
-
-
 class WebAgentTests(unittest.TestCase):
 
     def setUp(self):
