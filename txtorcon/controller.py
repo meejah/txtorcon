@@ -338,9 +338,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
 
     @inlineCallbacks
     def try_endpoint(control_ep):
-        if not IStreamClientEndpoint.providedBy(control_ep):
-            raise ValueError("control_endpoint must provide IStreamClientEndpoint")
-
+        assert IStreamClientEndpoint.providedBy(control_ep)
         proto = yield control_ep.connect(
             TorProtocolFactory(
                 password_function=password_function
@@ -361,7 +359,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
     elif isinstance(control_endpoint, Sequence):
         to_try = control_endpoint
         for ep in control_endpoint:
-            if not IStreamClientEndpoint.providedBy(control_endpoint):
+            if not IStreamClientEndpoint.providedBy(ep):
                 raise ValueError(
                     "For control_endpoint=, '{}' must provide"
                     " IStreamClientEndpoint".format(ep)

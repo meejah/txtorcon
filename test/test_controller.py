@@ -641,6 +641,20 @@ class ConnectTorTests(unittest.TestCase):
             yield connect(reactor, [ep0, ep1])
         self.assertTrue('IStreamClientEndpoint' in str(ctx.exception))
 
+    @patch('txtorcon.controller.TorConfig')
+    @defer.inlineCallbacks
+    def test_connect_multiple_endpoints_error(self, fake_cfg):
+        transport = Mock()
+        reactor = FakeReactor(self, transport, lambda: None)
+        ep0 = Mock()
+
+        def boom(*args, **kw):
+            raise RuntimeError("the bad thing")
+        ep0.connect = boom
+        directlyProvides(ep0, IStreamClientEndpoint)
+        with self.assertRaises(RuntimeError) as ctx:
+            yield connect(reactor, [ep0])
+        self.assertEqual("the bad thing", str(ctx.exception))
 
 def boom(*args, **kw):
     print("OHAI!")
