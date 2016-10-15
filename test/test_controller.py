@@ -653,8 +653,50 @@ class ConnectTorTests(unittest.TestCase):
         ep0.connect = boom
         directlyProvides(ep0, IStreamClientEndpoint)
         with self.assertRaises(RuntimeError) as ctx:
-            yield connect(reactor, [ep0])
+            yield connect(reactor, ep0)
         self.assertEqual("the bad thing", str(ctx.exception))
+
+    @patch('txtorcon.controller.TorConfig')
+    @defer.inlineCallbacks
+    def test_connect_multiple_endpoints_many_errors(self, fake_cfg):
+        transport = Mock()
+        reactor = FakeReactor(self, transport, lambda: None)
+        ep0 = Mock()
+        ep1 = Mock()
+
+        def boom0(*args, **kw):
+            raise RuntimeError("the bad thing")
+
+        def boom1(*args, **kw):
+            raise RuntimeError("more sadness")
+
+        ep0.connect = boom0
+        ep1.connect = boom1
+        directlyProvides(ep0, IStreamClientEndpoint)
+        directlyProvides(ep1, IStreamClientEndpoint)
+
+        with self.assertRaises(RuntimeError) as ctx:
+            yield connect(reactor, [ep0, ep1])
+        self.assertTrue("the bad thing" in str(ctx.exception))
+        self.assertTrue("more sadness" in str(ctx.exception))
+
+    @patch('txtorcon.controller.TorConfig')
+    @defer.inlineCallbacks
+    def test_connect_success(self, fake_cfg):
+        transport = Mock()
+        reactor = FakeReactor(self, transport, lambda: None)
+        torcfg = Mock()
+        fake_cfg.from_protocol = Mock(return_value=torcfg)
+        ep0 = Mock()
+        proto = object()
+        torcfg.protocol = proto
+        ep0.connect = Mock(return_value=proto)
+        directlyProvides(ep0, IStreamClientEndpoint)
+
+        ans = yield connect(reactor, [ep0])
+        self.assertEqual(ans.config, torcfg)
+        self.assertEqual(ans.protocol, proto)
+
 
 def boom(*args, **kw):
     print("OHAI!")
