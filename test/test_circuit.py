@@ -423,3 +423,15 @@ class CircuitTests(unittest.TestCase):
         reactor = Mock()
 
         ep = circuit.stream_via(reactor, 'torproject.org', 443, None, use_tls=_HAVE_TLS)
+
+    def test_circuit_web_agent(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+
+        config = TorConfig(tor)
+        circuit = Circuit(tor)
+        reactor = Mock()
+
+        # just testing this doesn't cause an exception
+        agent = circuit.web_agent(reactor)

@@ -587,6 +587,7 @@ class LaunchTorTests(unittest.TestCase):
         )
         res = yield tor_d
         self.assertEqual(res._process_protocol, self.process_proto)
+        res.quit()
 
 
 def create_endpoint(*args, **kw):
