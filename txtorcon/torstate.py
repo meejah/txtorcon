@@ -604,7 +604,9 @@ class TorState(object):
     # "state.on_circuit_built" etc?
     def on_circuit_new(self, callback):
         """
-        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_new`
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_new`
 
         See also :meth:`txtorcon.TorState.add_circuit_listener`
         """
@@ -612,7 +614,9 @@ class TorState(object):
 
     def on_circuit_launched(self, callback):
         """
-        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_launched`
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_launched`
 
         See also :meth:`txtorcon.TorState.add_circuit_listener`
         """
@@ -620,7 +624,9 @@ class TorState(object):
 
     def on_circuit_extend(self, callback):
         """
-        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_extend`
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_extend`
 
         See also :meth:`txtorcon.TorState.add_circuit_listener`
         """
@@ -628,7 +634,9 @@ class TorState(object):
 
     def on_circuit_built(self, callback):
         """
-        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_built`
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_built`
 
         See also :meth:`txtorcon.TorState.add_circuit_listener`
         """
@@ -636,7 +644,9 @@ class TorState(object):
 
     def on_circuit_closed(self, callback):
         """
-        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_closed`
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_closed`
 
         See also :meth:`txtorcon.TorState.add_circuit_listener`
         """
@@ -644,19 +654,33 @@ class TorState(object):
 
     def on_circuit_failed(self, callback):
         """
-        Callback should take same args as :meth:`txtorcon.ICircuitListener.circuit_failed`
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_failed`
 
         See also :meth:`txtorcon.TorState.add_circuit_listener`
         """
         self._circuit_listeners.failed.add(callback)
 
     def add_circuit_listener(self, icircuitlistener):
+        """
+        **experimental**
+
+        Adds a new instance of :class:`txtorcon.interface.ICircuitListener` which
+        will receive updates for all existing and new circuits.
+        """
         listen = ICircuitListener(icircuitlistener)
         for circ in self.circuits.values():
             circ.listen(listen)
         self.circuit_listeners.append(listen)
 
     def add_stream_listener(self, istreamlistener):
+        """
+        **experimental**
+
+        Adds a new instance of :class:`txtorcon.interface.IStreamListener` which
+        will receive updates for all existing and new streams.
+        """
         listen = IStreamListener(istreamlistener)
         for stream in self.streams.values():
             stream.listen(listen)
