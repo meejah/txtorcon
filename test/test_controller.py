@@ -10,6 +10,7 @@ from twisted.test import proto_helpers
 from txtorcon import Tor
 from txtorcon import TorConfig
 from txtorcon import TorControlProtocol
+from txtorcon import TorProcessProtocol
 from txtorcon import launch
 from txtorcon import connect
 
@@ -527,7 +528,7 @@ class LaunchTorTests(unittest.TestCase):
         process.progress(10, 'tag', 'summary')
         self.assertTrue(self.got_progress)
 
-    def XXXtest_quit_process(self):
+    def test_quit_process(self):
         process = TorProcessProtocol(None)
         process.transport = Mock()
 
@@ -542,7 +543,7 @@ class LaunchTorTests(unittest.TestCase):
         self.assertEqual(1, len(errs))
         self.assertTrue("Tor exited with error-code" in str(errs[0]))
 
-    def XXXtest_quit_process_already(self):
+    def test_quit_process_already(self):
         process = TorProcessProtocol(None)
         process.transport = Mock()
 
@@ -557,6 +558,21 @@ class LaunchTorTests(unittest.TestCase):
         errs = self.flushLoggedErrors()
         self.assertEqual(1, len(errs))
         self.assertTrue("Tor exited with error-code" in str(errs[0]))
+
+    @defer.inlineCallbacks
+    def test_quit_process_error(self):
+        process = TorProcessProtocol(None)
+        process.transport = Mock()
+
+        def boom(sig):
+            self.assertEqual(sig, 'TERM')
+            raise RuntimeError("Something bad")
+        process.transport.signalProcess = Mock(side_effect=boom)
+
+        try:
+            yield process.quit()
+        except RuntimeError as e:
+            self.assertEqual("Something bad", str(e))
 
     def XXXtest_status_updates(self):
         process = TorProcessProtocol(None)
