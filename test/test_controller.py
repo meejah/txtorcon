@@ -8,6 +8,7 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 
 from txtorcon import Tor
+from txtorcon import TorConfig
 from txtorcon import TorControlProtocol
 from txtorcon import launch
 from txtorcon import connect
@@ -21,10 +22,21 @@ from six.moves import StringIO
 
 class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
     pid = -1
+    reactor = None
 
     def signalProcess(self, signame):
-        self.process_protocol.processEnded(
-            Failure(error.ProcessTerminated(signal=signame))
+        assert self.reactor is not None
+        self.reactor.callLater(
+            0,
+            lambda: self.process_protocol.processEnded(
+                Failure(error.ProcessTerminated(signal=signame))
+            )
+        )
+        self.reactor.callLater(
+            0,
+            lambda: self.process_protocol.processExited(
+                Failure(error.ProcessTerminated(signal=signame))
+            )
         )
 
     def closeStdin(self):
@@ -37,6 +49,11 @@ class FakeProcessTransportNeverBootstraps(FakeProcessTransport):
 
     def closeStdin(self):
         return
+
+
+class FakeProcessTransportNoProtocol(FakeProcessTransport):
+    def closeStdin(self):
+        pass
 
 
 @implementer(IListeningPort)
@@ -61,6 +78,7 @@ class FakeReactor(task.Clock):
         super(FakeReactor, self).__init__()
         self.test = test
         self.transport = trans
+        self.transport.reactor = self  # XXX FIXME this is a cycle now
         self.on_protocol = on_protocol
         self.listen_ports = listen_ports
         # util.available_tcp_port ends up 'asking' for free ports via
@@ -92,6 +110,13 @@ class FakeReactor(task.Clock):
 
 
 class LaunchTorTests(unittest.TestCase):
+
+    def setUp(self):
+        self.protocol = TorControlProtocol()
+        self.protocol.connectionMade = lambda: None
+        self.transport = proto_helpers.StringTransport()
+        self.protocol.makeConnection(self.transport)
+        self.clock = task.Clock()
 
     @defer.inlineCallbacks
     def test_launch_fails(self):
@@ -265,7 +290,7 @@ class LaunchTorTests(unittest.TestCase):
             self.fail()
         except RuntimeError as e:
             self.assertTrue(
-                'Tor was killed (TERM).' in str(e)
+                'Timeout waiting for Tor' in str(e)
             )
         # could/should just use return from this to do asserts?
         self.flushLoggedErrors(RuntimeError)
@@ -558,18 +583,14 @@ class LaunchTorTests(unittest.TestCase):
         self.assertEquals(len(self.flushLoggedErrors(RuntimeError)), 1)
 
     @defer.inlineCallbacks
-    def XXXtest_launch_no_control_port(self):
+    def test_launch_no_control_port(self):
         '''
         See Issue #80. This allows you to launch tor with a TorConfig
         with ControlPort=0 in case you don't want a control connection
         at all. In this case you get back a TorProcessProtocol and you
         own both pieces. (i.e. you have to kill it yourself).
         '''
-        print("skipping; don't support controlport=0 I guess?")
-        return
 
-        config = TorConfig()
-        config.ControlPort = 0
         trans = FakeProcessTransportNoProtocol()
         trans.protocol = self.protocol
 
@@ -579,15 +600,28 @@ class LaunchTorTests(unittest.TestCase):
 
         def on_protocol(proto):
             self.process_proto = proto
-        tor_d = launch(
-            reactor=FakeReactor(self, trans, on_protocol, [9052]),
+            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+
+        reactor = FakeReactor(self, trans, on_protocol, [9052,9999])
+
+        tor = yield launch(
+            reactor=reactor,
             connection_creator=creator,
             tor_binary='/bin/echo',
             socks_port=1234,
+            control_port=0,
         )
-        res = yield tor_d
-        self.assertEqual(res._process_protocol, self.process_proto)
-        res.quit()
+        self.assertEqual(tor._process_protocol, self.process_proto)
+        tor._protocol = p = Mock()
+        p.quit = Mock(return_value=defer.succeed(None))
+        d = tor.quit()
+        reactor.advance(0)
+        yield d
+        errs = self.flushLoggedErrors()
+        self.assertEqual(1, len(errs))
+        self.assertTrue("Tor was killed" in str(errs[0]))
+        
 
 
 def create_endpoint(*args, **kw):

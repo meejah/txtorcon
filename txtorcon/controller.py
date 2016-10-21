@@ -16,7 +16,7 @@ from collections import Sequence
 
 from twisted.python import log
 from twisted.python.failure import Failure
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred, succeed
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred, succeed, fail
 from twisted.internet import protocol, error
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.endpoints import UNIXClientEndpoint
@@ -216,6 +216,8 @@ def launch(reactor,
         else:
             control_port = yield available_tcp_port(reactor)
     config.ControlPort = control_port
+    # should handle case when ControlPort is 0 -- means launch a tor,
+    # but we can't connect to it ...
 
     config.CookieAuthentication = 1
     config.__OwningControllerProcess = os.getpid()
@@ -224,6 +226,11 @@ def launch(reactor,
             TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
             TorProtocolFactory()
         )
+    # not an "else" on purpose; if we passed in "control_port=0" *and*
+    # a custom connection creator, we should still set this to None so
+    # it's never called (since we can't connect with ControlPort=0)
+    if control_port == 0:
+        connection_creator = None
 
     # NOTE well, that if we don't pass "-f" then Tor will merrily load
     # its default torrc, and apply our options over top... :/ should
@@ -249,7 +256,10 @@ def launch(reactor,
         stdout,
         stderr,
     )
-    connected_cb = process_protocol.when_connected()
+    if control_port == 0:
+        connected_cb = succeed(None)
+    else:
+        connected_cb = process_protocol.when_connected()
 
     # we set both to_delete and the shutdown events because this
     # process might be shut down way before the reactor, but if the
@@ -766,6 +776,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         except error.ProcessExitedAlready:
             self.transport.loseConnection()
             d = succeed(None)
+        except Exception:
+            d = fail()
         return d
 
     def _signal_on_exit(self, reason):
@@ -847,6 +859,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             err = RuntimeError(
                 "Tor exited with error-code %d" % status.value.exitCode)
 
+        # hmmm, this should probably go away...not always an error
+        # (e.g. .quit()
         log.err(err)
         for d in self._connected_listeners:
             d.errback(err)
