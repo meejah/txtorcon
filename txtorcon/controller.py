@@ -50,6 +50,7 @@ def launch(reactor,
            # 'users' probably never need these:
            connection_creator=None,
            kill_on_stderr=True,
+           _tor_config=None,  # a TorConfig instance, mostly for tests
            ):
     """
     launches a new Tor process, and returns a Deferred that fires with
@@ -60,9 +61,9 @@ def launch(reactor,
 
     Note that there is NO way to pass in a config; we only expost a
     couple of basic Tor options. If you need anything beyond these,
-    you can access the ``TorConfig`` instance (via ``.get_config()``)
+    you can access the ``TorConfig`` instance (via ``.config``)
     and make any changes there, reflecting them in tor with
-    ``.save()``.
+    ``.config.save()``.
 
     You can igore all the options and safe defaults will be
     provided. However, **it is recommended to pass data_directory**
@@ -172,7 +173,7 @@ def launch(reactor,
                 'File-like object needed for stdout or stderr args.'
             )
 
-    config = TorConfig()
+    config = _tor_config or TorConfig()
     if data_directory is not None:
         user_set_data_directory = True
         config.DataDirectory = data_directory
@@ -291,9 +292,12 @@ def launch(reactor,
     # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
     transport.closeStdin()
 
-    yield connected_cb
-    yield config.post_bootstrap
-    # ^ should also wait for protocol to bootstrap; be more explicit?
+    proto = yield connected_cb
+    if proto is not None:
+        # this happens in the ControlPort=0 case
+        yield config.attach_protocol(proto)
+        # note that attach_protocol waits for the protocol to be
+        # boostrapped if necessary
 
     returnValue(
         Tor(
@@ -446,9 +450,14 @@ class Tor(object):
         Closes the control connection, and if we launched this Tor
         instance we'll send it a TERM and wait until it exits.
         """
-        yield self._protocol.quit()
+        if self._protocol is not None:
+            yield self._protocol.quit()
         if self._process_protocol:
             yield self._process_protocol.quit()
+        if self._protocol is None and self._process_protocol is None:
+            raise RuntimeError(
+                "This Tor has no protocol instance; we can't quit"
+            )
 
     # XXX bikeshed on this name?
     @property
@@ -556,19 +565,25 @@ class Tor(object):
             return True         # too weird, don't connect
         return False
 
-    def stream_via(self, host, port, use_tls=False, socks_port=None):
+    def stream_via(self, host, port, tls=False, socks_port=None):
         """
         This returns an IStreamClientEndpoint instance that will use this
-        Tor (via SOCKS) to visit the host, port indicated. If
-        "use_tls" is True, it will wrap it in an endpoint that does
-        TLS.
+        Tor (via SOCKS) to visit the (host, port) indicated.
 
-        You SHOULD pass host-names to this and NOT turn them into IP
-        addresses yourself (unless, e.g., you save IPs in your app's
-        configuration or similar).
+        :param host: The host to connect to. You MUST pass host-names
+            to this. If you absolutely know that you've not leaked DNS
+            (e.g. you save IPs in your app's configuration or similar)
+            then you can pass an IP.
 
-        The socks_port thing .. hmm...
-        XXX (would make it more like web_agent() ...)
+        :param port: Port to connect to.
+
+        :param tls: If True, it will wrap the return endpoint in one
+            that does TLS (default: False).
+
+        :param socks_port: Normally not needed (default: None) but you
+            can pass any valid Tor "SocksPort" option here, and one will
+            be configured into this Tor instance (when you call .connect
+            on the endpoint)
         """
         if self._is_non_public_numeric_address(host):
             raise ValueError("'{}' isn't going to work over Tor".format(host))
@@ -576,7 +591,7 @@ class Tor(object):
         return TorClientEndpoint(
             self._reactor, host, port,
             self._socks_endpoint,
-            tls=use_tls,
+            tls=tls,
         )
 
     # XXX One Onion Method To Rule Them All, or
@@ -620,18 +635,6 @@ class Tor(object):
             private_key=None,
         )
 
-    # XXX either delete this, or make it the same as .stream_via (that
-    # is, pick one of the two names for "the thing that makes
-    # TorClientEndpoint instances for you)
-    def create_client_endpoint(self, host, port):
-        """
-        returns an IStreamClientEndpoint instance that will connect via
-        SOCKS over this Tor instance. Error if this Tor has no SOCKS
-        ports.
-        """
-        # probably takes args similar to TorClientEndpoint on master
-        raise NotImplemented(__name__)
-
     # XXX or get_state()? and make there be always 0 or 1 states; cf. convo w/ Warner
     @inlineCallbacks
     def create_state(self):
@@ -642,10 +645,6 @@ class Tor(object):
         state = TorState(self.protocol)
         yield state.post_bootstrap
         returnValue(state)
-
-    def shutdown(self):
-        # shuts down the Tor instance; nothing else will work after this
-        pass
 
     def __str__(self):
         return "<Tor version='{tor_version}'>".format(

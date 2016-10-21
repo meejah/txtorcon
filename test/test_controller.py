@@ -154,14 +154,20 @@ class LaunchTorTests(unittest.TestCase):
     def test_successful_launch(self, tpp):
         trans = FakeProcessTransport()
         reactor = FakeReactor(self, trans, lambda p: None, [1, 2, 3])
+        config = TorConfig()
+
+        def boot(arg=None):
+            config.post_bootstrap.callback(config)
+        config.__dict__['bootstrap'] = Mock(side_effect=boot)
 
         def foo(*args, **kw):
             rtn = Mock()
+            rtn.post_bootstrap = defer.succeed(None)
             rtn.when_connected = Mock(return_value=defer.succeed(rtn))
             return rtn
         tpp.side_effect=foo
 
-        tor = yield launch(reactor)
+        tor = yield launch(reactor, _tor_config=config)
         self.assertTrue(isinstance(tor, Tor))
 
     @patch('txtorcon.controller.sys')
@@ -629,8 +635,6 @@ class LaunchTorTests(unittest.TestCase):
             control_port=0,
         )
         self.assertEqual(tor._process_protocol, self.process_proto)
-        tor._protocol = p = Mock()
-        p.quit = Mock(return_value=defer.succeed(None))
         d = tor.quit()
         reactor.advance(0)
         yield d
@@ -647,9 +651,7 @@ def create_endpoint(*args, **kw):
 
 
 def create_endpoint_fails(*args, **kw):
-    print("making a boom-one")
     def go_boom(*args, **kw):
-        print("go boom")
         raise RuntimeError("boom")
 
     ep = Mock(side_effect=go_boom)
