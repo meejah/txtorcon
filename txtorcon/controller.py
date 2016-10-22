@@ -47,6 +47,7 @@ def launch(reactor,
            stderr=None,
            timeout=None,
            tor_binary=None,
+           user=None,  # XXX like the config['User'] special-casing from before
            # 'users' probably never need these:
            connection_creator=None,
            kill_on_stderr=True,
@@ -137,7 +138,8 @@ def launch(reactor,
 
     XXX this "User" thing was, IIRC, a feature for root-using scripts
     (!!) that were going to launch tor, but where tor would drop to a
-    different user. Do we still want to support this?
+    different user. Do we still want to support this? Probably
+    relevant to Docker (where everything is root! yay!)
 
     ``User``: if this exists, we attempt to set ownership of the tempdir
     to this user (but only if our effective UID is 0).
@@ -196,20 +198,17 @@ def launch(reactor,
         socks_port = yield available_tcp_port(reactor)
     config.SOCKSPort = socks_port
 
-    if False:  # XXX see note in docstring
-        # Set ownership on the temp-dir to the user tor will drop privileges to
-        # when executing as root.
-        try:
-            user = config.User
-        except KeyError:
-            pass
-        else:
-            if sys.platform in ('linux2', 'darwin') and os.geteuid() == 0:
-                os.chown(data_directory, pwd.getpwnam(user).pw_uid, -1)
+    try:
+        our_user = user or config.User
+    except KeyError:
+        pass
+    else:
+        if sys.platform in ('linux2', 'darwin') and os.geteuid() == 0:
+            os.chown(data_directory, pwd.getpwnam(our_user).pw_uid, -1)
 
-    # XXX untested -- but need to let user pass in unix/tcp ports for
-    # control-socket
+    # user can pass in a control port, or we set one up here
     if control_port is None:
+        # on posix-y systems, we can use a unix-socket
         if sys.platform in ('linux2', 'darwin'):
             # note: tor will not accept a relative path for ControlPort
             control_port = 'unix:{}'.format(
@@ -218,8 +217,6 @@ def launch(reactor,
         else:
             control_port = yield available_tcp_port(reactor)
     config.ControlPort = control_port
-    # should handle case when ControlPort is 0 -- means launch a tor,
-    # but we can't connect to it ...
 
     config.CookieAuthentication = 1
     config.__OwningControllerProcess = os.getpid()
@@ -251,10 +248,6 @@ def launch(reactor,
         config_args.append(k)
         config_args.append(v)
 
-    # XXX nicer API would probably be .when_connected() on
-    # TorProcessProtocol (and then it can handle multiple ones too if
-    # need-be). ...but also TorProcessProtocol should be "internal
-    # only", right?
     process_protocol = TorProcessProtocol(
         connection_creator,
         progress_updates,
@@ -300,8 +293,8 @@ def launch(reactor,
     transport.closeStdin()
 
     proto = yield connected_cb
-    if proto is not None:
-        # this happens in the ControlPort=0 case
+    if proto is not None and config.protocol is None:
+        # proto is None in the ControlPort=0 case
         yield config.attach_protocol(proto)
         # note that attach_protocol waits for the protocol to be
         # boostrapped if necessary
@@ -922,7 +915,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             yield proto.add_event_listener('STATUS_CLIENT', self.status_client)
             yield self.tor_protocol.queue_command('TAKEOWNERSHIP')
             yield self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
-            if self.config is not None:
+            if self.config is not None and self.config.protocol is None:
                 yield self.config.attach_protocol(proto)
 
         except Exception:

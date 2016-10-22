@@ -97,6 +97,8 @@ if _HAVE_TLS:
             return proto.wrappedProtocol
 
 
+# XXX deprecate this, and make one that has a global Tor() instance
+# instead (and this will use that, then call .create_config() etc)
 @defer.inlineCallbacks
 def get_global_tor(reactor, control_port=None,
                    progress_updates=None,
@@ -416,6 +418,11 @@ class TCPHiddenServiceEndpoint(object):
                 " with 'ephemeral=True'"
             )
 
+        if private_key is not None and not ephemeral:
+            raise ValueError(
+                "'private_key' only understood for ephemeral services"
+            )
+
         self._reactor = reactor
         self._config = defer.maybeDeferred(lambda: config)
         self.public_port = public_port
@@ -529,10 +536,6 @@ class TCPHiddenServiceEndpoint(object):
                 'Noting that "%s" does not exist; letting Tor create it.' %
                 self.hidden_service_dir
             )
-
-        # XXX move to constructor? (because it's validation)
-        if self.private_key is not None and not self.ephemeral:
-            raise RuntimeError("'private_key' only understood for ephemeral services")
 
         # see note in _tor_progress_update; we extend the percent
         # range to 110% for the descriptor upload
