@@ -178,7 +178,7 @@ def launch(reactor,
         user_set_data_directory = True
         config.DataDirectory = data_directory
         try:
-            os.mkdir(data_directory, 0x0700)
+            os.mkdir(data_directory, 0o0700)
         except OSError:
             pass
     else:
@@ -211,8 +211,9 @@ def launch(reactor,
     # control-socket
     if control_port is None:
         if sys.platform in ('linux2', 'darwin'):
+            # note: tor will not accept a relative path for ControlPort
             control_port = 'unix:{}'.format(
-                os.path.join(data_directory, 'control.socket')
+                os.path.join(os.path.realpath(data_directory), 'control.socket')
             )
         else:
             control_port = yield available_tcp_port(reactor)
