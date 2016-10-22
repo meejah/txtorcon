@@ -13,6 +13,7 @@ class Echo(protocol.Protocol):
         print("Connection from {}".format(self.transport.getHost()))
 
     def dataReceived(self, data):
+        print("echoing: '{}'".format(repr(data)))
         self.transport.write(data)
 
 

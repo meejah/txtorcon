@@ -37,9 +37,9 @@ setup(
     keywords=['python', 'twisted', 'tor', 'tor controller'],
     install_requires=open('requirements.txt').readlines(),
     # "pip install -e .[dev]" will install development requirements
-    extras_require=dict(
-        dev=open('dev-requirements.txt').readlines(),
-    ),
+    extras_require={
+        'dev': open('dev-requirements.txt').readlines(),
+    },
     classifiers=[
         'Framework :: Twisted',
         'Development Status :: 4 - Beta',
@@ -61,7 +61,11 @@ setup(
     author_email=__contact__,
     url=__url__,
     license=__license__,
-    packages=["txtorcon", "twisted.plugins"],
+    packages=[
+        "test",
+        "txtorcon",
+        "twisted.plugins",
+    ],
 
     # I'm a little unclear if I'm doing this "properly", especially
     # the documentation etc. Do we really want "share/txtorcon" for
