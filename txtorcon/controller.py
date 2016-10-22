@@ -224,10 +224,16 @@ def launch(reactor,
     config.CookieAuthentication = 1
     config.__OwningControllerProcess = os.getpid()
     if connection_creator is None:
-        connection_creator = functools.partial(
-            TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
-            TorProtocolFactory()
-        )
+        if str(control_port).startswith('unix:'):
+            connection_creator = functools.partial(
+                UNIXClientEndpoint(reactor, control_port[5:]).connect,
+                TorProtocolFactory()
+            )
+        else:
+            connection_creator = functools.partial(
+                TCP4ClientEndpoint(reactor, 'localhost', control_port).connect,
+                TorProtocolFactory()
+            )
     # not an "else" on purpose; if we passed in "control_port=0" *and*
     # a custom connection creator, we should still set this to None so
     # it's never called (since we can't connect with ControlPort=0)
