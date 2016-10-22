@@ -174,15 +174,17 @@ class LaunchTorTests(unittest.TestCase):
     @patch('txtorcon.controller.pwd')
     @patch('txtorcon.controller.os.geteuid')
     @patch('txtorcon.controller.os.chown')
-    def XXXtest_launch_root_changes_tmp_ownership(self, chown, euid, _pwd, _sys):
-        print("FIXME code is if False:'d away")
-        return
+    def test_launch_root_changes_tmp_ownership(self, chown, euid, _pwd, _sys):
         _pwd.return_value = 1000
         _sys.platform = 'linux2'
         euid.return_value = 0
-        config = TorConfig()
-        config.User = 'chuffington'
-        d = launch(Mock(), tor_binary='/bin/echo')
+        reactor = Mock()
+        directlyProvides(reactor, IReactorCore)
+
+        # note! we're providing enough options here that we react the
+        # "chown" before any 'yield' statements in launch, so we don't
+        # actually have to wait for it... a little rickety, though :/
+        d = launch(reactor, tor_binary='/bin/echo', user='chuffington', socks_port='1234')
         self.assertEqual(1, chown.call_count)
 
     def test_launch_timeout_exception(self):
