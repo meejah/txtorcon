@@ -293,9 +293,11 @@ def launch(reactor,
     transport.closeStdin()
 
     proto = yield connected_cb
-    if proto is not None and config.protocol is None:
+
+    # we might need to attach this protocol to the TorConfig
+    if config.protocol is None and proto is not None and proto.tor_protocol is not None:
         # proto is None in the ControlPort=0 case
-        yield config.attach_protocol(proto)
+        yield config.attach_protocol(proto.tor_protocol)
         # note that attach_protocol waits for the protocol to be
         # boostrapped if necessary
 
@@ -729,7 +731,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             self.connection_creator = connection_creator
         else:
             self.connection_creator = None
-        # XXX .when_connected() please!
         self._connected_listeners = []  # list of Deferred (None when we're connected)
 
         self.attempted_connect = False
@@ -758,6 +759,21 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         d = Deferred()
         self._connected_listeners.append(d)
         return d
+
+    def _maybe_notify_connected(self, arg):
+        """
+        Internal helper.
+
+        .callback or .errback on all Deferreds we've returned from
+        `when_connected`
+        """
+        if self._connected_listeners is None:
+            return
+        for d in self._connected_listeners:
+            # Twisted will turn this into an errback if "arg" is a
+            # Failure
+            d.callback(arg)
+        self._connected_listeners = None
 
     def quit(self):
         """
@@ -811,11 +827,15 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         """
         A timeout was supplied during setup, and the time has run out.
         """
+        self._did_timeout = True
         try:
             self.transport.signalProcess('TERM')
         except error.ProcessExitedAlready:
+            # XXX why don't we just always do this?
             self.transport.loseConnection()
-        self._did_timeout = True
+
+        fail = Failure(RuntimeError("timeout while launching Tor"))
+        self._maybe_notify_connected(fail)
 
     def errReceived(self, data):
         """
@@ -845,7 +865,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         """
         :api:`twisted.internet.protocol.ProcessProtocol <ProcessProtocol>` API
         """
-
         self.cleanup()
 
         if status.value.exitCode is None:
@@ -858,12 +877,10 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             err = RuntimeError(
                 "Tor exited with error-code %d" % status.value.exitCode)
 
-        # hmmm, this should probably go away...not always an error
-        # (e.g. .quit()
+        # hmmm, this log() should probably go away...not always an
+        # error (e.g. .quit()
         log.err(err)
-        for d in self._connected_listeners:
-            d.errback(err)
-        self._connected_listeners = None
+        self._maybe_notify_connected(Failure(err))
 
     def progress(self, percent, tag, summary):
         """
@@ -898,9 +915,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             if self._timeout_delayed_call:
                 self._timeout_delayed_call.cancel()
                 self._timeout_delayed_call = None
-            for d in self._connected_listeners:
-                d.callback(self)
-            self._connected_listeners = None
+            self._maybe_notify_connected(self)
 
     @inlineCallbacks
     def tor_connected(self, proto):

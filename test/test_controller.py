@@ -159,6 +159,53 @@ class LaunchTorTests(unittest.TestCase):
         def boot(arg=None):
             config.post_bootstrap.callback(config)
         config.__dict__['bootstrap'] = Mock(side_effect=boot)
+        config.__dict__['attach_protocol'] = Mock(return_value=defer.succeed(None))
+
+        def foo(*args, **kw):
+            rtn = Mock()
+            rtn.post_bootstrap = defer.succeed(None)
+            rtn.when_connected = Mock(return_value=defer.succeed(rtn))
+            return rtn
+        tpp.side_effect=foo
+
+        tor = yield launch(reactor, _tor_config=config)
+        self.assertTrue(isinstance(tor, Tor))
+
+    @patch('txtorcon.controller.TorProcessProtocol')
+    @defer.inlineCallbacks
+    def test_successful_launch_tcp_control(self, tpp):
+        trans = FakeProcessTransport()
+        reactor = FakeReactor(self, trans, lambda p: None, [1, 2, 3])
+        config = TorConfig()
+
+        def boot(arg=None):
+            config.post_bootstrap.callback(config)
+        config.__dict__['bootstrap'] = Mock(side_effect=boot)
+        config.__dict__['attach_protocol'] = Mock(return_value=defer.succeed(None))
+
+        def foo(*args, **kw):
+            rtn = Mock()
+            rtn.post_bootstrap = defer.succeed(None)
+            rtn.when_connected = Mock(return_value=defer.succeed(rtn))
+            return rtn
+        tpp.side_effect=foo
+
+        tor = yield launch(reactor, _tor_config=config, control_port='1234')
+        self.assertTrue(isinstance(tor, Tor))
+
+    @patch('txtorcon.controller.sys')
+    @patch('txtorcon.controller.TorProcessProtocol')
+    @defer.inlineCallbacks
+    def test_successful_launch_tcp_control_non_unix(self, tpp, _sys):
+        _sys.platform = 'not darwin or linux2'
+        trans = FakeProcessTransport()
+        reactor = FakeReactor(self, trans, lambda p: None, [1, 2, 3])
+        config = TorConfig()
+
+        def boot(arg=None):
+            config.post_bootstrap.callback(config)
+        config.__dict__['bootstrap'] = Mock(side_effect=boot)
+        config.__dict__['attach_protocol'] = Mock(return_value=defer.succeed(None))
 
         def foo(*args, **kw):
             rtn = Mock()
@@ -187,6 +234,7 @@ class LaunchTorTests(unittest.TestCase):
         d = launch(reactor, tor_binary='/bin/echo', user='chuffington', socks_port='1234')
         self.assertEqual(1, chown.call_count)
 
+    @defer.inlineCallbacks
     def test_launch_timeout_exception(self):
         """
         we provide a timeout, and it expires
@@ -194,15 +242,24 @@ class LaunchTorTests(unittest.TestCase):
         trans = Mock()
         trans.signalProcess = Mock(side_effect=error.ProcessExitedAlready)
         trans.loseConnection = Mock()
-        react = FakeReactor(self, trans, Mock(), [1234])
+        on_proto = Mock()
+        react = FakeReactor(self, trans, on_proto, [1234])
+
+        def creator():
+            return defer.succeed(Mock())
+
         d = launch(
             reactor=react,
             tor_binary='/bin/echo',
             socks_port=1234,
             timeout=10,
+            connection_creator=creator,
         )
         react.advance(12)
         self.assertTrue(trans.loseConnection.called)
+        with self.assertRaises(RuntimeError) as ctx:
+            yield d
+        self.assertTrue("timeout while launching" in str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_launch_timeout_process_exits(self):
@@ -305,7 +362,7 @@ class LaunchTorTests(unittest.TestCase):
         self.flushLoggedErrors(RuntimeError)
 
     @defer.inlineCallbacks
-    def XXXtest_launch_with_timeout_that_doesnt_expire(self):
+    def test_launch_with_timeout_that_doesnt_expire(self):
         config = TorConfig()
         config.OrPort = 1234
         config.SocksPort = 9999
@@ -341,7 +398,7 @@ class LaunchTorTests(unittest.TestCase):
         d = launch(react, connection_creator=creator,
                    timeout=timeout, tor_binary='/bin/echo')
         # FakeReactor is a task.Clock subclass and +1 just to be sure
-        react.advance(timeout + 1)
+        react.advance(timeout - 1)
 
         res = yield d
         self.assertTrue(res.protocol == self.protocol)
