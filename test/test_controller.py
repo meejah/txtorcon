@@ -362,48 +362,6 @@ class LaunchTorTests(unittest.TestCase):
         self.flushLoggedErrors(RuntimeError)
 
     @defer.inlineCallbacks
-    def test_launch_with_timeout_that_doesnt_expire(self):
-        config = TorConfig()
-        config.OrPort = 1234
-        config.SocksPort = 9999
-        timeout = 5
-
-        def connector(proto, trans):
-            proto._set_valid_events('STATUS_CLIENT')
-            proto.makeConnection(trans)
-            proto.post_bootstrap.callback(proto)
-            return proto.post_bootstrap
-
-        class OnProgress:
-            def __init__(self, test, expected):
-                self.test = test
-                self.expected = expected
-
-            def __call__(self, percent, tag, summary):
-                self.test.assertEqual(
-                    self.expected[0],
-                    (percent, tag, summary)
-                )
-                self.expected = self.expected[1:]
-                self.test.assertTrue('"' not in summary)
-                self.test.assertTrue(percent >= 0 and percent <= 100)
-
-        def on_protocol(proto):
-            proto.outReceived('Bootstrapped 100%\n')
-
-        trans = FakeProcessTransport()
-        trans.protocol = self.protocol
-        creator = functools.partial(connector, self.protocol, self.transport)
-        react = FakeReactor(self, trans, on_protocol, [1234, 9052])
-        d = launch(react, connection_creator=creator,
-                   timeout=timeout, tor_binary='/bin/echo')
-        # FakeReactor is a task.Clock subclass and +1 just to be sure
-        react.advance(timeout - 1)
-
-        res = yield d
-        self.assertTrue(res.protocol == self.protocol)
-
-    @defer.inlineCallbacks
     def test_tor_produces_stderr_output(self):
         def connector(proto, trans):
             proto._set_valid_events('STATUS_CLIENT')
