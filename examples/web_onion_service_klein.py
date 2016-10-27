@@ -48,7 +48,7 @@ def main(reactor):
     port = yield ep.listen(server.Site(app.resource()))
     print("Site listening: {}".format(port.getHost()))
     print("Private key:\n{}".format(port.getHost().onion_key))
-    print("\nVisit using Tor Browser: http://{}\n".format(port.getHost()))
+    print("\nVisit using Tor Browser: http://{}\n".format(port.getHost().onion_uri))
     yield defer.Deferred()  # wait forever
 
 
