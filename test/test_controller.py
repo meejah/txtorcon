@@ -206,26 +206,56 @@ class LaunchTorTests(unittest.TestCase):
         ans = yield tor.dns_resolve_ptr("4.3.2.1")
         self.assertEqual(ans, answer)
 
-    @patch('txtorcon.controller.TorProcessProtocol')
     @defer.inlineCallbacks
-    def test_successful_launch_tcp_control(self, tpp):
+    def test_successful_launch_tcp_control(self):
+        """
+        full end-to-end test of a launch, faking things out at a "lower
+        level" than most of the other tests
+        """
         trans = FakeProcessTransport()
-        reactor = FakeReactor(self, trans, lambda p: None, [1, 2, 3])
+
+        def on_protocol(proto):
+            print("got proto", proto)
+        reactor = FakeReactor(self, trans, on_protocol, [1, 2, 3])
+
+        def connect_tcp(host, port, factory, timeout=0, bindAddress=None):
+            addr = Mock()
+            factory.doStart()
+            proto = factory.buildProtocol(addr)
+            tpp = proto._wrappedProtocol
+
+            def fake_event_listener(what, cb):
+                print("EVENT!", what, cb)
+                if what == 'STATUS_CLIENT':
+                    # should ignore non-BOOTSTRAP messages
+                    cb('STATUS_CLIENT not-bootstrap')
+                    cb('STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=bar')
+                return defer.succeed(None)
+            tpp.add_event_listener = fake_event_listener
+
+            def fake_queue(cmd):
+                print("fake queue", cmd)
+                if cmd.split()[0] == 'PROTOCOLINFO':
+                    return defer.succeed('AUTH METHODS=NULL')
+                elif cmd == 'GETINFO config/names':
+                    return defer.succeed('config/names=')
+                elif cmd == 'GETINFO signal/names':
+                    return defer.succeed('signal/names=')
+                elif cmd == 'GETINFO version':
+                    return defer.succeed('version=0.1.2.3')
+                elif cmd == 'GETINFO events/names':
+                    return defer.succeed('events/names=STATUS_CLIENT')
+                print("returning None")
+                return defer.succeed(None)
+            tpp.queue_command = fake_queue
+            proto.makeConnection(Mock())
+            return proto
+        reactor.connectTCP = connect_tcp
+        
         config = TorConfig()
 
-        def boot(arg=None):
-            config.post_bootstrap.callback(config)
-        config.__dict__['bootstrap'] = Mock(side_effect=boot)
-        config.__dict__['attach_protocol'] = Mock(return_value=defer.succeed(None))
-
-        def foo(*args, **kw):
-            rtn = Mock()
-            rtn.post_bootstrap = defer.succeed(None)
-            rtn.when_connected = Mock(return_value=defer.succeed(rtn))
-            return rtn
-        tpp.side_effect=foo
-
-        tor = yield launch(reactor, _tor_config=config, control_port='1234')
+        tor = yield launch(reactor, _tor_config=config, control_port='1234', timeout=30)
+        print("got tor", tor)
         self.assertTrue(isinstance(tor, Tor))
 
     @patch('txtorcon.controller.sys')
@@ -916,6 +946,12 @@ class TorStreamTests(unittest.TestCase):
         with self.assertRaises(Exception) as ctx:
             ep = self.tor.stream_via('10.0.0.1', '1234')
         self.assertTrue("isn't going to work over Tor", str(ctx.exception))
+
+    def test_stream_via_custom_socks(self):
+        ep = self.tor.stream_via('meejah.ca', '1234', socks_port='localhost:9050')
+        self.assertEqual(1, len(self.cfg.mock_calls))
+        call = self.cfg.mock_calls[0]
+        self.assertEqual("create_socks_endpoint", call[0])
 
     def test_stream_v6(self):
         with self.assertRaises(Exception) as ctx:

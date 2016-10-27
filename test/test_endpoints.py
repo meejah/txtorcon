@@ -9,9 +9,10 @@ from zope.interface import implementer
 
 from twisted.trial import unittest
 from twisted.test import proto_helpers
-from twisted.internet import defer, error, task, tcp
+from twisted.internet import defer, error, task, tcp, unix
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.python.failure import Failure
@@ -220,13 +221,17 @@ class EndpointTests(unittest.TestCase):
         self.assertTrue(ding.called_with(*args))
 
     @patch('txtorcon.controller.launch')
-    def _test_progress_updates_private_tor(self, tor):
+    def test_progress_updates_private_tor(self, tor):
         ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
         tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
         return ep
 
-    def __test_progress_updates_system_tor(self):
-        ep = TCPHiddenServiceEndpoint.system_tor(self.reactor, 1234)
+    def test_progress_updates_system_tor(self):
+        ep = TCPHiddenServiceEndpoint.system_tor(
+            self.reactor,
+            UNIXClientEndpoint(self.reactor, "/non/existant"),
+            1234,
+        )
         ep._tor_progress_update(40, "FOO", "foo to bar")
         return ep
 
@@ -270,32 +275,6 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(port0.getHost().onion_port, port1.getHost().onion_port)
         self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
         self.assertEqual(len(self.config.HiddenServices), 1)
-
-    def _test_multiple_listen(self):
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, ephemeral=False)
-        d0 = ep.listen(NoOpProtocolFactory())
-
-        @defer.inlineCallbacks
-        def more_listen(arg):
-            yield arg.stopListening()
-            d1 = ep.listen(NoOpProtocolFactory())
-            self.assertEqual(3, len(self.protocol.sets))
-
-            def foo(arg):
-                return arg
-            d1.addBoth(foo)
-            defer.returnValue(arg)
-            return
-        d0.addBoth(more_listen)
-        self.config.bootstrap()
-
-        self.assertEqual(3, len(self.protocol.sets))
-
-        def check(arg):
-            self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
-            self.assertEqual(len(self.config.HiddenServices), 1)
-        d0.addCallback(check).addErrback(self.fail)
-        return d0
 
     def test_multiple_listen_ephemeral(self):
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, ephemeral=True)
@@ -665,6 +644,17 @@ class FakeReactorTcp(object):#FakeReactor):
         r = tcp.Connector(
             host, port, factory, timeout,
             bindAddress, reactor=self
+        )
+
+        def blam(*args):
+            print("BLAAAAAM", args)
+        r.connect = blam
+        return r
+
+    def connectUNIX(self, address, factory, timeout=30, checkPID=0):
+        '''should return IConnector'''
+        r = unix.Connector(
+            address, factory, timeout, self, checkPID,
         )
 
         def blam(*args):
