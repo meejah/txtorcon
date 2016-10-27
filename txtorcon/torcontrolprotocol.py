@@ -639,6 +639,8 @@ class TorControlProtocol(LineOnlyReceiver):
         # XXX FIXME if post_bootstrap is already callback()'d, this
         # goes into the aether; should be logged in that case...
         # print("authentication failed", fail)
+        if self.post_bootstrap.called:
+            return fail
         self.post_bootstrap.errback(fail)
         return None
 
@@ -729,7 +731,7 @@ class TorControlProtocol(LineOnlyReceiver):
                 d.addCallback(self._safecookie_authchallenge)
                 d.addCallback(self._bootstrap)
                 d.addErrback(self._auth_failed)
-                return
+                return d
 
             elif 'COOKIE' in methods:
                 txtorlog.msg("Using COOKIE authentication",
@@ -737,19 +739,19 @@ class TorControlProtocol(LineOnlyReceiver):
                 d = self.authenticate(self._cookie_data)
                 d.addCallback(self._bootstrap)
                 d.addErrback(self._auth_failed)
-                return
+                return d
 
         if self.password_function and 'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
             d.addCallback(self._do_password_authentication)
             d.addErrback(self._auth_failed)
-            return
+            return d
 
         if 'NULL' in methods:
             d = self.queue_command('AUTHENTICATE')
             d.addCallback(self._bootstrap)
             d.addErrback(self._auth_failed)
-            return
+            return d
 
         raise RuntimeError(
             "The Tor I connected to doesn't support SAFECOOKIE nor COOKIE"

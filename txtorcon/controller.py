@@ -291,7 +291,6 @@ def launch(reactor,
     )
     # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
     transport.closeStdin()
-
     proto = yield connected_cb
     # note "proto" here is a TorProcessProtocol
 
@@ -849,9 +848,13 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         if not self.attempted_connect and self.connection_creator \
                 and 'Bootstrap' in data:
             self.attempted_connect = True
+            # hmmm, we don't "do" anything with this Deferred?
+            # (should it be connected to the when_connected
+            # Deferreds?)
             d = self.connection_creator()
             d.addCallback(self.tor_connected)
             d.addErrback(self.tor_connection_failed)
+            d.addBoth(self._maybe_notify_connected)
 
     def timeout_expired(self):
         """
@@ -928,7 +931,10 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         # we don't just wait forever after 100% bootstrapped (that
         # is, we're ignoring these errors, but shouldn't do so after
         # we'll stop trying)
+        # XXX also, should check if the failure is e.g. a syntax error
+        # or an actually connection failure
         self.attempted_connect = False
+        return failure
 
     def status_client(self, arg):
         args = shlex.split(arg)
@@ -954,14 +960,11 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.tor_protocol = proto
         self.tor_protocol.is_owned = self.transport.pid
 
-        try:
-            yield self.tor_protocol.post_bootstrap
-            txtorlog.msg("Protocol is bootstrapped")
-            yield proto.add_event_listener('STATUS_CLIENT', self.status_client)
-            yield self.tor_protocol.queue_command('TAKEOWNERSHIP')
-            yield self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
-            if self.config is not None and self.config.protocol is None:
-                yield self.config.attach_protocol(proto)
-
-        except Exception:
-            self.tor_connection_failed(Failure())
+        yield self.tor_protocol.post_bootstrap
+        txtorlog.msg("Protocol is bootstrapped")
+        yield self.tor_protocol.add_event_listener('STATUS_CLIENT', self.status_client)
+        yield self.tor_protocol.queue_command('TAKEOWNERSHIP')
+        yield self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
+        if self.config is not None and self.config.protocol is None:
+            yield self.config.attach_protocol(proto)
+        returnValue(self)

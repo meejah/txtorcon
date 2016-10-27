@@ -42,6 +42,7 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
         )
 
     def closeStdin(self):
+        self.process_protocol.outReceived("Bootstrap")
         return
 
 
@@ -109,6 +110,12 @@ class FakeReactor(task.Clock):
     def listenTCP(self, *args, **kw):
         port = self.listen_ports.pop()
         return FakePort(port)
+
+    def connectTCP(self, host, port, factory, timeout=0, bindAddress=None):
+        return
+
+    def connectUNIX(self, *args, **kw):
+        return
 
 
 class LaunchTorTests(unittest.TestCase):
@@ -215,7 +222,7 @@ class LaunchTorTests(unittest.TestCase):
         trans = FakeProcessTransport()
 
         def on_protocol(proto):
-            print("got proto", proto)
+            pass
         reactor = FakeReactor(self, trans, on_protocol, [1, 2, 3])
 
         def connect_tcp(host, port, factory, timeout=0, bindAddress=None):
@@ -225,7 +232,6 @@ class LaunchTorTests(unittest.TestCase):
             tpp = proto._wrappedProtocol
 
             def fake_event_listener(what, cb):
-                print("EVENT!", what, cb)
                 if what == 'STATUS_CLIENT':
                     # should ignore non-BOOTSTRAP messages
                     cb('STATUS_CLIENT not-bootstrap')
@@ -234,7 +240,6 @@ class LaunchTorTests(unittest.TestCase):
             tpp.add_event_listener = fake_event_listener
 
             def fake_queue(cmd):
-                print("fake queue", cmd)
                 if cmd.split()[0] == 'PROTOCOLINFO':
                     return defer.succeed('AUTH METHODS=NULL')
                 elif cmd == 'GETINFO config/names':
@@ -245,7 +250,6 @@ class LaunchTorTests(unittest.TestCase):
                     return defer.succeed('version=0.1.2.3')
                 elif cmd == 'GETINFO events/names':
                     return defer.succeed('events/names=STATUS_CLIENT')
-                print("returning None")
                 return defer.succeed(None)
             tpp.queue_command = fake_queue
             proto.makeConnection(Mock())
@@ -255,7 +259,6 @@ class LaunchTorTests(unittest.TestCase):
         config = TorConfig()
 
         tor = yield launch(reactor, _tor_config=config, control_port='1234', timeout=30)
-        print("got tor", tor)
         self.assertTrue(isinstance(tor, Tor))
 
     @patch('txtorcon.controller.sys')
@@ -590,7 +593,7 @@ class LaunchTorTests(unittest.TestCase):
 
         self.assertEqual(tor.config.ControlPort, 9052)
 
-    def XXXtest_progress_updates(self):
+    def test_progress_updates(self):
         self.got_progress = False
 
         def confirm_progress(p, t, s):
