@@ -462,7 +462,7 @@ class EphemeralHiddenService(object):
         self._detach = detach
         self._discard_key = discard_key
         if auth != []:
-            raise RuntimeError(
+            raise ValueError(
                 "Tor doesn't yet support authentication on ephemeral onion "
                 "services."
             )

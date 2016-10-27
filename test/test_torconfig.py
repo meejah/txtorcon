@@ -1294,6 +1294,26 @@ class EphemeralOnionServiceTest(unittest.TestCase):
         eph = torconfig.EphemeralHiddenService(self.config, ["80 localhost:80"])
         self.assertEqual(eph._ports, ["80 localhost:80"])
 
+    def test_error_ports_external(self):
+        with self.assertRaises(ValueError) as ctx:
+            eph = torconfig.EphemeralHiddenService(self.config, ["foo localhost:80"])
+        self.assertTrue("external port isn't an in" in str(ctx.exception))
+
+    def test_error_ports_internal(self):
+        with self.assertRaises(ValueError) as ctx:
+            eph = torconfig.EphemeralHiddenService(self.config, ["80 localhost"])
+        self.assertTrue("local address should be" in str(ctx.exception))
+
+    def test_error_auth_not_supported(self):
+        with self.assertRaises(ValueError) as ctx:
+            eph = torconfig.EphemeralHiddenService(self.config, ["80 localhost:80"], auth=["stuff"])
+        self.assertTrue("authentication on ephemeral" in str(ctx.exception))
+
+    def test_error_non_local_internal(self):
+        with self.assertRaises(ValueError) as ctx:
+            eph = torconfig.EphemeralHiddenService(self.config, ["80 1.2.3.4:80"])
+        self.assertTrue("should be a local address" in str(ctx.exception))
+
     def test_wrong_blob(self):
         with self.assertRaises(ValueError) as ctx:
             torconfig.EphemeralHiddenService(self.config, ["80 localhost:80", "foo"])
@@ -1302,7 +1322,7 @@ class EphemeralOnionServiceTest(unittest.TestCase):
     # should support .add_to_tor for backwards compat?
     # if "no", ensure we have tests for this stuff elsewhere
     # also, ensure we can remove a service!
-    
+
     def test_add(self):
         return
         eph = torconfig.EphemeralHiddenService(self.config, ["80 127.0.0.1:80"])
