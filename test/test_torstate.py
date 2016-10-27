@@ -316,8 +316,6 @@ class StateTests(unittest.TestCase):
     def setUp(self):
         self.protocol = TorControlProtocol()
         self.state = TorState(self.protocol)
-        # avoid spew in trial logs; state prints this by default
-        self.state._attacher_error = lambda s, f: f
         self.protocol.connectionMade = lambda: None
         self.transport = proto_helpers.StringTransport()
         self.protocol.makeConnection(self.transport)
@@ -336,11 +334,6 @@ class StateTests(unittest.TestCase):
         attacher = MyAttacher()
         self.state.add_attacher(attacher, FakeReactor(self))
         self.state._stream_update("76 CLOSED 0 www.example.com:0 REASON=DONE")
-
-    def test_attacher_error_handler(self):
-        # make sure error-handling "does something" that isn't blowing up
-        with patch('sys.stdout') as fake_stdout:
-            TorState(self.protocol)._attacher_error(Mock(), Failure(RuntimeError("quote")))
 
     def test_stream_update(self):
         # we use a circuit ID of 0 so it doesn't try to look anything
@@ -499,11 +492,32 @@ class StateTests(unittest.TestCase):
                 return None
 
         fr = FakeReactor(self)
-        attacher = MyAttacher()
-        self.state.add_attacher(attacher, fr)
+        attacher0 = MyAttacher()
+        attacher1 = MyAttacher()
+        self.state.add_attacher(attacher0, fr)
         self.send(b"250 OK")
-        self.state.remove_attacher(attacher, fr)
+        self.assertEqual(
+            self.transport.value(),
+            b'SETCONF __LeaveStreamsUnattached=1\r\n'
+        )
+        # second attacher add should NOT issue a command
+        self.state.add_attacher(attacher1, fr)
+        self.assertEqual(
+            self.transport.value(),
+            b'SETCONF __LeaveStreamsUnattached=1\r\n'
+        )
+
+        # remove one attacher, shouldn't tell tor yet
+        self.state.remove_attacher(attacher1, fr)
+        self.assertEqual(
+            self.transport.value(),
+            b'SETCONF __LeaveStreamsUnattached=1\r\n'
+        )
+
+        # remove other one, Tor should be told
+        self.state.remove_attacher(attacher0, fr)
         self.send(b"250 OK")
+
         self.assertEqual(
             self.transport.value(),
             b'SETCONF __LeaveStreamsUnattached=1\r\nSETCONF'
@@ -516,19 +530,32 @@ class StateTests(unittest.TestCase):
 
             def __init__(self):
                 self.streams = []
+                self.fails = []
                 self.answer = None
 
             def attach_stream(self, stream, circuits):
+                if stream.id == 999:
+                    1 / 0
                 self.streams.append(stream)
                 return self.answer
 
-        attacher = MyAttacher()
-        self.state.add_attacher(attacher, FakeReactor(self))
+            def attach_stream_failure(self, stream, fail):
+                self.fails.append((stream, fail))
+
         events = 'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
         self.protocol._set_valid_events(events)
         self.state._add_events()
         for ignored in self.state.event_map.items():
             self.send(b"250 OK")
+
+        # before we set our attacher, we do a remap and ensure we
+        # DON'T issue any commands to Tor
+        self.send(b"650 STREAM 5 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
+        self.send(b"650 STREAM 5 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
+        self.assertEqual(len(self.protocol.commands), 0)
+
+        attacher = MyAttacher()
+        self.state.add_attacher(attacher, FakeReactor(self))
 
         self.send(b"650 STREAM 1 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
         self.send(b"650 STREAM 1 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
@@ -559,6 +586,28 @@ class StateTests(unittest.TestCase):
         self.assertEqual(len(attacher.streams), 2)
         self.assertEqual(len(self.protocol.commands), 3)
         self.assertEqual(self.protocol.commands[2][1], b'ATTACHSTREAM 4 1')
+
+        # do an attachment where our attacher raises an error
+        self.send(b"650 STREAM 999 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
+        self.send(b"650 STREAM 999 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
+        self.assertEqual(len(attacher.streams), 2)
+        self.assertEqual(len(self.protocol.commands), 4)
+        # our attacher raised an error, so we should ask Tor to do the attach
+        self.assertEqual(self.protocol.commands[3][1], b'ATTACHSTREAM 999 0')
+        self.assertEqual(len(attacher.fails), 1)
+        self.assertTrue(isinstance(attacher.fails[0][1].value, ZeroDivisionError))
+
+        # do an attachment where Tor produces an error
+        self.send(b"650 STREAM 6 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
+        self.send(b"650 STREAM 6 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
+        self.assertEqual(len(attacher.streams), 3)
+        self.assertEqual(len(self.protocol.commands), 5)
+        self.protocol.commands[-1][0].errback(Failure(RuntimeError("tor fails")))
+        self.assertEqual(len(attacher.fails), 2)
+        self.assertTrue(isinstance(attacher.fails[1][1].value, RuntimeError))
+        self.assertEqual(str(attacher.fails[1][1].value), "tor fails")
+
+
 
     def test_attacher_defer(self):
         @implementer(IStreamAttacher)

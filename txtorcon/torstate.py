@@ -759,7 +759,6 @@ class TorState(object):
 
         if not self._attachers:
             defer.returnValue(None)
-            return
 
         if stream.target_host is not None \
            and '.exit' in stream.target_host:
@@ -772,6 +771,8 @@ class TorState(object):
 
         # handle async or sync .attach() the same
         circ = None
+        res = None
+        used_attacher = None
         for attacher in self._attachers:
             circ_d = defer.maybeDeferred(
                 attacher.attach_stream,
@@ -779,9 +780,10 @@ class TorState(object):
             )
             try:
                 res = yield circ_d
-            except Exception:
+                used_attacher = attacher
+            except Exception as e:
+                attacher.attach_stream_failure(stream, Failure())
                 res = None
-                self._attacher_error(stream, Failure())
 
             if res is not None:
                 circ = res  # could be DO_NOT_ATTACH
@@ -824,17 +826,7 @@ class TorState(object):
                     "ATTACHSTREAM %d %d" % (stream.id, circ.id)
                 )
             except Exception:
-                self._attacher_error(stream, Failure())
-
-    def _attacher_error(self, stream, fail):
-        """
-        Note that tests monkey-patch this to reduce spew
-        """
-        if not self._attachers:
-            print("Failure while attaching stream, and no attachers:", fail)
-        for attacher in self._attachers:
-            attacher.attach_stream_failure(stream, fail)
-        return fail
+                used_attacher.attach_stream_failure(stream, Failure())
 
     def _circuit_status(self, data):
         """Used internally as a callback for updating Circuit information"""
