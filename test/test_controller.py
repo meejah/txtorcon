@@ -382,7 +382,7 @@ class LaunchTorTests(unittest.TestCase):
             self.assertTrue("file-like object needed" in str(e).lower())
 
     @defer.inlineCallbacks
-    def _test_launch_with_timeout(self):
+    def test_launch_with_timeout(self):
         # XXX not entirely sure what this was/is supposed to be
         # testing, but it covers an extra 7 lines of code??
         timeout = 5
@@ -397,21 +397,19 @@ class LaunchTorTests(unittest.TestCase):
             proto.outReceived('Bootstrapped 100%\n')
 
         trans = FakeProcessTransportNeverBootstraps()
-#        trans.protocol = self.protocol
+        trans.protocol = self.protocol
         creator = functools.partial(connector, Mock(), Mock())
         react = FakeReactor(self, trans, on_protocol, [1234, 9052])
-        d = launch(react, connection_creator=creator,
-                   timeout=timeout, tor_binary='/bin/echo')
-        # FakeReactor is a task.Clock subclass and +1 just to be sure
-        react.advance(timeout + 1)
 
-        try:
-            res = yield d
-            self.fail()
-        except RuntimeError as e:
-            self.assertTrue(
-                'Timeout waiting for Tor' in str(e)
-            )
+        with self.assertRaises(RuntimeError) as ctx:
+            d = launch(react, connection_creator=creator,
+                           timeout=timeout, tor_binary='/bin/echo')
+            # FakeReactor is a task.Clock subclass and +1 just to be sure
+            react.advance(timeout + 1)
+            yield d
+        self.assertTrue(
+            'timeout while launching Tor' in str(ctx.exception)
+        )
         # could/should just use return from this to do asserts?
         self.flushLoggedErrors(RuntimeError)
 
@@ -447,45 +445,60 @@ class LaunchTorTests(unittest.TestCase):
                 'Something went horribly wrong!' in str(e)
             )
 
-    def _test_tor_connection_fails(self):
-        """
-        We fail to connect once, and then successfully connect --
-        testing whether we're retrying properly on each Bootstrapped
-        line from stdout.
-        """
-
-        config = TorConfig()
-        config.OrPort = 1234
-        config.SocksPort = 9999
-
-        class Connector:
-            count = 0
-
-            def __call__(self, proto, trans):
-                self.count += 1
-                if self.count < 2:
-                    return defer.fail(
-                        error.CannotListenError(None, None, None)
-                    )
-
-                proto._set_valid_events('STATUS_CLIENT')
-                proto.makeConnection(trans)
-                proto.post_bootstrap.callback(proto)
-                return proto.post_bootstrap
+    @defer.inlineCallbacks
+    def test_tor_connection_fails(self):
+        trans = FakeProcessTransport()
 
         def on_protocol(proto):
-            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+        reactor = FakeReactor(self, trans, on_protocol, [1, 2, 3])
 
-        trans = FakeProcessTransport()
-        trans.protocol = self.protocol
-        creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch(
-            FakeReactor(self, trans, on_protocol, [1234, 9052]),
-            connection_creator=creator,
-            tor_binary='/bin/echo'
-        )
-        d.addCallback(self.setup_complete_fails)
-        return self.assertFailure(d, Exception)
+        fails = ['one']
+
+        def connect_tcp(host, port, factory, timeout=0, bindAddress=None):
+            print("connect tcp", host, port)
+            if len(fails):
+                print("failing")
+                fails.pop()
+                raise error.CannotListenError('on-purpose-error', None, None)
+            print("doing the real stuff")
+
+            addr = Mock()
+            factory.doStart()
+            proto = factory.buildProtocol(addr)
+            tpp = proto._wrappedProtocol
+
+            def fake_event_listener(what, cb):
+                if what == 'STATUS_CLIENT':
+                    # should ignore non-BOOTSTRAP messages
+                    cb('STATUS_CLIENT not-bootstrap')
+                    cb('STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=bar')
+                return defer.succeed(None)
+            tpp.add_event_listener = fake_event_listener
+
+            def fake_queue(cmd):
+                if cmd.split()[0] == 'PROTOCOLINFO':
+                    return defer.succeed('AUTH METHODS=NULL')
+                elif cmd == 'GETINFO config/names':
+                    return defer.succeed('config/names=')
+                elif cmd == 'GETINFO signal/names':
+                    return defer.succeed('signal/names=')
+                elif cmd == 'GETINFO version':
+                    return defer.succeed('version=0.1.2.3')
+                elif cmd == 'GETINFO events/names':
+                    return defer.succeed('events/names=STATUS_CLIENT')
+                return defer.succeed(None)
+            tpp.queue_command = fake_queue
+            proto.makeConnection(Mock())
+            return proto
+        reactor.connectTCP = connect_tcp
+        
+        config = TorConfig()
+
+        tor = yield launch(reactor, _tor_config=config, control_port='1234', timeout=30)
+        errs = self.flushLoggedErrors()
+        self.assertTrue(isinstance(tor, Tor))
+        self.assertEqual(1, len(errs))
 
     def _test_tor_connection_user_data_dir(self):
         """

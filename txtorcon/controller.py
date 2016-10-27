@@ -780,7 +780,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
                     'timeout')
             ireactortime = IReactorTime(ireactortime)
             self._timeout_delayed_call = ireactortime.callLater(
-                timeout, self.timeout_expired)
+                timeout, self._timeout_expired)
 
     def when_connected(self):
         if self._connected_listeners is None:
@@ -851,12 +851,13 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             # hmmm, we don't "do" anything with this Deferred?
             # (should it be connected to the when_connected
             # Deferreds?)
+            print("saw bootstrap, doing connect", self.connection_creator)
             d = self.connection_creator()
             d.addCallback(self.tor_connected)
             d.addErrback(self.tor_connection_failed)
-            d.addBoth(self._maybe_notify_connected)
+##            d.addCallback(self._maybe_notify_connected)
 
-    def timeout_expired(self):
+    def _timeout_expired(self):
         """
         A timeout was supplied during setup, and the time has run out.
         """
@@ -933,8 +934,16 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         # we'll stop trying)
         # XXX also, should check if the failure is e.g. a syntax error
         # or an actually connection failure
+
+        # okay, so this is a little trickier than I thought at first:
+        # we *can* just relay this back to the
+        # connection_creator()-returned Deferred, *but* we don't know
+        # if this is "the last" error and we're going to try again
+        # (and thus e.g. should fail all the when_connected()
+        # Deferreds) or not.
+        log.err(failure)
         self.attempted_connect = False
-        return failure
+        return None
 
     def status_client(self, arg):
         args = shlex.split(arg)
