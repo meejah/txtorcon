@@ -454,7 +454,7 @@ class Tor(object):
         """
         if self._protocol is not None:
             yield self._protocol.quit()
-        if self._process_protocol:
+        if self._process_protocol is not None:
             yield self._process_protocol.quit()
         if self._protocol is None and self._process_protocol is None:
             raise RuntimeError(

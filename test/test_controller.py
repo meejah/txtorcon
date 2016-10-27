@@ -172,6 +172,22 @@ class LaunchTorTests(unittest.TestCase):
         tor = yield launch(reactor, _tor_config=config)
         self.assertTrue(isinstance(tor, Tor))
 
+    @defer.inlineCallbacks
+    def test_quit(self):
+        tor = Tor(Mock(), Mock())
+        tor._protocol = Mock()
+        tor._process_protocol = Mock()
+        yield tor.quit()
+
+    @defer.inlineCallbacks
+    def test_quit_no_protocol(self):
+        tor = Tor(Mock(), Mock())
+        tor._protocol = None
+        tor._process_protocol = None
+        with self.assertRaises(RuntimeError) as ctx:
+            yield tor.quit()
+        self.assertTrue('no protocol instance' in str(ctx.exception))
+
     @patch('txtorcon.controller.TorProcessProtocol')
     @defer.inlineCallbacks
     def test_successful_launch_tcp_control(self, tpp):
