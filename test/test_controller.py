@@ -13,6 +13,7 @@ from txtorcon import TorControlProtocol
 from txtorcon import TorProcessProtocol
 from txtorcon import launch
 from txtorcon import connect
+from txtorcon.controller import _is_non_public_numeric_address
 
 from zope.interface import implementer, directlyProvides
 
@@ -314,7 +315,7 @@ class LaunchTorTests(unittest.TestCase):
             self.assertTrue("file-like object needed" in str(e).lower())
 
     @defer.inlineCallbacks
-    def test_launch_with_timeout(self):
+    def _test_launch_with_timeout(self):
         # XXX not entirely sure what this was/is supposed to be
         # testing, but it covers an extra 7 lines of code??
         timeout = 5
@@ -324,20 +325,6 @@ class LaunchTorTests(unittest.TestCase):
             proto.makeConnection(trans)
             proto.post_bootstrap.callback(proto)
             return proto.post_bootstrap
-
-        class OnProgress:
-            def __init__(self, test, expected):
-                self.test = test
-                self.expected = expected
-
-            def __call__(self, percent, tag, summary):
-                self.test.assertEqual(
-                    self.expected[0],
-                    (percent, tag, summary)
-                )
-                self.expected = self.expected[1:]
-                self.test.assertTrue('"' not in summary)
-                self.test.assertTrue(percent >= 0 and percent <= 100)
 
         def on_protocol(proto):
             proto.outReceived('Bootstrapped 100%\n')
@@ -884,8 +871,8 @@ class TorStreamTests(unittest.TestCase):
         self.tor = Tor(reactor, self.cfg)
 
     def test_sanity(self):
-        self.assertTrue(self.tor._is_non_public_numeric_address(u'10.0.0.0'))
-        self.assertTrue(self.tor._is_non_public_numeric_address(u'::1'))
+        self.assertTrue(_is_non_public_numeric_address(u'10.0.0.0'))
+        self.assertTrue(_is_non_public_numeric_address(u'::1'))
 
     def test_v6(self):
         import ipaddress
