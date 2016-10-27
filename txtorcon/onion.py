@@ -349,6 +349,73 @@ def _await_descriptor_upload(config, onion, progress):
     yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
 
 
+@defer.inlineCallbacks
+def _add_ephemeral_service(config, onion, progress):
+    """
+    Internal Helper.
+
+    This uses ADD_ONION to add the given service to Tor. The Deferred
+    this returns will callback when the ADD_ONION call has succeed,
+    *and* when at least one descriptor has been uploaded to a Hidden
+    Service Directory.
+
+    :param config: a TorConfig instance
+
+    :param onion: an EphemeralHiddenService instance
+
+    :param progress: a callable taking 3 arguments (percent, tag,
+        description) that is called some number of times to tell you of
+        progress.
+    """
+    if onion not in config.EphemeralOnionServices:
+        config.EphemeralOnionServices.append(onion)
+
+    # we have to keep this as a Deferred for now so that HS_DESC
+    # listener gets added before we issue ADD_ONION
+    uploaded = _await_descriptor_upload(config, onion, progress)
+
+    # we allow a key to be passed that *doestn'* start with
+    # "RSA1024:" because having to escape the ":" for endpoint
+    # string syntax (which uses ":" as delimeters) is annoying
+    # XXX rethink ^^? what do we do when the type is upgraded?
+    # maybe just a magic-character that's different from ":", or
+    # force people to escape them?
+    if onion.private_key and not onion.private_key.startswith("RSA1024:"):
+        onion._private_key = "RSA1024:" + onion.private_key
+
+    # okay, we're set up to listen, and now we issue the ADD_ONION
+    # command. this will set ._hostname and ._private_key properly
+    cmd = 'ADD_ONION {}'.format(onion.private_key or 'NEW:BEST')
+    for port in onion._ports:
+        cmd += ' Port={},{}'.format(*port.split(' ', 1))
+    flags = []
+    if onion._detach:
+        flags.append('Detach')
+    if onion._discard_key:
+        flags.append('DiscardPK')
+    if flags:
+        cmd += ' Flags={}'.format(','.join(flags))
+
+    res = yield config.tor_protocol.queue_command(cmd)
+    res = find_keywords(res.split('\n'))
+    try:
+        onion._hostname = res['ServiceID'] + '.onion'
+        if onion._discard_key:
+            onion._private_key = None
+        else:
+            # if we specified a private key, it's not echoed back
+            if not onion.private_key:
+                onion._private_key = res['PrivateKey']
+    except KeyError:
+        raise RuntimeError(
+            "Expected ADD_ONION to return ServiceID= and PrivateKey= args."
+            "Got: {}".format(res)
+        )
+
+    log.msg("Created '{}', waiting for descriptor uploads.".format(onion.hostname))
+    yield uploaded
+
+
 @implementer(IOnionService)
 class EphemeralHiddenService(object):
     @classmethod
@@ -377,60 +444,16 @@ class EphemeralHiddenService(object):
             discard_key=discard_key,
         )
 
-        # XXX more thinking req'd
-        # config.HiddenServices.append(onion)
-        if onion not in config.EphemeralOnionServices:
-            config.EphemeralOnionServices.append(onion)
-
-        # we have to keep this as a Deferred for now so that HS_DESC
-        # listener gets added before we issue ADD_ONION
-        uploaded = _await_descriptor_upload(config, onion, progress)
-
-        # we allow a key to be passed that *doestn'* start with
-        # "RSA1024:" because having to escape the ":" for endpoint
-        # string syntax (which uses ":" as delimeters) is annoying
-        # XXX rethink ^^? what do we do when the type is upgraded?
-        # maybe just a magic-character that's different from ":", or
-        # force people to escape them?
-        if onion.private_key and not onion.private_key.startswith("RSA1024:"):
-            onion._private_key = "RSA1024:" + onion.private_key
-
-        # okay, we're set up to listen, and now we issue the ADD_ONION
-        # command. this will set ._hostname and ._private_key properly
-        cmd = 'ADD_ONION {}'.format(onion.private_key or 'NEW:BEST')
-        for port in ports:
-            cmd += ' Port={},{}'.format(*port.split(' ', 1))
-        flags = []
-        if detach:
-            flags.append('Detach')
-        if discard_key:
-            flags.append('DiscardPK')
-        if flags:
-            cmd += ' Flags={}'.format(','.join(flags))
-
-        res = yield config.tor_protocol.queue_command(cmd)
-        res = find_keywords(res.split('\n'))
-        try:
-            onion._hostname = res['ServiceID'] + '.onion'
-            if discard_key:
-                onion._private_key = None
-            else:
-                # if we specified a private key, it's not echoed back
-                if not onion.private_key:
-                    onion._private_key = res['PrivateKey']
-        except KeyError:
-            raise RuntimeError(
-                "Expected ADD_ONION to return ServiceID= and PrivateKey= args."
-                "Got: {}".format(res)
-            )
-
-        log.msg("Created '{}', waiting for descriptor uploads.".format(onion.hostname))
-        yield uploaded
+        yield _add_ephemeral_service(config, onion, progress)
 
         defer.returnValue(onion)
 
     def __init__(self, config, ports, hostname=None, private_key=None, auth=[], ver=2,
                  detach=False, discard_key=False):
+        """
+        Users should create instances of this class by using the async
+        method :meth:`txtorcon.EphemeralHiddenService.create`
+        """
         # XXX do we need version?
         self._config = config
         self._ports = ports
@@ -444,6 +467,31 @@ class EphemeralHiddenService(object):
                 "services."
             )
         self._version = ver
+
+        # validation of options; should move to method?
+        for port in ports:
+            if ' ' not in port or len(port.split(' ')) != 2:
+                raise ValueError(
+                    "Port '{}' should have exactly one space in it".format(port)
+                )
+            (external, internal) = port.split(' ')
+            try:
+                external = int(external)
+            except ValueError:
+                raise ValueError(
+                    "Port '{}' external port isn't an int".format(port)
+                )
+            if not ':' in internal:
+                raise ValueError(
+                    "Port '{}' local address should be 'IP:port'".format(port)
+                )
+            ip, localport = internal.split(':')
+            from .controller import _is_non_public_numeric_address
+            if ip != 'localhost' and not _is_non_public_numeric_address(ip):
+                raise ValueError(
+                    "Port '{}' internal IP '{}' should be a local "
+                    "address".format(port, ip)
+                )
 
     @defer.inlineCallbacks
     def remove(self):

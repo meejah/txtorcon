@@ -1329,13 +1329,15 @@ class EphemeralOnionServiceTest(unittest.TestCase):
         self.assertEqual("blam", eph.private_key)
         self.assertEqual("ohai.onion", eph.hostname)
 
+    @defer.inlineCallbacks
     def test_descriptor_wait(self):
-        eph = torconfig.EphemeralHiddenService(self.config, ["80 127.0.0.1:80"])
         proto = Mock()
         proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=blam\nServiceID=ohai\n"))
 
-        eph.add_to_tor(proto)
-
+        eph = torconfig.EphemeralHiddenService.create(
+            config=self.config,
+            ports=["80 127.0.0.1:80"],
+        )
         # get the event-listener callback that torconfig code added;
         # the last call [-1] was to add_event_listener; we want the
         # [1] arg of that
@@ -1344,6 +1346,8 @@ class EphemeralOnionServiceTest(unittest.TestCase):
         # Tor doesn't actually provide the .onion, but we can test it anyway
         cb('UPLOADED ohai UNKNOWN somehsdir')
         cb('UPLOADED UNKNOWN UNKNOWN somehsdir')
+
+        eph = yield eph
 
         self.assertEqual("blam", eph.private_key)
         self.assertEqual("ohai.onion", eph.hostname)
@@ -1398,15 +1402,21 @@ class EphemeralOnionServiceTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_single_failed_upload(self):
-        eph = torconfig.EphemeralHiddenService(self.config, ["80 127.0.0.1:80"])
         proto = Mock()
         proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=seekrit\nServiceID=42\n"))
+        self.config.tor_protocol = proto
+        self.config.EphemeralOnionServices = []
 
-        d = eph.add_to_tor(proto)
+        d = torconfig.EphemeralHiddenService.create(
+            config=self.config,
+            ports=["80 127.0.0.1:80"],
+        )
 
-        # get the OnionService's HS_DESC callback
-        self.assertEqual(1, len(callbacks))
-        cb = callbacks[0]
+        # get the event-listener callback that torconfig code added;
+        # the last call [-1] was to add_event_listener; we want the
+        # [1] arg of that
+        self.assertEqual(1, len(proto.method_calls))
+        cb = proto.method_calls[-1][1][1]
 
         # Tor leads with UPLOAD events for each attempt; we queue 2 of
         # these...

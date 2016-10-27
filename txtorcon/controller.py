@@ -293,6 +293,7 @@ def launch(reactor,
     transport.closeStdin()
 
     proto = yield connected_cb
+    # note "proto" here is a TorProcessProtocol
 
     # we might need to attach this protocol to the TorConfig
     if config.protocol is None and proto is not None and proto.tor_protocol is not None:
@@ -441,10 +442,9 @@ class Tor(object):
         self._reactor = reactor
         # this only passed/set when we launch()
         self._process_protocol = _process_proto
-
-        # cache our preferred socks port
-        # XXX FIXME
-        self._socks_endpoint = TCP4ClientEndpoint(reactor, '127.0.0.1', 9050)
+        # cache our preferred socks port (please use
+        # self._default_socks_endpoint() to get one)
+        self._socks_endpoint = None
 
     @inlineCallbacks
     def quit(self):
@@ -532,6 +532,7 @@ class Tor(object):
             pool=pool,
         )
 
+    @inlineCallbacks
     def dns_resolve(self, hostname):
         """
         :param hostname: a string
@@ -540,8 +541,11 @@ class Tor(object):
             via Tor (or errback).  This uses Tor's custom extension to the
             SOCKS5 protocol.
         """
-        return socks.resolve(self._socks_endpoint, hostname)
+        socks_ep = yield self._default_socks_endpoint()
+        ans = yield socks.resolve(socks_ep, hostname)
+        returnValue(ans)
 
+    @inlineCallbacks
     def dns_resolve_ptr(self, ip):
         """
         :param ip: a string, like "127.0.0.1"
@@ -550,22 +554,9 @@ class Tor(object):
             looked-up via Tor (or errback).  This uses Tor's custom
             extension to the SOCKS5 protocol.
         """
-        return socks.resolve_ptr(self._socks_endpoint, ip)
-
-    # XXX maybe use this, stolen from magic-wormhole?
-    def _is_non_public_numeric_address(self, host):
-        # for numeric hostnames, skip RFC1918 addresses, since no Tor exit
-        # node will be able to reach those. Likewise ignore IPv6 addresses.
-        try:
-            a = ipaddress.ip_address(six.text_type(host))
-        except ValueError:
-            return False        # non-numeric, let Tor try it
-#        if a.version != 4:
-#            return True         # IPv6 gets ignored
-        if a.is_loopback or a.is_multicast or a.is_private or a.is_reserved \
-           or a.is_unspecified:
-            return True         # too weird, don't connect
-        return False
+        socks_ep = yield self._default_socks_endpoint()
+        ans = yield socks.resolve_ptr(socks_ep, ip)
+        returnValue(ans)
 
     def stream_via(self, host, port, tls=False, socks_port=None):
         """
@@ -587,12 +578,17 @@ class Tor(object):
             be configured into this Tor instance (when you call .connect
             on the endpoint)
         """
-        if self._is_non_public_numeric_address(host):
+        if _is_non_public_numeric_address(host):
             raise ValueError("'{}' isn't going to work over Tor".format(host))
 
+        if socks_port is None:
+            socks_ep = self._default_socks_endpoint()
+        else:
+            socks_ep = self._config.create_socks_endpoint(self._reactor, socks_port)
+        # socks_ep will be a a Deferred, but TorClientEndpoint handles it
         return TorClientEndpoint(
             self._reactor, host, port,
-            self._socks_endpoint,
+            socks_ep,
             tls=tls,
         )
 
@@ -652,6 +648,40 @@ class Tor(object):
         return "<Tor version='{tor_version}'>".format(
             tor_version=self._protocol.version,
         )
+
+    @inlineCallbacks
+    def _default_socks_endpoint(self):
+        """
+        Returns a Deferred that fires with our default SOCKS endpoint
+        (which might mean setting one up in our attacked Tor if it
+        doesn't have one)
+        """
+        if self._socks_endpoint is not None:
+            returnValue(self._socks_endpoint)
+        else:
+            try:
+                ep = self._config.socks_endpoint(self._reactor)
+            except RuntimeError:
+                # should we try to use unix socket on platforms that
+                # support it?
+                port = yield available_tcp_port()
+                ep = yield self._config.create_socks_endpoint(self._reactor, str(port))
+            self._socks_endpoint = ep
+            returnValue(self._socks_endpoint)
+
+
+# XXX from magic-wormhole
+def _is_non_public_numeric_address(host):
+    # for numeric hostnames, skip RFC1918 addresses, since no Tor exit
+    # node will be able to reach those. Likewise ignore IPv6 addresses.
+    try:
+        a = ipaddress.ip_address(six.text_type(host))
+    except ValueError:
+        return False        # non-numeric, let Tor try it
+    if a.is_loopback or a.is_multicast or a.is_private or a.is_reserved \
+       or a.is_unspecified:
+        return True         # too weird, don't connect
+    return False
 
 
 class TorNotFound(RuntimeError):
