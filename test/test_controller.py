@@ -188,6 +188,24 @@ class LaunchTorTests(unittest.TestCase):
             yield tor.quit()
         self.assertTrue('no protocol instance' in str(ctx.exception))
 
+    @patch('txtorcon.controller.socks')
+    @defer.inlineCallbacks
+    def test_dns_resolve(self, fake_socks):
+        answer = object()
+        tor = Tor(Mock(), Mock())
+        fake_socks.resolve = Mock(return_value=defer.succeed(answer))
+        ans = yield tor.dns_resolve("meejah.ca")
+        self.assertEqual(ans, answer)
+
+    @patch('txtorcon.controller.socks')
+    @defer.inlineCallbacks
+    def test_dns_resolve_ptr(self, fake_socks):
+        answer = object()
+        tor = Tor(Mock(), Mock())
+        fake_socks.resolve_ptr = Mock(return_value=defer.succeed(answer))
+        ans = yield tor.dns_resolve_ptr("4.3.2.1")
+        self.assertEqual(ans, answer)
+
     @patch('txtorcon.controller.TorProcessProtocol')
     @defer.inlineCallbacks
     def test_successful_launch_tcp_control(self, tpp):
