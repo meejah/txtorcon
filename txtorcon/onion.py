@@ -135,8 +135,8 @@ class FilesystemHiddenService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(config, hsdir, ports, auth=None, progress=None):
-        fhs = FilesystemHiddenService(config, hsdir, ports, auth=auth)
+    def create(config, hsdir, ports, group_readable=False, auth=None, progress=None):
+        fhs = FilesystemHiddenService(config, hsdir, ports, group_readable=group_readable, auth=auth)
         config.HiddenServices.append(fhs)
         # we .save() down below, after setting HS_DESC listener
 
@@ -175,7 +175,7 @@ class FilesystemHiddenService(object):
         if not isinstance(ports, list):
             raise ValueError("'ports' must be a list of strings")
         self._config = config
-        self._dir = thedir
+        self._dir = os.path.realpath(thedir)
         from .torconfig import _ListWrapper
         self._ports = _ListWrapper(
             ports,

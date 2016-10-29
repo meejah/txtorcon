@@ -623,13 +623,14 @@ class Tor(object):
             private_key=private_key,
         )
 
-    def create_onion_disk_endpoint(self, port, hs_dir=None):
+    def create_onion_disk_endpoint(self, port, hs_dir=None, group_readable=False):
         return TCPHiddenServiceEndpoint(
             self._reactor, self.config, port,
             hidden_service_dir=hs_dir,
             local_port=None,
             ephemeral=False,
             private_key=None,
+            group_readable=int(group_readable),
         )
 
     # XXX or get_state()? and make there be always 0 or 1 states; cf. convo w/ Warner

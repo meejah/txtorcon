@@ -365,7 +365,8 @@ class TCPHiddenServiceEndpoint(object):
                  local_port=None,
                  stealth_auth=None,
                  ephemeral=None,  # will be set to True, unless hsdir spec'd
-                 private_key=None):
+                 private_key=None,
+                 group_readable=False):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
@@ -435,6 +436,7 @@ class TCPHiddenServiceEndpoint(object):
         self.hidden_service_dir = hidden_service_dir
         self.tcp_listening_port = None
         self.hiddenservice = None
+        self.group_readable = group_readable
         self.retries = 0
 
         '''for IProgressProvider to add_progress_listener'''
@@ -567,6 +569,7 @@ class TCPHiddenServiceEndpoint(object):
                     ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                     auth=authlines,
                     progress=self._tor_progress_update,
+                    group_readable=self.group_readable,
                 )
         else:
             for hs in self._config.HiddenServices:
