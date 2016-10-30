@@ -14,45 +14,13 @@ from socket import inet_aton, inet_ntoa
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.address import IPv4Address
-# from twisted.protocols import portforward
+from twisted.protocols import portforward
 from twisted.protocols import tls
 # from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
 from txtorcon.spaghetti import FSM, State, Transition
-
-
-# straight outta twisted, basically -- rest of portforward not in py3?
-# (FIXME look into that)
-class ProxyClient(Protocol):
-    noisy = True
-    peer = None
-
-    def setPeer(self, peer):
-        self.peer = peer
-
-    def connectionLost(self, reason):
-        if self.peer is not None:
-            self.peer.transport.loseConnection()
-            self.peer = None
-
-    def dataReceived(self, data):
-        self.peer.transport.write(data)
-
-    def connectionMade(self):
-        self.peer.setPeer(self)
-
-        # Wire this and the peer transport together to enable
-        # flow control (this stops connections from filling
-        # this proxy memory when one side produces data at a
-        # higher rate than the other can consume).
-        self.transport.registerProducer(self.peer.transport, True)
-        self.peer.transport.registerProducer(self.transport, True)
-
-        # We're connected, everybody can read to their hearts content.
-        self.peer.transport.resumeProducing()
-        return
 
 
 @inlineCallbacks
@@ -211,8 +179,7 @@ class _TorSocksProtocol(Protocol):
         sender = yield self._factory.buildProtocol(addr)
         # portforward.ProxyClient is going to call setPeer but this
         # probably doesn't have it...
-        # client_proxy = portforward.ProxyClient()
-        client_proxy = ProxyClient()
+        client_proxy = portforward.ProxyClient()
         sender.makeConnection(self.transport)
 
         setattr(sender, 'setPeer', lambda _: None)
