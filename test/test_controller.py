@@ -157,9 +157,10 @@ class LaunchTorTests(unittest.TestCase):
         except ValueError as e:
             self.assertTrue("provide IReactorCore" in str(e))
 
+    @patch('txtorcon.util.find_tor_binary', return_value='/bin/echo')
     @patch('txtorcon.controller.TorProcessProtocol')
     @defer.inlineCallbacks
-    def test_successful_launch(self, tpp):
+    def test_successful_launch(self, tpp, ftb):
         trans = FakeProcessTransport()
         reactor = FakeReactor(self, trans, lambda p: None, [1, 2, 3])
         config = TorConfig()
@@ -213,8 +214,9 @@ class LaunchTorTests(unittest.TestCase):
         ans = yield tor.dns_resolve_ptr("4.3.2.1")
         self.assertEqual(ans, answer)
 
+    @patch('txtorcon.util.find_tor_binary', return_value='/bin/echo')
     @defer.inlineCallbacks
-    def test_successful_launch_tcp_control(self):
+    def test_successful_launch_tcp_control(self, ftb):
         """
         full end-to-end test of a launch, faking things out at a "lower
         level" than most of the other tests
@@ -261,10 +263,11 @@ class LaunchTorTests(unittest.TestCase):
         tor = yield launch(reactor, _tor_config=config, control_port='1234', timeout=30)
         self.assertTrue(isinstance(tor, Tor))
 
+    @patch('txtorcon.util.find_tor_binary', return_value='/bin/echo')
     @patch('txtorcon.controller.sys')
     @patch('txtorcon.controller.TorProcessProtocol')
     @defer.inlineCallbacks
-    def test_successful_launch_tcp_control_non_unix(self, tpp, _sys):
+    def test_successful_launch_tcp_control_non_unix(self, tpp, _sys, ftb):
         _sys.platform = 'not darwin or linux2'
         trans = FakeProcessTransport()
         reactor = FakeReactor(self, trans, lambda p: None, [1, 2, 3])
@@ -445,8 +448,9 @@ class LaunchTorTests(unittest.TestCase):
                 'Something went horribly wrong!' in str(e)
             )
 
+    @patch('txtorcon.util.find_tor_binary', return_value='/bin/echo')
     @defer.inlineCallbacks
-    def test_tor_connection_fails(self):
+    def test_tor_connection_fails(self, ftb):
         trans = FakeProcessTransport()
 
         def on_protocol(proto):
