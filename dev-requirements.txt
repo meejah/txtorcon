@@ -13,4 +13,3 @@ pep8
 mock
 ipaddress>=1.0.16
 geoip
-https://github.com/john2x/solarized-pygment/archive/master.zip
