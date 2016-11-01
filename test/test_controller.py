@@ -127,8 +127,9 @@ class LaunchTorTests(unittest.TestCase):
         self.protocol.makeConnection(self.transport)
         self.clock = task.Clock()
 
+    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @defer.inlineCallbacks
-    def test_launch_fails(self):
+    def test_launch_fails(self, ftb):
         trans = FakeProcessTransport()
 
         def on_proto(protocol):
@@ -157,7 +158,7 @@ class LaunchTorTests(unittest.TestCase):
         except ValueError as e:
             self.assertTrue("provide IReactorCore" in str(e))
 
-    @patch('txtorcon.util.find_tor_binary', return_value='/bin/echo')
+    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @patch('txtorcon.controller.TorProcessProtocol')
     @defer.inlineCallbacks
     def test_successful_launch(self, tpp, ftb):
@@ -214,7 +215,7 @@ class LaunchTorTests(unittest.TestCase):
         ans = yield tor.dns_resolve_ptr("4.3.2.1")
         self.assertEqual(ans, answer)
 
-    @patch('txtorcon.util.find_tor_binary', return_value='/bin/echo')
+    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @defer.inlineCallbacks
     def test_successful_launch_tcp_control(self, ftb):
         """
@@ -263,7 +264,7 @@ class LaunchTorTests(unittest.TestCase):
         tor = yield launch(reactor, _tor_config=config, control_port='1234', timeout=30)
         self.assertTrue(isinstance(tor, Tor))
 
-    @patch('txtorcon.util.find_tor_binary', return_value='/bin/echo')
+    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @patch('txtorcon.controller.sys')
     @patch('txtorcon.controller.TorProcessProtocol')
     @defer.inlineCallbacks
@@ -448,7 +449,7 @@ class LaunchTorTests(unittest.TestCase):
                 'Something went horribly wrong!' in str(e)
             )
 
-    @patch('txtorcon.util.find_tor_binary', return_value='/bin/echo')
+    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @defer.inlineCallbacks
     def test_tor_connection_fails(self, ftb):
         trans = FakeProcessTransport()
