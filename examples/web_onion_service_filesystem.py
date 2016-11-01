@@ -14,19 +14,21 @@ def main(reactor):
     res = resource.Resource()
     res.putChild(b'', static.Data("<html>Hello, onion-service world!</html>", 'text/html'))
 
+    def on_progress(percent, tag, msg):
+        print('%03d: %s' % (percent, msg))
+
     # if we don't provide a control-endpoint, this will try some default ones
-    tor = yield txtorcon.connect(reactor)
+    # tor = yield txtorcon.connect(reactor, progress_updates=on_progress)
+    tor = yield txtorcon.launch(reactor, progress_updates=on_progress)
 
     # an endpoint that'll listen on port 80, and put the hostname +
     # private_key files in './hidden_service_dir'
     hs_dir = './hidden_service_dir'
     print("Creating hidden-service, keys in: {}".format(hs_dir))
-    ep = tor.create_onion_disk_endpoint(80, hs_dir=hs_dir)
+    ep = tor.create_onion_disk_endpoint(80, hs_dir=hs_dir, group_readable=True)
 
     print("Note: descriptor upload can take several minutes")
 
-    def on_progress(percent, tag, msg):
-        print('%03d: %s' % (percent, msg))
     txtorcon.IProgressProvider(ep).add_progress_listener(on_progress)
 
     port = yield ep.listen(server.Site(res))
