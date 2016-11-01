@@ -27,7 +27,7 @@ class SocksConnectTests(unittest.TestCase):
         protocol = Mock()
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
-        ep = socks.TorSocksEndpoint(socks_ep, 'meejah.ca', 443)
+        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443)
         proto = yield ep.connect(factory)
         self.assertEqual(proto, protocol)
 
@@ -48,7 +48,7 @@ class SocksConnectTests(unittest.TestCase):
         protocol = Mock()
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
-        ep = socks.TorSocksEndpoint(socks_ep, 'meejah.ca', 443, tls=True)
+        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
         proto = yield ep.connect(factory)
         self.assertEqual(proto, protocol)
 
@@ -90,7 +90,7 @@ class SocksResolveTests(unittest.TestCase):
             proto._done.callback("the dns answer")
             return proto
         socks_ep.connect = connect
-        hn = yield socks.resolve(socks_ep, 'meejah.ca')
+        hn = yield socks.resolve(socks_ep, b'meejah.ca')
         self.assertEqual(hn, "the dns answer")
 
     @defer.inlineCallbacks
@@ -109,5 +109,5 @@ class SocksResolveTests(unittest.TestCase):
             proto._done.callback("the dns answer")
             return proto
         socks_ep.connect = connect
-        hn = yield socks.resolve_ptr(socks_ep, 'meejah.ca')
+        hn = yield socks.resolve_ptr(socks_ep, b'meejah.ca')
         self.assertEqual(hn, "the dns answer")
