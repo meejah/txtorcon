@@ -26,10 +26,9 @@ def main(reactor):
     # None, which means "the first configured SOCKSPort"
     #agent = tor.web_agent(u'9999')
     agent = tor.web_agent()
-
-    uri = 'https://www.torproject.org'
+    uri = b'https://www.torproject.org'
     print("Downloading {}".format(uri))
-    resp = yield agent.request('GET', uri)
+    resp = yield agent.request(b'GET', uri)
 
     print("Response has {} bytes".format(resp.length))
     body = yield readBody(resp)
