@@ -182,7 +182,7 @@ documentation
 -------------
 
 It is likely that you will need to read at least some of
-`control-spec.txt <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
+`control-spec.txt <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_
 from the torspec git repository so you know what's being abstracted by
 this library.
 
