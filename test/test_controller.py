@@ -42,7 +42,7 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
         )
 
     def closeStdin(self):
-        self.process_protocol.outReceived("Bootstrap")
+        self.process_protocol.outReceived(b"Bootstrap")
         return
 
 
@@ -398,7 +398,7 @@ class LaunchTorTests(unittest.TestCase):
             return proto.post_bootstrap
 
         def on_protocol(proto):
-            proto.outReceived('Bootstrapped 100%\n')
+            proto.outReceived(b'Bootstrapped 100%\n')
 
         trans = FakeProcessTransportNeverBootstraps()
         trans.protocol = self.protocol
@@ -407,7 +407,7 @@ class LaunchTorTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeError) as ctx:
             d = launch(react, connection_creator=creator,
-                           timeout=timeout, tor_binary='/bin/echo')
+                       timeout=timeout, tor_binary='/bin/echo')
             # FakeReactor is a task.Clock subclass and +1 just to be sure
             react.advance(timeout + 1)
             yield d
@@ -455,7 +455,7 @@ class LaunchTorTests(unittest.TestCase):
         trans = FakeProcessTransport()
 
         def on_protocol(proto):
-            proto.outReceived('Bootstrapped 100%\n')
+            proto.outReceived(b'Bootstrapped 100%\n')
         reactor = FakeReactor(self, trans, on_protocol, [1, 2, 3])
 
         fails = ['one']
@@ -521,7 +521,7 @@ class LaunchTorTests(unittest.TestCase):
                 return proto.post_bootstrap
 
         def on_protocol(proto):
-            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived(b'Bootstrapped 90%\n')
 
         my_dir = tempfile.mkdtemp(prefix='tortmp')
         config.DataDirectory = my_dir
@@ -560,8 +560,8 @@ class LaunchTorTests(unittest.TestCase):
                 return proto.post_bootstrap
 
         def on_protocol(proto):
-            proto.outReceived('Bootstrapped 90%\n')
-            proto.outReceived('Bootstrapped 100%\n')
+            proto.outReceived(b'Bootstrapped 90%\n')
+            proto.outReceived(b'Bootstrapped 100%\n')
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
@@ -596,8 +596,8 @@ class LaunchTorTests(unittest.TestCase):
                 return proto.post_bootstrap
 
         def on_protocol(proto):
-            proto.outReceived('Bootstrapped 90%\n')
-            proto.outReceived('Bootstrapped 100%\n')
+            proto.outReceived(b'Bootstrapped 90%\n')
+            proto.outReceived(b'Bootstrapped 100%\n')
 
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
@@ -711,8 +711,8 @@ class LaunchTorTests(unittest.TestCase):
 
         def on_protocol(proto):
             self.process_proto = proto
-            proto.outReceived('Bootstrapped 90%\n')
-            proto.outReceived('Bootstrapped 100%\n')
+            proto.outReceived(b'Bootstrapped 90%\n')
+            proto.outReceived(b'Bootstrapped 100%\n')
 
         reactor = FakeReactor(self, trans, on_protocol, [9052,9999])
 
