@@ -46,7 +46,7 @@ doc: docs/*.rst
 	-cp dist/txtorcon-${VERSION}.tar.gz docs/_build/html
 
 coverage:
-	coverage run --source=txtorcon `which trial` test
+	coverage run --source=txtorcon -m pytest test
 #-coverage report --show-missing
 	-cuv graph
 
