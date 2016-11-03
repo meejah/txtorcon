@@ -17,13 +17,22 @@ def main(reactor):
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
 
-    # if we don't provide a control-endpoint, this will try some default ones
-    # tor = yield txtorcon.connect(reactor, progress_updates=on_progress)
+    # We are using launch() here instead of connect() because
+    # filesystem services are very picky about the permissions and
+    # ownership of the directories involved. If you *do* want to
+    # connect to e.g. a system service or Tor Browser Bundle, it's way
+    # more likely to work to use Ephemeral services
+
     tor = yield txtorcon.launch(reactor, progress_updates=on_progress)
 
     # an endpoint that'll listen on port 80, and put the hostname +
     # private_key files in './hidden_service_dir'
+
+    # NOTE: you should put these somewhere you've thought about more
+    # and made proper permissions for the parent directory, etc. A
+    # good choice for a system-wide Tor is /var/lib/tor/<whatever>
     hs_dir = './hidden_service_dir'
+
     print("Creating hidden-service, keys in: {}".format(hs_dir))
     ep = tor.create_onion_disk_endpoint(80, hs_dir=hs_dir, group_readable=True)
 
