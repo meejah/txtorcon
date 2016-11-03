@@ -317,6 +317,10 @@ def _await_descriptor_upload(config, onion, progress):
             # we only need ONE successful upload to happen for the
             # HS to be reachable.
             # unused? addr = args[1]
+
+            # XXX FIXME I think tor is sending the onion-address
+            # properly with these now, so we can use those
+            # (i.e. instead of matching to "attempted_uploads")
             if args[3] in attempted_uploads:
                 if progress:
                     progress(
@@ -391,6 +395,7 @@ def _add_ephemeral_service(config, onion, progress):
     flags = []
     if onion._detach:
         flags.append('Detach')
+    # XXX from below, make "private_key=THROW_AWAY" the way to do this?
     if onion._discard_key:
         flags.append('DiscardPK')
     if flags:
@@ -422,6 +427,7 @@ class EphemeralHiddenService(object):
     @defer.inlineCallbacks
     def create(cls, config, ports,
                detach=False,
+    # XXX from below, make "private_key=THROW_AWAY" the way to do this?
                discard_key=False,
                private_key=None,
                progress=None):

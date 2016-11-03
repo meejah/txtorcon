@@ -581,6 +581,7 @@ class TorControlProtocol(LineOnlyReceiver):
     def connectionMade(self):
         "Protocol API"
         txtorlog.msg('got connection, authenticating')
+        # XXX this Deferred is just being dropped on the floor
         d = self.protocolinfo()
         d.addCallback(self._do_authenticate)
         d.addErrback(self._auth_failed)
