@@ -1,7 +1,6 @@
 import os
 import re
 import functools
-import tempfile
 
 from zope.interface import Interface, Attribute, implementer
 
@@ -25,6 +24,15 @@ from txtorcon.util import find_keywords, version_at_least
 # "create_detached_onion" "create_permanent_onion??" etc...?
 # --> yes.
 # --> also: direct people to Tor() thing (doesn't exist in this branch tho)
+
+
+## TODO
+
+# - naming:
+#   FilesystemOnionService, OnionService vs. FilesystemHiddenService,
+#   EphemeralHiddenService, etc. (can the latter just be aliases for
+#   the former??)
+#
 
 
 class HiddenServiceClientAuth(object):
@@ -53,10 +61,10 @@ class IOnionService(Interface):
     (which is a subclass of this).
 
     If this object happens to represent an authenticated service, it
-    shall implement IAuthenticatedOnionService ONLY (not this
-    interface too; IAuthenticatedOnionService returns *lists* of
+    shall implement IAuthenticatedOnionClients ONLY (not this
+    interface too; IAuthenticatedOnionClients returns *lists* of
     IAuthenticatedOnionClient instances which are a subclass of
-    IOnionService; see :class:`txtorcon.IAuthenticatedOnionService`).
+    IOnionService; see :class:`txtorcon.IAuthenticatedOnionClients`).
 
     For non-authenticated services, there will be one of these per
     directory (i.e. HiddenServiceDir) if using non-ephemeral services,
@@ -80,12 +88,7 @@ class IFilesystemOnionService(IOnionService):
     group_readable = Attribute("set HiddenServiceGroupReadable if true")
 
 
-# XXX bad name? why isn't it something collection-releated
-# e.g. IOnionServiceCollection ... or whatever bikeshed color
-# just having "OnionSerivce" in this class name smells real bad, because it doesn't implement IOnionService
-# maybe: IOnionClients? IOnionClientCollection?
-# class IAuthenticatedOnionService(Interface):
-class IOnionClients(Interface):
+class IAuthenticatedOnionClients(Interface):
     """
     This encapsulates both 'stealth' and 'basic' authenticated Onion
     (nee Hidden) services, whether ephemeral or not. Note that Tor
@@ -115,7 +118,7 @@ class IOnionClients(Interface):
 
 class IOnionClient(IOnionService):
     """
-    A single client from a 'parent' IAuthenticatedOnionService. We do
+    A single client from a 'parent' IAuthenticatedOnionClients. We do
     this because hidden services can have different URLs and/or
     auth_tokens on a per-client basis. So, the only way to access
     *anything* from an authenticated onion service is to list the
@@ -124,19 +127,19 @@ class IOnionClient(IOnionService):
     """
     auth_token = Attribute('Some secret bytes')
     name = Attribute('str')  # XXX required? probably.
-    parent = Attribute('the IOnionClients instance who owns me')
+    parent = Attribute('the IAuthenticatedOnionClients instance who owns me')
 
 
 @implementer(IOnionService)
 @implementer(IFilesystemOnionService)
-class FilesystemHiddenService(object):
+class FilesystemOnionService(object):
     """
     """
 
     @staticmethod
     @defer.inlineCallbacks
     def create(config, hsdir, ports, group_readable=False, auth=None, progress=None):
-        fhs = FilesystemHiddenService(config, hsdir, ports, group_readable=group_readable, auth=auth)
+        fhs = FilesystemOnionService(config, hsdir, ports, group_readable=group_readable, auth=auth)
         config.HiddenServices.append(fhs)
         # we .save() down below, after setting HS_DESC listener
 
@@ -276,7 +279,7 @@ class FilesystemHiddenService(object):
         pass  # XXX FIXME
 
 
-# XXX: probably better/nicer to make "EphemeralHiddenService" object
+# XXX: probably better/nicer to make "EphemeralOnionService" object
 # "just" a data-container; it needs to list-wrapping voodoo etc like
 # the others.
 #   --> so only way to "add" it to a Tor is via a factory-method (like
@@ -365,7 +368,7 @@ def _add_ephemeral_service(config, onion, progress):
 
     :param config: a TorConfig instance
 
-    :param onion: an EphemeralHiddenService instance
+    :param onion: an EphemeralOnionService instance
 
     :param progress: a callable taking 3 arguments (percent, tag,
         description) that is called some number of times to tell you of
@@ -421,18 +424,20 @@ def _add_ephemeral_service(config, onion, progress):
     yield uploaded
 
 
+## okay, square this with FilesystemHiddenService -- There Can Be Only
+## One. (but the other should stay as an alias ...)
 @implementer(IOnionService)
-class EphemeralHiddenService(object):
+class EphemeralOnionService(object):
     @classmethod
     @defer.inlineCallbacks
     def create(cls, config, ports,
                detach=False,
-    # XXX from below, make "private_key=THROW_AWAY" the way to do this?
+               ## XXX from below, make "private_key=THROW_AWAY" the way to do this?
                discard_key=False,
                private_key=None,
                progress=None):
         """
-        returns a new EphemeralHiddenService after adding it to the
+        returns a new EphemeralOnionService after adding it to the
         provided config and ensuring at least one of its descriptors
         is uploaded.
 
@@ -442,7 +447,7 @@ class EphemeralHiddenService(object):
         if private_key and discard_key:
             raise ValueError("Don't pass a 'private_key' and ask to 'discard_key'")
 
-        onion = EphemeralHiddenService(
+        onion = EphemeralOnionService(
             config, ports,
             hostname=None,
             private_key=private_key,
@@ -458,7 +463,7 @@ class EphemeralHiddenService(object):
                  detach=False, discard_key=False):
         """
         Users should create instances of this class by using the async
-        method :meth:`txtorcon.EphemeralHiddenService.create`
+        method :meth:`txtorcon.EphemeralOnionService.create`
         """
         # XXX do we need version?
         self._config = config
@@ -487,7 +492,7 @@ class EphemeralHiddenService(object):
                 raise ValueError(
                     "Port '{}' external port isn't an int".format(port)
                 )
-            if not ':' in internal:
+            if ':' not in internal:
                 raise ValueError(
                     "Port '{}' local address should be 'IP:port'".format(port)
                 )
@@ -561,10 +566,7 @@ class AuthenticatedHiddenServiceClient(object):
         return self._parent.group_readable
 
 
-# XXX this can't provide IOnionService or IFilesystemOnionService at all!
-#@implementer(IFilesystemOnionService)
-#@implementer(IAuthenticatedOnionService)
-@implementer(IOnionClients)
+@implementer(IAuthenticatedOnionClients)
 class AuthenticatedHiddenService(object):
     """
     Corresponds to::
@@ -616,7 +618,7 @@ class AuthenticatedHiddenService(object):
 
     def client_names(self):
         """
-        IAuthenticatedOnionService API
+        IAuthenticatedOnionClients API
         """
         if self._clients is None:
             self._parse_hostname()
@@ -624,7 +626,7 @@ class AuthenticatedHiddenService(object):
 
     def get_client(self, name):
         """
-        IAuthenticatedOnionService API
+        IAuthenticatedOnionClients API
         """
         if self._clients is None:
             self._parse_hostname()
@@ -880,14 +882,19 @@ def create_ephemeral_onion_service(
 
     # XXX this is untested and un-called -- can we just make use of
     # whatever other APIs there are? and/or make this one call those?
-    
+
     # validate args
     detach = bool(detach)  # False by default
-    discard_key = bool(discard_key)  # False by default
+    discard_key = private_key is THROW_AWAY
 
-    d = EphemeralHiddenService.create(
+    d = EphemeralOnionService.create(
         torconfig, ports,
         detach=detach,
         discard_key=discard_key,
     )
     return d
+
+
+## aliases, that we should deprecate
+FilesystemHiddenService = FilesystemOnionService ## XXX
+EphemeralHiddenService = EphemeralOnionService ## XXX

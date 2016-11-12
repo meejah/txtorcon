@@ -48,7 +48,10 @@ from twisted.python.util import FancyEqMixin
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
-from .onion import FilesystemHiddenService, EphemeralHiddenService
+from .onion import FilesystemOnionService, EphemeralOnionService
+FilesystemHiddenService = FilesystemOnionService ## XXX
+EphemeralHiddenService = EphemeralOnionService ## XXX
+
 from .torconfig import TorConfig
 
 

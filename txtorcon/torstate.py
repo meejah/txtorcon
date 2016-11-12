@@ -781,7 +781,7 @@ class TorState(object):
             try:
                 res = yield circ_d
                 used_attacher = attacher
-            except Exception as e:
+            except Exception:
                 attacher.attach_stream_failure(stream, Failure())
                 res = None
 
