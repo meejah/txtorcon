@@ -26,16 +26,22 @@ from txtorcon.torstate import TorState
 from txtorcon.torstate import build_tor_connection
 from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
-from txtorcon.onion import EphemeralHiddenService
-from txtorcon.onion import FilesystemHiddenService
-from txtorcon.onion import AuthenticatedHiddenService
+
 # from txtorcon.onion import create_onion_service
 # from txtorcon.onion import launch_tor # XXX backwards-compat: (put back??)
 
 from txtorcon.onion import IOnionService
-#from txtorcon.onion import IAuthenticatedOnionService
+from txtorcon.onion import IAuthenticatedOnionClients
+from txtorcon.onion import IOnionClient
 from txtorcon.onion import OnionService
-#from txtorcon.onion import FilesystemOnionService
+from txtorcon.onion import FilesystemOnionService
+
+# these are the 'existing'-ish API I think? We could just make these
+# (to-be-deprecated) aliases to the Onion versions ..
+from txtorcon.onion import EphemeralHiddenService
+from txtorcon.onion import FilesystemHiddenService
+from txtorcon.onion import AuthenticatedHiddenService
+
 
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
@@ -43,6 +49,7 @@ from txtorcon.endpoints import TorOnionAddress
 from txtorcon.endpoints import TorOnionListeningPort
 from txtorcon.endpoints import TCPHiddenServiceEndpoint
 from txtorcon.endpoints import TCPHiddenServiceEndpointParser
+# should these be more like TorTCPClientEndpoint ?
 from txtorcon.endpoints import TorClientEndpoint
 from txtorcon.endpoints import TorClientEndpointStringParser
 from txtorcon.endpoints import IHiddenService, IProgressProvider
@@ -95,8 +102,10 @@ __all__ = [
     "IHiddenService",
 
     # new onion + ephemeral API
-    "IOnionService", "IAuthenticatedOnionService",
-    "EphemeralHiddenService",
+    "IOnionService",
+    "IAuthenticatedOnionClients", "IOnionClient",
+    "OnionService",
+    "FilesystemOnionService",
 
     # web stuff
     "agent_for_socks_port",
