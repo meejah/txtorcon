@@ -289,12 +289,23 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     CircuitBuildTimedOutError will be raised unless we
     receive a circuit build result within the `timeout` duration.
     """
+    timed_circuit = []
     d = tor_state.build_circuit(path, using_guards)
-    reactor.callLater(timeout, d.cancel)
 
+    def get_circuit(c):
+        timed_circuit.append(c)
+        return c
     def trap_cancel(f):
         f.trap(defer.CancelledError)
-        return Failure(CircuitBuildTimedOutError("circuit build timed out"))
-    d.addCallback(lambda circuit: circuit.when_built())
+        if len(timed_circuit) > 0:
+            d2 = timed_circuit[0].close()
+        else:
+            d2 = defer.succeed(None)
+        d2.addCallback(lambda ign: Failure(CircuitBuildTimedOutError("circuit build timed out")))
+        return d2
+
+    d.addCallback(get_circuit)
+    reactor.callLater(timeout, d.cancel)
+    d.addCallback(lambda c: c.when_built())
     d.addErrback(trap_cancel)
     return d
