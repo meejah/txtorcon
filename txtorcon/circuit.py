@@ -290,7 +290,7 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     receive a circuit build result within the `timeout` duration.
     """
     timed_circuit = []
-    d = tor_state.build_circuit(path, using_guards)
+    d = tor_state.build_circuit(routers=path, using_guards=using_guards)
 
     def get_circuit(c):
         timed_circuit.append(c)
