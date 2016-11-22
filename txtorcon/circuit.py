@@ -338,9 +338,7 @@ class Circuit(object):
         if self.state == 'BUILT':
             for x in self.listeners:
                 x.circuit_built(self)
-            for d in self._when_built:
-                d.callback(self)
-            self._when_built = []
+            self._notify_when_built()
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:
@@ -362,6 +360,14 @@ class Circuit(object):
             self.maybe_call_closing_deferred()
             for x in self.listeners:
                 x.circuit_failed(self, **flags)
+
+    def _notify_when_built(self, err=None):
+        for d in self._when_built:
+            if err is None:
+                d.callback(self)
+            else:
+                d.errback(Failure(err))
+        self._when_built = []
 
     def maybe_call_closing_deferred(self):
         """
