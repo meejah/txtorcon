@@ -1169,7 +1169,7 @@ s Fast Guard Running Stable Valid
         timeout = 10
         clock = task.Clock()
 
-        d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=True)
+        d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=False)
         clock.advance(10)
 
         def check_for_timeout_error(f):
