@@ -1169,12 +1169,48 @@ s Fast Guard Running Stable Valid
         timeout = 10
         clock = task.Clock()
 
-        d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=True)
+        d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=False)
         clock.advance(10)
 
         def check_for_timeout_error(f):
             self.assertTrue(isinstance(f.type(), CircuitBuildTimedOutError))
         d.addErrback(check_for_timeout_error)
+        return d
+
+    def test_build_circuit_timeout_after_progress(self):
+        """
+        Similar to above but we timeout after Tor has ack'd our
+        circuit-creation attempt, but before reaching BUILT.
+        """
+        class FakeRouter:
+            def __init__(self, i):
+                self.id_hex = i
+                self.flags = []
+
+        class FakeCircuit(Circuit):
+            def close(self):
+                return defer.succeed(None)
+
+        path = []
+        for x in range(3):
+            path.append(FakeRouter("$%040d" % x))
+
+        def fake_queue(cmd):
+            self.assertTrue(cmd.startswith('EXTENDCIRCUIT 0'))
+            return defer.succeed("EXTENDED 1234")
+
+        queue_command = patch.object(self.protocol, 'queue_command', fake_queue)
+        circuit_factory = patch.object(self.state, 'circuit_factory', FakeCircuit)
+        with queue_command, circuit_factory:
+            timeout = 10
+            clock = task.Clock()
+
+            d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=False)
+            clock.advance(timeout + 1)
+
+            def check_for_timeout_error(f):
+                self.assertTrue(isinstance(f.type(), CircuitBuildTimedOutError))
+            d.addErrback(check_for_timeout_error)
         return d
 
     def test_build_circuit_not_timedout(self):
