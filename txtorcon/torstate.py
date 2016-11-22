@@ -882,9 +882,11 @@ class TorState(object):
         from NS and NEWCONSENSUS events.
         """
 
-        self.all_routers = set()
-        for line in data.split('\n'):
-            self._network_status_parser.process(line)
+        # XXX why are we getting this with 0 data?
+        if len(data):
+            self.all_routers = set()
+            for line in data.split('\n'):
+                self._network_status_parser.process(line)
 
         txtorlog.msg(len(self.routers_by_name), "named routers found.")
         # remove any names we added that turned out to have dups
