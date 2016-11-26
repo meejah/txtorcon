@@ -138,6 +138,11 @@ class AuthenticationTests(unittest.TestCase):
             self.send(b'250 OK')
         self.assertTrue("didn't issue a command" in str(ctx.exception))
 
+        # we wish to ignore the error about no authentication methods
+        # available that we'll get from the boottstrap phase
+        self.protocol.post_bootstrap.addErrback(lambda _: None)
+        return self.protocol.post_bootstrap
+
     def test_authenticate_null(self):
         self.protocol.makeConnection(self.transport)
         self.assertEqual(self.transport.value(), b'PROTOCOLINFO 1\r\n')
@@ -199,7 +204,12 @@ class AuthenticationTests(unittest.TestCase):
         self.send(b'250-VERSION Tor="0.2.2.34"')
         self.send(b'250 OK')
 
+        # we wish to ignore the error about no authentication methods
+        # available that we'll get from the boottstrap phase
+        self.protocol.post_bootstrap.addErrback(lambda _: None)
+
         self.assertTrue(self.auth_failed)
+        return self.protocol.post_bootstrap
 
 
 class DisconnectionTests(unittest.TestCase):
@@ -406,6 +416,9 @@ OK''' % unexisting_file)
             self.assertTrue(False)
         except RuntimeError:
             pass
+        # we wish to ignore the error about no authentication methods
+        # available that we'll get from the boottstrap phase
+        self.protocol.post_bootstrap.addErrback(lambda _: None)
 
     def test_authenticate_unexisting_safecookie_file(self):
         unexisting_file = __file__ + "-unexisting"
@@ -417,6 +430,9 @@ OK'''.format(unexisting_file))
             self.assertTrue(False)
         except RuntimeError:
             pass
+        # we wish to ignore the error about no authentication methods
+        # available that we'll get from the boottstrap phase
+        self.protocol.post_bootstrap.addErrback(lambda _: None)
 
     def test_authenticate_dont_send_cookiefile(self):
         try:
@@ -427,6 +443,9 @@ OK''')
             self.assertTrue(False)
         except RuntimeError:
             pass
+        # we wish to ignore the error about no authentication methods
+        # available that we'll get from the boottstrap phase
+        self.protocol.post_bootstrap.addErrback(lambda _: None)
 
     def test_authenticate_password_when_cookie_unavailable(self):
         unexisting_file = __file__ + "-unexisting"
