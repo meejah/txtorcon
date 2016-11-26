@@ -885,7 +885,7 @@ def create_ephemeral_onion_service(
 
     # validate args
     detach = bool(detach)  # False by default
-    discard_key = private_key is THROW_AWAY
+    discard_key = private_key is _THROW_AWAY
 
     d = EphemeralOnionService.create(
         torconfig, ports,

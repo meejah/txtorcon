@@ -606,7 +606,7 @@ class FakeReactorTcp(object):#FakeReactor):
         self.transport.protocol = self.protocol
 
         def blam():
-            self.protocol.outReceived("Bootstrap")
+            self.protocol.outReceived(b"Bootstrap")
         self.transport.closeStdin = blam
         self.protocol.makeConnection(self.transport)
         self.test = test

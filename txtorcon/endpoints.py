@@ -48,11 +48,11 @@ from twisted.python.util import FancyEqMixin
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
+from .torconfig import TorConfig
 from .onion import FilesystemOnionService, EphemeralOnionService
 FilesystemHiddenService = FilesystemOnionService ## XXX
 EphemeralHiddenService = EphemeralOnionService ## XXX
 
-from .torconfig import TorConfig
 
 
 _global_tor = None  # instance of txtorcon.controller.Tor
@@ -908,7 +908,7 @@ class TorClientEndpoint(object):
             self._socks_endpoint, self.host, self.port, self._tls,
         )
 
-    ## this is the one from the "original" release-1.x branch, i think?
+    # this is the one from the "original" release-1.x branch, i think?
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
         last_error = None

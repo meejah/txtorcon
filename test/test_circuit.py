@@ -408,10 +408,18 @@ class CircuitTests(unittest.TestCase):
         state.circuit_new(circuit)
         d = circuit.when_built()
 
-        state.circuit_closed(circuit)
+        called = []
+        def err(f):
+            called.append(f)
+            return None
+        d.addErrback(err)
 
-        self.assertTrue(d.called)
-        self.assertTrue(isinstance(d.result, Failure))
+        state.circuit_closed(circuit, REASON='testing')
+
+        self.assertEqual(1, len(called))
+        self.assertTrue(isinstance(called[0], Failure))
+        self.assertTrue('testing' in str(called[0].value))
+        return d
 
     def test_stream_success(self):
         tor = FakeTorController()
