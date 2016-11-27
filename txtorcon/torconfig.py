@@ -649,6 +649,7 @@ class LineList(TorConfigType):
         return _ListWrapper(
             obj, functools.partial(instance.mark_unsaved, name))
 
+
 config_types = [Boolean, Boolean_Auto, LineList, Integer, SignedInteger, Port,
                 TimeInterval, TimeMsecInterval,
                 DataSize, Float, Time, CommaList, String, LineList, Filename,
