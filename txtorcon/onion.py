@@ -846,6 +846,7 @@ _THROW_AWAY = object()
 def create_authenticated_ephemeral_onion_service():
     pass
 
+
 # XXX i don't think i've ever used this?
 @defer.inlineCallbacks
 def create_ephemeral_onion_service(
@@ -896,5 +897,5 @@ def create_ephemeral_onion_service(
 
 
 ## aliases, that we should deprecate
-FilesystemHiddenService = FilesystemOnionService ## XXX
-EphemeralHiddenService = EphemeralOnionService ## XXX
+FilesystemHiddenService = FilesystemOnionService  # XXX
+EphemeralHiddenService = EphemeralOnionService  # XXX

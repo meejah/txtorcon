@@ -50,9 +50,8 @@ from zope.interface import Interface, Attribute
 
 from .torconfig import TorConfig
 from .onion import FilesystemOnionService, EphemeralOnionService
-FilesystemHiddenService = FilesystemOnionService ## XXX
-EphemeralHiddenService = EphemeralOnionService ## XXX
-
+FilesystemHiddenService = FilesystemOnionService  # XXX
+EphemeralHiddenService = EphemeralOnionService  # XXX
 
 
 _global_tor = None  # instance of txtorcon.controller.Tor

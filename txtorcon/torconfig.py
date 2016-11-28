@@ -157,6 +157,7 @@ class LineList(TorConfigType):
         return _ListWrapper(
             obj, functools.partial(instance.mark_unsaved, name))
 
+
 config_types = [Boolean, Boolean_Auto, LineList, Integer, SignedInteger, Port,
                 TimeInterval, TimeMsecInterval,
                 DataSize, Float, Time, CommaList, String, LineList, Filename,
@@ -205,6 +206,7 @@ class _ListWrapper(list):
 
     def __repr__(self):
         return '_ListWrapper' + super(_ListWrapper, self).__repr__()
+
 
 if six.PY2:
     setattr(_ListWrapper, '__setslice__', _wrapture(list.__setslice__))
