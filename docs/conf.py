@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.join(os.path.split(__file__)[0], '_themes'))
 
 #keep_warnings = True
 pygments_style = 'monokai'
-pygments_style = 'solarized_dark256'
+#pygments_style = 'solarized_dark256'
 
 ## trying to set t his somewhere...
 autodoc_member_order = 'bysource'
@@ -38,14 +38,15 @@ autoclass_content = 'both'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.todo',
-              'sphinx.ext.autosummary',
-              'sphinx.ext.todo',
-              'sphinx.ext.coverage',
-              'repoze.sphinx.autointerface',
-              'apilinks_sphinxext'
-              ]
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.todo',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    'repoze.sphinx.autointerface',
+    'apilinks_sphinxext',
+]
 
 todo_include_todos = True
 
