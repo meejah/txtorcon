@@ -172,6 +172,13 @@ Using pip this would be::
     pip install Twisted ipaddr pygeoip
     pip install GeoIP Sphinx repoze.sphinx.autointerface coverage  # for development
 
+.. note::
+    Don't forget to install the GeoIP dev headers if you are developing:
+
+    .. code:: bash
+
+        apt-get install libgeoip-dev
+
 or::
 
     pip install -r requirements.txt
