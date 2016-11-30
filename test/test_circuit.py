@@ -349,10 +349,11 @@ class CircuitTests(unittest.TestCase):
         self.assertTrue(circuit._closing_deferred is not None)
 
         # if we try to close it again (*before* the actual close has
-        # succeeded!) we should also still be waiting (possibly on the
-        # very same Deferred, but that's an implementation detail).
+        # succeeded!) we should also still be waiting.
         d1 = circuit.close()
         self.assertTrue(not d1.called)
+        # ...and this Deferred should *not* be the same as the first
+        self.assertTrue(d0 is not d1)
 
         # simulate that Tor has really closed the circuit for us
         # this should cause our Deferred to callback
