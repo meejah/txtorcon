@@ -272,8 +272,15 @@ class Circuit(object):
         if you included IfUnused.
         """
 
+        # we're already closed; nothing to do
         if self.state == 'CLOSED':
             return defer.succeed(None)
+
+        # someone already called close() but we're not closed yet
+        if self._closing_deferred:
+            return self._closing_deferred
+
+        # actually-close the circuit
         self._closing_deferred = defer.Deferred()
 
         def close_command_is_queued(*args):

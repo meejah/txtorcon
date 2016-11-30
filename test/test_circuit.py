@@ -339,26 +339,37 @@ class CircuitTests(unittest.TestCase):
         circuit.update('123 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL'.split())
 
         self.assertEqual(3, len(circuit.path))
-        d = circuit.close()
+        d0 = circuit.close()
         # we already pretended that Tor answered "OK" to the
         # CLOSECIRCUIT call (see close_circuit() in FakeTorController
         # above) however the circuit isn't "really" closed yet...
-        self.assertTrue(not d.called)
+        self.assertTrue(not d0.called)
         # not unit-test-y? shouldn't probably delve into internals I
         # suppose...
         self.assertTrue(circuit._closing_deferred is not None)
+
+        # if we try to close it again (*before* the actual close has
+        # succeeded!) we should also still be waiting (possibly on the
+        # very same Deferred, but that's an implementation detail).
+        d1 = circuit.close()
+        self.assertTrue(not d1.called)
 
         # simulate that Tor has really closed the circuit for us
         # this should cause our Deferred to callback
         circuit.update('123 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=FINISHED'.split())
 
+        # if we close *after* the close has succeeded, then we should
+        # immediately "succeed"
+        d2 = circuit.close()
+        self.assertTrue(d1.called)
+
         # confirm that our circuit callback has been triggered already
         self.assertRaises(
             defer.AlreadyCalledError,
-            d.callback,
+            d0.callback,
             "should have been called already"
         )
-        return d
+        return defer.DeferredList([d0, d1, d2])
 
     def test_is_built(self):
         tor = FakeTorController()
