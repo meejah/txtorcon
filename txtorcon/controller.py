@@ -664,7 +664,7 @@ class Tor(object):
             except RuntimeError:
                 # should we try to use unix socket on platforms that
                 # support it?
-                port = yield available_tcp_port()
+                port = yield available_tcp_port(self._reactor)
                 ep = yield self._config.create_socks_endpoint(self._reactor, str(port))
             self._socks_endpoint = ep
             returnValue(self._socks_endpoint)

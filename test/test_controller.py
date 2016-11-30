@@ -208,6 +208,35 @@ class LaunchTorTests(unittest.TestCase):
 
     @patch('txtorcon.controller.socks')
     @defer.inlineCallbacks
+    def test_dns_resolve_existing_socks(self, fake_socks):
+        answer = object()
+        tor = Tor(Mock(), Mock())
+        fake_socks.resolve = Mock(return_value=defer.succeed(answer))
+        ans0 = yield tor.dns_resolve("meejah.ca")
+
+        # do it again to exercise the _default_socks_port() case when
+        # we already got the default
+        fake_socks.resolve = Mock(return_value=defer.succeed(answer))
+        ans1 = yield tor.dns_resolve("meejah.ca")
+        self.assertEqual(ans0, answer)
+        self.assertEqual(ans1, answer)
+
+    @patch('txtorcon.controller.socks')
+    @defer.inlineCallbacks
+    def test_dns_resolve_no_configured_socks(self, fake_socks):
+        answer = object()
+        tor = Tor(Mock(), Mock())
+
+        def boom(*args, **kw):
+            raise RuntimeError("no socks")
+        tor._config.socks_endpoint = Mock(side_effect=boom)
+        fake_socks.resolve = Mock(return_value=defer.succeed(answer))
+        ans = yield tor.dns_resolve("meejah.ca")
+
+        self.assertEqual(ans, answer)
+
+    @patch('txtorcon.controller.socks')
+    @defer.inlineCallbacks
     def test_dns_resolve_ptr(self, fake_socks):
         answer = object()
         tor = Tor(Mock(), Mock())
