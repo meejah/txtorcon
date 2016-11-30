@@ -278,7 +278,13 @@ class Circuit(object):
 
         # someone already called close() but we're not closed yet
         if self._closing_deferred:
-            return self._closing_deferred
+            d = defer.Deferred()
+
+            def closed(arg):
+                d.callback(arg)
+                return arg
+            self._closing_deferred.addBoth(closed)
+            return d
 
         # actually-close the circuit
         self._closing_deferred = defer.Deferred()
