@@ -126,6 +126,32 @@ class EndpointTests(unittest.TestCase):
             # should be an error
             pass
 
+    def test_inconsistent_options_two_auths(self):
+        with self.assertRaises(ValueError) as ctx:
+            foo = TCPHiddenServiceEndpoint(
+                Mock(), Mock(), 80,
+                stealth_auth=['alice', 'bob'],
+                ephemeral=True,
+            )
+        self.assertTrue("don't support stealth_auth", str(ctx.exception))
+
+    def test_inconsistent_options_dir_and_ephemeral(self):
+        with self.assertRaises(ValueError) as ctx:
+            foo = TCPHiddenServiceEndpoint(
+                Mock(), Mock(), 80,
+                ephemeral=True,
+                hidden_service_dir="/not/nothing",
+            )
+        self.assertTrue("incompatible with", str(ctx.exception))
+
+    def test_inconsistent_options_priv_key_no_ephemeral(self):
+        with self.assertRaises(ValueError) as ctx:
+            foo = TCPHiddenServiceEndpoint(
+                Mock(), Mock(), 80,
+                hidden_service_dir="/not/nothing",
+                private_key="RSA1024:deadbeef",
+            )
+        self.assertTrue("incompatible with", str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_endpoint_properties(self):

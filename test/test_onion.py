@@ -1,3 +1,4 @@
+import os
 
 from zope.interface.verify import verifyClass, verifyObject
 from zope.interface import implementer
@@ -8,6 +9,7 @@ from twisted.trial import unittest
 from twisted.internet import defer
 
 from txtorcon.onion import EphemeralHiddenService
+from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import IOnionService  # FIXME interfaces.py
 
 
@@ -24,6 +26,21 @@ class OnionInterfaceTests(unittest.TestCase):
             EphemeralHiddenService(Mock(), [])
         )
 
+
+class FilesystemServiceTests(unittest.TestCase):
+
+    def test_invalid_ports(self):
+        with self.assertRaises(ValueError) as ctx:
+            FilesystemOnionService(Mock(), '/dev/null', (123, 456))
+        self.assertTrue("'ports' must be" in str(ctx.exception))
+
+    def test_load_private_key(self):
+        d = self.mktemp()
+        os.mkdir(d)
+        with self.assertRaises(IOError) as ctx:
+            o = FilesystemOnionService(Mock(), d, [123])
+            o.private_key
+        self.assertIn("No such file or", str(ctx.exception))
 
 class EphemeralServiceTests(unittest.TestCase):
 

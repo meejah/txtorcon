@@ -351,17 +351,6 @@ class TCPHiddenServiceEndpoint(object):
         progress.target = r._tor_progress_update
         return r
 
-    @classmethod
-    def create(
-            cls, reactor, config, public_port,
-            hidden_service_dir=None,
-            local_port=None,
-            control_port=None,
-            ephemeral=None,
-            private_key=None,
-            progress=None):
-        pass
-
     def __init__(self, reactor, config, public_port,
                  hidden_service_dir=None,
                  local_port=None,

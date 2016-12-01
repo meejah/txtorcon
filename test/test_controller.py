@@ -9,10 +9,12 @@ from twisted.test import proto_helpers
 
 from txtorcon import Tor
 from txtorcon import TorConfig
+from txtorcon import TorState
 from txtorcon import TorControlProtocol
 from txtorcon import TorProcessProtocol
 from txtorcon import launch
 from txtorcon import connect
+from txtorcon import TCPHiddenServiceEndpoint
 from txtorcon.controller import _is_non_public_numeric_address
 
 from zope.interface import implementer, directlyProvides
@@ -126,6 +128,11 @@ class LaunchTorTests(unittest.TestCase):
         self.transport = proto_helpers.StringTransport()
         self.protocol.makeConnection(self.transport)
         self.clock = task.Clock()
+
+    def test_ctor_timeout_no_ireactortime(self):
+        with self.assertRaises(RuntimeError) as ctx:
+            tpp = TorProcessProtocol(lambda: None, timeout=42)
+        self.assertTrue("Must supply an IReactorTime" in str(ctx.exception))
 
     @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @defer.inlineCallbacks
@@ -287,7 +294,7 @@ class LaunchTorTests(unittest.TestCase):
             proto.makeConnection(Mock())
             return proto
         reactor.connectTCP = connect_tcp
-        
+
         config = TorConfig()
 
         tor = yield launch(reactor, _tor_config=config, control_port='1234', timeout=30)
@@ -965,6 +972,16 @@ class TorAttributeTests(unittest.TestCase):
             x = self.tor.process
         self.assertTrue('not launched by us' in str(ctx.exception))
 
+    def test_when_connected_already(self):
+        tpp = TorProcessProtocol(lambda: None)
+        # hmmmmmph, delving into internal state "because way shorter
+        # test"
+        tpp._connected_listeners = None
+        d = tpp.when_connected()
+
+        self.assertTrue(d.called)
+        self.assertEqual(d.result, tpp)
+
     def test_process_exists(self):
         gold = object()
         self.tor._process_protocol = gold
@@ -1032,3 +1049,31 @@ class IteratorTests(unittest.TestCase):
         self.assertEqual(['FooBar', 'Quux'], keys)
 
 
+class FactoryFunctionTests(unittest.TestCase):
+    """
+    Mostly simple 'does not blow up' sanity checks of simple
+    factory-functions.
+    """
+
+    def test_create_onion(self):
+        tor = Tor(Mock(), Mock())
+        ep = tor.create_onion_endpoint(80)
+        self.assertTrue(isinstance(ep, TCPHiddenServiceEndpoint))
+
+    def test_create_onion_filesystem(self):
+        tor = Tor(Mock(), Mock())
+        ep = tor.create_onion_disk_endpoint(80, hs_dir='/tmp/foo')
+        self.assertTrue(isinstance(ep, TCPHiddenServiceEndpoint))
+
+    @defer.inlineCallbacks
+    def test_create_state(self):
+        tor = Tor(Mock(), Mock())
+        with patch('txtorcon.controller.TorState') as ts:
+            ts.post_boostrap = defer.succeed('boom')
+            state = yield tor.create_state()
+        # no assertions; we just testing this doesn't raise
+
+    def test_str(self):
+        tor = Tor(Mock(), Mock())
+        str(tor)
+        # just testing the __str__ method doesn't explode
