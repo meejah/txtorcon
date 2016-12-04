@@ -186,7 +186,7 @@ Ubuntu system, this should work (as root):
 
   # apt-get install -y python-setuptools python-twisted python-ipaddress graphviz tor
   # echo "for development:"
-  # apt-get install -y python-sphinx python-repoze.sphinx.autointerface python-coverage
+  # apt-get install -y python-sphinx python-repoze.sphinx.autointerface python-coverage libgeoip-dev
 
 .. END_INSTALL
 
