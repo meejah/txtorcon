@@ -981,7 +981,9 @@ class TorClientEndpointStringParser(object):
 
         ep = None
         if socksPort is not None:
-            ep = TCP4ClientEndpoint(reactor, socksHostname, socksPort)
+            # Tor can speak SOCKS over unix, too, but this doesn't let
+            # us pass one ...
+            ep = TCP4ClientEndpoint(reactor, socksHostname, int(socksPort))
         return TorClientEndpoint(
             reactor,
             host, port,

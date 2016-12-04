@@ -909,6 +909,11 @@ class TestTorClientEndpoint(unittest.TestCase):
         # XXX actually, why was this set to 9050 before? should do the guessing-thing...
         self.assertEqual(ep._socks_endpoint, None)
 
+    def test_parser_socks_port(self):
+        ep = clientFromString(None, 'tor:host=timaq4ygg2iegci7.onion:port=80:socksPort=1234')
+        self.assertEqual(ep._socks_endpoint._port, 1234)
+
+
     def test_parser_user_password(self):
         epstring = 'tor:host=torproject.org:port=443' + \
                    ':socksUsername=foo:socksPassword=bar'
