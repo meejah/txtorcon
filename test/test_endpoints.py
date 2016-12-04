@@ -521,6 +521,10 @@ class EndpointLaunchTests(unittest.TestCase):
         repr(addr)
         hash(addr)
 
+    def test_onion_address_key(self):
+        addr = TorOnionAddress(80, EphemeralHiddenServiceClient("foo.onion", "privatekey"))
+        self.assertEqual(addr.onion_key, "privatekey")
+
     def test_onion_parse_unix_socket(self):
         r = Mock()
         ep = serverFromString(r, "onion:80:controlPort=/tmp/foo")
