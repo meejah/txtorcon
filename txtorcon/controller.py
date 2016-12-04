@@ -853,10 +853,9 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             # hmmm, we don't "do" anything with this Deferred?
             # (should it be connected to the when_connected
             # Deferreds?)
-            print("saw bootstrap, doing connect", self.connection_creator)
             d = self.connection_creator()
-            d.addCallback(self.tor_connected)
-            d.addErrback(self.tor_connection_failed)
+            d.addCallback(self._tor_connected)
+            d.addErrback(self._tor_connection_failed)
 # XXX 'should' be able to improve the error-handling by directly tying
 # this Deferred into the notifications -- BUT we might try again, so
 # we need to know "have we given up -- had an error" and only in that
@@ -933,7 +932,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
     # the below are all callbacks
 
-    def tor_connection_failed(self, failure):
+    def _tor_connection_failed(self, failure):
         # FIXME more robust error-handling please, like a timeout so
         # we don't just wait forever after 100% bootstrapped (that
         # is, we're ignoring these errors, but shouldn't do so after
@@ -951,7 +950,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         self.attempted_connect = False
         return None
 
-    def status_client(self, arg):
+    def _status_client(self, arg):
         args = shlex.split(arg)
         if args[1] != 'BOOTSTRAP':
             return
@@ -969,17 +968,18 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             self._maybe_notify_connected(self)
 
     @inlineCallbacks
-    def tor_connected(self, proto):
+    def _tor_connected(self, proto):
         txtorlog.msg("tor_connected %s" % proto)
 
         self.tor_protocol = proto
+        print("ASDFASDF", self.tor_protocol, self.transport)
         self.tor_protocol.is_owned = self.transport.pid
 
         yield self.tor_protocol.post_bootstrap
         txtorlog.msg("Protocol is bootstrapped")
-        yield self.tor_protocol.add_event_listener('STATUS_CLIENT', self.status_client)
+        yield self.tor_protocol.add_event_listener('STATUS_CLIENT', self._status_client)
         yield self.tor_protocol.queue_command('TAKEOWNERSHIP')
         yield self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
         if self.config is not None and self.config.protocol is None:
             yield self.config.attach_protocol(proto)
-        returnValue(self)
+        returnValue(self)  # XXX or "proto"?
