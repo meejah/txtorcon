@@ -35,8 +35,8 @@ Release Checklist
      * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}.tar.gz
   * copy signatures back to build machine, in dist/
   * double-check that they validate
-     * gpg --verify dist/txtorcon-${VERSION}-py2-none-any.whl
-     * gpg --verify dist/txtorcon-${VERSION}.tar.gz
+     * gpg --verify dist/txtorcon-${VERSION}-py2-none-any.whl.asc
+     * gpg --verify dist/txtorcon-${VERSION}.tar.gz.asc
 
 * generate sha256sum for each:
      sha256sum dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2-none-any.whl
@@ -50,7 +50,7 @@ Release Checklist
    * copy-paste release notes, un-rst-format them
    * include above sha256sums
    * clear-sign the announcement
-   * gpg --armor --clearsign -u meejah@meejah.ca path/to/release-announcement-X-Y-Z
+   * gpg --armor --clearsign -u meejah@meejah.ca release-announce-${VERSION}
    * Example boilerplate:
 
            I'm [adjective] to announce txtorcon 0.10.0. This adds
@@ -99,17 +99,20 @@ Release Checklist
 * download both distributions + signatures from hidden-service
    * verify sigs
    * verify sha256sums versus announcement text
-   * verify tag (git tag -v v0.9.2) on machine other than signing-machine
+   * verify tag (git tag --verify v${VERSION}) on machine other than signing-machine
+   * run: ./scripts/download-release-onion.sh
 
 * upload release
    * to PyPI: "make release" (which uses twine so this isn't the same step as "sign the release")
       * make sure BOTH the .tar.gz and .tar.gz.asc (ditto for .whl) are in the dist/ directory first!!)
       * ls dist/txtorcon-${VERSION}*
       * note this depends on a ~/.pypirc file with [server-login] section containing "username:" and "password:"
-   * git push --tags github master
+   * git push origin master
+   * git push origin v${VERSION}
    * to github: use web-upload interface to upload the 4 files (both dists, both signature)
 
 * make announcement
    * post to tor-dev@ the clear-signed release announcement
    * post to twisted-python@ the clear-signed release announcement
+   * tweet as @txtorcon 
    * tell #tor-dev??
