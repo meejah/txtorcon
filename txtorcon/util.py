@@ -227,7 +227,7 @@ def compare_via_hash(x, y):
             hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
 
 
-class NetLocation:
+class NetLocation(object):
     """
     Represents the location of an IP address, either city or country
     level resolution depending on what GeoIP database was loaded. If

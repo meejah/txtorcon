@@ -42,6 +42,16 @@ class FilesystemServiceTests(unittest.TestCase):
             o.private_key
         self.assertIn("No such file or", str(ctx.exception))
 
+    def test_load_private_key_for_realz(self):
+        d = self.mktemp()
+        os.mkdir(d)
+        with open(os.path.join(d, 'private_key'), 'w') as f:
+            f.write('was it worth it?')
+
+        fos = FilesystemOnionService(Mock(), d, [123])
+        self.assertEqual("was it worth it?", fos.private_key)
+
+
 class EphemeralServiceTests(unittest.TestCase):
 
     @defer.inlineCallbacks
@@ -141,6 +151,79 @@ class EphemeralServiceTests(unittest.TestCase):
             self.assertTrue(
                 "Expected ADD_ONION to return" in str(e)
             )
+
+    @defer.inlineCallbacks
+    def test_remove_service(self):
+
+        class FakeProtocol(object):
+            listener = None
+            commands = []
+
+            def queue_command(s, cmd):
+                s.commands.append(cmd)
+                return "OK"
+
+            def add_event_listener(s, evt, listener):
+                self.assertTrue(evt == 'HS_DESC')
+                s.listener = listener
+
+            def remove_event_listener(s, evt, listener):
+                self.assertTrue(evt == 'HS_DESC')
+                self.assertTrue(listener == s.listener)
+                s.listener = None
+
+        class FakeConfig(object):
+            EphemeralOnionServices = []
+            tor_protocol = FakeProtocol()
+
+        config = FakeConfig()
+
+        hs = yield EphemeralHiddenService(
+            config,
+            ['80 127.0.0.1:80'],
+            # we test it works with no leading "RSA1024:" too
+            private_key="RSA1024:deadbeefdeadbeef",
+        )
+        hs._hostname = 'deadbeef.onion'
+        yield hs.remove()
+        self.assertTrue("DEL_ONION deadbeef" in config.tor_protocol.commands[-1])
+
+    @defer.inlineCallbacks
+    def test_remove_service_but_fails(self):
+
+        class FakeProtocol(object):
+            listener = None
+            commands = []
+
+            def queue_command(s, cmd):
+                s.commands.append(cmd)
+                return "something went wrong"
+
+            def add_event_listener(s, evt, listener):
+                self.assertTrue(evt == 'HS_DESC')
+                s.listener = listener
+
+            def remove_event_listener(s, evt, listener):
+                self.assertTrue(evt == 'HS_DESC')
+                self.assertTrue(listener == s.listener)
+                s.listener = None
+
+        class FakeConfig(object):
+            EphemeralOnionServices = []
+            tor_protocol = FakeProtocol()
+
+        config = FakeConfig()
+
+        hs = yield EphemeralHiddenService(
+            config,
+            ['80 127.0.0.1:80'],
+            # we test it works with no leading "RSA1024:" too
+            private_key="RSA1024:deadbeefdeadbeef",
+        )
+        hs._hostname = 'deadbeef.onion'
+        with self.assertRaises(RuntimeError) as ctx:
+            yield hs.remove()
+        self.assertTrue("Failed to remove service" in str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_uploads_fail(self):

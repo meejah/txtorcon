@@ -1,8 +1,10 @@
+from mock import Mock, patch
 from datetime import datetime
 from twisted.trial import unittest
 from twisted.internet import defer
 
 from txtorcon.router import Router, hexIdFromHash, hashFromHexId
+import txtorcon.util
 
 
 class FakeController(object):
@@ -142,6 +144,63 @@ class RouterTests(unittest.TestCase):
                       "24051", "24052")
 
         self.assertEqual(router.location.countrycode, 'ZZ')
+
+    @defer.inlineCallbacks
+    def test_get_location_cached(self):
+        controller = Mock()
+        router = Router(controller)
+        router._location = 'cached'
+        loc = yield router.get_location()
+        self.assertEqual(loc, 'cached')
+
+    @defer.inlineCallbacks
+    def test_get_location_unknown(self):
+        controller = Mock()
+        router = Router(controller)
+        router.ip = 'unknown'
+        loc = yield router.get_location()
+        self.assertEqual(loc.ip, None)
+
+    @defer.inlineCallbacks
+    def test_get_location_something(self):
+        with patch.object(txtorcon.util, 'city') as city:
+            city.record_by_addr = Mock(
+                return_value=dict(
+                    city=None,
+                    country_code='foo',
+                    latitude=None,
+                    longitude=None,
+                    region_name=None,
+                )
+            )
+
+            controller = Mock()
+            router = Router(controller)
+            router.ip = '8.8.8.8'
+            loc = yield router.get_location()
+            self.assertEqual('foo', loc.countrycode)
+
+    @defer.inlineCallbacks
+    def test_get_location_ip_to_country(self):
+        with patch.object(txtorcon.util, 'city') as city:
+            city.record_by_addr = Mock(
+                return_value=dict(
+                    city=None,
+                    country_code=None,
+                    latitude=None,
+                    longitude=None,
+                    region_name=None,
+                )
+            )
+
+            controller = Mock()
+            controller.get_info_raw = Mock(
+                return_value=defer.succeed("ip-to-country/8.8.8.8=FOO")
+            )
+            router = Router(controller)
+            router.ip = '8.8.8.8'
+            loc = yield router.get_location()
+            self.assertEqual('FOO', loc.countrycode)
 
     def test_policy_error(self):
         router = Router(object())
