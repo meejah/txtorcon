@@ -31,6 +31,7 @@ from txtorcon import TorConfig
 from txtorcon import launch
 from txtorcon import TCPHiddenServiceEndpoint
 from txtorcon import TorClientEndpoint
+from txtorcon import TorClientEndpointStringParser
 from txtorcon import TorNotFound
 from txtorcon import TCPHiddenServiceEndpointParser
 from txtorcon import IProgressProvider
@@ -909,10 +910,14 @@ class TestTorClientEndpoint(unittest.TestCase):
         # XXX actually, why was this set to 9050 before? should do the guessing-thing...
         self.assertEqual(ep._socks_endpoint, None)
 
+    @patch('txtorcon.endpoints._TX_CLIENT_ENDPOINT_REACTOR', False)
+    def test_parser_basic_old_twisted(self):
+        with patch.object(TorClientEndpointStringParser, '_parseClient'):
+            clientFromString(None, 'tor:host=timaq4ygg2iegci7.onion:port=80')
+
     def test_parser_socks_port(self):
         ep = clientFromString(None, 'tor:host=timaq4ygg2iegci7.onion:port=80:socksPort=1234')
         self.assertEqual(ep._socks_endpoint._port, 1234)
-
 
     def test_parser_user_password(self):
         epstring = 'tor:host=torproject.org:port=443' + \
