@@ -134,40 +134,61 @@ class LaunchTorTests(unittest.TestCase):
             tpp = TorProcessProtocol(lambda: None, timeout=42)
         self.assertTrue("Must supply an IReactorTime" in str(ctx.exception))
 
+    def _fake_queue(self, cmd):
+        if cmd.split()[0] == 'PROTOCOLINFO':
+            return defer.succeed('AUTH METHODS=NULL')
+        elif cmd == 'GETINFO config/names':
+            return defer.succeed('config/names=')
+        elif cmd == 'GETINFO signal/names':
+            return defer.succeed('signal/names=')
+        elif cmd == 'GETINFO version':
+            return defer.succeed('version=0.1.2.3')
+        elif cmd == 'GETINFO events/names':
+            return defer.succeed('events/names=STATUS_CLIENT')
+        return defer.succeed(None)
+
+    def _fake_event_listener(self, what, cb):
+        if what == 'STATUS_CLIENT':
+            # should ignore non-BOOTSTRAP messages
+            cb('STATUS_CLIENT not-bootstrap')
+            cb('STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=bar')
+        return defer.succeed(None)
+
     @defer.inlineCallbacks
     def test_launch_tor_unix_controlport(self):
-        config = TorConfig()
-        config.ControlPort = "unix:/dev/null"
         trans = FakeProcessTransport()
         trans.protocol = self.protocol
+        self.protocol.post_bootstrap.callback(self.protocol)
+        self.protocol._set_valid_events("STATUS_CLIENT")
+        self.protocol.add_event_listener = self._fake_event_listener
+        self.protocol.queue_command = self._fake_queue
         fakeout = StringIO()
         fakeerr = StringIO()
-
-        def connector(proto, trans):
-            proto._set_valid_events('STATUS_CLIENT')
-            proto.makeConnection(trans)
-            proto.post_bootstrap.callback(proto)
-            return proto.post_bootstrap
 
         def on_protocol(proto):
             proto.outReceived('Bootstrapped 90%\n')
 
-        reactor = FakeReactor(self, trans, on_protocol)
+        # launch() auto-discovers a SOCKS port
+        reactor = FakeReactor(self, trans, on_protocol, [9050])
         reactor.connectUNIX = Mock()
-        try:
-            yield launch_tor(
-                config,
+        with patch('txtorcon.controller.UNIXClientEndpoint') as uce:
+            endpoint = Mock()
+            endpoint.connect = Mock(return_value=defer.succeed(self.protocol))
+            uce.return_value = endpoint
+
+            yield launch(
                 reactor,
+                control_port="unix:/dev/null",
                 tor_binary='/bin/echo',
                 stdout=fakeout,
                 stderr=fakeerr
             )
-        except Exception:
-            pass
-        self.assertTrue(reactor.connectUNIX.called)
+
+        self.assertTrue(endpoint.connect.called)
+        self.assertTrue(uce.called)
         self.assertEqual(
             '/dev/null',
-            reactor.connectUNIX.mock_calls[0][1][0],
+            uce.mock_calls[0][1][1],
         )
 
 
@@ -306,28 +327,8 @@ class LaunchTorTests(unittest.TestCase):
             factory.doStart()
             proto = factory.buildProtocol(addr)
             tpp = proto._wrappedProtocol
-
-            def fake_event_listener(what, cb):
-                if what == 'STATUS_CLIENT':
-                    # should ignore non-BOOTSTRAP messages
-                    cb('STATUS_CLIENT not-bootstrap')
-                    cb('STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=bar')
-                return defer.succeed(None)
-            tpp.add_event_listener = fake_event_listener
-
-            def fake_queue(cmd):
-                if cmd.split()[0] == 'PROTOCOLINFO':
-                    return defer.succeed('AUTH METHODS=NULL')
-                elif cmd == 'GETINFO config/names':
-                    return defer.succeed('config/names=')
-                elif cmd == 'GETINFO signal/names':
-                    return defer.succeed('signal/names=')
-                elif cmd == 'GETINFO version':
-                    return defer.succeed('version=0.1.2.3')
-                elif cmd == 'GETINFO events/names':
-                    return defer.succeed('events/names=STATUS_CLIENT')
-                return defer.succeed(None)
-            tpp.queue_command = fake_queue
+            tpp.add_event_listener = self._fake_event_listener
+            tpp.queue_command = self._fake_queue
             proto.makeConnection(Mock())
             return proto
         reactor.connectTCP = connect_tcp
