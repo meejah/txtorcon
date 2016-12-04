@@ -224,6 +224,7 @@ class EndpointTests(unittest.TestCase):
             port.startListening()
             str(port)
             port.tor_config
+            port.onion_service
             # system_tor should be connecting to a running one,
             # *not* launching a new one.
             self.assertFalse(launch_mock.called)
@@ -414,6 +415,14 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.public_port, 88)
         self.assertEqual(ep.local_port, 1234)
         self.assertEqual(ep.hidden_service_dir, '/foo/bar')
+
+    def test_parse_via_plugin_hsdir_and_key(self):
+        with self.assertRaises(ValueError) as ctx:
+            serverFromString(
+                self.reactor,
+                'onion:88:hiddenServiceDir=/dev/null:privateKey=deadbeef'
+            )
+        self.assertTrue('Only one of' in str(ctx.exception))
 
     def test_parse_user_path(self):
         # this makes sure we expand users and symlinks in
@@ -862,6 +871,12 @@ class TestTorClientEndpoint(unittest.TestCase):
         endpoint = TorClientEndpoint(reactor, '', 0, socks_endpoint=tor_endpoint)
         d = endpoint.connect(None)
         return self.assertFailure(d, ConnectionRefusedError)
+
+    def test_client_tls_but_no_tls(self):
+        with patch('txtorcon.endpoints._HAVE_TLS', False):
+            with self.assertRaises(ValueError) as ctx:
+                TorClientEndpoint(Mock(), 'localhost', 1234, tls=True)
+        self.assertTrue("don't have TLS" in str(ctx.exception))
 
     def test_client_connection_failed_user_password(self):
         """
