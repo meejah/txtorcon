@@ -972,7 +972,6 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         txtorlog.msg("tor_connected %s" % proto)
 
         self.tor_protocol = proto
-        print("ASDFASDF", self.tor_protocol, self.transport)
         self.tor_protocol.is_owned = self.transport.pid
 
         yield self.tor_protocol.post_bootstrap

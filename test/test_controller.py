@@ -162,11 +162,9 @@ class LaunchTorTests(unittest.TestCase):
         self.protocol._set_valid_events("STATUS_CLIENT")
         self.protocol.add_event_listener = self._fake_event_listener
         self.protocol.queue_command = self._fake_queue
-        fakeout = StringIO()
-        fakeerr = StringIO()
 
         def on_protocol(proto):
-            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived(b'Bootstrapped 90%\n')
 
         # launch() auto-discovers a SOCKS port
         reactor = FakeReactor(self, trans, on_protocol, [9050])
@@ -179,9 +177,7 @@ class LaunchTorTests(unittest.TestCase):
             yield launch(
                 reactor,
                 control_port="unix:/dev/null",
-                tor_binary='/bin/echo',
-                stdout=fakeout,
-                stderr=fakeerr
+                tor_binary="/bin/echo",
             )
 
         self.assertTrue(endpoint.connect.called)
@@ -804,7 +800,7 @@ class LaunchTorTests(unittest.TestCase):
         errs = self.flushLoggedErrors()
         self.assertEqual(1, len(errs))
         self.assertTrue("Tor was killed" in str(errs[0]))
-        
+
 
 
 def create_endpoint(*args, **kw):
