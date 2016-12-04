@@ -239,7 +239,8 @@ def launch(reactor,
 
     # NOTE well, that if we don't pass "-f" then Tor will merrily load
     # its default torrc, and apply our options over top... :/ should
-    # file a bug probably?
+    # file a bug probably? --no-defaults or something maybe? (does
+    # --defaults-torrc - or something work?)
     config_args = ['-f', '/dev/null/non-existant-on-purpose', '--ignore-missing-torrc']
 
     # ...now add all our config options on the command-line. This
