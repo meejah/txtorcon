@@ -12,13 +12,24 @@
 # launch a Tor instance using it. cool!
 
 from __future__ import print_function
-from twisted.internet import reactor, endpoints
-from twisted.web import server, static
+from twisted.internet import endpoints, defer
+from twisted.internet.task import react
+from twisted.web import server, static, resource
 import txtorcon
 
-res = static.Data("<html>Hello, hidden-service world!</html>", 'text/html')
-ep = endpoints.serverFromString(reactor, "onion:80")
-txtorcon.IProgressProvider(ep).add_progress_listener(lambda p, tag, msg: print(msg))
-ep.listen(server.Site(res)).addCallback(lambda port: print(str(port.getHost()))).addErrback(print)
 
-reactor.run()
+@defer.inlineCallbacks
+def main(reactor):
+    root = resource.Resource()
+    root.putChild('', static.Data(
+        "<html>Hello, hidden-service world!</html>",
+        'text/html')
+    )
+    ep = endpoints.serverFromString(reactor, "onion:80")
+    txtorcon.IProgressProvider(ep).add_progress_listener(
+        lambda percent, tag, msg: print(msg)
+    )
+    port = yield ep.listen(server.Site(root))
+    print("Our address {}".format(port))
+    yield defer.Deferred()  # wait forever; this Deferred never fires
+react(main)
