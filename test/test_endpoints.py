@@ -126,6 +126,20 @@ class EndpointTests(unittest.TestCase):
             # should be an error
             pass
 
+    @defer.inlineCallbacks
+    def test_illegal_torconfig_instance(self):
+
+        class NotTorConfig(object):
+            "Definitely not a TorConfig"
+
+        with self.assertRaises(RuntimeError) as ctx:
+            ep = TCPHiddenServiceEndpoint(
+                Mock(), NotTorConfig(), 80,
+            )
+            yield ep.listen(Mock())
+        self.assertTrue('TorConfig instance' in str(ctx.exception))
+
+
     def test_inconsistent_options_two_auths(self):
         with self.assertRaises(ValueError) as ctx:
             foo = TCPHiddenServiceEndpoint(
@@ -133,7 +147,7 @@ class EndpointTests(unittest.TestCase):
                 stealth_auth=['alice', 'bob'],
                 ephemeral=True,
             )
-        self.assertTrue("don't support stealth_auth", str(ctx.exception))
+        self.assertTrue("don't support stealth_auth" in str(ctx.exception))
 
     def test_inconsistent_options_dir_and_ephemeral(self):
         with self.assertRaises(ValueError) as ctx:
