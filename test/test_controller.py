@@ -180,6 +180,8 @@ class LaunchTorTests(unittest.TestCase):
                 reactor,
                 control_port="unix:/dev/null",
                 tor_binary="/bin/echo",
+                stdout=Mock(),
+                stderr=Mock(),
             )
 
         self.assertTrue(endpoint.connect.called)
