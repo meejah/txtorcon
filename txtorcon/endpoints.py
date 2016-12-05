@@ -17,10 +17,10 @@ from txtorcon.socks import TorSocksEndpoint
 # ...WithReactor class, but in Twisted prior to 14, there is no such
 # class (and the parse() doesn't provide a 'reactor' argument).
 try:
-    from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
+    from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor  # noqa
     _TX_CLIENT_ENDPOINT_REACTOR = True
 except ImportError:
-    from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor
+    from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor  # noqa
     _TX_CLIENT_ENDPOINT_REACTOR = False
 
 try:
