@@ -64,7 +64,7 @@ from txtorcon.interface import (
 
 try:
     from txtorcon.web import agent_for_socks_port
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     def agent_for_socks_port(*args, **kw):
         raise RuntimeError("Couldn't import {}, so no web-agent available".format(e))
 

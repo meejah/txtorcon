@@ -19,7 +19,7 @@ from txtorcon.socks import TorSocksEndpoint
 try:
     from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor  # noqa
     _TX_CLIENT_ENDPOINT_REACTOR = True
-except ImportError:
+except ImportError:  # pragma: no cover
     from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor  # noqa
     _TX_CLIENT_ENDPOINT_REACTOR = False
 
@@ -27,7 +27,7 @@ try:
     from twisted.internet.ssl import optionsForClientTLS
     from twisted.protocols import tls
     _HAVE_TLS = True
-except ImportError:
+except ImportError:  # pragma: no cover
     _HAVE_TLS = False
 
 from twisted.internet import defer, error
