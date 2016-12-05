@@ -14,6 +14,7 @@ from socket import inet_aton, inet_ntoa
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.address import IPv4Address
+from twisted.python.failure import Failure
 from twisted.protocols import portforward
 from twisted.protocols import tls
 # from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -21,6 +22,10 @@ from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
 from txtorcon.spaghetti import FSM, State, Transition
+
+
+class SocksError(Exception):
+    pass
 
 
 @inlineCallbacks
@@ -151,14 +156,16 @@ class _TorSocksProtocol(Protocol):
         }
         assert socks_method in methods
         self._socks_method = methods[socks_method]
+        if socks_method == 'CONNECT':
+            assert factory is not None
         self._factory = factory
         if self._socks_method == 0x01:
             self._done.addCallback(self._make_connection)
-            if not self._factory:
-                raise RuntimeError("factory required for CONNECT")
+            # for CONNECT, we must have a factory
+            assert self._factory is not None
         else:
-            if self._factory:
-                raise RuntimeError("factory not allowed for RESOLVE/RESOLVE_PTR")
+            # for RESOLVE/RESOLVE_PTR, we should not have a factory
+            assert self._factory is None
 
         self._sender = None
         self._sent_version_state = sent_version = State("SENT_VERSION")
@@ -196,10 +203,15 @@ class _TorSocksProtocol(Protocol):
 
     def _error(self, msg):
         reply = struct.unpack('B', msg[1:2])[0]
-        # surely we can do better here!
-        print("error; aborting SOCKS:", self.error_code_to_string[reply])
+        if self._done and not self._done.called:
+            self._done.errback(
+                Failure(
+                    SocksError(self.error_code_to_string[reply])
+                )
+            )
         self.transport.loseConnection()
-        # connectionLost will errback on self._done
+        # connectionLost will (try to) errback on self._done, but we
+        # do it above so that we can pass the actual error-message
 
     def _relay_data(self, data):
         # print("relay {} bytes".format(len(data)))
