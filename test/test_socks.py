@@ -9,6 +9,7 @@ from twisted.internet.address import IPv4Address
 from txtorcon import socks
 
 
+# XXX should re-write (at LEAST) these to use Twisted's IOPump
 class SocksConnectTests(unittest.TestCase):
 
     @defer.inlineCallbacks

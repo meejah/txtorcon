@@ -534,12 +534,9 @@ class LaunchTorTests(unittest.TestCase):
         fails = ['one']
 
         def connect_tcp(host, port, factory, timeout=0, bindAddress=None):
-            print("connect tcp", host, port)
             if len(fails):
-                print("failing")
                 fails.pop()
                 raise error.CannotListenError('on-purpose-error', None, None)
-            print("doing the real stuff")
 
             addr = Mock()
             factory.doStart()
