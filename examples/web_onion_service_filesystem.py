@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-from twisted.internet import defer, task, endpoints
+from twisted.internet import defer, task
 from twisted.web import server, static, resource
 
 import txtorcon
-from txtorcon.util import default_control_port
 
 
 @defer.inlineCallbacks
 def main(reactor):
     # a simple Web site; could be any other listening service of course
     res = resource.Resource()
-    res.putChild(b'', static.Data("<html>Hello, onion-service world!</html>", 'text/html'))
+    res.putChild(
+        b'',
+        static.Data("<html>Hello, onion-service world!</html>", 'text/html')
+    )
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
@@ -44,6 +46,7 @@ def main(reactor):
     print("Private key:\n{}".format(port.getHost().onion_key))
     print("Site listening: {}".format(port.getHost()))
     yield defer.Deferred()  # wait forever
+
 
 if __name__ == '__main__':
     task.react(main)

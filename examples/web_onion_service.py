@@ -28,7 +28,10 @@ def main(reactor):
     )
     ep = tor.create_onion_endpoint(80)
     res = resource.Resource()
-    res.putChild(b'', static.Data("<html>Hello, onion-service world!</html>", 'text/html'))
+    res.putChild(
+        b'',
+        static.Data("<html>Hello, onion-service world!</html>", 'text/html'),
+    )
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
@@ -38,6 +41,7 @@ def main(reactor):
     print("Site listening: {}".format(port.getHost()))
     print("Private key:\n{}".format(port.getHost().onion_key))
     yield defer.Deferred()  # wait forever
+
 
 if __name__ == '__main__':
     task.react(main)

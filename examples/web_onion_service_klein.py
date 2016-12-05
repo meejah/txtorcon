@@ -38,7 +38,10 @@ def home(request):
 
 @defer.inlineCallbacks
 def main(reactor):
-    ep = endpoints.serverFromString(reactor, "onion:80:controlPort={port}".format(port=default_control_port()))
+    ep = endpoints.serverFromString(
+        reactor,
+        "onion:80:controlPort={port}".format(port=default_control_port())
+    )
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))

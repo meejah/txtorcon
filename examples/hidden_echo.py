@@ -21,12 +21,16 @@ class EchoFactory(protocol.Factory):
     def buildProtocol(self, addr):
         return Echo()
 
+
 print("Starting Tor, and onion service (can take a few minutes)")
 d = endpoints.serverFromString(reactor, "onion:1234").listen(EchoFactory())
+
 
 def listening(port):
     # port is a Twisted IListeningPort
     print("Listening on: {} port 1234".format(port.getHost()))
     print("Try: torsocks telnet {} 1234".format(port.getHost().onion_uri))
+
+
 d.addCallback(listening)
 reactor.run()

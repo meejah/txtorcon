@@ -18,6 +18,7 @@ class Simple(resource.Resource):
     def render_GET(self, request):
         return "<html>Hello, world! I'm a hidden service!</html>"
 
+
 site = server.Site(Simple())
 
 
@@ -34,6 +35,7 @@ def setup_complete(port):
 def progress(percent, tag, message):
     bar = int(percent / 10)
     print '[%s%s] %s' % ('#' * bar, '.' * (10 - bar), message)
+
 
 hs_endpoint1 = serverFromString(reactor, "onion:80")
 hs_endpoint2 = serverFromString(reactor, "onion:80")

@@ -55,7 +55,8 @@ class PortFilterAttacher:
 
 @inlineCallbacks
 def main(reactor):
-    tor = yield txtorcon.connect(reactor, clientFromString(reactor, "tcp:localhost:9051"))
+    control_ep = clientFromString(reactor, "tcp:localhost:9051")
+    tor = yield txtorcon.connect(reactor, control_ep)
     print("Connected to a Tor version={version}".format(
         version=tor.protocol.version,
     ))
@@ -66,5 +67,6 @@ def main(reactor):
     for s in state.streams.values():
         print("  ", s)
     yield Deferred()
+
 
 react(main)

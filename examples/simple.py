@@ -25,5 +25,6 @@ def main(reactor):
     print("curl --socks5-hostname localhost:{} https://check.torproject.org/api/ip".format(tor.config.SOCKSPort))
     yield Deferred()  # wait forever
 
+
 if __name__ == '__main__':
     react(main)

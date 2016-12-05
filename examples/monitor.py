@@ -21,4 +21,6 @@ def main(reactor):
     is_current = yield tor.protocol.get_info('status/version/current')
     version = yield tor.protocol.get_info('version')
     print("Version '{}', is_current={}".format(version, is_current))
+
+
 task.react(main)

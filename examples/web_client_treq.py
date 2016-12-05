@@ -5,9 +5,7 @@ from __future__ import print_function
 
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import react
-from twisted.internet.endpoints import UNIXClientEndpoint, TCP4ClientEndpoint
-from twisted.web.iweb import IAgentEndpointFactory
-from zope.interface import implementer
+from twisted.internet.endpoints import TCP4ClientEndpoint
 
 import txtorcon
 from txtorcon.util import default_control_port
@@ -34,6 +32,11 @@ def main(reactor):
 
     print("Retrieving {} bytes".format(resp.length))
     data = yield resp.text()
-    print("Got {} bytes:\n{}\n[...]{}".format(len(data), data[:120], data[-120:]))
+    print("Got {} bytes:\n{}\n[...]{}".format(
+        len(data),
+        data[:120],
+        data[-120:],
+    ))
+
 
 react(main)

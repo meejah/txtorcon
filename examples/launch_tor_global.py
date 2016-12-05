@@ -11,7 +11,6 @@ import txtorcon
 from twisted.web.client import readBody
 from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks
-from twisted.internet.endpoints import clientFromString
 
 
 @inlineCallbacks
@@ -20,8 +19,16 @@ def main(reactor):
     # note that you can pass a few options as kwargs
     # (e.g. data_directory=, or socks_port= ). For other torrc
     # changes, see below.
-    tor = yield txtorcon.launch(reactor, data_directory="./tordata", stdout=sys.stdout, socks_port='unix:/tmp/tor2/socks')
-    #tor = yield txtorcon.connect(reactor, clientFromString(reactor, "unix:/var/run/tor/control"))
+    tor = yield txtorcon.launch(
+        reactor,
+        data_directory="./tordata",
+        stdout=sys.stdout,
+        socks_port='unix:/tmp/tor2/socks',
+    )
+    # tor = yield txtorcon.connect(
+    #     reactor,
+    #     clientFromString(reactor, "unix:/var/run/tor/control"),
+    # )
     print("Connected to Tor version '{}'".format(tor.protocol.version))
 
     state = yield tor.create_state()

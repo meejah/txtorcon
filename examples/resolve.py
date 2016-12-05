@@ -23,4 +23,5 @@ def main(reactor):
         rev = yield tor.dns_resolve_ptr(answer)
         print("'{}' reverses to '{}'".format(answer, rev))
 
+
 react(main)
