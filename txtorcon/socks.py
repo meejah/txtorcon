@@ -65,13 +65,20 @@ class TorSocksEndpoint(object):
         self._host = host
         self._port = port
         self._tls = tls
+        self._socks_factory = None
 
     def get_address(self):
         """
         Returns a Deferred that fires with the source IAddress of the
         underlying SOCKS connection (i.e. usually a
         twisted.internet.address.IPv4Address)
+
+        circuit.py uses this; better suggestions welcome!
         """
+        if self._socks_factory is None:
+            raise RuntimeError(
+                "Have to call .connect() before calling .get_address()"
+            )
         return self._socks_factory.get_address()
 
     @inlineCallbacks
@@ -281,7 +288,7 @@ class _TorSocksProtocol(Protocol):
         # TorCircuitEndpoint and friends -- so we do so via
         # get_address / did_connect on the factory (happy to entertain
         # better ideas).
-        self.factory.did_connect(self.transport.getHost())
+        self.factory._did_connect(self.transport.getHost())
         self._fsm.state = self._fsm.states[0]  # SENT_VERSION
         # ask for 2 methods: 0 (anonymous) and 2 (authenticated)
         data = struct.pack('BBBB', 5, 2, 0, 2)
@@ -323,7 +330,7 @@ class _TorSocksFactory(Factory):
             self._connected_d.append(d)
         return d
 
-    def did_connect(self, host):
+    def _did_connect(self, host):
         self._host = host
         for d in self._connected_d:
             d.callback(host)

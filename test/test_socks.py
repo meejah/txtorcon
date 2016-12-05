@@ -4,6 +4,7 @@ from mock import Mock
 from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.test import proto_helpers
+from twisted.internet.address import IPv4Address
 
 from txtorcon import socks
 
@@ -53,6 +54,32 @@ class SocksConnectTests(unittest.TestCase):
         self.assertEqual(proto, protocol)
 
     @defer.inlineCallbacks
+    def test_get_address_endpoint(self):
+        socks_ep = Mock()
+        transport = proto_helpers.StringTransport()
+
+        def connect(factory):
+            factory.startFactory()
+            proto = factory.buildProtocol("addr")
+            proto.makeConnection(transport)
+            self.assertEqual(b'\x05\x01\x00', transport.value())
+            proto.dataReceived(b'\x05\x00')
+            proto.dataReceived(b'\x05\x00\x00\x01\x00\x00\x00\x00\x00\x00')
+            return proto
+        socks_ep.connect = connect
+        protocol = Mock()
+        factory = Mock()
+        factory.buildProtocol = Mock(return_value=protocol)
+        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
+        with self.assertRaises(RuntimeError) as ctx:
+            yield ep.get_address()
+        proto = yield ep.connect(factory)
+        addr = yield ep.get_address()
+
+        self.assertEqual(addr, IPv4Address('TCP', '10.0.0.1', 12345))
+        self.assertTrue('call .connect()' in str(ctx.exception))
+
+    @defer.inlineCallbacks
     def test_get_address(self):
         # normally, .get_address is only called via the
         # attach_stream() method on Circuit
@@ -60,7 +87,7 @@ class SocksConnectTests(unittest.TestCase):
         factory = socks._TorSocksFactory()
         d = factory.get_address()
         self.assertFalse(d.called)
-        factory.did_connect(addr)
+        factory._did_connect(addr)
 
         maybe_addr = yield d
 
