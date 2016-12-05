@@ -273,15 +273,15 @@ class TestFindTor(unittest.TestCase):
 class TestIpAddr(unittest.TestCase):
 
     @patch('txtorcon.util.ipaddress')
-    def test_create_ipaddr(self, ipaddr):
-        ip = maybe_ip_addr('1.2.3.4')
+    def test_create_ipaddr0(self, ipaddr):
+        maybe_ip_addr('1.2.3.4')
 
     @patch('txtorcon.util.ipaddress')
-    def test_create_ipaddr(self, ipaddr):
+    def test_create_ipaddr1(self, ipaddr):
         def foo(blam):
             raise ValueError('testing')
         ipaddr.ip_address.side_effect = foo
-        ip = maybe_ip_addr('1.2.3.4')
+        maybe_ip_addr('1.2.3.4')
 
 
 class TestUnescapeQuotedString(unittest.TestCase):

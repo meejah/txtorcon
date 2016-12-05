@@ -1,13 +1,11 @@
 import datetime
-import time
 from twisted.trial import unittest
-from twisted.internet import defer, task
+from twisted.internet import defer
 from twisted.python.failure import Failure
 from zope.interface import implementer
 from mock import patch
 
 from txtorcon import Circuit
-from txtorcon import build_timeout_circuit
 
 from txtorcon import Stream
 from txtorcon import TorControlProtocol
@@ -26,7 +24,10 @@ from txtorcon.endpoints import _HAVE_TLS
 from mock import Mock
 
 
-@implementer(IRouterContainer, ICircuitListener, ICircuitContainer, ITorControlProtocol)
+@implementer(IRouterContainer)
+@implementer(ICircuitListener)
+@implementer(ICircuitContainer)
+@implementer(ITorControlProtocol)
 class FakeTorController(object):
 
     post_bootstrap = defer.Deferred()
@@ -83,6 +84,7 @@ class FakeRouter:
         self.id_hash = hsh
         self.id_hex = hexIdFromHash(self.id_hash)
         self.location = FakeLocation()
+
 
 examples = ['CIRC 365 LAUNCHED PURPOSE=GENERAL',
             'CIRC 365 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL',
@@ -421,6 +423,7 @@ class CircuitTests(unittest.TestCase):
         d = circuit.when_built()
 
         called = []
+
         def err(f):
             called.append(f)
             return None
@@ -438,20 +441,21 @@ class CircuitTests(unittest.TestCase):
         a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
         tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
 
-        config = TorConfig(tor)
         circuit = Circuit(tor)
         reactor = Mock()
 
-        ep = circuit.stream_via(reactor, 'torproject.org', 443, None, use_tls=_HAVE_TLS)
+        circuit.stream_via(
+            reactor, 'torproject.org', 443, None,
+            use_tls=_HAVE_TLS,
+        )
 
     def test_circuit_web_agent(self):
         tor = FakeTorController()
         a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
         tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
 
-        config = TorConfig(tor)
         circuit = Circuit(tor)
         reactor = Mock()
 
         # just testing this doesn't cause an exception
-        agent = circuit.web_agent(reactor)
+        circuit.web_agent(reactor)

@@ -12,7 +12,6 @@ from txtorcon import ITorControlProtocol
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.util import hmac_sha256
 
-import types
 import functools
 import tempfile
 import base64
@@ -378,7 +377,6 @@ OK''' % cookietmp.name)
                 b'AUTHCHALLENGE SAFECOOKIE ' in self.transport.value()
             )
             x = self.transport.value().split()[-1]
-            #client_nonce = base64.b16decode(x)
             client_nonce = a2b_hex(x)
             self.transport.clear()
             server_nonce = bytes(bytearray([0] * 32))
@@ -388,8 +386,8 @@ OK''' % cookietmp.name)
             )
 
             self.send(
-                b'250 AUTHCHALLENGE SERVERHASH=' + \
-                base64.b16encode(server_hash) + b' SERVERNONCE=' + \
+                b'250 AUTHCHALLENGE SERVERHASH=' +
+                base64.b16encode(server_hash) + b' SERVERNONCE=' +
                 base64.b16encode(server_nonce) + b'\r\n'
             )
             self.assertTrue(b'AUTHENTICATE ' in self.transport.value())

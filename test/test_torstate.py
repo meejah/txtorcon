@@ -6,10 +6,9 @@ from twisted.python.failure import Failure
 from twisted.internet import task, defer
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 
-import os
 import tempfile
 
-from mock import patch, Mock
+from mock import patch
 
 from txtorcon import TorControlProtocol
 from txtorcon import TorProtocolError
@@ -20,7 +19,6 @@ from txtorcon import build_tor_connection
 from txtorcon import build_local_tor_connection
 from txtorcon import build_timeout_circuit
 from txtorcon import CircuitBuildTimedOutError
-from txtorcon.interface import ITorControlProtocol
 from txtorcon.interface import IStreamAttacher
 from txtorcon.interface import ICircuitListener
 from txtorcon.interface import IStreamListener
@@ -45,7 +43,9 @@ class CircuitListener(object):
             if k == 'arg':
                 if v != arg:
                     raise RuntimeError(
-                        'Expected argument to have value "%s", not "%s"' % (arg, v)
+                        'Expected argument to have value "{}", not "{}"'.format(
+                            arg, v
+                        )
                     )
             elif getattr(circuit, k) != v:
                 raise RuntimeError(
@@ -145,6 +145,7 @@ class FakeCircuit(Circuit):
         self.streams = []
         self.id = id
         self.state = 'BOGUS'
+
 
 @implementer(IStreamClientEndpoint)
 class FakeEndpoint:
@@ -606,7 +607,6 @@ class StateTests(unittest.TestCase):
         self.assertEqual(len(attacher.fails), 2)
         self.assertTrue(isinstance(attacher.fails[1][1].value, RuntimeError))
         self.assertEqual(str(attacher.fails[1][1].value), "tor fails")
-
 
 
     def test_attacher_defer(self):

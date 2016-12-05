@@ -1,7 +1,6 @@
 import os
 
 from zope.interface.verify import verifyClass, verifyObject
-from zope.interface import implementer
 
 from mock import Mock
 
@@ -139,7 +138,7 @@ class EphemeralServiceTests(unittest.TestCase):
         progress = Mock()
         config = FakeConfig()
         try:
-            hs = yield EphemeralHiddenService.create(
+            yield EphemeralHiddenService.create(
                 config,
                 ['80 127.0.0.1:80'],
                 progress=progress,
@@ -186,7 +185,7 @@ class EphemeralServiceTests(unittest.TestCase):
         )
         hs._hostname = 'deadbeef.onion'
         yield hs.remove()
-        self.assertTrue("DEL_ONION deadbeef" in config.tor_protocol.commands[-1])
+        self.assertIn("DEL_ONION deadbeef", config.tor_protocol.commands[-1])
 
     @defer.inlineCallbacks
     def test_remove_service_but_fails(self):
@@ -244,7 +243,7 @@ class EphemeralServiceTests(unittest.TestCase):
                 s.listener = listener
 
         class FakeConfig(object):
-            EphemeralOnionServices=[]
+            EphemeralOnionServices = []
             tor_protocol = FakeProtocol()
 
         progress = Mock()
@@ -256,15 +255,19 @@ class EphemeralServiceTests(unittest.TestCase):
         )
 
         for x in range(6):
-            config.tor_protocol.listener('UPLOAD deadbeefdeadbeef x hs_dir_{}'.format(x))
+            config.tor_protocol.listener(
+                'UPLOAD deadbeefdeadbeef x hs_dir_{}'.format(x)
+            )
 
         for x in range(6):
-            config.tor_protocol.listener('FAILED deadbeefdeadbeef x hs_dir_{}'.format(x))
+            config.tor_protocol.listener(
+                'FAILED deadbeefdeadbeef x hs_dir_{}'.format(x)
+            )
 
         try:
             hs = yield hs
             self.fail("should have gotten exception")
         except Exception as e:
-            self.assertTrue("Failed to upload 'deadbeefdeadbeef.onion'" in str(e))
+            self.assertIn("Failed to upload 'deadbeefdeadbeef.onion'", str(e))
             for x in range(6):
                 self.assertTrue("hs_dir_{}".format(x) in str(e))
