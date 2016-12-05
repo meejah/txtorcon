@@ -504,6 +504,9 @@ class EphemeralOnionService(object):
                     "address".format(port, ip)
                 )
 
+    # XXX for backwards-compat we could put .add_to_tor back in :/
+    # ...and then deprecate it.
+
     @defer.inlineCallbacks
     def remove(self):
         """
