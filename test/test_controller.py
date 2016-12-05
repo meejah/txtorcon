@@ -1,21 +1,23 @@
+import tempfile
+import os
 from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.address import IPv4Address
-from twisted.internet import defer, error, task, tcp
+from twisted.internet import defer, error, task
 from twisted.python.failure import Failure
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 
 from txtorcon import Tor
 from txtorcon import TorConfig
-from txtorcon import TorState
 from txtorcon import TorControlProtocol
 from txtorcon import TorProcessProtocol
 from txtorcon import launch
 from txtorcon import connect
 from txtorcon import TCPHiddenServiceEndpoint
 from txtorcon.controller import _is_non_public_numeric_address
+from txtorcon.util import delete_file_or_tree
 
 from zope.interface import implementer, directlyProvides
 
@@ -131,7 +133,7 @@ class LaunchTorTests(unittest.TestCase):
 
     def test_ctor_timeout_no_ireactortime(self):
         with self.assertRaises(RuntimeError) as ctx:
-            tpp = TorProcessProtocol(lambda: None, timeout=42)
+            TorProcessProtocol(lambda: None, timeout=42)
         self.assertTrue("Must supply an IReactorTime" in str(ctx.exception))
 
     def _fake_queue(self, cmd):
@@ -187,7 +189,6 @@ class LaunchTorTests(unittest.TestCase):
             uce.mock_calls[0][1][1],
         )
 
-
     @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @defer.inlineCallbacks
     def test_launch_fails(self, ftb):
@@ -200,9 +201,9 @@ class LaunchTorTests(unittest.TestCase):
         reactor = FakeReactor(self, trans, on_proto, [1234, 9052])
 
         try:
-            tor = yield launch(reactor)
+            yield launch(reactor)
             self.fail("Should fail")
-        except RuntimeError as e:
+        except RuntimeError:
             pass
 
         errs = self.flushLoggedErrors(RuntimeError)
@@ -237,7 +238,7 @@ class LaunchTorTests(unittest.TestCase):
             rtn.post_bootstrap = defer.succeed(None)
             rtn.when_connected = Mock(return_value=defer.succeed(rtn))
             return rtn
-        tpp.side_effect=foo
+        tpp.side_effect = foo
 
         tor = yield launch(reactor, _tor_config=config)
         self.assertTrue(isinstance(tor, Tor))
@@ -354,7 +355,7 @@ class LaunchTorTests(unittest.TestCase):
             rtn.post_bootstrap = defer.succeed(None)
             rtn.when_connected = Mock(return_value=defer.succeed(rtn))
             return rtn
-        tpp.side_effect=foo
+        tpp.side_effect = foo
 
         tor = yield launch(reactor, _tor_config=config)
         self.assertTrue(isinstance(tor, Tor))
@@ -373,7 +374,7 @@ class LaunchTorTests(unittest.TestCase):
         # note! we're providing enough options here that we react the
         # "chown" before any 'yield' statements in launch, so we don't
         # actually have to wait for it... a little rickety, though :/
-        d = launch(reactor, tor_binary='/bin/echo', user='chuffington', socks_port='1234')
+        launch(reactor, tor_binary='/bin/echo', user='chuffington', socks_port='1234')
         self.assertEqual(1, chown.call_count)
 
     @defer.inlineCallbacks
@@ -424,7 +425,7 @@ class LaunchTorTests(unittest.TestCase):
                 processprotocol.processEnded(status)
                 return self.transport
 
-        react=MyFakeReactor(self, trans, Mock(), [1234, 9052])
+        react = MyFakeReactor(self, trans, Mock(), [1234, 9052])
 
         d = launch(
             reactor=react,
@@ -504,7 +505,7 @@ class LaunchTorTests(unittest.TestCase):
         fakeerr = StringIO()
         creator = functools.partial(connector, Mock(), Mock())
         try:
-            res = yield launch(
+            yield launch(
                 FakeReactor(self, trans, on_protocol, [1234, 9052]),
                 connection_creator=creator,
                 tor_binary='/bin/echo',
@@ -567,7 +568,6 @@ class LaunchTorTests(unittest.TestCase):
             proto.makeConnection(Mock())
             return proto
         reactor.connectTCP = connect_tcp
-        
         config = TorConfig()
 
         tor = yield launch(reactor, _tor_config=config, control_port='1234', timeout=30)
@@ -784,7 +784,7 @@ class LaunchTorTests(unittest.TestCase):
             proto.outReceived(b'Bootstrapped 90%\n')
             proto.outReceived(b'Bootstrapped 100%\n')
 
-        reactor = FakeReactor(self, trans, on_protocol, [9052,9999])
+        reactor = FakeReactor(self, trans, on_protocol, [9052, 9999])
 
         tor = yield launch(
             reactor=reactor,
@@ -800,7 +800,6 @@ class LaunchTorTests(unittest.TestCase):
         errs = self.flushLoggedErrors()
         self.assertEqual(1, len(errs))
         self.assertTrue("Tor was killed" in str(errs[0]))
-
 
 
 def create_endpoint(*args, **kw):
@@ -830,7 +829,7 @@ class ConnectTorTests(unittest.TestCase):
         """
         transport = Mock()
         reactor = FakeReactor(self, transport, lambda: None)
-        tor = yield connect(reactor)
+        yield connect(reactor)
 
     @patch('txtorcon.controller.TorConfig')
     @defer.inlineCallbacks
@@ -990,7 +989,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, cfg)
         with self.assertRaises(ValueError) as ctx:
             agent = tor.web_agent(object(), pool=self.pool)
-            resp = yield agent.request('GET', b'meejah.ca')
+            yield agent.request('GET', b'meejah.ca')
         self.assertTrue('socks_config' in str(ctx.exception))
 
 
@@ -1003,7 +1002,7 @@ class TorAttributeTests(unittest.TestCase):
 
     def test_process(self):
         with self.assertRaises(Exception) as ctx:
-            x = self.tor.process
+            self.tor.process
         self.assertTrue('not launched by us' in str(ctx.exception))
 
     def test_when_connected_already(self):
@@ -1041,22 +1040,22 @@ class TorStreamTests(unittest.TestCase):
 
     def test_v6(self):
         import ipaddress
-        ip = ipaddress.ip_address(u'2603:3023:807:3d00:21e:52ff:fe71:a4ce')
+        ipaddress.ip_address(u'2603:3023:807:3d00:21e:52ff:fe71:a4ce')
 
     def test_stream_private_ip(self):
         with self.assertRaises(Exception) as ctx:
-            ep = self.tor.stream_via('10.0.0.1', '1234')
+            self.tor.stream_via('10.0.0.1', '1234')
         self.assertTrue("isn't going to work over Tor", str(ctx.exception))
 
     def test_stream_via_custom_socks(self):
-        ep = self.tor.stream_via('meejah.ca', '1234', socks_port='localhost:9050')
+        self.tor.stream_via('meejah.ca', '1234', socks_port='localhost:9050')
         self.assertEqual(1, len(self.cfg.mock_calls))
         call = self.cfg.mock_calls[0]
         self.assertEqual("create_socks_endpoint", call[0])
 
     def test_stream_v6(self):
         with self.assertRaises(Exception) as ctx:
-            ep = self.tor.stream_via(u'::1', '1234')
+            self.tor.stream_via(u'::1', '1234')
         self.assertTrue("isn't going to work over Tor", str(ctx.exception))
 
     def test_public_v6(self):
@@ -1104,7 +1103,7 @@ class FactoryFunctionTests(unittest.TestCase):
         tor = Tor(Mock(), Mock())
         with patch('txtorcon.controller.TorState') as ts:
             ts.post_boostrap = defer.succeed('boom')
-            state = yield tor.create_state()
+            yield tor.create_state()
         # no assertions; we just testing this doesn't raise
 
     def test_str(self):

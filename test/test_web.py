@@ -21,7 +21,7 @@ class WebAgentTests(unittest.TestCase):
         reactor = Mock()
         config = Mock()
         config.SocksPort = ['1234']
-        agent = agent_for_socks_port(reactor, config, '1234')
+        agent_for_socks_port(reactor, config, '1234')
 
     @defer.inlineCallbacks
     def test_socks_agent_error_saving(self):
@@ -33,7 +33,7 @@ class WebAgentTests(unittest.TestCase):
             raise RuntimeError("sad times at ridgemont high")
         config.save = boom
         try:
-            agent = yield agent_for_socks_port(reactor, config, '1234')
+            yield agent_for_socks_port(reactor, config, '1234')
             self.fail("Should get an error")
         except RuntimeError as e:
             self.assertTrue("sad times at ridgemont high" in str(e))
@@ -42,7 +42,7 @@ class WebAgentTests(unittest.TestCase):
         reactor = Mock()
         config = Mock()
         config.SocksPort = []
-        agent = agent_for_socks_port(reactor, config, 'unix:/foo')
+        agent_for_socks_port(reactor, config, 'unix:/foo')
 
     @defer.inlineCallbacks
     def test_socks_agent_tcp_host_port(self):
@@ -73,7 +73,7 @@ class WebAgentTests(unittest.TestCase):
     def test_agent(self):
         reactor = Mock()
         socks_ep = Mock()
-        agent = yield tor_agent(reactor, socks_ep)
+        yield tor_agent(reactor, socks_ep)
 
     @defer.inlineCallbacks
     def test_agent_with_circuit(self):

@@ -911,7 +911,7 @@ platform Tor 0.2.5.0-alpha-dev on Linux
 
         finally:
             stderrdata = sys.stderr.getvalue()
-            stdoutdata = sys.stdout.getvalue()
+            # stdoutdata = sys.stdout.getvalue()
             sys.stdout, sys.stderr = orig
 
         # why was I looking for "print_stack"?!

@@ -10,7 +10,6 @@ from txtorcon import Circuit
 from txtorcon import Stream
 from txtorcon import TorControlProtocol
 from txtorcon import TorState
-from txtorcon import TorConfig
 from txtorcon import Router
 from txtorcon.router import hexIdFromHash
 from txtorcon.circuit import TorCircuitEndpoint

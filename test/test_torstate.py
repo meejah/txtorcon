@@ -608,7 +608,6 @@ class StateTests(unittest.TestCase):
         self.assertTrue(isinstance(attacher.fails[1][1].value, RuntimeError))
         self.assertEqual(str(attacher.fails[1][1].value), "tor fails")
 
-
     def test_attacher_defer(self):
         @implementer(IStreamAttacher)
         class MyAttacher(object):

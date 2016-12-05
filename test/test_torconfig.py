@@ -2,7 +2,6 @@ import os
 import shutil
 import tempfile
 import functools
-from getpass import getuser
 from mock import patch
 from six import StringIO
 
@@ -11,38 +10,24 @@ from mock import Mock, patch
 from zope.interface import implementer, directlyProvides
 from twisted.trial import unittest
 from twisted.test import proto_helpers
-from twisted.internet import defer, error, task, tcp
-from twisted.internet.endpoints import TCP4ServerEndpoint, serverFromString
-from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.python.failure import Failure
+from twisted.internet import defer
 from twisted.internet.interfaces import IReactorCore
-from twisted.internet.interfaces import IReactorTime
-from twisted.internet.interfaces import IProtocolFactory
-from twisted.internet.interfaces import IProtocol
-from twisted.internet.interfaces import IReactorTCP
 from twisted.internet.interfaces import IListeningPort
-from twisted.internet.interfaces import IAddress
 from twisted.internet.address import IPv4Address
 
-from txtorcon import TorControlProtocol
 from txtorcon import TorProtocolError
 from txtorcon import ITorControlProtocol
 from txtorcon import TorConfig
 from txtorcon import DEFAULT_VALUE
 from txtorcon import HiddenService
 from txtorcon import launch
-from txtorcon import TCPHiddenServiceEndpoint
 from txtorcon import TorNotFound
-from txtorcon import TCPHiddenServiceEndpointParser
-from txtorcon import IProgressProvider
 from txtorcon import torconfig
-from txtorcon import TorProcessProtocol
 
-from txtorcon.util import delete_file_or_tree
 from txtorcon.onion import parse_client_keys
 from txtorcon.onion import AuthenticatedHiddenService
 from txtorcon.onion import FilesystemHiddenService
-from txtorcon.onion import IOnionService # XXX interfaces.py
+from txtorcon.onion import IOnionService  # XXX interfaces.py
 from txtorcon.torconfig import CommaList
 
 
@@ -756,7 +741,7 @@ class EventTests(unittest.TestCase):
         protocol.answers.append({'Foo': '0'})
         protocol.answers.append({'Bar': '1'})
 
-        config = TorConfig(protocol)
+        TorConfig(protocol)
         # Initial value is not tested here
         try:
             protocol.events['CONF_CHANGED']('Foo=INVALID\nBar=VALUES')
@@ -1176,6 +1161,7 @@ HiddenServiceDir=/fake/path'''
         conf.hiddenservices[0].ports.append('90 127.0.0.1:2345')
         self.assertTrue(conf.needs_save())
 
+
 @implementer(IListeningPort)
 class FakePort(object):
     def __init__(self, port):
@@ -1208,8 +1194,6 @@ class ErrorTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_no_tor_binary(self, ftb):
         self.transport = proto_helpers.StringTransport()
-        config = TorConfig()
-        d = None
 
         class Connector:
             def __call__(self, proto, trans):
@@ -1286,7 +1270,7 @@ class HiddenServiceAuthTests(unittest.TestCase):
 
 
 class EphemeralOnionServiceTest(unittest.TestCase):
-#    skip = 'Use only new API to create these'
+
     def setUp(self):
         self.config = Mock()
 
@@ -1296,22 +1280,22 @@ class EphemeralOnionServiceTest(unittest.TestCase):
 
     def test_error_ports_external(self):
         with self.assertRaises(ValueError) as ctx:
-            eph = torconfig.EphemeralHiddenService(self.config, ["foo localhost:80"])
+            torconfig.EphemeralHiddenService(self.config, ["foo localhost:80"])
         self.assertTrue("external port isn't an in" in str(ctx.exception))
 
     def test_error_ports_internal(self):
         with self.assertRaises(ValueError) as ctx:
-            eph = torconfig.EphemeralHiddenService(self.config, ["80 localhost"])
+            torconfig.EphemeralHiddenService(self.config, ["80 localhost"])
         self.assertTrue("local address should be" in str(ctx.exception))
 
     def test_error_auth_not_supported(self):
         with self.assertRaises(ValueError) as ctx:
-            eph = torconfig.EphemeralHiddenService(self.config, ["80 localhost:80"], auth=["stuff"])
+            torconfig.EphemeralHiddenService(self.config, ["80 localhost:80"], auth=["stuff"])
         self.assertTrue("authentication on ephemeral" in str(ctx.exception))
 
     def test_error_non_local_internal(self):
         with self.assertRaises(ValueError) as ctx:
-            eph = torconfig.EphemeralHiddenService(self.config, ["80 1.2.3.4:80"])
+            torconfig.EphemeralHiddenService(self.config, ["80 1.2.3.4:80"])
         self.assertTrue("should be a local address" in str(ctx.exception))
 
     def test_wrong_blob(self):
@@ -1357,7 +1341,6 @@ class EphemeralOnionServiceTest(unittest.TestCase):
         self.assertEqual("ohai.onion", eph.hostname)
         self.assertTrue(eph in self.config.EphemeralOnionServices)
 
-
     def test_remove(self):
         return
         eph = torconfig.EphemeralHiddenService(self.config, ["80 127.0.0.1:80"])
@@ -1378,7 +1361,7 @@ class EphemeralOnionServiceTest(unittest.TestCase):
         try:
             yield eph.remove_from_tor(proto)
             self.fail("should have gotten exception")
-        except RuntimeError as e:
+        except RuntimeError:
             pass
 
     @defer.inlineCallbacks
