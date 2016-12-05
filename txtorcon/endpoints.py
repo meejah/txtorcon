@@ -86,14 +86,16 @@ if _HAVE_TLS:
             with `TLSMemoryBIOFactory`__ during connection.
 
             :returns: A ``Deferred`` which fires with the same ``Protocol`` as
-                ``wrappedEndpoint.connect(fac)`` fires with. If that ``Deferred``
-                errbacks, so will the returned deferred.
+                ``wrappedEndpoint.connect(fac)`` fires with. If that
+                ``Deferred`` errbacks, so will the returned deferred.
 
             __ http://twistedmatrix.com/documents/current/api/twisted.protocols.tls.html
 
             """
             fac = self._wrapper(self.contextFactory, True, fac)
-            return self.wrappedEndpoint.connect(fac).addCallback(self._unwrapProtocol)
+            d = self.wrappedEndpoint.connect(fac)
+            d.addCallback(self._unwrapProtocol)
+            return d
 
         def _unwrapProtocol(self, proto):
             return proto.wrappedProtocol
@@ -150,7 +152,7 @@ def get_global_tor(reactor, control_port=None,
                     )
             except KeyError:
                 # XXX i think just from tests?
-                log.msg("No ControlPort in config -- weird, but we'll let it go")
+                log.msg("No ControlPort in config -- weird, but we'll ignore")
 
         defer.returnValue(_global_tor)
     finally:
