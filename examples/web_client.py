@@ -29,7 +29,9 @@ def main(reactor):
     # None, which means "the first configured SOCKSPort"
     # agent = tor.web_agent(u'9999')
     agent = tor.web_agent()
+    uri = b'http://surely-this-has-not-been-registered-and-is-invalid.com'
     uri = b'https://www.torproject.org'
+    uri = b'http://timaq4ygg2iegci7.onion/'  # txtorcon documentation
     print("Downloading {}".format(uri))
     resp = yield agent.request(b'GET', uri)
 
