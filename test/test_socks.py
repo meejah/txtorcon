@@ -1,12 +1,41 @@
-
+from StringIO import StringIO
 from mock import Mock
 
 from twisted.trial import unittest
 from twisted.internet import defer
-from twisted.test import proto_helpers
 from twisted.internet.address import IPv4Address
+from twisted.internet.protocol import Protocol
+from twisted.test import proto_helpers
 
 from txtorcon import socks
+
+class SocksStateMachine(unittest.TestCase):
+
+    def test_resolve(self):
+        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
+        sm.connected()
+        sm.version_reply()
+
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertEqual(
+            '\x05\x01\x00'
+            '\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
+            data.getvalue(),
+        )
+
+    def test_resolve_ptr(self):
+        sm = socks.SocksMachine('RESOLVE_PTR', '1.2.3.4', 443)
+        sm.connected()
+        sm.version_reply()
+
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertEqual(
+            '\x05\x01\x00'
+            '\x05\xf1\x00\x03\x071.2.3.4\x00\x00',
+            data.getvalue(),
+        )
 
 
 # XXX should re-write (at LEAST) these to use Twisted's IOPump

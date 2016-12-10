@@ -24,6 +24,149 @@ from zope.interface import implementer
 from txtorcon.spaghetti import FSM, State, Transition
 
 
+# okay, so what i want to do to fix this crap up is:
+# - state-machine is separate (doesn't do parsing)
+# - parsing incoming data into symbols for the state-machine
+# - (the parser sadly has to know the current state, because no SOCKS framing)
+# - ideally also make it "IO neutral", i.e. so could be basis for a
+#   synchronous SOCKS thing
+
+# so, e.g. states ge
+
+
+
+import automat
+
+class SocksMachine(object):
+    """
+    trying to prototype the SOCKS state-machine in automat
+
+    This is a SOCKS state machine to make a single request.
+    """
+    _machine = automat.MethodicalMachine()
+
+    def __init__(self, req_type, host, port=0):
+        self._outgoing_data = []
+        if req_type not in self._dispatch:
+            raise ValueError(
+                "Unknown request type '{}'".format(req_type)
+            )
+        self._req_type = req_type
+        self._host = host
+        self._port = port
+
+    def send_data(self, callback):
+        while len(self._outgoing_data):
+            data = self._outgoing_data.pop(0)
+            callback(data)
+
+    @_machine.input()
+    def connected(self):
+        "begin the protocol (i.e. connection made)"
+
+    @_machine.input()
+    def disconnected(self):
+        "the connection has gone away"
+
+    @_machine.input()
+    def version_reply(self):
+        "the SOCKS server replied with a version"
+
+    @_machine.output()
+    def _send_version(self):
+        "sends a SOCKS version reply"
+        self._outgoing_data.append(
+            # for anonymous(0) *and* authenticated (2): struct.pack('BBBB', 5, 2, 0, 2)
+            struct.pack('BBB', 5, 1, 0)
+        )
+
+    @_machine.output()
+    def _send_request(self):
+        "send the request (connect, resolve or resolve_ptr)"
+        return self._dispatch[self._req_type](self)
+
+    def _send_connect_request(self):
+        "sends CONNECT request"
+        self._outgoing_data.append(
+            struct.pack(
+                '!BBBB4sH',
+                5,                   # version
+                0x01,                # command
+                0x00,                # reserved
+                0x01,                # IPv4 address
+                inet_aton(self._host),
+                self._port,
+            )
+        )
+
+    @_machine.output()
+    def _send_resolve_request(self):
+        "sends RESOLVE_PTR request (Tor custom)"
+        self._outgoing_data.append(
+            struct.pack(
+                '!BBBBB{}sH'.format(len(self._host)),
+                5,                   # version
+                0xF0,                # command
+                0x00,                # reserved
+                0x03,                # DOMAINNAME
+                len(self._host),
+                self._host,
+                0,  # self._port?
+            )
+        )
+
+    @_machine.output()
+    def _send_resolve_ptr_request(self):
+        "sends RESOLVE_PTR request (Tor custom)"
+        self._outgoing_data.append(
+            struct.pack(
+                '!BBBBB{}sH'.format(len(self._host)),
+                5,                   # version
+                0xF1,                # command
+                0x00,                # reserved
+                0x03,                # DOMAINNAME
+                len(self._host),
+                self._host,
+                0,              # why do we specify port at all?
+            )
+        )
+
+    @_machine.state(initial=True)
+    def unconnected(self):
+        "not yet connected"
+
+    @_machine.state()
+    def sent_version(self):
+        "we've sent our version request"
+
+    @_machine.state()
+    def sent_request(self):
+        "we've sent our stream/etc request"
+
+    unconnected.upon(
+        connected,
+        enter=sent_version,
+        outputs=[_send_version],
+    )
+
+    sent_version.upon(
+        version_reply,
+        enter=sent_request,
+        outputs=[_send_request],
+    )
+    sent_version.upon(
+        disconnected,
+        enter=unconnected,
+        outputs=[]
+    )
+    _dispatch = {
+        'CONNECT': _send_connect_request,
+        'RESOLVE': _send_resolve_request,
+        'RESOLVE_PTR': _send_resolve_ptr_request,
+    }
+
+
+
 class SocksError(Exception):
     pass
 
