@@ -345,13 +345,20 @@ class _TorSocksProtocol(Protocol):
         returnValue(sender)
 
     def _error(self, msg):
-        reply = struct.unpack('B', msg[1:2])[0]
-        if self._done and not self._done.called:
-            self._done.errback(
-                Failure(
-                    SocksError(self.error_code_to_string[reply])
-                )
+        print("doing error", repr(msg))
+        try:
+            reply = struct.unpack('B', msg[1:2])[0]
+            f = Failure(
+                SocksError(self.error_code_to_string[reply])
             )
+        except:
+            f = Failure(
+                Exception("Internal error processing error-reply")
+            )
+        if self._done and not self._done.called:
+            self._done.errback(f)
+        else:
+            print("Unreportable error {}".format(f))
         self.transport.loseConnection()
         # connectionLost will (try to) errback on self._done, but we
         # do it above so that we can pass the actual error-message
