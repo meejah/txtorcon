@@ -11,6 +11,13 @@ from txtorcon import socks
 
 class SocksStateMachine(unittest.TestCase):
 
+    def test_illegal_request(self):
+        with self.assertRaises(ValueError) as ctx:
+            socks.SocksMachine('FOO_RESOLVE', 'meejah.ca', 443)
+        self.assertTrue(
+            'Unknown request type' in str(ctx.exception)
+        )
+
     def test_resolve(self):
         sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
         sm.connected()
@@ -34,6 +41,19 @@ class SocksStateMachine(unittest.TestCase):
         self.assertEqual(
             '\x05\x01\x00'
             '\x05\xf1\x00\x03\x071.2.3.4\x00\x00',
+            data.getvalue(),
+        )
+
+    def test_connect(self):
+        sm = socks.SocksMachine('CONNECT', '1.2.3.4', 443)
+        sm.connected()
+        sm.version_reply()
+
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertEqual(
+            '\x05\x01\x00'
+            '\x05\x01\x00\x01\x01\x02\x03\x04\x01\xbb',
             data.getvalue(),
         )
 
