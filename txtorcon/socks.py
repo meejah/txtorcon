@@ -54,14 +54,34 @@ class SocksMachine(object):
         self._req_type = req_type
         self._host = host
         self._port = port
+        self._data = b''
 
     def send_data(self, callback):
         while len(self._outgoing_data):
             data = self._outgoing_data.pop(0)
             callback(data)
 
+    def feed_data(self, data):
+        # I feel like maybe i'm doing all this buffering-stuff
+        # wrong. but I also don't want a bunch of "received 1 byte"
+        # etc states hanging off everything that can "get data"
+        self._data += data
+        self.got_data()
+
+    @_machine.output()
+    def _parse_version_reply(self):
+        "waiting for a version reply"
+        if len(self._data) >= 2:
+            reply = self._data[:2]
+            self._data = self._data[2:]
+            (version, method) = struct.unpack('BB', reply)
+            if version == 5 and method in [0x00, 0x02]:
+                self.version_reply(method)
+            else:
+                self.version_error(version, method)
+
     @_machine.input()
-    def connected(self):
+    def connection(self):
         "begin the protocol (i.e. connection made)"
 
     @_machine.input()
@@ -69,8 +89,24 @@ class SocksMachine(object):
         "the connection has gone away"
 
     @_machine.input()
-    def version_reply(self):
+    def got_data(self):
+        "we recevied some data and buffered it"
+
+    @_machine.input()
+    def version_reply(self, method):
         "the SOCKS server replied with a version"
+
+    @_machine.input()
+    def version_error(self, version, method):
+        "the SOCKS server replied, but we don't understand"
+
+    @_machine.input()
+    def error_reply(self):
+        "the SOCKS server replied with an error"
+
+    @_machine.input()
+    def answer(self):
+        "the SOCKS server replied with an answer"
 
     @_machine.output()
     def _send_version(self):
@@ -81,8 +117,14 @@ class SocksMachine(object):
         )
 
     @_machine.output()
-    def _send_request(self):
+    def _disconnect(self, version, method):
+        "done"
+        print("would disconnect", version, method)
+
+    @_machine.output()
+    def _send_request(self, method):
         "send the request (connect, resolve or resolve_ptr)"
+        print("_send_request", method)
         return self._dispatch[self._req_type](self)
 
     def _send_connect_request(self):
@@ -143,12 +185,26 @@ class SocksMachine(object):
     def sent_request(self):
         "we've sent our stream/etc request"
 
+    @_machine.state()
+    def abort(self):
+        "we've encountered an error"
+
     unconnected.upon(
-        connected,
+        connection,
         enter=sent_version,
         outputs=[_send_version],
     )
 
+    sent_version.upon(
+        got_data,
+        enter=sent_version,
+        outputs=[_parse_version_reply],
+    )
+    sent_version.upon(
+        version_error,
+        enter=abort,
+        outputs=[_disconnect],
+    )
     sent_version.upon(
         version_reply,
         enter=sent_request,
@@ -159,6 +215,20 @@ class SocksMachine(object):
         enter=unconnected,
         outputs=[]
     )
+#    sent_version.upon(
+#        error_reply,
+#        # we could go back to 'sent_version' if we had some way to
+#        # remember / input (type, host, port) as an @input
+#        enter=abort,
+#        output=[_close_connection]
+#    )
+#    sent_version.upon(
+#        answer,
+#        enter=got_answer,
+#        output=[_start_relay]
+#    )
+
+
     _dispatch = {
         'CONNECT': _send_connect_request,
         'RESOLVE': _send_resolve_request,

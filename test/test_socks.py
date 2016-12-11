@@ -18,10 +18,17 @@ class SocksStateMachine(unittest.TestCase):
             'Unknown request type' in str(ctx.exception)
         )
 
+    def test_end_to_end(self):
+        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
+        sm.connection()
+
+        sm.feed_data('\x05')
+        sm.feed_data('\x01')
+
     def test_resolve(self):
         sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
-        sm.connected()
-        sm.version_reply()
+        sm.connection()
+        sm.version_reply(0x02)
 
         data = StringIO()
         sm.send_data(data.write)
@@ -33,8 +40,8 @@ class SocksStateMachine(unittest.TestCase):
 
     def test_resolve_ptr(self):
         sm = socks.SocksMachine('RESOLVE_PTR', '1.2.3.4', 443)
-        sm.connected()
-        sm.version_reply()
+        sm.connection()
+        sm.version_reply(0x00)
 
         data = StringIO()
         sm.send_data(data.write)
@@ -46,8 +53,8 @@ class SocksStateMachine(unittest.TestCase):
 
     def test_connect(self):
         sm = socks.SocksMachine('CONNECT', '1.2.3.4', 443)
-        sm.connected()
-        sm.version_reply()
+        sm.connection()
+        sm.version_reply(0x00)
 
         data = StringIO()
         sm.send_data(data.write)
