@@ -34,6 +34,17 @@ from txtorcon.spaghetti import FSM, State, Transition
 # so, e.g. states ge
 
 
+_socks_reply_code_to_string = {
+    0x00: 'succeeded',
+    0x01: 'general SOCKS server failure',
+    0x02: 'connection not allowed by ruleset',
+    0x03: 'Network unreachable',
+    0x04: 'Host unreachable',
+    0x05: 'Connection refused',
+    0x06: 'TTL expired',
+    0x07: 'Command not supported',
+    0x08: 'Address type not supported',
+}
 
 import automat
 
@@ -45,7 +56,7 @@ class SocksMachine(object):
     """
     _machine = automat.MethodicalMachine()
 
-    def __init__(self, req_type, host, port=0):
+    def __init__(self, req_type, host, port=0, on_disconnect=None):
         self._outgoing_data = []
         if req_type not in self._dispatch:
             raise ValueError(
@@ -55,6 +66,7 @@ class SocksMachine(object):
         self._host = host
         self._port = port
         self._data = b''
+        self._on_disconnect = on_disconnect
 
     def send_data(self, callback):
         while len(self._outgoing_data):
@@ -78,7 +90,56 @@ class SocksMachine(object):
             if version == 5 and method in [0x00, 0x02]:
                 self.version_reply(method)
             else:
-                self.version_error(version, method)
+                if version != 5:
+                    self.version_error("Expected version 5, got {}".format(version))
+                else:
+                    self.version_error("Wanted method 0 or 2, got {}".format(method))
+
+    @_machine.output()
+    def _parse_request_reply(self):
+        "waiting for a reply to our request"
+        # we need at least 6 bytes of data: 4 for the "header", such
+        # as it is, and 2 more if it's DOMAINNAME (for the size) or 4
+        # or 16 more if it's an IPv4/6 address reply. plus there's 2
+        # bytes on the end for the bound port.
+        if len(self._data) >= 8:
+            msg = self._data[:4]
+            # not changing self._data yet, in case we've not got
+            # enough bytes so far.
+            (version, reply, _, typ) = struct.unpack('BBBB', msg)
+            if version != 5:
+                self.reply_error("Expected version 5, got {}".format(version))
+            elif reply != 0:
+                # reply == 0x00 is "succeeded", else there are error codes
+                try:
+                    self.reply_error(_socks_reply_code_to_string[reply])
+                except KeyError:
+                    self.reply_error("Unknown reply code {}".format(reply))
+            elif typ not in [0x01, 0x03, 0x04]:
+                self.reply_error("Unexpected response type {}".format(typ))
+            else:
+                if typ == 0x01 and len(self._data) >= 10:  # IPv4
+                    addr = inet_ntoa(self._data[4:8])
+                    port = struct.unpack('H', self._data[8:10])[0]
+                    self._data = self._data[10:]
+                    self.reply_ipv4(addr, port)
+                elif typ == 0x03 and len(self._data) >= 8:
+                    addrlen = struct.unpack('B', self._data[4:5])[0]
+                    # may simply not have received enough data yet...
+                    if len(self._data) >= 5 + addrlen + 2:
+                        addr = self._data[5:5 + addrlen]
+                        port = struct.unpack('H', self._data[5 + addrlen:5 + addrlen + 2])[0]
+                        self._data = self._data[5 + addrlen + 2:]
+                        # ignoring port -- don't think it's used?
+                        self.reply_domain_name(addr)
+                elif typ == 0x04 and len(self._data) >= 22:
+                    addr = msg[4:20]
+                    port = struct.unpack('H', self._data[2:22])[0]
+                    self._data = self._data[22:]
+                    self.reply_ipv6(addr, port)
+                # if we were requesting a CONNECT originally, now we can relay...
+                print("DING, do we relay now? what's the port?")
+                print(repr(self._data))
 
     @_machine.input()
     def connection(self):
@@ -97,16 +158,32 @@ class SocksMachine(object):
         "the SOCKS server replied with a version"
 
     @_machine.input()
-    def version_error(self, version, method):
+    def version_error(self, error_message):
         "the SOCKS server replied, but we don't understand"
 
     @_machine.input()
-    def error_reply(self):
+    def reply_error(self, error_message):
         "the SOCKS server replied with an error"
+
+    @_machine.input()
+    def reply_ipv4(self, addr, port):
+        "the SOCKS server told me an IPv4 addr, port"
+
+    @_machine.input()
+    def reply_ipv6(self, addr, port):
+        "the SOCKS server told me an IPv6 addr, port"
+
+    @_machine.input()
+    def reply_domain_name(self, domain):
+        "the SOCKS server told me a domain-name"
 
     @_machine.input()
     def answer(self):
         "the SOCKS server replied with an answer"
+
+    @_machine.input()
+    def relay_reply(self):
+        "the SOCKS server told us its relaying"
 
     @_machine.output()
     def _send_version(self):
@@ -117,15 +194,23 @@ class SocksMachine(object):
         )
 
     @_machine.output()
-    def _disconnect(self, version, method):
+    def _disconnect(self, error_message):
         "done"
-        print("would disconnect", version, method)
+        if self._on_disconnect:
+            self._on_disconnect(error_message)
 
     @_machine.output()
     def _send_request(self, method):
         "send the request (connect, resolve or resolve_ptr)"
         print("_send_request", method)
         return self._dispatch[self._req_type](self)
+
+    @_machine.output()
+    def _relay_data(self):
+        "relay any data we have"
+        if self._data:
+            self._outgoing_data.append(self._data)
+            self._data = b''
 
     def _send_connect_request(self):
         "sends CONNECT request"
@@ -186,7 +271,11 @@ class SocksMachine(object):
         "we've sent our stream/etc request"
 
     @_machine.state()
-    def abort(self):
+    def relaying(self):
+        "received our response, now we can relay"
+
+    @_machine.state()
+    def abort(self, error_message):
         "we've encountered an error"
 
     unconnected.upon(
@@ -215,6 +304,29 @@ class SocksMachine(object):
         enter=unconnected,
         outputs=[]
     )
+
+    sent_request.upon(
+        got_data,
+        enter=sent_request,
+        outputs=[_parse_request_reply],
+    )
+    sent_request.upon(
+        reply_ipv4,
+        enter=relaying,
+        outputs=[],
+    )
+    sent_request.upon(
+        reply_error,
+        enter=abort,
+        outputs=[_disconnect],
+    )
+
+    relaying.upon(
+        got_data,
+        enter=relaying,
+        outputs=[_relay_data],
+    )
+
 #    sent_version.upon(
 #        error_reply,
 #        # we could go back to 'sent_version' if we had some way to

@@ -18,12 +18,126 @@ class SocksStateMachine(unittest.TestCase):
             'Unknown request type' in str(ctx.exception)
         )
 
-    def test_end_to_end(self):
-        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
+    def test_dump_graphviz(self):
+        with open('socks.dot', 'w') as f:
+            for line in socks.SocksMachine._machine.graphviz():
+                f.write(line)
+
+    def test_end_to_end_wrong_method(self):
+
+        dis = []
+        def on_disconnect(error_message):
+            dis.append(error_message)
+        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443, on_disconnect)
         sm.connection()
 
         sm.feed_data('\x05')
         sm.feed_data('\x01')
+
+        # we should have sent the request to the server, and nothing
+        # else (because we disconnected)
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertEqual(
+            '\x05\x01\x00',
+            data.getvalue(),
+        )
+        self.assertEqual(1, len(dis))
+        self.assertEqual("Wanted method 0 or 2, got 1", dis[0])
+
+    def test_end_to_end_wrong_version(self):
+
+        dis = []
+        def on_disconnect(error_message):
+            dis.append(error_message)
+        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443, on_disconnect)
+        sm.connection()
+
+        sm.feed_data('\x06')
+        sm.feed_data('\x00')
+
+        # we should have sent the request to the server, and nothing
+        # else (because we disconnected)
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertEqual(
+            '\x05\x01\x00',
+            data.getvalue(),
+        )
+        self.assertEqual(1, len(dis))
+        self.assertEqual("Expected version 5, got 6", dis[0])
+
+    def test_end_to_end_connection_refused(self):
+
+        dis = []
+        def on_disconnect(error_message):
+            dis.append(error_message)
+        sm = socks.SocksMachine('CONNECT', '1.2.3.4', 443, on_disconnect)
+        sm.connection()
+
+        sm.feed_data('\x05')
+        sm.feed_data('\x00')
+
+        # reply with 'connection refused'
+        sm.feed_data('\x05\x05\x00\x01\x00\x00\x00\x00\xff\xff')
+
+        self.assertEqual(1, len(dis))
+        self.assertEqual("Connection refused", dis[0])
+
+    def test_end_to_end_successful_relay(self):
+
+        dis = []
+        def on_disconnect(error_message):
+            dis.append(error_message)
+        sm = socks.SocksMachine('CONNECT', '1.2.3.4', 443, on_disconnect)
+        sm.connection()
+
+        sm.feed_data('\x05')
+        sm.feed_data('\x00')
+
+        # reply with success, port 0x1234
+        sm.feed_data('\x05\x00\x00\x01\x00\x00\x00\x00\x12\x34')
+
+        # now some data that should get relayed
+        sm.feed_data('this is some relayed data')
+        # should *not* have disconnected
+        self.assertEqual(0, len(dis))
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertTrue(data.getvalue().endswith("this is some relayed data"))
+
+    def test_end_to_end_success(self):
+        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
+        sm.connection()
+
+        sm.feed_data('\x05')
+        sm.feed_data('\x00')
+
+        # now we check we got the right bytes out the other side
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertEqual(
+            '\x05\x01\x00'
+            '\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
+            data.getvalue(),
+        )
+
+    def test_end_to_end_connect_and_relay(self):
+        sm = socks.SocksMachine('CONNECT', '1.2.3.4', 443)
+        sm.connection()
+
+        sm.feed_data('\x05')
+        sm.feed_data('\x00')
+        sm.feed_data('some relayed data')
+
+        # now we check we got the right bytes out the other side
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertEqual(
+            '\x05\x01\x00'
+            '\x05\x01\x00\x01\x01\x02\x03\x04\x01\xbb',
+            data.getvalue(),
+        )
 
     def test_resolve(self):
         sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
