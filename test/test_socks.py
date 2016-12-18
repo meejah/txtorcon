@@ -23,6 +23,38 @@ class SocksStateMachine(unittest.TestCase):
             for line in socks.SocksMachine._machine.graphviz():
                 f.write(line)
 
+    @defer.inlineCallbacks
+    def test_connect_socks_illegal_packet(self):
+        from twisted.test.iosim import IOPump, connect, FakeTransport
+
+        class BadSocksServer(Protocol):
+            def __init__(self):
+                self._buffer = b''
+
+            def dataReceived(self, data):
+                print("BADSOCKS got data", data)
+                self._buffer += data
+                if len(self._buffer) == 3:
+                    assert self._buffer == b'\x05\x01\x00'
+                    self._buffer = b''
+                    self.transport.write(b'\x05\x01\x01')
+
+        done = defer.Deferred()
+        factory = socks._TorSocksFactory2(b'meejah.ca', 1234, 'CONNECT', Mock())
+        server_proto = BadSocksServer()
+        server_transport = FakeTransport(server_proto, isServer=True)
+
+        client_proto = factory.buildProtocol('ignored')
+        client_transport = FakeTransport(client_proto, isServer=False)
+
+        pump = yield connect(
+            server_proto, server_transport,
+            client_proto, client_transport,
+        )
+
+        self.assertTrue(server_proto.transport.disconnected)
+        self.assertTrue(client_proto.transport.disconnected)
+
     def test_end_to_end_wrong_method(self):
 
         dis = []
