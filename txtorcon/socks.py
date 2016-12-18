@@ -56,8 +56,9 @@ class SocksMachine(object):
     """
     _machine = automat.MethodicalMachine()
 
-    def __init__(self, req_type, host, port=0, on_disconnect=None):
-        self._outgoing_data = []
+    def __init__(self, req_type, host, port=0,
+                 on_disconnect=None,
+                 on_data=None):
         if req_type not in self._dispatch:
             raise ValueError(
                 "Unknown request type '{}'".format(req_type)
@@ -67,6 +68,17 @@ class SocksMachine(object):
         self._port = port
         self._data = b''
         self._on_disconnect = on_disconnect
+        # XXX FIXME do *one* of these:
+        self._on_data = on_data
+        self._outgoing_data = []
+        # the other side of our proxy
+        self._sender = None
+
+    def _data_to_send(self, data):
+        if self._on_data:
+            self._on_data(data)
+        else:
+            self._outgoing_data.append(data)
 
     def send_data(self, callback):
         while len(self._outgoing_data):
@@ -141,12 +153,26 @@ class SocksMachine(object):
                 print("DING, do we relay now? what's the port?")
                 print(repr(self._data))
 
+    @_machine.output()
+    def _make_connection(self, addr, port):
+        "make our proxy connection"
+        addr = IPv4Address('TCP', addr, port)
+        sender = yield self._factory.buildProtocol(addr)
+        client_proxy = portforward.ProxyClient()
+        sender.makeConnection(self.transport)
+        # portforward.ProxyClient is going to call setPeer but this
+        # probably doesn't have it...
+        setattr(sender, 'setPeer', lambda _: None)
+        client_proxy.setPeer(sender)
+        self._sender = sender
+        returnValue(sender)
+
     @_machine.input()
     def connection(self):
         "begin the protocol (i.e. connection made)"
 
     @_machine.input()
-    def disconnected(self):
+    def disconnected(self, error_message):
         "the connection has gone away"
 
     @_machine.input()
@@ -188,7 +214,7 @@ class SocksMachine(object):
     @_machine.output()
     def _send_version(self):
         "sends a SOCKS version reply"
-        self._outgoing_data.append(
+        self._data_to_send(
             # for anonymous(0) *and* authenticated (2): struct.pack('BBBB', 5, 2, 0, 2)
             struct.pack('BBB', 5, 1, 0)
         )
@@ -198,6 +224,10 @@ class SocksMachine(object):
         "done"
         if self._on_disconnect:
             self._on_disconnect(error_message)
+        if self._sender:
+            self._sender.connectionLost(SocksError(error_message))
+        #if not self._done.called:
+        #    self._done.callback(reason)
 
     @_machine.output()
     def _send_request(self, method):
@@ -209,12 +239,13 @@ class SocksMachine(object):
     def _relay_data(self):
         "relay any data we have"
         if self._data:
-            self._outgoing_data.append(self._data)
+            d = self._data
             self._data = b''
+            self._data_to_send(d)
 
     def _send_connect_request(self):
         "sends CONNECT request"
-        self._outgoing_data.append(
+        self._data_to_send(
             struct.pack(
                 '!BBBB4sH',
                 5,                   # version
@@ -229,7 +260,7 @@ class SocksMachine(object):
     @_machine.output()
     def _send_resolve_request(self):
         "sends RESOLVE_PTR request (Tor custom)"
-        self._outgoing_data.append(
+        self._data_to_send(
             struct.pack(
                 '!BBBBB{}sH'.format(len(self._host)),
                 5,                   # version
@@ -245,7 +276,7 @@ class SocksMachine(object):
     @_machine.output()
     def _send_resolve_ptr_request(self):
         "sends RESOLVE_PTR request (Tor custom)"
-        self._outgoing_data.append(
+        self._data_to_send(
             struct.pack(
                 '!BBBBB{}sH'.format(len(self._host)),
                 5,                   # version
@@ -302,7 +333,7 @@ class SocksMachine(object):
     sent_version.upon(
         disconnected,
         enter=unconnected,
-        outputs=[]
+        outputs=[_disconnect]
     )
 
     sent_request.upon(
@@ -313,7 +344,7 @@ class SocksMachine(object):
     sent_request.upon(
         reply_ipv4,
         enter=relaying,
-        outputs=[],
+        outputs=[_make_connection],
     )
     sent_request.upon(
         reply_error,
@@ -325,6 +356,17 @@ class SocksMachine(object):
         got_data,
         enter=relaying,
         outputs=[_relay_data],
+    )
+
+    abort.upon(
+        got_data,
+        enter=abort,
+        outputs=[],
+    )
+    abort.upon(
+        disconnected,
+        enter=abort,
+        outputs=[],
     )
 
 #    sent_version.upon(
@@ -346,6 +388,77 @@ class SocksMachine(object):
         'RESOLVE': _send_resolve_request,
         'RESOLVE_PTR': _send_resolve_ptr_request,
     }
+
+
+class _TorSocksProtocol2(Protocol):
+
+    def __init__(self, host, port, socks_method, factory):
+        print("made a proto", host)
+        self._machine = SocksMachine(
+            req_type=socks_method,
+            host=host,
+            port=port,
+            on_disconnect=self._on_disconnect,
+            on_data=self._on_data,
+        )
+
+    def connectionMade(self):
+        print("connection!")
+        self._machine.connection()
+
+    def connectionLost(self, reason):
+        print("LOST", reason)
+        self._machine.disconnected(reason)
+
+    def dataReceived(self, data):
+        print("DATA", repr(data))
+        self._machine.feed_data(data)
+
+    def _on_data(self, data):
+        print("sending", data)
+        self.transport.write(data)
+
+    def _on_disconnect(self, error_message):
+        print("DISCONNECTED!", error_message)
+        print(dir(self.transport))
+        self.transport.loseConnection()
+        print("self.transport", self.transport, self.transport.disconnected)
+        #self.transport.abortConnection()#SocksError(error_message))
+        #self._machine.disconnect(error_message)
+
+
+class _TorSocksFactory2(Factory):
+    protocol = _TorSocksProtocol2
+
+    def __init__(self, *args, **kw):
+        self._args = args
+        self._kw = kw
+        self._connected_d = []
+        self._host = None
+
+    def get_address(self):
+        """
+        Returns a Deferred that fires with the IAddress from the transport
+        when this SOCKS protocol becomes connected.
+        """
+        d = Deferred()
+        if self._host:
+            d.callback(self._host)
+        else:
+            self._connected_d.append(d)
+        return d
+
+    def _did_connect(self, host):
+        self._host = host
+        for d in self._connected_d:
+            d.callback(host)
+        self._connected_d = None
+
+    def buildProtocol(self, addr):
+        p = self.protocol(*self._args, **self._kw)
+        p.factory = self
+        return p
+
 
 
 
