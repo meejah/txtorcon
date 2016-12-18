@@ -292,8 +292,27 @@ class SocksConnectTests(unittest.TestCase):
             proto.makeConnection(transport)
             self.assertEqual(b'\x05\x01\x00', transport.value())
             proto.dataReceived(b'\x05\x01')
-            #proto.dataReceived(b'\x05\x00\x00\x01\x00\x00\x00\x00\x00\x00')
-            #proto.dataReceived(b'\x05\x00\x00\x01\x00\x00\x00\x00\x00\x00')
+            return proto
+        socks_ep.connect = connect
+        protocol = Mock()
+        factory = Mock()
+        factory.buildProtocol = Mock(return_value=protocol)
+        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
+        with self.assertRaises(Exception) as ctx:
+            yield ep.connect(factory)
+        self.assertTrue('general SOCKS server failure' in str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_connect_socks_illegal_byte(self):
+        socks_ep = Mock()
+        transport = proto_helpers.StringTransport()
+
+        def connect(factory):
+            factory.startFactory()
+            proto = factory.buildProtocol("addr")
+            proto.makeConnection(transport)
+            self.assertEqual(b'\x05\x01\x00', transport.value())
+            proto.dataReceived(b'\x05\x01')
             return proto
         socks_ep.connect = connect
         protocol = Mock()
