@@ -15,6 +15,7 @@ import ipaddress
 import struct
 import re
 import six
+from functools import wraps
 
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
@@ -363,6 +364,62 @@ class IListener(Interface):
 
         XXX errors? just log?
         """
+
+
+# similar to OneShotObserverList in Tahoe-LAFS
+class _SingleObserver(object):
+    """
+    A helper for ".when_*()" sort of functions.
+    """
+    _NotFired = object()
+
+    def __init__(self):
+        self._observers = []
+        self._fired = self._NotFired
+
+    def when_fired(self):
+        d = defer.Deferred()
+        if self._fired is not self._NotFired:
+            d.callback(self._fired)
+        else:
+            self._observers.append(d)
+        return d
+
+    def fire(self, value):
+        self._fired = value
+        for d in self._observers:
+            d.callback(self._fired)
+        self._observers = None
+
+
+def observable(f):
+    """
+    This is a decorator that makes this method a one-shot observable
+    -- a method that returns a Deferred each time it's called, and all
+    those Deferreds are fired once.
+
+    For example, a "when_something()" method which fires when
+    "something" happens.
+
+    You "fire" it by calling .fire() on the *method* itself, like
+    this:
+
+        class Foo(object):
+            @observable
+            def when_something(self):
+                "Returns a Deferred that fires when 'something' happens"
+
+            def unrelated_method(self):
+                self.when_something.fire('value')
+    """
+
+    shot_list = _SingleObserver()
+
+    @wraps(f)
+    def the_observer(s):
+        return shot_list.when_fired()
+    the_observer.fire = shot_list.fire
+    return the_observer
 
 
 @implementer(IListener)
