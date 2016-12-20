@@ -55,6 +55,128 @@ class SocksStateMachine(unittest.TestCase):
         self.assertTrue(server_proto.transport.disconnected)
         self.assertTrue(client_proto.transport.disconnected)
 
+    @defer.inlineCallbacks
+    def test_connect_socks_unknown_version(self):
+        from twisted.test.iosim import IOPump, connect, FakeTransport
+
+        class BadSocksServer(Protocol):
+            def __init__(self):
+                self._buffer = b''
+                self._recv_stack = [
+                    (b'\x05\x01\x00', b'\x05\xff'),
+                ]
+
+            def dataReceived(self, data):
+                self._buffer += data
+                if len(self._recv_stack) == 0:
+                    assert "not expecting any more data, got {}".format(repr(self._buffer))
+                    return
+                expecting, to_send = self._recv_stack.pop(0)
+                got = self._buffer[:len(expecting)]
+                self._buffer = self._buffer[len(expecting):]
+                assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
+                self.transport.write(to_send)
+
+        done = defer.Deferred()
+        factory = socks._TorSocksFactory2(b'1.2.3.4', 1234, 'CONNECT', Mock())
+        server_proto = BadSocksServer()
+        server_transport = FakeTransport(server_proto, isServer=True)
+
+        client_proto = factory.buildProtocol('ignored')
+        client_transport = FakeTransport(client_proto, isServer=False)
+
+        pump = yield connect(
+            server_proto, server_transport,
+            client_proto, client_transport,
+        )
+
+        self.assertTrue(server_proto.transport.disconnected)
+        self.assertTrue(client_proto.transport.disconnected)
+
+    @defer.inlineCallbacks
+    def test_connect_socks_unknown_reply_code(self):
+        from twisted.test.iosim import IOPump, connect, FakeTransport
+
+        class BadSocksServer(Protocol):
+            def __init__(self):
+                self._buffer = b''
+                self._recv_stack = [
+                    (b'\x05\x01\x00', b'\x05\x00'),
+                    (b'\x05\x01\x00\x01\x01\x02\x03\x04\x04\xd2', b'\x05\xff\x00\x04xxxx'),
+                ]
+
+            def dataReceived(self, data):
+                print("DATA", repr(data))
+                self._buffer += data
+                if len(self._recv_stack) == 0:
+                    assert "not expecting any more data, got {}".format(repr(self._buffer))
+                    return
+                expecting, to_send = self._recv_stack.pop(0)
+                got = self._buffer[:len(expecting)]
+                self._buffer = self._buffer[len(expecting):]
+                assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
+                self.transport.write(to_send)
+
+        done = defer.Deferred()
+        factory = socks._TorSocksFactory2(b'1.2.3.4', 1234, 'CONNECT', Mock())
+        server_proto = BadSocksServer()
+        server_transport = FakeTransport(server_proto, isServer=True)
+
+        client_proto = factory.buildProtocol('ignored')
+        client_transport = FakeTransport(client_proto, isServer=False)
+
+        d = client_proto._machine.when_done()
+
+        pump = yield connect(
+            server_proto, server_transport,
+            client_proto, client_transport,
+        )
+        with self.assertRaises(Exception) as ctx:
+            yield d
+        self.assertTrue('Unknown reply code' in str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_socks_relay_data(self):
+        from twisted.test.iosim import IOPump, connect, FakeTransport
+
+        class BadSocksServer(Protocol):
+            def __init__(self):
+                self._buffer = b''
+                self._recv_stack = [
+                    (b'\x05\x01\x00', b'\x05\x02'),
+                    (b'\x05\x01\x00\x01\x01\x02\x03\x04\x04\xd2', b'\x05\x00\x00\x01\x01\x02\x03\x04\x12\x34'),
+                ]
+
+            def dataReceived(self, data):
+                self._buffer += data
+                if len(self._recv_stack) == 0:
+                    assert "not expecting any more data, got {}".format(repr(self._buffer))
+                    return
+                expecting, to_send = self._recv_stack.pop(0)
+                got = self._buffer[:len(expecting)]
+                self._buffer = self._buffer[len(expecting):]
+                assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
+                self.transport.write(to_send)
+
+        done = defer.Deferred()
+        factory = socks._TorSocksFactory2(b'1.2.3.4', 1234, 'CONNECT', Mock())
+        server_proto = BadSocksServer()
+        server_transport = FakeTransport(server_proto, isServer=True)
+
+        client_proto = factory.buildProtocol('ignored')
+        client_transport = FakeTransport(client_proto, isServer=False)
+
+        pump = yield connect(
+            server_proto, server_transport,
+            client_proto, client_transport,
+        )
+
+        # should be relaying now, try sending some datas
+
+        client_proto.transport.write('abcdef')
+        pump.flush()
+        self.assertEqual('abcdef', server_proto._buffer)
+
     def test_end_to_end_wrong_method(self):
 
         dis = []
@@ -301,6 +423,27 @@ class SocksConnectTests(unittest.TestCase):
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
         self.assertTrue('general SOCKS server failure' in str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_connect_socks_error_unknown(self):
+        socks_ep = Mock()
+        transport = proto_helpers.StringTransport()
+
+        def connect(factory):
+            factory.startFactory()
+            proto = factory.buildProtocol("addr")
+            proto.makeConnection(transport)
+            self.assertEqual(b'\x05\x01\x00', transport.value())
+            proto.dataReceived(b'\x05\xff')
+            return proto
+        socks_ep.connect = connect
+        protocol = Mock()
+        factory = Mock()
+        factory.buildProtocol = Mock(return_value=protocol)
+        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
+        with self.assertRaises(Exception) as ctx:
+            yield ep.connect(factory)
+        self.assertTrue('No such SOCKS reply code' in str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_connect_socks_illegal_byte(self):

@@ -9,7 +9,7 @@ from __future__ import print_function
 import six
 import struct
 from socket import inet_aton, inet_ntoa
-# from ipaddress import ip_address
+import functools
 
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.protocol import Protocol, Factory
@@ -22,6 +22,7 @@ from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
 from txtorcon.spaghetti import FSM, State, Transition
+from txtorcon import util
 
 
 # okay, so what i want to do to fix this crap up is:
@@ -73,6 +74,12 @@ class SocksMachine(object):
         self._outgoing_data = []
         # the other side of our proxy
         self._sender = None
+
+    @util.observable
+    def when_done(self):
+        """
+        Returns a Deferred that fires when we're done
+        """
 
     def _data_to_send(self, data):
         if self._on_data:
@@ -226,6 +233,7 @@ class SocksMachine(object):
             self._on_disconnect(error_message)
         if self._sender:
             self._sender.connectionLost(SocksError(error_message))
+        self.when_done.fire(Failure(SocksError(error_message)))
         #if not self._done.called:
         #    self._done.callback(reason)
 
