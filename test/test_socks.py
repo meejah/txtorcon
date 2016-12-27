@@ -19,7 +19,7 @@ class SocksStateMachine(unittest.TestCase):
             'Unknown request type' in str(ctx.exception)
         )
 
-    def test_dump_graphviz(test):
+    def test_dump_graphviz(self):
         try:
             with open('socks.dot', 'w') as f:
                 #for line in socks.SocksMachine._machine.graphviz():
@@ -31,7 +31,6 @@ class SocksStateMachine(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_connect_socks_illegal_packet(self):
-        from twisted.test.iosim import IOPump, connect, FakeTransport
 
         class BadSocksServer(Protocol):
             def __init__(self):
@@ -60,10 +59,10 @@ class SocksStateMachine(unittest.TestCase):
 
         self.assertTrue(server_proto.transport.disconnected)
         self.assertTrue(client_proto.transport.disconnected)
+        pump.flush()
 
     @defer.inlineCallbacks
     def test_connect_socks_unknown_version(self):
-        from twisted.test.iosim import IOPump, connect, FakeTransport
 
         class BadSocksServer(Protocol):
             def __init__(self):
@@ -139,11 +138,10 @@ class SocksStateMachine(unittest.TestCase):
         )
         with self.assertRaises(Exception) as ctx:
             yield d
-        self.assertTrue('Unknown reply code' in str(ctx.exception))
+        self.assertIn('Unknown reply code', str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_socks_relay_data(self):
-        from twisted.test.iosim import IOPump, connect, FakeTransport
 
         class BadSocksServer(Protocol):
             def __init__(self):
