@@ -2,10 +2,11 @@ from six import StringIO
 from mock import Mock
 
 from twisted.trial import unittest
-from twisted.internet import defer
+from twisted.internet import defer, task
 from twisted.internet.address import IPv4Address
 from twisted.internet.protocol import Protocol
 from twisted.test import proto_helpers
+from twisted.test.iosim import IOPump, connect, FakeTransport
 
 from txtorcon import socks
 
