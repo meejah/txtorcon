@@ -438,7 +438,7 @@ class _ListenerCollection(object):
 
 
 # similar to OneShotObserverList in Tahoe-LAFS
-class _SingleObserver(object):
+class SingleObserver(object):
     """
     A helper for ".when_*()" sort of functions.
     """
@@ -465,6 +465,9 @@ class _SingleObserver(object):
         self._observers = None
 
 
+# am i just being silly here? why not just "self.when_foo =
+# SingleObserver()"?
+
 def observable(f):
     """
     This is a decorator that makes this method a one-shot observable
@@ -486,10 +489,27 @@ def observable(f):
                 self.when_something.fire('value')
     """
 
-    shot_list = _SingleObserver()
-
-    @wraps(f)
+    shot_observers = {}
+    #@wraps(f)
     def the_observer(s):
-        return shot_list.when_fired()
-    the_observer.fire = shot_list.fire
+        if s in shot_observers:
+            obs = shot_observers[s]
+        else:
+            obs = SingleObserver()
+            shot_observers[s] = obs
+        return obs.when_fired()
+
+    def fire(s, arg):
+        try:
+            shot_observers[s].fire(arg)
+            # XXX is this still fine? i.e. are we "re-using" a
+            # Deferred here? I don't think so... but then aren't we
+            # just going to have a giant memory-leak here,
+            # i.e. hash-table will contain *every* instance we've ever
+            # had an @observer on...?
+            #shot_observers[s] = None
+        except KeyError:
+            print("no observers", s)
+
+    the_observer.fire = fire
     return the_observer
