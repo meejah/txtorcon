@@ -461,7 +461,7 @@ class TestObserver(unittest.TestCase):
                 pass
 
             def do_it(self):
-                self.when_something.fire('foo')
+                self.when_something.fire(self, 'foo')
 
         f = Foo()
         d = f.when_something()
@@ -488,7 +488,7 @@ class TestObserver(unittest.TestCase):
         self.assertTrue(d0 is not d1)
 
         result = object()
-        f.when_something.fire(result)
+        f.when_something.fire(f, result)
 
         self.assertEqual(result, d0.result)
         self.assertEqual(result, d1.result)
@@ -504,7 +504,7 @@ class TestObserver(unittest.TestCase):
 
         f = Foo()
         d0 = f.when_something()
-        f.when_something.fire('boom')
+        f.when_something.fire(f, 'boom')
         d1 = f.when_something()
 
         self.assertTrue(d0.called)

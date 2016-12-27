@@ -74,12 +74,14 @@ class SocksMachine(object):
         self._outgoing_data = []
         # the other side of our proxy
         self._sender = None
+        self._when_done = util.SingleObserver()
 
-    @util.observable
+##    @util.observable
     def when_done(self):
         """
         Returns a Deferred that fires when we're done
         """
+        return self._when_done.when_fired()
 
     def _data_to_send(self, data):
         if self._on_data:
@@ -233,7 +235,9 @@ class SocksMachine(object):
             self._on_disconnect(error_message)
         if self._sender:
             self._sender.connectionLost(SocksError(error_message))
-        self.when_done.fire(Failure(SocksError(error_message)))
+        # XXX what's the 'happy path' exit? i.e. do we ever .fire()
+        # without a Failure?
+        self._when_done.fire(Failure(SocksError(error_message)))
         #if not self._done.called:
         #    self._done.callback(reason)
 
@@ -654,7 +658,11 @@ class _TorSocksProtocol(Protocol):
             f = Failure(
                 SocksError(self.error_code_to_string[reply])
             )
-        except:
+        except KeyError:
+            f = Failure(
+                Exception("No such SOCKS reply code '{}'".format(reply))
+            )
+        except Exception:
             f = Failure(
                 Exception("Internal error processing error-reply")
             )
