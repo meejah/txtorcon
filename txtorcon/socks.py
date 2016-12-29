@@ -157,30 +157,33 @@ class SocksMachine(object):
 
         if len(self._data) < 8:
             return
-
         msg = self._data[:4]
+
         # not changing self._data yet, in case we've not got
         # enough bytes so far.
         (version, reply, _, typ) = struct.unpack('BBBB', msg)
+
         if version != 5:
             self.reply_error("Expected version 5, got {}".format(version))
-        elif reply != 0:
+            return
+
+        if reply != 0:
             # reply == 0x00 is "succeeded", else there are error codes
             try:
                 self.reply_error(_socks_reply_code_to_string[reply])
             except KeyError:
                 self.reply_error("Unknown reply code {}".format(reply))
-        else:
-            dispatchers = {
-                0x01: self._ipv4_reply,
-                0x03: self._hostname_reply,
-                0x04: self._ipv6_reply,
-            }
+            return
 
-            try:
-                dispatchers[typ]()
-            except KeyError:
-                self.reply_error("Unexpected response type {}".format(typ))
+        type_dispatch = {
+            0x01: self._ipv4_reply,
+            0x03: self._hostname_reply,
+            0x04: self._ipv6_reply,
+        }
+        try:
+            type_dispatch[typ]()
+        except KeyError:
+            self.reply_error("Unexpected response type {}".format(typ))
 
     @_machine.output()
     def _make_connection(self, addr, port):
