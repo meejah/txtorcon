@@ -55,7 +55,12 @@ class SocksMachine(object):
 
     This is a SOCKS state machine to make a single request.
     """
+
     _machine = automat.MethodicalMachine()
+    SUCCEEDED = 0x00
+    REPLY_IPV4 = 0x01
+    REPLY_HOST = 0x03
+    REPLY_IPV6 = 0x04
 
     # XXX address = (host, port) instead
     def __init__(self, req_type, host, port=0,
@@ -167,21 +172,20 @@ class SocksMachine(object):
             self.reply_error("Expected version 5, got {}".format(version))
             return
 
-        if reply != 0:
-            # reply == 0x00 is "succeeded", else there are error codes
+        if reply != self.SUCCEEDED:
             try:
                 self.reply_error(_socks_reply_code_to_string[reply])
             except KeyError:
                 self.reply_error("Unknown reply code {}".format(reply))
             return
 
-        type_dispatch = {
-            0x01: self._ipv4_reply,
-            0x03: self._hostname_reply,
-            0x04: self._ipv6_reply,
+        reply_dispatcher = {
+            self.REPLY_IPV4: self._ipv4_reply,
+            self.REPLY_HOST: self._hostname_reply,
+            self.REPLY_IPV6: self._ipv6_reply,
         }
         try:
-            type_dispatch[typ]()
+            reply_dispatcher[typ]()
         except KeyError:
             self.reply_error("Unexpected response type {}".format(typ))
 
