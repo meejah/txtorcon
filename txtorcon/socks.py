@@ -96,6 +96,13 @@ class SocksMachine(object):
             self._outgoing_data.append(data)
 
     def send_data(self, callback):
+        """
+        drain all pending data by calling `callback()` on it
+        """
+        # a "for x in self._outgoing_data" would potentially be more
+        # efficient, but then there's no good way to bubble exceptions
+        # from callback() out without lying about how much data we
+        # processed .. or eat the exceptions in here.
         while len(self._outgoing_data):
             data = self._outgoing_data.pop(0)
             callback(data)
