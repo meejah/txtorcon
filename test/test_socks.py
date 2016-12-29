@@ -37,7 +37,6 @@ class SocksStateMachine(unittest.TestCase):
                 self._buffer = b''
 
             def dataReceived(self, data):
-                print("BADSOCKS got data", data)
                 self._buffer += data
                 if len(self._buffer) == 3:
                     assert self._buffer == b'\x05\x01\x00'
@@ -109,7 +108,6 @@ class SocksStateMachine(unittest.TestCase):
                 ]
 
             def dataReceived(self, data):
-                print("DATA", repr(data))
                 self._buffer += data
                 if len(self._recv_stack) == 0:
                     assert "not expecting any more data, got {}".format(repr(self._buffer))
