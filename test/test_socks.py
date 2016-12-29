@@ -98,7 +98,6 @@ class SocksStateMachine(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_connect_socks_unknown_reply_code(self):
-        from twisted.test.iosim import IOPump, connect, FakeTransport
 
         class BadSocksServer(Protocol):
             def __init__(self):
