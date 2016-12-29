@@ -57,6 +57,7 @@ class SocksMachine(object):
     """
     _machine = automat.MethodicalMachine()
 
+    # XXX address = (host, port) instead
     def __init__(self, req_type, host, port=0,
                  on_disconnect=None,
                  on_data=None):

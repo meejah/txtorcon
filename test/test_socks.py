@@ -44,7 +44,6 @@ class SocksStateMachine(unittest.TestCase):
                     self._buffer = b''
                     self.transport.write(b'\x05\x01\x01')
 
-        done = defer.Deferred()
         factory = socks._TorSocksFactory2(b'meejah.ca', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
@@ -82,7 +81,6 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        done = defer.Deferred()
         factory = socks._TorSocksFactory2(b'1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
@@ -107,7 +105,8 @@ class SocksStateMachine(unittest.TestCase):
                 self._buffer = b''
                 self._recv_stack = [
                     (b'\x05\x01\x00', b'\x05\x00'),
-                    (b'\x05\x01\x00\x01\x01\x02\x03\x04\x04\xd2', b'\x05\xff\x00\x04xxxx'),
+                    # the \xff is an invalid reply-code
+                    (b'\x05\x01\x00\x01\x01\x02\x03\x04\x04\xd2', b'\x05\xff\x00\x04\x01\x01\x01\x01'),
                 ]
 
             def dataReceived(self, data):
@@ -122,7 +121,6 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        done = defer.Deferred()
         factory = socks._TorSocksFactory2(b'1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
@@ -162,7 +160,6 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        done = defer.Deferred()
         factory = socks._TorSocksFactory2(b'1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
@@ -298,6 +295,8 @@ class SocksStateMachine(unittest.TestCase):
         )
 
     def test_resolve(self):
+        # kurt: most things use (hsot, port) tuples, this probably
+        # should too
         sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
         sm.connection()
         sm.version_reply(0x02)
