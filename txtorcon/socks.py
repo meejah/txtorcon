@@ -8,7 +8,7 @@ from __future__ import print_function
 
 import six
 import struct
-from socket import inet_aton, inet_ntoa
+from socket import inet_pton, inet_ntoa, AF_INET6, AF_INET
 import functools
 
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
@@ -92,9 +92,9 @@ class SocksMachine(object):
             raise ValueError(
                 "Unknown request type '{}'".format(req_type)
             )
+        # XXX what if addr is None?
         self._req_type = req_type
-        self._host = host
-        self._port = port
+        self._addr = _create_ip_address(host, port)
         self._data = b''
         self._on_disconnect = on_disconnect
         # XXX FIXME do *one* of these:
@@ -146,27 +146,32 @@ class SocksMachine(object):
             if version == 5 and method in [0x00, 0x02]:
                 self.version_reply(method)
             else:
-                print("HERE", version, self)
                 if version != 5:
                     self.version_error("Expected version 5, got {}".format(version))
                 else:
                     self.version_error("Wanted method 0 or 2, got {}".format(method))
 
-    def _ipv4_reply(self):
+    def _parse_ipv4_reply(self):
+        print("ipv4????", len(self._data))
         if len(self._data) >= 10:
             addr = inet_ntoa(self._data[4:8])
             port = struct.unpack('H', self._data[8:10])[0]
             self._data = self._data[10:]
+            print("ipv4 reply!", addr, port)
             self.reply_ipv4(addr, port)
+            print("DONE")
 
-    def _ipv6_reply(self):
+    def _parse_ipv6_reply(self):
         if len(self._data) >= 22:
-            addr = msg[4:20]
-            port = struct.unpack('H', self._data[2:22])[0]
+            addr = self._data[4:20]
+            port = struct.unpack('H', self._data[20:22])[0]
             self._data = self._data[22:]
+            print("ipv6 reply!", addr, port)
+            print("doing", self.reply_ipv6)
             self.reply_ipv6(addr, port)
+            print("done")
 
-    def _hostname_reply(self):
+    def _parse_hostname_reply(self):
         if len(self._data) < 8:
             return
         addrlen = struct.unpack('B', self._data[4:5])[0]
@@ -209,9 +214,9 @@ class SocksMachine(object):
             return
 
         reply_dispatcher = {
-            self.REPLY_IPV4: self._ipv4_reply,
-            self.REPLY_HOST: self._hostname_reply,
-            self.REPLY_IPV6: self._ipv6_reply,
+            self.REPLY_IPV4: self._parse_ipv4_reply,
+            self.REPLY_HOST: self._parse_hostname_reply,
+            self.REPLY_IPV6: self._parse_ipv6_reply,
         }
         try:
             reply_dispatcher[typ]()
@@ -225,6 +230,24 @@ class SocksMachine(object):
         sender = yield self._factory.buildProtocol(addr)
         client_proxy = portforward.ProxyClient()
         sender.makeConnection(self.transport)
+        # portforward.ProxyClient is going to call setPeer but this
+        # probably doesn't have it...
+        setattr(sender, 'setPeer', lambda _: None)
+        client_proxy.setPeer(sender)
+        self._sender = sender
+        returnValue(sender)
+
+    @_machine.output()
+    def _make_connection_v6(self, addr, port):
+        "make our proxy connection v6"
+        print("MAKE CONN")
+        # XXX notify factory we got the other sides' address?
+        print("DING MAKE CONNECTION", addr, port)
+        addr = IPv6Address('TCP', addr, port)
+        sender = yield self._factory.buildProtocol(addr)
+        client_proxy = portforward.ProxyClient()
+        sender.makeConnection(self.transport)
+        print("SENDER", sender)
         # portforward.ProxyClient is going to call setPeer but this
         # probably doesn't have it...
         setattr(sender, 'setPeer', lambda _: None)
@@ -313,15 +336,21 @@ class SocksMachine(object):
 
     def _send_connect_request(self):
         "sends CONNECT request"
+        # XXX needs to support v6 ... or something else does
+        is_v6 = isinstance(self._addr, IPv6Address)
+        host = self._addr.host
+        port = self._addr.port
+        print("IS", is_v6, host, port, type(host), len(inet_pton(AF_INET6 if is_v6 else AF_INET, host)))
+
         self._data_to_send(
             struct.pack(
                 '!BBBB4sH',
                 5,                   # version
                 0x01,                # command
                 0x00,                # reserved
-                0x01,                # IPv4 address
-                inet_aton(self._host),
-                self._port,
+                0x04 if is_v6 else 0x01,
+                inet_pton(AF_INET6 if is_v6 else AF_INET, host),
+                port,
             )
         )
 
@@ -330,14 +359,14 @@ class SocksMachine(object):
         "sends RESOLVE_PTR request (Tor custom)"
         self._data_to_send(
             struct.pack(
-                '!BBBBB{}sH'.format(len(self._host)),
+                '!BBBBB{}sH'.format(len(self._addr.host)),
                 5,                   # version
                 0xF0,                # command
                 0x00,                # reserved
                 0x03,                # DOMAINNAME
-                len(self._host),
-                self._host,
-                0,  # self._port?
+                len(self._addr.host),
+                str(self._addr.host),
+                0,  # self._addr.port?
             )
         )
 
@@ -346,13 +375,13 @@ class SocksMachine(object):
         "sends RESOLVE_PTR request (Tor custom)"
         self._data_to_send(
             struct.pack(
-                '!BBBBB{}sH'.format(len(self._host)),
+                '!BBBBB{}sH'.format(len(self._addr.host)),
                 5,                   # version
                 0xF1,                # command
                 0x00,                # reserved
                 0x03,                # DOMAINNAME
-                len(self._host),
-                self._host,
+                len(self._addr.host),
+                str(self._addr.host),
                 0,              # why do we specify port at all?
             )
         )
@@ -415,6 +444,11 @@ class SocksMachine(object):
         outputs=[_make_connection],
     )
     sent_request.upon(
+        reply_ipv6,
+        enter=relaying,
+        outputs=[_make_connection_v6],
+    )
+    sent_request.upon(
         reply_error,
         enter=abort,
         outputs=[_disconnect],
@@ -461,10 +495,9 @@ class SocksMachine(object):
 class _TorSocksProtocol2(Protocol):
 
     def __init__(self, host, port, socks_method, factory):
-        print("made a proto", host)
         self._machine = SocksMachine(
             req_type=socks_method,
-            host=host,
+            host=unicode(host),
             port=port,
             on_disconnect=self._on_disconnect,
             on_data=self._on_data,
@@ -473,6 +506,9 @@ class _TorSocksProtocol2(Protocol):
     def connectionMade(self):
         print("connection!")
         self._machine.connection()
+        # I think also we want to fire "got_address" or similar from
+        # self.transport.getHost -- e.g. like the get_address madness
+        # in the "old" stuff.
 
     def connectionLost(self, reason):
         print("LOST", reason)
@@ -571,6 +607,8 @@ class TorSocksEndpoint(object):
     These should usually not be instantiated directly, instead use
     :meth:`txtorcon.TorConfig.socks_endpoint`.
     """
+    # XXX host, port args should be (host, port) tuple, or
+    # IAddress-implementer?
     def __init__(self, socks_endpoint, host, port, tls=False):
         self._proxy_ep = socks_endpoint  # can be Deferred
         self._host = host
