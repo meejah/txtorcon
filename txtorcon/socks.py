@@ -13,16 +13,18 @@ import functools
 
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.protocol import Protocol, Factory
-from twisted.internet.address import IPv4Address
+from twisted.internet.address import IPv4Address, IPv6Address, HostnameAddress
 from twisted.python.failure import Failure
 from twisted.protocols import portforward
 from twisted.protocols import tls
 # from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
+import ipaddress
 
 from txtorcon.spaghetti import FSM, State, Transition
 from txtorcon import util
+
 
 
 # okay, so what i want to do to fix this crap up is:
@@ -49,6 +51,25 @@ _socks_reply_code_to_string = {
 
 import automat
 
+
+def _create_ip_address(host, port):
+    if not isinstance(host, six.text_type):
+        raise ValueError(
+            "'host' must be {}, not {}".format(six.text_type, type(host))
+        )
+    try:
+        a = ipaddress.ip_address(host)
+    except ValueError as e:
+        a = None
+    if isinstance(a, ipaddress.IPv4Address):
+        return IPv4Address('TCP', host, port)
+    if isinstance(a, ipaddress.IPv6Address):
+        return IPv6Address('TCP', host, port)
+    addr = HostnameAddress(host, port)
+    addr.host = host
+    return addr
+
+
 class SocksMachine(object):
     """
     trying to prototype the SOCKS state-machine in automat
@@ -63,7 +84,8 @@ class SocksMachine(object):
     REPLY_IPV6 = 0x04
 
     # XXX address = (host, port) instead
-    def __init__(self, req_type, host, port=0,
+    def __init__(self, req_type, host,
+                 port=0,
                  on_disconnect=None,
                  on_data=None):
         if req_type not in self._dispatch:

@@ -14,7 +14,7 @@ class SocksStateMachine(unittest.TestCase):
 
     def test_illegal_request(self):
         with self.assertRaises(ValueError) as ctx:
-            socks.SocksMachine('FOO_RESOLVE', 'meejah.ca', 443)
+            socks.SocksMachine('FOO_RESOLVE', u'meejah.ca', 443)
         self.assertTrue(
             'Unknown request type' in str(ctx.exception)
         )
@@ -180,7 +180,7 @@ class SocksStateMachine(unittest.TestCase):
         dis = []
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443, on_disconnect)
+        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
         sm.connection()
 
         sm.feed_data('\x05')
@@ -202,7 +202,7 @@ class SocksStateMachine(unittest.TestCase):
         dis = []
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443, on_disconnect)
+        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
         sm.connection()
 
         sm.feed_data('\x06')
@@ -224,7 +224,7 @@ class SocksStateMachine(unittest.TestCase):
         dis = []
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine('CONNECT', '1.2.3.4', 443, on_disconnect)
+        sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443, on_disconnect=on_disconnect)
         sm.connection()
 
         sm.feed_data('\x05')
@@ -241,7 +241,7 @@ class SocksStateMachine(unittest.TestCase):
         dis = []
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine('CONNECT', '1.2.3.4', 443, on_disconnect)
+        sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443, on_disconnect=on_disconnect)
         sm.connection()
 
         sm.feed_data('\x05')
@@ -259,7 +259,7 @@ class SocksStateMachine(unittest.TestCase):
         self.assertTrue(data.getvalue().endswith("this is some relayed data"))
 
     def test_end_to_end_success(self):
-        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
+        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
 
         sm.feed_data('\x05')
@@ -275,7 +275,7 @@ class SocksStateMachine(unittest.TestCase):
         )
 
     def test_end_to_end_connect_and_relay(self):
-        sm = socks.SocksMachine('CONNECT', '1.2.3.4', 443)
+        sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443)
         sm.connection()
 
         sm.feed_data('\x05')
@@ -294,7 +294,7 @@ class SocksStateMachine(unittest.TestCase):
     def test_resolve(self):
         # kurt: most things use (hsot, port) tuples, this probably
         # should too
-        sm = socks.SocksMachine('RESOLVE', 'meejah.ca', 443)
+        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
         sm.version_reply(0x02)
 
@@ -307,7 +307,7 @@ class SocksStateMachine(unittest.TestCase):
         )
 
     def test_resolve_ptr(self):
-        sm = socks.SocksMachine('RESOLVE_PTR', '1.2.3.4', 443)
+        sm = socks.SocksMachine('RESOLVE_PTR', u'1.2.3.4', 443)
         sm.connection()
         sm.version_reply(0x00)
 
@@ -320,7 +320,7 @@ class SocksStateMachine(unittest.TestCase):
         )
 
     def test_connect(self):
-        sm = socks.SocksMachine('CONNECT', '1.2.3.4', 443)
+        sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443)
         sm.connection()
         sm.version_reply(0x00)
 
