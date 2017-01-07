@@ -175,6 +175,53 @@ class SocksStateMachine(unittest.TestCase):
         pump.flush()
         self.assertEqual('abcdef', server_proto._buffer)
 
+    @defer.inlineCallbacks
+    def test_socks_ipv6(self):
+
+        class BadSocksServer(Protocol):
+            def __init__(self):
+                self._buffer = b''
+                self._recv_stack = [
+                    (b'\x05\x01\x00', b'\x05\x02'),
+                    (b'\x05\x01\x00\x04\x20\x02\x44\x93\x04\xd2', b'\x05\x00\x00\x04{}\xbe\xef'.format('\x00' * 16)),
+                ]
+
+            def dataReceived(self, data):
+                print("RECV '{}'".format(repr(data)))
+                self._buffer += data
+                if len(self._recv_stack) == 0:
+                    assert "not expecting any more data, got {}".format(repr(self._buffer))
+                    return
+                expecting, to_send = self._recv_stack.pop(0)
+                got = self._buffer[:len(expecting)]
+                self._buffer = self._buffer[len(expecting):]
+                assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
+                self.transport.write(to_send)
+
+        factory = socks._TorSocksFactory2(u'2002:4493:5105::a299:9bff:fe0e:4471', 1234, 'CONNECT', Mock())
+        server_proto = BadSocksServer()
+        server_transport = FakeTransport(server_proto, isServer=True)
+
+        client_proto = factory.buildProtocol('ignored')
+        client_transport = FakeTransport(client_proto, isServer=False)
+
+        pump = yield connect(
+            server_proto, server_transport,
+            client_proto, client_transport,
+        )
+
+        # should be relaying now, try sending some datas
+
+        client_proto.transport.write('abcdef')
+        pump.flush()
+        self.assertEqual('abcdef', server_proto._buffer)
+        print("zinga", dir(client_proto.transport))
+        print("zinga", client_proto.transport)
+        print("zinga", client_proto.transport.getHost())
+        print("blam", client_proto)
+        print("blam", dir(client_proto))
+        self.assertEqual(61374, client_proto)
+
     def test_end_to_end_wrong_method(self):
 
         dis = []
