@@ -197,10 +197,11 @@ class SocksStateMachine(unittest.TestCase):
 
         factory = socks._TorSocksFactory2(u'2002:4493:5105::a299:9bff:fe0e:4471', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
+        expected_address = object()
         server_transport = FakeTransport(server_proto, isServer=True)
 
         client_proto = factory.buildProtocol('ignored')
-        client_transport = FakeTransport(client_proto, isServer=False)
+        client_transport = FakeTransport(client_proto, isServer=False, hostAddress=expected_address)
 
         pump = yield connect(
             server_proto, server_transport,
@@ -210,6 +211,11 @@ class SocksStateMachine(unittest.TestCase):
         # should be relaying now, try sending some datas
 
         client_proto.transport.write('abcdef')
+        addr = yield factory.get_address()
+
+        # FIXME how shall we test for IPv6-ness?
+        assert addr is expected_address
+        print("ADDR", addr)
         pump.flush()
         self.assertEqual('abcdef', server_proto._buffer)
         print("zinga", dir(client_proto.transport))
@@ -217,7 +223,7 @@ class SocksStateMachine(unittest.TestCase):
         print("zinga", client_proto.transport.getHost())
         print("blam", client_proto)
         print("blam", dir(client_proto))
-        self.assertEqual(61374, client_proto)
+        #self.assertEqual(61374, client_proto)
 
     def test_end_to_end_wrong_method(self):
 
