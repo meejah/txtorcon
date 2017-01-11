@@ -697,7 +697,6 @@ class TorControlProtocol(LineOnlyReceiver):
         what's supported.
         """
         methods = None
-        cookie_auth = False
         for line in protoinfo.split('\n'):
             if line[:5] == 'AUTH ':
                 kw = parse_keywords(line[5:].replace(' ', '\n'))
@@ -717,33 +716,42 @@ class TorControlProtocol(LineOnlyReceiver):
                     self._read_cookie(cookiefile)
                 except IOError as why:
                     txtorlog.msg("Reading COOKIEFILE failed: " + str(why))
-                    cookie_auth = False
-                else:
-                    cookie_auth = True
+                    if self.password_function and 'HASHEDPASSWORD' in methods:
+                        txtorlog.msg("Falling back to password")
+                    else:
+                        raise RuntimeError(
+                            "Failed to read COOKIEFILE '{fname}': {msg}\n".format(
+                                fname=cookiefile,
+                                msg=str(why),
+                            )
+                            # "On Debian, join the debian-tor group"
+                        )
             else:
                 txtorlog.msg("Didn't get COOKIEFILE")
+                raise RuntimeError(
+                    "Got 'COOKIE' or 'SAFECOOKIE' method, but no 'COOKIEFILE'"
+                )
 
-        if cookie_auth:
-            if 'SAFECOOKIE' in methods:
-                txtorlog.msg("Using SAFECOOKIE authentication", cookiefile,
-                             len(self._cookie_data), "bytes")
-                self.client_nonce = os.urandom(32)
+        if 'SAFECOOKIE' in methods and self._cookie_data is not None:
+            txtorlog.msg("Using SAFECOOKIE authentication", cookiefile,
+                         len(self._cookie_data), "bytes")
+            self.client_nonce = os.urandom(32)
 
-                cmd = 'AUTHCHALLENGE SAFECOOKIE ' + \
-                      base64.b16encode(self.client_nonce)
-                d = self.queue_command(cmd)
-                d.addCallback(self._safecookie_authchallenge)
-                d.addCallback(self._bootstrap)
-                d.addErrback(self._auth_failed)
-                return
+            cmd = 'AUTHCHALLENGE SAFECOOKIE ' + \
+                  base64.b16encode(self.client_nonce)
+            d = self.queue_command(cmd)
+            d.addCallback(self._safecookie_authchallenge)
+            d.addCallback(self._bootstrap)
+            d.addErrback(self._auth_failed)
+            return
 
-            elif 'COOKIE' in methods:
-                txtorlog.msg("Using COOKIE authentication",
-                             cookiefile, len(self._cookie_data), "bytes")
-                d = self.authenticate(self._cookie_data)
-                d.addCallback(self._bootstrap)
-                d.addErrback(self._auth_failed)
-                return
+        elif 'COOKIE' in methods and self._cookie_data is not None:
+            txtorlog.msg("Using COOKIE authentication",
+                         cookiefile, len(self._cookie_data), "bytes")
+            d = self.authenticate(self._cookie_data)
+            d.addCallback(self._bootstrap)
+            d.addErrback(self._auth_failed)
+            return
 
         if self.password_function and 'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
@@ -759,7 +767,8 @@ class TorControlProtocol(LineOnlyReceiver):
 
         raise RuntimeError(
             "The Tor I connected to doesn't support SAFECOOKIE nor COOKIE"
-            " authentication and I have no password_function specified."
+            " authentication (or we can't read the cookie files) and I have"
+            " no password_function specified."
         )
 
     def _do_password_authentication(self, passwd):

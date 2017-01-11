@@ -21,6 +21,8 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.18.0*
 
+ * `issue 200 <https://github.com/meejah/txtorcon/issues/200>`_: better feedback if the cookie data can't be read
+
 
 v0.17.0
 -------
