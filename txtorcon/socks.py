@@ -104,7 +104,6 @@ class SocksMachine(object):
         self._sender = None
         self._when_done = util.SingleObserver()
 
-##    @util.observable
     def when_done(self):
         """
         Returns a Deferred that fires when we're done
@@ -171,9 +170,8 @@ class SocksMachine(object):
             self.reply_ipv6(addr, port)
             print("done")
 
-    def _parse_hostname_reply(self):
-        if len(self._data) < 8:
-            return
+    def _parse_domain_name_reply(self):
+        assert len(self._data) >= 8  # _parse_request_reply checks this
         addrlen = struct.unpack('B', self._data[4:5])[0]
         # may simply not have received enough data yet...
         if len(self._data) < (5 + addrlen + 2):
@@ -215,13 +213,15 @@ class SocksMachine(object):
 
         reply_dispatcher = {
             self.REPLY_IPV4: self._parse_ipv4_reply,
-            self.REPLY_HOST: self._parse_hostname_reply,
+            self.REPLY_HOST: self._parse_domain_name_reply,
             self.REPLY_IPV6: self._parse_ipv6_reply,
         }
         try:
-            reply_dispatcher[typ]()
+            method = reply_dispatcher[typ]
         except KeyError:
             self.reply_error("Unexpected response type {}".format(typ))
+            return
+        method()
 
     @_machine.output()
     def _make_connection(self, addr, port):
@@ -253,7 +253,12 @@ class SocksMachine(object):
         setattr(sender, 'setPeer', lambda _: None)
         client_proxy.setPeer(sender)
         self._sender = sender
+        self._when_done.fire(addr)
         returnValue(sender)
+
+    @_machine.output()
+    def _domain_name_resolved(self, domain):
+        self._when_done.fire(domain)
 
     @_machine.input()
     def connection(self):
@@ -406,6 +411,10 @@ class SocksMachine(object):
     def abort(self, error_message):
         "we've encountered an error"
 
+    @_machine.state()
+    def done(self):
+        "operations complete"
+
     unconnected.upon(
         connection,
         enter=sent_version,
@@ -447,6 +456,11 @@ class SocksMachine(object):
         reply_ipv6,
         enter=relaying,
         outputs=[_make_connection_v6],
+    )
+    sent_request.upon(
+        reply_domain_name,
+        enter=done,
+        outputs=[_domain_name_resolved],
     )
     sent_request.upon(
         reply_error,
@@ -509,6 +523,7 @@ class _TorSocksProtocol2(Protocol):
         # I think also we want to fire "got_address" or similar from
         # self.transport.getHost -- e.g. like the get_address madness
         # in the "old" stuff.
+        self.factory._did_connect(self.transport.getHost())
 
     def connectionLost(self, reason):
         print("LOST", reason)

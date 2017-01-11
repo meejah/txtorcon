@@ -84,6 +84,7 @@ class Router(object):
 
     @property
     def modified(self):
+        # UTC
         if self._modified is None:
             self._modified = datetime.strptime(
                 self._modified_unparsed,

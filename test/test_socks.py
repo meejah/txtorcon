@@ -356,6 +356,59 @@ class SocksStateMachine(unittest.TestCase):
             data.getvalue(),
         )
 
+    @defer.inlineCallbacks
+    def test_resolve_with_reply(self):
+        # kurt: most things use (hsot, port) tuples, this probably
+        # should too
+        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
+        sm.connection()
+        sm.version_reply(0x02)
+
+        # make sure the state-machine wanted to send out the correct
+        # request.
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertEqual(
+            '\x05\x01\x00'
+            '\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
+            data.getvalue(),
+        )
+
+        # now feed it a reply (but not enough to parse it yet!)
+        d = sm.when_done()
+        # ...we have to send at least 8 bytes, but NOT the entire hostname
+        sm.feed_data('\x05\x00\x00\x03')
+        sm.feed_data('\x06meeja')
+        self.assertTrue(not d.called)
+        # now send the rest, checking the buffering in _parse_domain_name_reply
+        sm.feed_data('h\x00\x00')
+        self.assertTrue(d.called)
+        answer = yield d
+        self.assertEqual('meejah', answer)
+
+    @defer.inlineCallbacks
+    def test_unknown_response_type(self):
+        # kurt: most things use (hsot, port) tuples, this probably
+        # should too
+        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
+        sm.connection()
+        sm.version_reply(0x02)
+
+        # make sure the state-machine wanted to send out the correct
+        # request.
+        data = StringIO()
+        sm.send_data(data.write)
+        self.assertEqual(
+            '\x05\x01\x00'
+            '\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
+            data.getvalue(),
+        )
+
+        sm.feed_data('\x05\x00\x00\xaf\x00\x00\x00\x00')
+        with self.assertRaises(socks.SocksError) as ctx:
+            yield sm.when_done()
+        self.assertTrue('Unexpected response type 175' in str(ctx.exception))
+
     def test_resolve_ptr(self):
         sm = socks.SocksMachine('RESOLVE_PTR', u'1.2.3.4', 443)
         sm.connection()
