@@ -19,6 +19,13 @@ class SocksStateMachine(unittest.TestCase):
             'Unknown request type' in str(ctx.exception)
         )
 
+    def test_illegal_host(self):
+        with self.assertRaises(ValueError) as ctx:
+            socks.SocksMachine('RESOLVE', 1234, 443)
+        self.assertTrue(
+            "'host' must be" in str(ctx.exception)
+        )
+
     @defer.inlineCallbacks
     def test_connect_socks_illegal_packet(self):
 
