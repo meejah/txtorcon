@@ -1,4 +1,4 @@
-.PHONY: test html counts coverage sdist clean install doc integration
+.PHONY: test html counts coverage sdist clean install doc integration diagrams
 default: test
 VERSION = 0.17.0
 
@@ -7,6 +7,9 @@ test:
 
 tox:
 	tox -i http://localhost:3141/root/pypi
+
+diagrams:
+	automat-visualize --image-directory ./diagrams --image-type png txtorcon
 
 # see also http://docs.docker.io/en/latest/use/baseimages/
 dockerbase-wheezy:
