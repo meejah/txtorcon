@@ -3,7 +3,7 @@ default: test
 VERSION = 0.18.0
 
 test:
-	trial --reporter=text test
+	PYTHONPATH=. trial --reporter=text test
 
 tox:
 	tox -i http://localhost:3141/root/pypi
