@@ -40,7 +40,7 @@ class SocksStateMachine(unittest.TestCase):
                     self._buffer = b''
                     self.transport.write(b'\x05\x01\x01')
 
-        factory = socks._TorSocksFactory2('meejah.ca', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2(u'meejah.ca', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -77,7 +77,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2('1.2.3.4', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2(u'1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -115,7 +115,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2('1.2.3.4', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2(u'1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -154,7 +154,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2('1.2.3.4', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2(u'1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -195,7 +195,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2('2002:4493:5105::a299:9bff:fe0e:4471', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2(u'2002:4493:5105::a299:9bff:fe0e:4471', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         expected_address = object()
         server_transport = FakeTransport(server_proto, isServer=True)

@@ -3,6 +3,7 @@ import sys
 import tempfile
 from mock import patch
 from unittest import skipIf
+import ipaddress
 
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -273,16 +274,18 @@ class TestFindTor(unittest.TestCase):
 
 class TestIpAddr(unittest.TestCase):
 
-    @patch('txtorcon.util.ipaddress')
-    def test_create_ipaddr(self, ipaddr):
+    def test_create_ipaddr(self):
         ip = maybe_ip_addr('1.2.3.4')
+        print(ip)
+        self.assertTrue(isinstance(ip, ipaddress.IPv4Address))
 
     @patch('txtorcon.util.ipaddress')
-    def test_create_ipaddr(self, ipaddr):
+    def test_create_ipaddr_fail(self, ipaddr):
         def foo(blam):
             raise ValueError('testing')
         ipaddr.ip_address.side_effect = foo
         ip = maybe_ip_addr('1.2.3.4')
+        self.assertTrue(isinstance(ip, type('1.2.3.4')))
 
 
 class TestUnescapeQuotedString(unittest.TestCase):
