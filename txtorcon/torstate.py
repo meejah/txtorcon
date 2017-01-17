@@ -9,6 +9,7 @@ import os
 import stat
 import types
 import warnings
+import six
 
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -33,7 +34,6 @@ from txtorcon.interface import ICircuitContainer
 from txtorcon.interface import IStreamListener
 from txtorcon.interface import IStreamAttacher
 from .spaghetti import FSM, State, Transition
-from .util import basestring
 
 
 def _build_state(proto):
@@ -603,7 +603,8 @@ class TorState(object):
                     first = False
                 else:
                     cmd += ','
-                if isinstance(router, basestring) and len(router) == 40 \
+                # XXX should we really accept bytes here?
+                if isinstance(router, (six.text_type, bytes)) and len(router) == 40 \
                    and hashFromHexId(router):
                     cmd += router
                 else:

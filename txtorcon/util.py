@@ -14,6 +14,8 @@ import subprocess
 import ipaddress
 import struct
 import re
+import six
+from functools import wraps
 
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
@@ -21,6 +23,7 @@ from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.endpoints import serverFromString
 
 from zope.interface import implementer
+from zope.interface import Interface
 
 try:
     import GeoIP as _GeoIP
@@ -32,15 +35,21 @@ city = None
 country = None
 asn = None
 
-# XXX probably better to depend on and use "six" for py2/3 stuff?
-try:
-    unicode
-except NameError:
-    py3k = True
-    basestring = str
-else:
-    py3k = False
-    basestring = basestring
+
+def version_at_least(version_string, major, minor, micro, patch):
+    """
+    This returns True if the version_string represents a Tor version
+    of at least ``major``.``minor``.``micro``.``patch`` version,
+    ignoring any trailing specifiers.
+    """
+    parts = re.match(
+        r'^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+).*$',
+        version_string,
+    )
+    for ver, gold in zip(parts.group(1, 2, 3, 4), (major, minor, micro, patch)):
+        if int(ver) < int(gold):
+            return False
+    return True
 
 
 def create_geoip(fname):
@@ -126,7 +135,7 @@ def maybe_ip_addr(addr):
     try:
         return ipaddress.ip_address(addr)
     except ValueError:
-            pass
+        pass
     return str(addr)
 
 
@@ -146,6 +155,8 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
         a dict of key->value (both strings) of all name=value type
         keywords found in args.
     """
+    if type(args) is bytes:
+        args = args.decode('ascii')
     filtered = [x for x in args if '=' in x and key_filter(x.split('=')[0])]
     return dict(x.split('=', 1) for x in filtered)
 
@@ -190,7 +201,7 @@ def process_from_address(addr, port, torstate=None):
     proc = subprocess.Popen(['lsof', '-i', '4tcp@%s:%s' % (addr, port)],
                             stdout=subprocess.PIPE)
     (stdout, stderr) = proc.communicate()
-    lines = stdout.split('\n')
+    lines = stdout.split(b'\n')
     if len(lines) > 1:
         return int(lines[1].split()[1])
 
@@ -217,7 +228,7 @@ def compare_via_hash(x, y):
             hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
 
 
-class NetLocation:
+class NetLocation(object):
     """
     Represents the location of an IP address, either city or country
     level resolution depending on what GeoIP database was loaded. If
@@ -315,4 +326,35 @@ def unescape_quoted_string(string):
     # handeled as escape codes by string.decode('string-escape').
     # This is needed so e.g. '\x00' is not unescaped as '\0'
     string = re.sub(r'((?:^|[^\\])(?:\\\\)*)\\([^ntr0-7\\])', r'\1\2', string)
+    if six.PY3:
+        # XXX hmmm?
+        return bytes(string, 'ascii').decode('unicode-escape')
     return string.decode('string-escape')
+
+
+# similar to OneShotObserverList in Tahoe-LAFS
+class SingleObserver(object):
+    """
+    A helper for ".when_*()" sort of functions.
+    """
+    _NotFired = object()
+
+    def __init__(self):
+        self._observers = []
+        self._fired = self._NotFired
+
+    def when_fired(self):
+        d = defer.Deferred()
+        if self._fired is not self._NotFired:
+            d.callback(self._fired)
+        else:
+            self._observers.append(d)
+        return d
+
+    def fire(self, value):
+        if self._observers is None:
+            return  #raise RuntimeError("already fired")
+        self._fired = value
+        for d in self._observers:
+            d.callback(self._fired)
+        self._observers = None
