@@ -132,6 +132,8 @@ def maybe_ip_addr(addr):
     TODO consider explicitly checking for .exit or .onion at the end?
     """
 
+    if six.PY2 and isinstance(addr, str):
+        addr = unicode(addr)
     try:
         return ipaddress.ip_address(addr)
     except ValueError:
