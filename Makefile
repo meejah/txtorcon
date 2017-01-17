@@ -35,7 +35,7 @@ doc: docs/*.rst
 	-cp dist/txtorcon-${VERSION}.tar.gz docs/_build/html
 
 coverage:
-	coverage run --source=txtorcon `which trial` test
+	PYTHONPATH=. coverage run --source=txtorcon `which trial` test
 	coverage report --show-missing
 
 htmlcoverage:
