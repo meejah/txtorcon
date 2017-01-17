@@ -166,7 +166,7 @@ class SocksMachine(object):
             port = struct.unpack('H', self._data[20:22])[0]
             self._data = self._data[22:]
             print("ipv6 reply!", addr, port)
-            print("doing", self.reply_ipv6)
+            print("doing", self.reply_ipv6, addr, type(addr))
             self.reply_ipv6(addr, port)
             print("done")
 
@@ -362,15 +362,17 @@ class SocksMachine(object):
     @_machine.output()
     def _send_resolve_request(self):
         "sends RESOLVE_PTR request (Tor custom)"
+        host = self._addr.host.encode()
+        print("XXXXX", host, type(host))
         self._data_to_send(
             struct.pack(
-                '!BBBBB{}sH'.format(len(self._addr.host)),
+                '!BBBBB{}sH'.format(len(host)),
                 5,                   # version
                 0xF0,                # command
                 0x00,                # reserved
                 0x03,                # DOMAINNAME
-                len(self._addr.host),
-                str(self._addr.host),
+                len(host),
+                host,
                 0,  # self._addr.port?
             )
         )
@@ -378,15 +380,16 @@ class SocksMachine(object):
     @_machine.output()
     def _send_resolve_ptr_request(self):
         "sends RESOLVE_PTR request (Tor custom)"
+        host = self._addr.host.encode()
         self._data_to_send(
             struct.pack(
-                '!BBBBB{}sH'.format(len(self._addr.host)),
+                '!BBBBB{}sH'.format(len(host)),
                 5,                   # version
                 0xF1,                # command
                 0x00,                # reserved
                 0x03,                # DOMAINNAME
-                len(self._addr.host),
-                str(self._addr.host),
+                len(host),
+                host,
                 0,              # why do we specify port at all?
             )
         )
@@ -511,7 +514,7 @@ class _TorSocksProtocol2(Protocol):
     def __init__(self, host, port, socks_method, factory):
         self._machine = SocksMachine(
             req_type=socks_method,
-            host=unicode(host),
+            host=host,  # unicode() on py3, py2? we want idna, actually?
             port=port,
             on_disconnect=self._on_disconnect,
             on_data=self._on_data,
@@ -534,7 +537,7 @@ class _TorSocksProtocol2(Protocol):
         self._machine.feed_data(data)
 
     def _on_data(self, data):
-        print("sending", data)
+        print("sending", data, type(data))
         self.transport.write(data)
 
     def _on_disconnect(self, error_message):

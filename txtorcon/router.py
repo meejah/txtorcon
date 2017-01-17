@@ -8,7 +8,6 @@ from __future__ import with_statement
 from datetime import datetime
 from .util import NetLocation
 import six
-from .util import basestring
 from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 

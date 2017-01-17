@@ -4,8 +4,9 @@ import tempfile
 
 from mock import patch
 from mock import Mock, MagicMock
+import six
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from twisted.trial import unittest
 from twisted.test import proto_helpers
@@ -33,7 +34,7 @@ from txtorcon import TorNotFound
 from txtorcon import TCPHiddenServiceEndpointParser
 from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
-from txtorcon.util import NoOpProtocolFactory, py3k
+from txtorcon.util import NoOpProtocolFactory
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import _HAVE_TLS
 
@@ -457,8 +458,8 @@ class EndpointLaunchTests(unittest.TestCase):
 
 
 # FIXME should probably go somewhere else, so other tests can easily use these.
+@implementer(IProtocol)
 class FakeProtocol(object):
-    implements(IProtocol)
 
     def dataReceived(self, data):
         print("DATA", data)
@@ -474,8 +475,8 @@ class FakeProtocol(object):
         print("MADE!")
 
 
+@implementer(IAddress)
 class FakeAddress(object):
-    implements(IAddress)
 
     compareAttributes = ('type', 'host', 'port')
     type = 'fakeTCP'
@@ -492,8 +493,8 @@ class FakeAddress(object):
         return hash((self.type, self.host, self.port))
 
 
+@implementer(IListeningPort)
 class FakeListeningPort(object):
-    implements(IListeningPort)
 
     def __init__(self, port):
         self.port = port
@@ -519,8 +520,8 @@ from .test_torconfig import FakeProcessTransport  # FIXME importing from other t
 from .test_torconfig import FakeControlProtocol  # FIXME
 
 
+@implementer(IReactorTCP)
 class FakeReactorTcp(FakeReactor):
-    implements(IReactorTCP)
 
     failures = 0
     _port_generator = port_generator()
@@ -589,7 +590,7 @@ class FakeTorSocksEndpoint(object):
 
 
 class TestTorClientEndpoint(unittest.TestCase):
-    skip = "no txsocksx on py3" if py3k else None
+    skip = "no txsocksx on py3" if six.PY3 else None
 
     def test_client_connection_failed(self):
         """

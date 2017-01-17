@@ -1,4 +1,4 @@
-from six import StringIO
+from six import BytesIO
 from mock import Mock
 
 from twisted.trial import unittest
@@ -40,7 +40,7 @@ class SocksStateMachine(unittest.TestCase):
                     self._buffer = b''
                     self.transport.write(b'\x05\x01\x01')
 
-        factory = socks._TorSocksFactory2(b'meejah.ca', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2('meejah.ca', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -77,7 +77,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2(b'1.2.3.4', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2('1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -115,7 +115,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2(b'1.2.3.4', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2('1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -154,7 +154,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2(b'1.2.3.4', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2('1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -168,9 +168,9 @@ class SocksStateMachine(unittest.TestCase):
 
         # should be relaying now, try sending some datas
 
-        client_proto.transport.write('abcdef')
+        client_proto.transport.write(b'abcdef')
         pump.flush()
-        self.assertEqual('abcdef', server_proto._buffer)
+        self.assertEqual(b'abcdef', server_proto._buffer)
 
     @defer.inlineCallbacks
     def test_socks_ipv6(self):
@@ -180,11 +180,11 @@ class SocksStateMachine(unittest.TestCase):
                 self._buffer = b''
                 self._recv_stack = [
                     (b'\x05\x01\x00', b'\x05\x02'),
-                    (b'\x05\x01\x00\x04\x20\x02\x44\x93\x04\xd2', b'\x05\x00\x00\x04{}\xbe\xef'.format('\x00' * 16)),
+                    (b'\x05\x01\x00\x04\x20\x02\x44\x93\x04\xd2', b'\x05\x00\x00\x04%s\xbe\xef' % (b'\x00' * 16)),
                 ]
 
             def dataReceived(self, data):
-                print("RECV '{}'".format(repr(data)))
+                print("RECV {}".format(repr(data)))
                 self._buffer += data
                 if len(self._recv_stack) == 0:
                     assert "not expecting any more data, got {}".format(repr(self._buffer))
@@ -195,12 +195,12 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2(u'2002:4493:5105::a299:9bff:fe0e:4471', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory2('2002:4493:5105::a299:9bff:fe0e:4471', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         expected_address = object()
         server_transport = FakeTransport(server_proto, isServer=True)
 
-        client_proto = factory.buildProtocol('ignored')
+        client_proto = factory.buildProtocol(u'ignored')
         client_transport = FakeTransport(client_proto, isServer=False, hostAddress=expected_address)
 
         pump = yield connect(
@@ -210,20 +210,13 @@ class SocksStateMachine(unittest.TestCase):
 
         # should be relaying now, try sending some datas
 
-        client_proto.transport.write('abcdef')
+        client_proto.transport.write(b'abcdef')
         addr = yield factory.get_address()
 
         # FIXME how shall we test for IPv6-ness?
         assert addr is expected_address
-        print("ADDR", addr)
         pump.flush()
-        self.assertEqual('abcdef', server_proto._buffer)
-        print("zinga", dir(client_proto.transport))
-        print("zinga", client_proto.transport)
-        print("zinga", client_proto.transport.getHost())
-        print("blam", client_proto)
-        print("blam", dir(client_proto))
-        #self.assertEqual(61374, client_proto)
+        self.assertEqual(b'abcdef', server_proto._buffer)
 
     def test_end_to_end_wrong_method(self):
 
@@ -233,15 +226,15 @@ class SocksStateMachine(unittest.TestCase):
         sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
         sm.connection()
 
-        sm.feed_data('\x05')
-        sm.feed_data('\x01')
+        sm.feed_data(b'\x05')
+        sm.feed_data(b'\x01')
 
         # we should have sent the request to the server, and nothing
         # else (because we disconnected)
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
         self.assertEqual(
-            '\x05\x01\x00',
+            b'\x05\x01\x00',
             data.getvalue(),
         )
         self.assertEqual(1, len(dis))
@@ -255,15 +248,15 @@ class SocksStateMachine(unittest.TestCase):
         sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
         sm.connection()
 
-        sm.feed_data('\x06')
-        sm.feed_data('\x00')
+        sm.feed_data(b'\x06')
+        sm.feed_data(b'\x00')
 
         # we should have sent the request to the server, and nothing
         # else (because we disconnected)
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
         self.assertEqual(
-            '\x05\x01\x00',
+            b'\x05\x01\x00',
             data.getvalue(),
         )
         self.assertEqual(1, len(dis))
@@ -277,11 +270,11 @@ class SocksStateMachine(unittest.TestCase):
         sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443, on_disconnect=on_disconnect)
         sm.connection()
 
-        sm.feed_data('\x05')
-        sm.feed_data('\x00')
+        sm.feed_data(b'\x05')
+        sm.feed_data(b'\x00')
 
         # reply with 'connection refused'
-        sm.feed_data('\x05\x05\x00\x01\x00\x00\x00\x00\xff\xff')
+        sm.feed_data(b'\x05\x05\x00\x01\x00\x00\x00\x00\xff\xff')
 
         self.assertEqual(1, len(dis))
         self.assertEqual("Connection refused", dis[0])
@@ -294,33 +287,33 @@ class SocksStateMachine(unittest.TestCase):
         sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443, on_disconnect=on_disconnect)
         sm.connection()
 
-        sm.feed_data('\x05')
-        sm.feed_data('\x00')
+        sm.feed_data(b'\x05')
+        sm.feed_data(b'\x00')
 
         # reply with success, port 0x1234
-        sm.feed_data('\x05\x00\x00\x01\x00\x00\x00\x00\x12\x34')
+        sm.feed_data(b'\x05\x00\x00\x01\x00\x00\x00\x00\x12\x34')
 
         # now some data that should get relayed
-        sm.feed_data('this is some relayed data')
+        sm.feed_data(b'this is some relayed data')
         # should *not* have disconnected
         self.assertEqual(0, len(dis))
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
-        self.assertTrue(data.getvalue().endswith("this is some relayed data"))
+        self.assertTrue(data.getvalue().endswith(b"this is some relayed data"))
 
     def test_end_to_end_success(self):
         sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
 
-        sm.feed_data('\x05')
-        sm.feed_data('\x00')
+        sm.feed_data(b'\x05')
+        sm.feed_data(b'\x00')
 
         # now we check we got the right bytes out the other side
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
         self.assertEqual(
-            '\x05\x01\x00'
-            '\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
+            b'\x05\x01\x00'
+            b'\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
             data.getvalue(),
         )
 
@@ -328,16 +321,16 @@ class SocksStateMachine(unittest.TestCase):
         sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443)
         sm.connection()
 
-        sm.feed_data('\x05')
-        sm.feed_data('\x00')
-        sm.feed_data('some relayed data')
+        sm.feed_data(b'\x05')
+        sm.feed_data(b'\x00')
+        sm.feed_data(b'some relayed data')
 
         # now we check we got the right bytes out the other side
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
         self.assertEqual(
-            '\x05\x01\x00'
-            '\x05\x01\x00\x01\x01\x02\x03\x04\x01\xbb',
+            b'\x05\x01\x00'
+            b'\x05\x01\x00\x01\x01\x02\x03\x04\x01\xbb',
             data.getvalue(),
         )
 
@@ -348,11 +341,11 @@ class SocksStateMachine(unittest.TestCase):
         sm.connection()
         sm.version_reply(0x02)
 
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
         self.assertEqual(
-            '\x05\x01\x00'
-            '\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
+            b'\x05\x01\x00'
+            b'\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
             data.getvalue(),
         )
 
@@ -366,25 +359,26 @@ class SocksStateMachine(unittest.TestCase):
 
         # make sure the state-machine wanted to send out the correct
         # request.
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
         self.assertEqual(
-            '\x05\x01\x00'
-            '\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
+            b'\x05\x01\x00'
+            b'\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
             data.getvalue(),
         )
 
         # now feed it a reply (but not enough to parse it yet!)
         d = sm.when_done()
         # ...we have to send at least 8 bytes, but NOT the entire hostname
-        sm.feed_data('\x05\x00\x00\x03')
-        sm.feed_data('\x06meeja')
+        sm.feed_data(b'\x05\x00\x00\x03')
+        sm.feed_data(b'\x06meeja')
         self.assertTrue(not d.called)
         # now send the rest, checking the buffering in _parse_domain_name_reply
-        sm.feed_data('h\x00\x00')
+        sm.feed_data(b'h\x00\x00')
         self.assertTrue(d.called)
         answer = yield d
-        self.assertEqual('meejah', answer)
+        # XXX answer *should* be not-bytes, though I think
+        self.assertEqual(b'meejah', answer)
 
     @defer.inlineCallbacks
     def test_unknown_response_type(self):
@@ -396,15 +390,15 @@ class SocksStateMachine(unittest.TestCase):
 
         # make sure the state-machine wanted to send out the correct
         # request.
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
         self.assertEqual(
-            '\x05\x01\x00'
-            '\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
+            b'\x05\x01\x00'
+            b'\x05\xf0\x00\x03\tmeejah.ca\x00\x00',
             data.getvalue(),
         )
 
-        sm.feed_data('\x05\x00\x00\xaf\x00\x00\x00\x00')
+        sm.feed_data(b'\x05\x00\x00\xaf\x00\x00\x00\x00')
         with self.assertRaises(socks.SocksError) as ctx:
             yield sm.when_done()
         self.assertTrue('Unexpected response type 175' in str(ctx.exception))
@@ -414,11 +408,11 @@ class SocksStateMachine(unittest.TestCase):
         sm.connection()
         sm.version_reply(0x00)
 
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
         self.assertEqual(
-            '\x05\x01\x00'
-            '\x05\xf1\x00\x03\x071.2.3.4\x00\x00',
+            b'\x05\x01\x00'
+            b'\x05\xf1\x00\x03\x071.2.3.4\x00\x00',
             data.getvalue(),
         )
 
@@ -427,11 +421,11 @@ class SocksStateMachine(unittest.TestCase):
         sm.connection()
         sm.version_reply(0x00)
 
-        data = StringIO()
+        data = BytesIO()
         sm.send_data(data.write)
         self.assertEqual(
-            '\x05\x01\x00'
-            '\x05\x01\x00\x01\x01\x02\x03\x04\x01\xbb',
+            b'\x05\x01\x00'
+            b'\x05\x01\x00\x01\x01\x02\x03\x04\x01\xbb',
             data.getvalue(),
         )
 

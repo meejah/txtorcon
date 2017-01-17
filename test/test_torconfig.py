@@ -8,7 +8,7 @@ from six import StringIO
 
 from mock import Mock, patch
 
-from zope.interface import implements
+from zope.interface import implementer
 from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error, task, tcp
@@ -38,6 +38,7 @@ from txtorcon.util import delete_file_or_tree
 from txtorcon.torconfig import parse_client_keys
 
 
+@implementer(ITorControlProtocol)     # actually, just get_info_raw
 class FakeControlProtocol:
     """
     This is a little weird, but in most tests the answer at the top of
@@ -52,8 +53,6 @@ class FakeControlProtocol:
     Deferred is already-fired when get_conf runs, there's a Very Good
     Chance (always?) that the callback just runs right away.
     """
-
-    implements(ITorControlProtocol)     # actually, just get_info_raw
 
     def __init__(self, answers):
         self.answers = answers
@@ -1030,8 +1029,8 @@ HiddenServiceDir=/fake/path'''
         self.assertTrue(conf.needs_save())
 
 
+@implementer(IReactorCore)
 class FakeReactor(task.Clock):
-    implements(IReactorCore)
 
     def __init__(self, test, trans, on_protocol):
         super(FakeReactor, self).__init__()
@@ -1691,8 +1690,6 @@ ControlPort Port''')
         process.status_client(
             'STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=cabbage'
         )
-        # XXX why this assert?
-        self.assertEqual(None, process._connected_cb)
 
         class Value(object):
             exitCode = 123
@@ -1828,6 +1825,7 @@ class HiddenServiceAuthTests(unittest.TestCase):
 class EphemeralHiddenServiceTest(unittest.TestCase):
     def test_defaults(self):
         eph = torconfig.EphemeralHiddenService("80 localhost:80")
+        print("AAA", eph._ports)
         self.assertEqual(eph._ports, ["80,localhost:80"])
 
     def test_wrong_blob(self):

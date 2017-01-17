@@ -726,6 +726,7 @@ class TorControlProtocol(LineOnlyReceiver):
                 "Didn't find AUTH line in PROTOCOLINFO response."
             )
 
+        print("METHODS", methods)
         if 'SAFECOOKIE' in methods or 'COOKIE' in methods:
             cookiefile_match = re.search(r'COOKIEFILE=("(?:[^"\\]|\\.)*")',
                                          protoinfo)
@@ -734,6 +735,7 @@ class TorControlProtocol(LineOnlyReceiver):
                 cookiefile = unescape_quoted_string(cookiefile)
                 try:
                     self._read_cookie(cookiefile)
+                    cookie_auth = True
                 except IOError as why:
                     txtorlog.msg("Reading COOKIEFILE failed: " + str(why))
                     if self.password_function and 'HASHEDPASSWORD' in methods:

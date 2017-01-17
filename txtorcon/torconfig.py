@@ -6,6 +6,7 @@ from __future__ import with_statement
 
 import os
 import sys
+import six
 import types
 import functools
 import tempfile
@@ -23,8 +24,10 @@ from txtorcon.torcontrolprotocol import parse_keywords, TorProtocolFactory, DEFA
 from txtorcon.util import delete_file_or_tree, find_keywords, find_tor_binary
 from txtorcon.log import txtorlog
 from txtorcon.interface import ITorControlProtocol
-if sys.platform in ('linux2', 'darwin'):
+if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
+else:
+    pwd = None
 
 
 class TorNotFound(RuntimeError):
@@ -699,7 +702,7 @@ class _ListWrapper(list):
     def __repr__(self):
         return '_ListWrapper' + super(_ListWrapper, self).__repr__()
 
-if not py3k:
+if six.PY2:
     setattr(_ListWrapper, '__setslice__', _wrapture(list.__setslice__))
 
 
@@ -892,18 +895,18 @@ class EphemeralHiddenService(object):
     # XXX "auth" is unused (also, no Tor support I don't think?)
 
     def __init__(self, ports, key_blob_or_type='NEW:BEST', auth=[], ver=2):
-        if not isinstance(ports, types.ListType):
+        if not isinstance(ports, list):
             ports = [ports]
         # for "normal" HSes the port-config bit looks like "80
         # 127.0.0.1:1234" whereas this one wants a comma, so we leave
         # the public API the same and fix up the space. Or of course
         # you can just use the "real" comma-syntax if you wanted.
-        self._ports = map(lambda x: x.replace(' ', ','), ports)
+        self._ports = [x.replace(' ', ',') for x in ports]
         self._key_blob = key_blob_or_type
         self.auth = auth  # FIXME ununsed
         # FIXME nicer than assert, plz
         assert ' ' not in self._key_blob
-        assert isinstance(ports, types.ListType)
+        assert isinstance(ports, list)
         if not key_blob_or_type.startswith('NEW:') \
            and (len(key_blob_or_type) > 825 or len(key_blob_or_type) < 820):
             raise RuntimeError('Wrong size key-blob')

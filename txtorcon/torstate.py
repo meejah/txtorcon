@@ -602,11 +602,11 @@ class TorState(object):
                 if first:
                     first = False
                 else:
-                    cmd += b','
+                    cmd += ','
                 # XXX should we really accept bytes here?
-                if isinstance(router, (six.text_type, bytes)) and len(router) == 40 \
+                if isinstance(router, bytes) and len(router) == 40 \
                    and hashFromHexId(router):
-                    cmd += router
+                    cmd += router.decode('utf8')
                 else:
                     cmd += router.id_hex[1:]
         d = self.protocol.queue_command(cmd)
@@ -654,7 +654,7 @@ class TorState(object):
         #    3. Circuit instance: attach to the provided circuit
         def issue_stream_attach(circ):
             txtorlog.msg("circuit:", circ)
-            if circ is None:
+            if circ is None or circ is TorState.DO_NOT_ATTACH:
                 # tell Tor to do what it likes
                 return self.protocol.queue_command(b"ATTACHSTREAM %d 0" % stream.id)
 

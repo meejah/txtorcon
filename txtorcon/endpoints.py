@@ -670,7 +670,7 @@ class TorClientEndpoint(object):
                  socks_endpoint=None,
                  socks_username=None, socks_password=None,
                  tls=False,
-                 _proxy_endpoint_generator=default_tcp4_endpoint_generator,
+#                 _proxy_endpoint_generator=default_tcp4_endpoint_generator,
                  **kw):
         if not HAVE_SOCKSX:
             raise Exception("No SOCKS5 support; txsocksx not found")
