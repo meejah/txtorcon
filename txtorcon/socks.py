@@ -8,7 +8,7 @@ from __future__ import print_function
 
 import six
 import struct
-from socket import inet_pton, inet_ntoa, AF_INET6, AF_INET
+from socket import inet_pton, inet_ntoa, inet_aton, AF_INET6, AF_INET
 import functools
 
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
@@ -151,24 +151,25 @@ class SocksMachine(object):
                     self.version_error("Wanted method 0 or 2, got {}".format(method))
 
     def _parse_ipv4_reply(self):
-        print("ipv4????", len(self._data))
         if len(self._data) >= 10:
             addr = inet_ntoa(self._data[4:8])
             port = struct.unpack('H', self._data[8:10])[0]
             self._data = self._data[10:]
-            print("ipv4 reply!", addr, port)
-            self.reply_ipv4(addr, port)
-            print("DONE")
+            if self._req_type == 'RESOLVE':
+                self.reply_domain_name(addr)
+            else:
+                self.reply_ipv4(addr, port)
+            #print("DONE")
 
     def _parse_ipv6_reply(self):
         if len(self._data) >= 22:
             addr = self._data[4:20]
             port = struct.unpack('H', self._data[20:22])[0]
             self._data = self._data[22:]
-            print("ipv6 reply!", addr, port)
-            print("doing", self.reply_ipv6, addr, type(addr))
+            #print("ipv6 reply!", addr, port)
+            #print("doing", self.reply_ipv6, addr, type(addr))
             self.reply_ipv6(addr, port)
-            print("done")
+            #print("done")
 
     def _parse_domain_name_reply(self):
         assert len(self._data) >= 8  # _parse_request_reply checks this
@@ -191,7 +192,6 @@ class SocksMachine(object):
         # as it is, and 2 more if it's DOMAINNAME (for the size) or 4
         # or 16 more if it's an IPv4/6 address reply. plus there's 2
         # bytes on the end for the bound port.
-
         if len(self._data) < 8:
             return
         msg = self._data[:4]
@@ -240,14 +240,11 @@ class SocksMachine(object):
     @_machine.output()
     def _make_connection_v6(self, addr, port):
         "make our proxy connection v6"
-        print("MAKE CONN")
         # XXX notify factory we got the other sides' address?
-        print("DING MAKE CONNECTION", addr, port)
         addr = IPv6Address('TCP', addr, port)
         sender = yield self._factory.buildProtocol(addr)
         client_proxy = portforward.ProxyClient()
         sender.makeConnection(self.transport)
-        print("SENDER", sender)
         # portforward.ProxyClient is going to call setPeer but this
         # probably doesn't have it...
         setattr(sender, 'setPeer', lambda _: None)
@@ -273,7 +270,7 @@ class SocksMachine(object):
         "we recevied some data and buffered it"
 
     @_machine.input()
-    def version_reply(self, method):
+    def version_reply(self, auth_method):
         "the SOCKS server replied with a version"
 
     @_machine.input()
@@ -326,9 +323,9 @@ class SocksMachine(object):
         #    self._done.callback(reason)
 
     @_machine.output()
-    def _send_request(self, method):
+    def _send_request(self, auth_method):
         "send the request (connect, resolve or resolve_ptr)"
-        print("_send_request", method)
+        assert auth_method == 0x00  # "no authentication required"
         return self._dispatch[self._req_type](self)
 
     @_machine.output()
@@ -345,7 +342,7 @@ class SocksMachine(object):
         is_v6 = isinstance(self._addr, IPv6Address)
         host = self._addr.host
         port = self._addr.port
-        print("IS", is_v6, host, port, type(host), len(inet_pton(AF_INET6 if is_v6 else AF_INET, host)))
+        #print("IS", is_v6, host, port, type(host), len(inet_pton(AF_INET6 if is_v6 else AF_INET, host)))
 
         self._data_to_send(
             struct.pack(
@@ -363,7 +360,6 @@ class SocksMachine(object):
     def _send_resolve_request(self):
         "sends RESOLVE_PTR request (Tor custom)"
         host = self._addr.host.encode()
-        print("XXXXX", host, type(host))
         self._data_to_send(
             struct.pack(
                 '!BBBBB{}sH'.format(len(host)),
@@ -381,16 +377,17 @@ class SocksMachine(object):
     def _send_resolve_ptr_request(self):
         "sends RESOLVE_PTR request (Tor custom)"
         host = self._addr.host.encode()
+        print(host, type(host))
+        addr_type = 0x04 if isinstance(self._addr, ipaddress.IPv4Address) else 0x01
         self._data_to_send(
             struct.pack(
-                '!BBBBB{}sH'.format(len(host)),
+                '!BBBB4sH',
                 5,                   # version
                 0xF1,                # command
                 0x00,                # reserved
-                0x03,                # DOMAINNAME
-                len(host),
-                host,
-                0,              # why do we specify port at all?
+                addr_type,
+                inet_aton(self._addr.host),
+                0,                   # port; unused? SOCKS is fun
             )
         )
 
@@ -476,6 +473,11 @@ class SocksMachine(object):
         enter=relaying,
         outputs=[_relay_data],
     )
+    relaying.upon(
+        disconnected,
+        enter=done,
+        outputs=[],
+    )
 
     abort.upon(
         got_data,
@@ -485,6 +487,12 @@ class SocksMachine(object):
     abort.upon(
         disconnected,
         enter=abort,
+        outputs=[],
+    )
+
+    done.upon(
+        disconnected,
+        enter=done,
         outputs=[],
     )
 
@@ -520,31 +528,28 @@ class _TorSocksProtocol2(Protocol):
             on_data=self._on_data,
         )
 
+    def when_done(self):
+        return self._machine.when_done()
+
     def connectionMade(self):
-        print("connection!")
         self._machine.connection()
-        # I think also we want to fire "got_address" or similar from
-        # self.transport.getHost -- e.g. like the get_address madness
-        # in the "old" stuff.
+        # we notify via the factory that we have teh
+        # locally-connecting host -- this is e.g. used by the "stream
+        # over one particular circuit" code to determine the local
+        # port that "our" SOCKS connection went to
         self.factory._did_connect(self.transport.getHost())
 
     def connectionLost(self, reason):
-        print("LOST", reason)
         self._machine.disconnected(reason)
 
     def dataReceived(self, data):
-        print("DATA", repr(data))
         self._machine.feed_data(data)
 
     def _on_data(self, data):
-        print("sending", data, type(data))
         self.transport.write(data)
 
     def _on_disconnect(self, error_message):
-        print("DISCONNECTED!", error_message)
-        print(dir(self.transport))
         self.transport.loseConnection()
-        print("self.transport", self.transport, self.transport.disconnected)
         #self.transport.abortConnection()#SocksError(error_message))
         #self._machine.disconnect(error_message)
 
@@ -582,8 +587,6 @@ class _TorSocksFactory2(Factory):
         return p
 
 
-
-
 class SocksError(Exception):
     pass
 
@@ -597,23 +600,21 @@ def resolve(tor_endpoint, hostname):
 
     :param hostname: the hostname to look up.
     """
-    done = Deferred()
-    factory = _TorSocksFactory(
-        done, hostname, 0, 'RESOLVE', None,
+    factory = _TorSocksFactory2(
+        hostname, 0, 'RESOLVE', None,
     )
-    yield tor_endpoint.connect(factory)
-    result = yield done
+    proto = yield tor_endpoint.connect(factory)
+    result = yield proto.when_done()
     returnValue(result)
 
 
 @inlineCallbacks
 def resolve_ptr(tor_endpoint, hostname):
-    done = Deferred()
-    factory = _TorSocksFactory(
-        done, hostname, 0, 'RESOLVE_PTR', None,
+    factory = _TorSocksFactory2(
+        unicode(hostname), 0, 'RESOLVE_PTR', None,
     )
-    yield tor_endpoint.connect(factory)
-    result = yield done
+    proto = yield tor_endpoint.connect(factory)
+    result = yield proto.when_done()
     returnValue(result)
 
 
@@ -652,17 +653,17 @@ class TorSocksEndpoint(object):
     def connect(self, factory):
         done = Deferred()
         # further wrap the protocol if we're doing TLS.
-        # "pray i do not wrap it further".
+        # "pray i do not wrap the protocol further".
         if self._tls:
             # XXX requires Twisted 14+
             from twisted.internet.ssl import optionsForClientTLS
             context = optionsForClientTLS(self._host.decode())
             tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
-            socks_factory = _TorSocksFactory(
+            socks_factory = _TorSocksFactory2(
                 done, self._host, self._port, 'CONNECT', tls_factory,
             )
         else:
-            socks_factory = _TorSocksFactory(
+            socks_factory = _TorSocksFactory2(
                 done, self._host, self._port, 'CONNECT', factory,
             )
 

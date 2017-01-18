@@ -4,4 +4,3 @@
 Twisted>=11.1.0
 ipaddress>=1.0.16
 zope.interface>=3.6.1
-txsocksx>=1.13.0

@@ -47,12 +47,6 @@ from twisted.python.util import FancyEqMixin
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
-try:
-    from txsocksx.client import SOCKS5ClientEndpoint
-    HAVE_SOCKSX = True
-except ImportError:
-    HAVE_SOCKSX = False
-
 from .torconfig import TorConfig, launch_tor, HiddenService
 from .torstate import build_tor_connection
 
@@ -672,8 +666,6 @@ class TorClientEndpoint(object):
                  tls=False,
 #                 _proxy_endpoint_generator=default_tcp4_endpoint_generator,
                  **kw):
-        if not HAVE_SOCKSX:
-            raise Exception("No SOCKS5 support; txsocksx not found")
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
