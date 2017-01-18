@@ -139,7 +139,7 @@ class SocksStateMachine(unittest.TestCase):
             def __init__(self):
                 self._buffer = b''
                 self._recv_stack = [
-                    (b'\x05\x01\x00', b'\x05\x02'),
+                    (b'\x05\x01\x00', b'\x05\x00'),
                     (b'\x05\x01\x00\x01\x01\x02\x03\x04\x04\xd2', b'\x05\x00\x00\x01\x01\x02\x03\x04\x12\x34'),
                 ]
 
@@ -179,7 +179,7 @@ class SocksStateMachine(unittest.TestCase):
             def __init__(self):
                 self._buffer = b''
                 self._recv_stack = [
-                    (b'\x05\x01\x00', b'\x05\x02'),
+                    (b'\x05\x01\x00', b'\x05\x00'),
                     (b'\x05\x01\x00\x04\x20\x02\x44\x93\x04\xd2', b'\x05\x00\x00\x04%s\xbe\xef' % (b'\x00' * 16)),
                 ]
 
@@ -339,7 +339,7 @@ class SocksStateMachine(unittest.TestCase):
         # should too
         sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
-        sm.version_reply(0x02)
+        sm.version_reply(0x00)
 
         data = BytesIO()
         sm.send_data(data.write)
@@ -355,7 +355,7 @@ class SocksStateMachine(unittest.TestCase):
         # should too
         sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
-        sm.version_reply(0x02)
+        sm.version_reply(0x00)
 
         # make sure the state-machine wanted to send out the correct
         # request.
@@ -386,7 +386,9 @@ class SocksStateMachine(unittest.TestCase):
         # should too
         sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
-        sm.version_reply(0x02)
+        # don't actually support username/password (which is version 0x02) yet
+        #sm.version_reply(0x02)
+        sm.version_reply(0)
 
         # make sure the state-machine wanted to send out the correct
         # request.
