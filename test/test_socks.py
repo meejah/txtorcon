@@ -582,7 +582,8 @@ class SocksConnectTests(unittest.TestCase):
         protocol = Mock()
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
-        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
+        ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
+        # calling it before there's a factory 
         with self.assertRaises(RuntimeError) as ctx:
             yield ep.get_address()
         proto = yield ep.connect(factory)
@@ -626,10 +627,10 @@ class SocksResolveTests(unittest.TestCase):
             # bytes to the protocol to convince it a connection is
             # made ... *or* we can cheat and just do the callback
             # directly...
-            proto._done.callback("the dns answer")
+            proto._machine._when_done.fire("the dns answer")
             return proto
         socks_ep.connect = connect
-        hn = yield socks.resolve(socks_ep, b'meejah.ca')
+        hn = yield socks.resolve(socks_ep, u'meejah.ca')
         self.assertEqual(hn, "the dns answer")
 
     @defer.inlineCallbacks
@@ -645,8 +646,8 @@ class SocksResolveTests(unittest.TestCase):
             # bytes to the protocol to convince it a connection is
             # made ... *or* we can cheat and just do the callback
             # directly...
-            proto._done.callback("the dns answer")
+            proto._machine._when_done.fire(u"the dns answer")
             return proto
         socks_ep.connect = connect
-        hn = yield socks.resolve_ptr(socks_ep, b'meejah.ca')
+        hn = yield socks.resolve_ptr(socks_ep, u'meejah.ca')
         self.assertEqual(hn, "the dns answer")

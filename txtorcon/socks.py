@@ -235,6 +235,7 @@ class SocksMachine(object):
         setattr(sender, 'setPeer', lambda _: None)
         client_proxy.setPeer(sender)
         self._sender = sender
+        self._when_done.fire(addr)
         returnValue(sender)
 
     @_machine.output()
@@ -339,22 +340,35 @@ class SocksMachine(object):
     def _send_connect_request(self):
         "sends CONNECT request"
         # XXX needs to support v6 ... or something else does
-        is_v6 = isinstance(self._addr, IPv6Address)
         host = self._addr.host
         port = self._addr.port
-        #print("IS", is_v6, host, port, type(host), len(inet_pton(AF_INET6 if is_v6 else AF_INET, host)))
 
-        self._data_to_send(
-            struct.pack(
-                '!BBBB4sH',
-                5,                   # version
-                0x01,                # command
-                0x00,                # reserved
-                0x04 if is_v6 else 0x01,
-                inet_pton(AF_INET6 if is_v6 else AF_INET, host),
-                port,
+        if isinstance(self._addr, (IPv4Address, IPv6Address)):
+            self._data_to_send(
+                struct.pack(
+                    '!BBBB4sH',
+                    5,                   # version
+                    0x01,                # command
+                    0x00,                # reserved
+                    0x04 if is_v6 else 0x01,
+                    inet_pton(AF_INET6 if is_v6 else AF_INET, host),
+                    port,
+                )
             )
-        )
+        else:
+            host = str(host)
+            self._data_to_send(
+                struct.pack(
+                    '!BBBBB{}sH'.format(len(host)),
+                    5,                   # version
+                    0x01,                # command
+                    0x00,                # reserved
+                    0x03,
+                    len(host),
+                    host,
+                    port,
+                )
+            )
 
     @_machine.output()
     def _send_resolve_request(self):
@@ -457,6 +471,8 @@ class SocksMachine(object):
         enter=relaying,
         outputs=[_make_connection_v6],
     )
+    # XXX this isn't always a _domain_name_resolved -- if we're a
+    # req_type CONNECT then it's _make_connection_domain ...
     sent_request.upon(
         reply_domain_name,
         enter=done,
@@ -651,7 +667,6 @@ class TorSocksEndpoint(object):
 
     @inlineCallbacks
     def connect(self, factory):
-        done = Deferred()
         # further wrap the protocol if we're doing TLS.
         # "pray i do not wrap the protocol further".
         if self._tls:
@@ -660,11 +675,11 @@ class TorSocksEndpoint(object):
             context = optionsForClientTLS(self._host.decode())
             tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
             socks_factory = _TorSocksFactory2(
-                done, self._host, self._port, 'CONNECT', tls_factory,
+                self._host, self._port, 'CONNECT', tls_factory,
             )
         else:
             socks_factory = _TorSocksFactory2(
-                done, self._host, self._port, 'CONNECT', factory,
+                self._host, self._port, 'CONNECT', factory,
             )
 
         self._socks_factory = socks_factory
@@ -674,8 +689,10 @@ class TorSocksEndpoint(object):
             proxy_ep = self._proxy_ep
 
         # socks_proto = yield proxy_ep.connect(socks_factory)
-        yield proxy_ep.connect(socks_factory)
-        wrapped_proto = yield done
+        proto = yield proxy_ep.connect(socks_factory)
+        print("proto", proto)
+        wrapped_proto = yield proto.when_done()
+        print("proto", wrapped_proto)
         if self._tls:
             returnValue(wrapped_proto.wrappedProtocol)
         else:
