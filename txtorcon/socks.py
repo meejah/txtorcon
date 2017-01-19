@@ -220,7 +220,7 @@ class SocksMachine(object):
             try:
                 self.reply_error(_socks_reply_code_to_string[reply])
             except KeyError:
-                self.reply_error("Unknown reply code {}".format(reply))
+                self.reply_error("Unknown SOCKS reply code {}".format(reply))
             return
 
         reply_dispatcher = {

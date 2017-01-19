@@ -656,7 +656,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         endpoint.connect(Mock)
         self.assertEqual(tor_endpoint.transport.value(), '\x05\x01\x00')
 
-    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
     def test_success(self, socks5_factory):
         ep = MagicMock()
@@ -704,7 +704,7 @@ class TestTorClientEndpoint(unittest.TestCase):
             d = endpoint.connect(None)
             return self.assertFailure(d, ConnectionRefusedError)
 
-    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @patch('txtorcon.endpoints.TorSocksEndpoint')
     def test_default_socks_ports_fails(self, ep_mock):
         """
         Ensure we iterate over the default socks ports
@@ -723,7 +723,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         d = endpoint.connect(None)
         self.assertFailure(d, ConnectionRefusedError)
 
-    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
     def test_default_socks_ports_happy(self, ep_mock):
         """
@@ -744,7 +744,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         p2 = yield endpoint.connect(None)
         self.assertTrue(proto is p2)
 
-    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
     def test_tls_socks_no_endpoint(self, ep_mock):
 
@@ -770,7 +770,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         p2 = yield endpoint.connect(None)
         self.assertTrue(wrap.wrappedProtocol is p2)
 
-    @patch('txtorcon.endpoints.SOCKS5ClientEndpoint')
+    @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
     def test_tls_socks_with_endpoint(self, ep_mock):
         """

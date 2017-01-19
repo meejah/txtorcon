@@ -526,7 +526,8 @@ class SocksConnectTests(unittest.TestCase):
             proto = factory.buildProtocol("addr")
             proto.makeConnection(transport)
             self.assertEqual(b'\x05\x01\x00', transport.value())
-            proto.dataReceived(b'\x05\x01')
+            proto.dataReceived(b'\x05\x00')
+            proto.dataReceived(b'\x05\x01\x00\x01\x00\x00\x00\x00')
             return proto
         socks_ep.connect = connect
         protocol = Mock()
@@ -547,7 +548,8 @@ class SocksConnectTests(unittest.TestCase):
             proto = factory.buildProtocol("addr")
             proto.makeConnection(transport)
             self.assertEqual(b'\x05\x01\x00', transport.value())
-            proto.dataReceived(b'\x05\xff')
+            proto.dataReceived(b'\x05\x00')
+            proto.dataReceived(b'\x05\xff\x00\x01\x00\x00\x00\x00')
             return proto
         socks_ep.connect = connect
         protocol = Mock()
@@ -556,7 +558,7 @@ class SocksConnectTests(unittest.TestCase):
         ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
-        self.assertTrue('No such SOCKS reply code' in str(ctx.exception))
+        self.assertTrue('Unknown SOCKS reply code' in str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_connect_socks_illegal_byte(self):
@@ -568,7 +570,8 @@ class SocksConnectTests(unittest.TestCase):
             proto = factory.buildProtocol("addr")
             proto.makeConnection(transport)
             self.assertEqual(b'\x05\x01\x00', transport.value())
-            proto.dataReceived(b'\x05\x01')
+            proto.dataReceived(b'\x05\x00')
+            proto.dataReceived(b'\x05\x01\x00\x01\x00\x00\x00\x00')
             return proto
         socks_ep.connect = connect
         protocol = Mock()

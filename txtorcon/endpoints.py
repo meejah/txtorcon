@@ -11,6 +11,7 @@ import tempfile
 import functools
 
 from txtorcon.util import available_tcp_port
+from txtorcon.socks import TorSocksEndpoint
 
 # backwards-compatibility dance: we "should" be using the
 # ...WithReactor class, but in Twisted prior to 14, there is no such
@@ -664,7 +665,6 @@ class TorClientEndpoint(object):
                  socks_endpoint=None,
                  socks_username=None, socks_password=None,
                  tls=False,
-#                 _proxy_endpoint_generator=default_tcp4_endpoint_generator,
                  **kw):
         if host is None or port is None:
             raise ValueError('host and port must be specified')
