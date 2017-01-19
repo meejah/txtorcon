@@ -39,8 +39,10 @@ class TestImports(unittest.TestCase):
             # now ensure we set up all the databases as "None" when we
             # import w/o the GeoIP thing available.
             import txtorcon.util
-            ipa = txtorcon.util.maybe_ip_addr('127.0.0.1')
-            self.assertTrue(isinstance(ipa, str))
+            loc = txtorcon.util.NetLocation('127.0.0.1')
+            self.assertEqual(loc.city, None)
+            self.assertEqual(loc.asn, None)
+            self.assertEqual(loc.countrycode, '')
 
         finally:
             __import__ = orig
