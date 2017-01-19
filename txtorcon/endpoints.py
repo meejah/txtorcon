@@ -414,8 +414,6 @@ class TCPHiddenServiceEndpoint(object):
         # just to be sure:
         yield self.config.post_bootstrap
 
-        print("XXXXXXX", self.config)
-
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would
         # probably want to check for "is a local interface or not" and

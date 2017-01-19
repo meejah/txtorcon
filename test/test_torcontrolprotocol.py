@@ -352,7 +352,6 @@ OK'''.format(cookietmp.name))
                 base64.b16encode(server_hash) + b' SERVERNONCE=' + \
                 base64.b16encode(server_nonce) + b'\r\n'
             )
-            print("transport:", self.transport.value())
             self.assertTrue(b'AUTHENTICATE ' in self.transport.value())
 
     def test_authenticate_cookie_without_reading(self):

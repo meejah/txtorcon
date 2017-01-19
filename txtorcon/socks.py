@@ -177,10 +177,7 @@ class SocksMachine(object):
             addr = self._data[4:20]
             port = struct.unpack('H', self._data[20:22])[0]
             self._data = self._data[22:]
-            #print("ipv6 reply!", addr, port)
-            #print("doing", self.reply_ipv6, addr, type(addr))
             self.reply_ipv6(addr, port)
-            #print("done")
 
     def _parse_domain_name_reply(self):
         assert len(self._data) >= 8  # _parse_request_reply checks this
@@ -191,7 +188,6 @@ class SocksMachine(object):
         addr = self._data[5:5 + addrlen]
         port = struct.unpack('H', self._data[5 + addrlen:5 + addrlen + 2])[0]
         self._data = self._data[5 + addrlen + 2:]
-        # ignoring port -- don't think it's used?
         self.reply_domain_name(addr)
 
 
@@ -375,7 +371,6 @@ class SocksMachine(object):
     def _send_resolve_ptr_request(self):
         "sends RESOLVE_PTR request (Tor custom)"
         host = self._addr.host.encode()
-        print(host, type(host))
         addr_type = 0x04 if isinstance(self._addr, ipaddress.IPv4Address) else 0x01
         self._data_to_send(
             struct.pack(
@@ -529,7 +524,6 @@ class _TorSocksProtocol2(Protocol):
             create_connection=self._create_connection,
         )
         self._factory = factory
-        print("factory", factory)
 
     def when_done(self):
         return self._machine.when_done()
@@ -689,9 +683,7 @@ class TorSocksEndpoint(object):
 
         # socks_proto = yield proxy_ep.connect(socks_factory)
         proto = yield proxy_ep.connect(socks_factory)
-        print("proto", proto)
         wrapped_proto = yield proto.when_done()
-        print("wrapped_proto", wrapped_proto)
         if self._tls:
             returnValue(wrapped_proto.wrappedProtocol)
         else:
@@ -767,7 +759,6 @@ class _TorSocksProtocol(Protocol):
 
     @inlineCallbacks
     def _make_connection(self, addr, port):
-        print("make connection!")
         addr = IPv4Address('TCP', self._reply_addr, self._reply_port)
         sender = yield self._factory.buildProtocol(addr)
         # portforward.ProxyClient is going to call setPeer but this
@@ -781,7 +772,6 @@ class _TorSocksProtocol(Protocol):
         returnValue(sender)
 
     def _error(self, msg):
-        print("doing error", repr(msg))
         try:
             reply = struct.unpack('B', msg[1:2])[0]
             f = Failure(
@@ -804,11 +794,9 @@ class _TorSocksProtocol(Protocol):
         # do it above so that we can pass the actual error-message
 
     def _relay_data(self, data):
-        print("relay {} bytes".format(len(data)))
         self._sender.dataReceived(data)
 
     def _is_valid_response(self, msg):
-        # print("_is_valid_response", msg)
         try:
             (version, reply, _, typ) = struct.unpack('BBBB', msg[:4])
             return version == 5 and reply == 0 and typ in [0x01, 0x03, 0x04]
@@ -830,7 +818,6 @@ class _TorSocksProtocol(Protocol):
         port = struct.unpack('H', msg[-2:])[0]
         self._reply_addr = addr
         self._reply_port = port
-        # print("reply {} {}".format(addr, port))
         if self._socks_method in [0xf0, 0xf1]:
             self._done.callback(addr)
             self.transport.loseConnection()
@@ -844,7 +831,6 @@ class _TorSocksProtocol(Protocol):
             # self._make_connection()
 
     def _is_valid_version(self, msg):
-        # print("_is_valid_version", msg)
         try:
             (version, method) = struct.unpack('BB', msg)
             return version == 5 and method in [0x00, 0x02]
@@ -899,14 +885,12 @@ class _TorSocksProtocol(Protocol):
         self.transport.write(data)
 
     def connectionLost(self, reason):
-        # print("connectionLost", reason)
         if self._sender:
             self._sender.connectionLost(reason)
         if not self._done.called:
             self._done.callback(reason)
 
     def dataReceived(self, d):
-        # print("dataReceived({} bytes): {}".format(len(d), repr(d)))
         self._fsm.process(d)
         return
 

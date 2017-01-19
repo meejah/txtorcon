@@ -228,7 +228,6 @@ class EndpointTests(unittest.TestCase):
 
         @defer.inlineCallbacks
         def more_listen(arg):
-            print("DING", arg)
             yield arg.stopListening()
             d1 = ep.listen(NoOpProtocolFactory())
 

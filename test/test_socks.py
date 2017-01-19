@@ -200,7 +200,6 @@ class SocksStateMachine(unittest.TestCase):
                 ]
 
             def dataReceived(self, data):
-                print("RECV {}".format(repr(data)))
                 self._buffer += data
                 if len(self._recv_stack) == 0:
                     assert "not expecting any more data, got {}".format(repr(self._buffer))
