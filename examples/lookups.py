@@ -3,7 +3,7 @@ from __future__ import print_function
 from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.endpoints import clientFromString
-from twisted.web.client import Agent
+from twisted.web.client import Agent, readBody
 import txtorcon
 from txtorcon import socks
 
@@ -25,7 +25,7 @@ class _AgentEndpointFactoryUsingTor(object):
 @inlineCallbacks
 def main(reactor):
     tor_ep = clientFromString(reactor, "tcp:localhost:9050")
-    if False:
+    if True:
         for domain in [u'www.torproject.org', u'meejah.ca']:
             print("Looking up '{}' via Tor".format(domain))
             ans = yield socks.resolve(tor_ep, domain)
@@ -38,10 +38,16 @@ def main(reactor):
         'www.torproject.org', 80,
         socks_endpoint=tor_ep,
     )
-    factory = _AgentEndpointFactoryUsingTor(reactor, ep)
+    factory = _AgentEndpointFactoryUsingTor(reactor, tor_ep)
     agent = Agent.usingEndpointFactory(reactor, factory)
     reply = yield agent.request('GET', 'https://www.torproject.org')
-    print("reply", reply)
+    #reply = yield agent.request('GET', 'http://boingboing.net')
+    print("{}: {} ({} bytes)".format(reply.code, reply.phrase, reply.length))
+    text = yield readBody(reply)
+    if len(text) > 400:
+        print(text[:200], "...", text[-200:])
+    else:
+        print(text)
 
 
 if __name__ == '__main__':
