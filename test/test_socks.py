@@ -130,7 +130,7 @@ class SocksStateMachine(unittest.TestCase):
         )
         with self.assertRaises(Exception) as ctx:
             yield d
-        self.assertIn('Unknown reply code', str(ctx.exception))
+        self.assertIn('Unknown SOCKS reply code', str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_socks_relay_data(self):

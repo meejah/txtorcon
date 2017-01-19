@@ -752,11 +752,8 @@ class TestTorClientEndpoint(unittest.TestCase):
             print("no TLS support")
             return
 
-        class FakeWrappedProto(object):
-            wrappedProtocol = object()
-
-        wrap = FakeWrappedProto()
-        proto = defer.succeed(wrap)
+        the_proto = object()
+        proto = defer.succeed(the_proto)
         class FakeSocks5(object):
 
             def __init__(self, *args, **kw):
@@ -768,7 +765,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         ep_mock.side_effect = FakeSocks5
         endpoint = TorClientEndpoint('torproject.org', 0, tls=True)
         p2 = yield endpoint.connect(None)
-        self.assertTrue(wrap.wrappedProtocol is p2)
+        self.assertTrue(the_proto is p2)
 
     @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
@@ -781,18 +778,15 @@ class TestTorClientEndpoint(unittest.TestCase):
             print("no TLS support")
             return
 
-        class FakeWrappedProto(object):
-            wrappedProtocol = object()
-
-        wrap = FakeWrappedProto()
-        proto = defer.succeed(wrap)
+        the_proto = object()
+        proto_d = defer.succeed(the_proto)
         class FakeSocks5(object):
 
             def __init__(self, *args, **kw):
                 pass
 
             def connect(self, *args, **kw):
-                return proto
+                return proto_d
 
         ep_mock.side_effect = FakeSocks5
         endpoint = TorClientEndpoint(
@@ -801,7 +795,7 @@ class TestTorClientEndpoint(unittest.TestCase):
             tls=True,
         )
         p2 = yield endpoint.connect(None)
-        self.assertTrue(wrap.wrappedProtocol is p2)
+        self.assertTrue(p2 is the_proto)
 
     @patch('txtorcon.endpoints.reactor')  # FIXME should be passing reactor to TorClientEndpoint :/
     def test_client_endpoint_old_api(self, reactor):

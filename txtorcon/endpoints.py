@@ -25,7 +25,8 @@ except ImportError:
 
 try:
     from twisted.internet.ssl import optionsForClientTLS
-    from txsocksx.tls import TLSWrapClientEndpoint
+    from twisted.protocols.tls import TLSMemoryBIOProtocol
+#    from txsocksx.tls import TLSWrapClientEndpoint
     _HAVE_TLS = True
 except ImportError:
     _HAVE_TLS = False
@@ -708,16 +709,13 @@ class TorClientEndpoint(object):
     def connect(self, protocolfactory):
         last_error = None
         kwargs = dict()
+        # XXX fix in socks.py stuff
         if self.socks_username is not None and self.socks_password is not None:
             kwargs['methods'] = dict(
                 login=(self.socks_username, self.socks_password),
             )
         if self.socks_endpoint is not None:
-            args = (self.host, self.port, self.socks_endpoint)
-            socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
-            if self.tls:
-                context = optionsForClientTLS(unicode(self.host))
-                socks_ep = TLSWrapClientEndpoint(context, socks_ep)
+            socks_ep = TorSocksEndpoint(self.socks_endpoint, self.host, self.port, self.tls)
             proto = yield socks_ep.connect(protocolfactory)
             defer.returnValue(proto)
         else:
@@ -727,12 +725,7 @@ class TorClientEndpoint(object):
                     "127.0.0.1",
                     socks_port,
                 )
-                args = (self.host, self.port, tor_ep)
-                socks_ep = SOCKS5ClientEndpoint(*args, **kwargs)
-                if self.tls:
-                    # XXX only twisted 14+
-                    context = optionsForClientTLS(unicode(self.host))
-                    socks_ep = TLSWrapClientEndpoint(context, socks_ep)
+                socks_ep = TorSocksEndpoint(tor_ep, self.host, self.port, self.tls)
 
                 try:
                     proto = yield socks_ep.connect(protocolfactory)
