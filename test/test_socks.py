@@ -267,7 +267,11 @@ class SocksStateMachine(unittest.TestCase):
         dis = []
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443, on_disconnect=on_disconnect)
+        sm = socks.SocksMachine(
+            'CONNECT', u'1.2.3.4', 443,
+            on_disconnect=on_disconnect,
+            create_connection=lambda a, p: None,
+        )
         sm.connection()
 
         sm.feed_data(b'\x05')
@@ -284,7 +288,11 @@ class SocksStateMachine(unittest.TestCase):
         dis = []
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443, on_disconnect=on_disconnect)
+        sm = socks.SocksMachine(
+            'CONNECT', u'1.2.3.4', 443,
+            on_disconnect=on_disconnect,
+            create_connection=lambda a, p: None,
+        )
         sm.connection()
 
         sm.feed_data(b'\x05')
@@ -318,7 +326,10 @@ class SocksStateMachine(unittest.TestCase):
         )
 
     def test_end_to_end_connect_and_relay(self):
-        sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443)
+        sm = socks.SocksMachine(
+            'CONNECT', u'1.2.3.4', 443,
+            create_connection=lambda a, p: None,
+        )
         sm.connection()
 
         sm.feed_data(b'\x05')
@@ -414,12 +425,15 @@ class SocksStateMachine(unittest.TestCase):
         sm.send_data(data.write)
         self.assertEqual(
             b'\x05\x01\x00'
-            b'\x05\xf1\x00\x03\x071.2.3.4\x00\x00',
+            b'\x05\xf1\x00\x01\x01\x02\x03\x04\x00\x00',
             data.getvalue(),
         )
 
     def test_connect(self):
-        sm = socks.SocksMachine('CONNECT', u'1.2.3.4', 443)
+        sm = socks.SocksMachine(
+            'CONNECT', u'1.2.3.4', 443,
+            create_connection=lambda a, p: None,
+        )
         sm.connection()
         sm.version_reply(0x00)
 

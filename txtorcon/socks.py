@@ -87,16 +87,28 @@ class SocksMachine(object):
     def __init__(self, req_type, host,
                  port=0,
                  on_disconnect=None,
-                 on_data=None):
+                 on_data=None,
+                 create_connection=None):
         if req_type not in self._dispatch:
             raise ValueError(
                 "Unknown request type '{}'".format(req_type)
             )
+        if req_type == 'CONNECT' and create_connection is None:
+            raise ValueError(
+                "create_connection function required for '{}'".format(
+                    req_type
+                )
+            )
+        if not isinstance(host, (bytes, str, six.text_type)):
+            raise ValueError(
+                "'host' must be text".format(type(host))
+            )
         # XXX what if addr is None?
         self._req_type = req_type
-        self._addr = _create_ip_address(host, port)
+        self._addr = _create_ip_address(six.text_type(host), port)
         self._data = b''
         self._on_disconnect = on_disconnect
+        self._create_connection = create_connection
         # XXX FIXME do *one* of these:
         self._on_data = on_data
         self._outgoing_data = []
@@ -226,17 +238,10 @@ class SocksMachine(object):
     @_machine.output()
     def _make_connection(self, addr, port):
         "make our proxy connection"
-        addr = IPv4Address('TCP', addr, port)
-        sender = yield self._factory.buildProtocol(addr)
-        client_proxy = portforward.ProxyClient()
-        sender.makeConnection(self.transport)
-        # portforward.ProxyClient is going to call setPeer but this
-        # probably doesn't have it...
-        setattr(sender, 'setPeer', lambda _: None)
-        client_proxy.setPeer(sender)
-        self._sender = sender
-        self._when_done.fire(addr)
-        returnValue(sender)
+        print("make connection", addr, port)
+        rtn = self._create_connection(addr, port)
+        print("created", rtn)
+        self._when_done.fire(rtn)
 
     @_machine.output()
     def _make_connection_v6(self, addr, port):
@@ -344,6 +349,7 @@ class SocksMachine(object):
         port = self._addr.port
 
         if isinstance(self._addr, (IPv4Address, IPv6Address)):
+            is_v6 = isinstance(self._addr, IPv6Address)
             self._data_to_send(
                 struct.pack(
                     '!BBBB4sH',
@@ -542,7 +548,10 @@ class _TorSocksProtocol2(Protocol):
             port=port,
             on_disconnect=self._on_disconnect,
             on_data=self._on_data,
+            create_connection=self._create_connection,
         )
+        self._factory = factory
+        print("factory", factory)
 
     def when_done(self):
         return self._machine.when_done()
@@ -563,6 +572,18 @@ class _TorSocksProtocol2(Protocol):
 
     def _on_data(self, data):
         self.transport.write(data)
+
+    def _create_connection(self, addr, port):
+        addr = IPv4Address('TCP', addr, port)
+        sender = self._factory.buildProtocol(addr)
+        client_proxy = portforward.ProxyClient()
+        sender.makeConnection(self.transport)
+        # portforward.ProxyClient is going to call setPeer but this
+        # probably doesn't have it...
+        setattr(sender, 'setPeer', lambda _: None)
+        client_proxy.setPeer(sender)
+        self._sender = sender
+        return sender
 
     def _on_disconnect(self, error_message):
         self.transport.loseConnection()
@@ -692,7 +713,7 @@ class TorSocksEndpoint(object):
         proto = yield proxy_ep.connect(socks_factory)
         print("proto", proto)
         wrapped_proto = yield proto.when_done()
-        print("proto", wrapped_proto)
+        print("wrapped_proto", wrapped_proto)
         if self._tls:
             returnValue(wrapped_proto.wrappedProtocol)
         else:
@@ -767,8 +788,8 @@ class _TorSocksProtocol(Protocol):
         self._fsm = FSM([sent_version, sent_request, relaying, complete, error])
 
     @inlineCallbacks
-    def _make_connection(self, _):
-        # print("make connection!")
+    def _make_connection(self, addr, port):
+        print("make connection!")
         addr = IPv4Address('TCP', self._reply_addr, self._reply_port)
         sender = yield self._factory.buildProtocol(addr)
         # portforward.ProxyClient is going to call setPeer but this
@@ -805,7 +826,7 @@ class _TorSocksProtocol(Protocol):
         # do it above so that we can pass the actual error-message
 
     def _relay_data(self, data):
-        # print("relay {} bytes".format(len(data)))
+        print("relay {} bytes".format(len(data)))
         self._sender.dataReceived(data)
 
     def _is_valid_response(self, msg):
