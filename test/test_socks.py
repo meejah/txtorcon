@@ -301,13 +301,25 @@ class SocksStateMachine(unittest.TestCase):
 
     def test_end_to_end_successful_relay(self):
 
+        class Proto(object):
+            data = b''
+            lost = []
+
+            def dataReceived(self, d):
+                self.data = self.data + d
+
+            def connectionLost(self, reason):
+                self.lost.append(reason)
+
+        the_proto = Proto()
         dis = []
+
         def on_disconnect(error_message):
             dis.append(error_message)
         sm = socks.SocksMachine(
             'CONNECT', u'1.2.3.4', 443,
             on_disconnect=on_disconnect,
-            create_connection=lambda a, p: None,
+            create_connection=lambda a, p: the_proto,
         )
         sm.connection()
 
@@ -321,9 +333,10 @@ class SocksStateMachine(unittest.TestCase):
         sm.feed_data(b'this is some relayed data')
         # should *not* have disconnected
         self.assertEqual(0, len(dis))
-        data = BytesIO()
-        sm.send_data(data.write)
-        self.assertTrue(data.getvalue().endswith(b"this is some relayed data"))
+        self.assertTrue(the_proto.data, b"this is some relayed data")
+        sm.disconnected("it's fine")
+        self.assertEqual(1, len(Proto.lost))
+        self.assertTrue("it's fine" in str(Proto.lost[0]))
 
     def test_end_to_end_success(self):
         sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
@@ -432,6 +445,7 @@ class SocksStateMachine(unittest.TestCase):
             yield sm.when_done()
         self.assertTrue('Unexpected response type 175' in str(ctx.exception))
 
+    @defer.inlineCallbacks
     def test_resolve_ptr(self):
         sm = socks.SocksMachine('RESOLVE_PTR', u'1.2.3.4', 443)
         sm.connection()
@@ -444,6 +458,11 @@ class SocksStateMachine(unittest.TestCase):
             b'\x05\xf1\x00\x01\x01\x02\x03\x04\x00\x00',
             data.getvalue(),
         )
+        sm.feed_data(
+            b'\x05\x00\x00\x01\x00\x01\x02\xff\x12\x34'
+        )
+        addr = yield sm.when_done()
+        self.assertEqual('0.1.2.255', addr)
 
     def test_connect(self):
         sm = socks.SocksMachine(
@@ -602,8 +621,11 @@ class SocksConnectTests(unittest.TestCase):
     def test_get_address_endpoint(self):
         socks_ep = Mock()
         transport = proto_helpers.StringTransport()
+        delayed_addr = []
 
         def connect(factory):
+            delayed_addr.append(factory.get_address())
+            delayed_addr.append(factory.get_address())
             factory.startFactory()
             proto = factory.buildProtocol("addr")
             proto.makeConnection(transport)
@@ -624,6 +646,9 @@ class SocksConnectTests(unittest.TestCase):
 
         self.assertEqual(addr, IPv4Address('TCP', '10.0.0.1', 12345))
         self.assertTrue('call .connect()' in str(ctx.exception))
+        self.assertEqual(2, len(delayed_addr))
+        self.assertTrue(delayed_addr[0] is not delayed_addr[1])
+        self.assertTrue(all([d.called for d in delayed_addr]))
 
     @defer.inlineCallbacks
     def test_get_address(self):

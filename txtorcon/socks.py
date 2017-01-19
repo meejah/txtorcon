@@ -167,11 +167,10 @@ class SocksMachine(object):
             addr = inet_ntoa(self._data[4:8])
             port = struct.unpack('H', self._data[8:10])[0]
             self._data = self._data[10:]
-            if self._req_type == 'RESOLVE':
-                self.reply_domain_name(addr)
-            else:
+            if self._req_type == 'CONNECT':
                 self.reply_ipv4(addr, port)
-            #print("DONE")
+            else:
+                self.reply_domain_name(addr)
 
     def _parse_ipv6_reply(self):
         if len(self._data) >= 22:
@@ -238,26 +237,9 @@ class SocksMachine(object):
     @_machine.output()
     def _make_connection(self, addr, port):
         "make our proxy connection"
-        print("make connection", addr, port)
-        rtn = self._create_connection(addr, port)
-        print("created", rtn)
-        self._when_done.fire(rtn)
-
-    @_machine.output()
-    def _make_connection_v6(self, addr, port):
-        "make our proxy connection v6"
-        # XXX notify factory we got the other sides' address?
-        addr = IPv6Address('TCP', addr, port)
-        sender = yield self._factory.buildProtocol(addr)
-        client_proxy = portforward.ProxyClient()
-        sender.makeConnection(self.transport)
-        # portforward.ProxyClient is going to call setPeer but this
-        # probably doesn't have it...
-        setattr(sender, 'setPeer', lambda _: None)
-        client_proxy.setPeer(sender)
+        sender = self._create_connection(addr, port)
         self._sender = sender
-        self._when_done.fire(addr)
-        returnValue(sender)
+        self._when_done.fire(sender)
 
     @_machine.output()
     def _domain_name_resolved(self, domain):
@@ -303,10 +285,6 @@ class SocksMachine(object):
     def answer(self):
         "the SOCKS server replied with an answer"
 
-    @_machine.input()
-    def relay_reply(self):
-        "the SOCKS server told us its relaying"
-
     @_machine.output()
     def _send_version(self):
         "sends a SOCKS version reply"
@@ -340,7 +318,7 @@ class SocksMachine(object):
         if self._data:
             d = self._data
             self._data = b''
-            self._data_to_send(d)
+            self._sender.dataReceived(d)
 
     def _send_connect_request(self):
         "sends CONNECT request"
@@ -475,7 +453,7 @@ class SocksMachine(object):
     sent_request.upon(
         reply_ipv6,
         enter=relaying,
-        outputs=[_make_connection_v6],
+        outputs=[_make_connection],
     )
     # XXX this isn't always a _domain_name_resolved -- if we're a
     # req_type CONNECT then it's _make_connection_domain ...
@@ -498,7 +476,7 @@ class SocksMachine(object):
     relaying.upon(
         disconnected,
         enter=done,
-        outputs=[],
+        outputs=[_disconnect],
     )
 
     abort.upon(
@@ -602,7 +580,7 @@ class _TorSocksFactory2(Factory):
 
     def get_address(self):
         """
-        Returns a Deferred that fires with the IAddress from the transport
+        Returns a Deferred that fires with the transport's getHost()
         when this SOCKS protocol becomes connected.
         """
         d = Deferred()
