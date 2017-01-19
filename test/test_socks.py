@@ -654,7 +654,7 @@ class SocksConnectTests(unittest.TestCase):
         # normally, .get_address is only called via the
         # attach_stream() method on Circuit
         addr = object()
-        factory = socks._TorSocksFactory()
+        factory = socks._TorSocksFactory2()
         d = factory.get_address()
         self.assertFalse(d.called)
         factory._did_connect(addr)
