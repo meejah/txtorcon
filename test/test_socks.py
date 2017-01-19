@@ -26,6 +26,22 @@ class SocksStateMachine(unittest.TestCase):
             "'host' must be" in str(ctx.exception)
         )
 
+    def test_illegal_ip_addr(self):
+        with self.assertRaises(ValueError) as ctx:
+            socks._create_ip_address(1234, 443)
+        self.assertTrue(
+            "'host' must be" in str(ctx.exception)
+        )
+
+    def test_connect_but_no_creator(self):
+        with self.assertRaises(ValueError) as ctx:
+            socks.SocksMachine(
+                'CONNECT', u'foo.bar',
+            )
+        self.assertTrue(
+            "create_connection function required" in str(ctx.exception)
+        )
+
     @defer.inlineCallbacks
     def test_connect_socks_illegal_packet(self):
 
