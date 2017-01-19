@@ -336,7 +336,11 @@ class SocksMachine(object):
                 )
             )
         else:
-            host = str(host)
+            #host = str(host)
+            host = host.encode('ascii')
+            print("HOST", host, type(host))
+            if not isinstance(host, bytes):
+                raise RuntimeError("you're gunna have a bad time")
             self._data_to_send(
                 struct.pack(
                     '!BBBBB{}sH'.format(len(host)),
@@ -372,6 +376,7 @@ class SocksMachine(object):
         "sends RESOLVE_PTR request (Tor custom)"
         host = self._addr.host.encode()
         addr_type = 0x04 if isinstance(self._addr, ipaddress.IPv4Address) else 0x01
+        encoded_host =                 inet_aton(self._addr.host)
         self._data_to_send(
             struct.pack(
                 '!BBBB4sH',
@@ -379,7 +384,7 @@ class SocksMachine(object):
                 0xF1,                # command
                 0x00,                # reserved
                 addr_type,
-                inet_aton(self._addr.host),
+                encoded_host,
                 0,                   # port; unused? SOCKS is fun
             )
         )
@@ -619,8 +624,10 @@ def resolve(tor_endpoint, hostname):
 
 @inlineCallbacks
 def resolve_ptr(tor_endpoint, hostname):
+    if six.PY2 and isinstance(hostname, str):
+        hostname = unicode(hostname)
     factory = _TorSocksFactory2(
-        unicode(hostname), 0, 'RESOLVE_PTR', None,
+        hostname, 0, 'RESOLVE_PTR', None,
     )
     proto = yield tor_endpoint.connect(factory)
     result = yield proto.when_done()
@@ -639,6 +646,8 @@ class TorSocksEndpoint(object):
     # IAddress-implementer?
     def __init__(self, socks_endpoint, host, port, tls=False):
         self._proxy_ep = socks_endpoint  # can be Deferred
+        if six.PY2 and isinstance(host, str):
+            host = unicode(host)
         self._host = host
         self._port = port
         self._tls = tls
@@ -665,7 +674,7 @@ class TorSocksEndpoint(object):
         if self._tls:
             # XXX requires Twisted 14+
             from twisted.internet.ssl import optionsForClientTLS
-            context = optionsForClientTLS(self._host.decode())
+            context = optionsForClientTLS(self._host)
             tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
             socks_factory = _TorSocksFactory2(
                 self._host, self._port, 'CONNECT', tls_factory,

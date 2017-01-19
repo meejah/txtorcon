@@ -500,7 +500,7 @@ class SocksConnectTests(unittest.TestCase):
         protocol = Mock()
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
-        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443)
+        ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443)
         proto = yield ep.connect(factory)
         self.assertEqual(proto, protocol)
 
@@ -523,7 +523,7 @@ class SocksConnectTests(unittest.TestCase):
         factory.buildProtocol = Mock(return_value=protocol)
         ep = socks.TorSocksEndpoint(
             socks_endpoint=defer.succeed(socks_ep),
-            host=b'meejah.ca',
+            host=u'meejah.ca',
             port=443,
         )
         proto = yield ep.connect(factory)
@@ -546,7 +546,7 @@ class SocksConnectTests(unittest.TestCase):
         protocol = Mock()
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
-        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
+        ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         proto = yield ep.connect(factory)
         self.assertEqual(proto, protocol)
 
@@ -567,7 +567,7 @@ class SocksConnectTests(unittest.TestCase):
         protocol = Mock()
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
-        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
+        ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
         self.assertTrue('general SOCKS server failure' in str(ctx.exception))
@@ -589,7 +589,7 @@ class SocksConnectTests(unittest.TestCase):
         protocol = Mock()
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
-        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
+        ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
         self.assertTrue('Unknown SOCKS reply code' in str(ctx.exception))
@@ -611,9 +611,10 @@ class SocksConnectTests(unittest.TestCase):
         protocol = Mock()
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
-        ep = socks.TorSocksEndpoint(socks_ep, b'meejah.ca', 443, tls=True)
+        ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
+        print("XXX", str(ctx.exception))
         self.assertTrue('general SOCKS server failure' in str(ctx.exception))
 
     @defer.inlineCallbacks
