@@ -327,8 +327,6 @@ class SocksMachine(object):
             )
         else:
             host = host.encode('ascii')
-            if not isinstance(host, bytes):
-                raise RuntimeError("you're gunna have a bad time")
             self._data_to_send(
                 struct.pack(
                     '!BBBBB{}sH'.format(len(host)),
