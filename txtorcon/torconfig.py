@@ -25,8 +25,6 @@ from txtorcon.log import txtorlog
 from txtorcon.interface import ITorControlProtocol
 if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
-else:
-    pwd = None
 
 
 class TorNotFound(RuntimeError):
@@ -429,7 +427,7 @@ def launch_tor(config, reactor,
         except KeyError:
             pass
         else:
-            if sys.platform in ('linux2', 'darwin') and os.geteuid() == 0:
+            if sys.platform in ('linux', 'linux2', 'darwin') and os.geteuid() == 0:
                 os.chown(data_directory, pwd.getpwnam(user).pw_uid, -1)
 
     try:
