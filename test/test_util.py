@@ -276,7 +276,6 @@ class TestIpAddr(unittest.TestCase):
 
     def test_create_ipaddr(self):
         ip = maybe_ip_addr('1.2.3.4')
-        print(ip)
         self.assertTrue(isinstance(ip, ipaddress.IPv4Address))
 
     @patch('txtorcon.util.ipaddress')

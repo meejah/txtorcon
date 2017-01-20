@@ -1825,7 +1825,6 @@ class HiddenServiceAuthTests(unittest.TestCase):
 class EphemeralHiddenServiceTest(unittest.TestCase):
     def test_defaults(self):
         eph = torconfig.EphemeralHiddenService("80 localhost:80")
-        print("AAA", eph._ports)
         self.assertEqual(eph._ports, ["80,localhost:80"])
 
     def test_wrong_blob(self):

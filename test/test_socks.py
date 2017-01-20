@@ -614,7 +614,6 @@ class SocksConnectTests(unittest.TestCase):
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
-        print("XXX", str(ctx.exception))
         self.assertTrue('general SOCKS server failure' in str(ctx.exception))
 
     @defer.inlineCallbacks
