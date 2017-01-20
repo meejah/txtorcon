@@ -1,5 +1,5 @@
-from six import BytesIO
-from mock import Mock
+from six import BytesIO, text_type
+from mock import Mock, patch
 
 from twisted.trial import unittest
 from twisted.internet import defer, task
@@ -708,3 +708,25 @@ class SocksResolveTests(unittest.TestCase):
         socks_ep.connect = connect
         hn = yield socks.resolve_ptr(socks_ep, u'meejah.ca')
         self.assertEqual(hn, "the dns answer")
+
+    @patch('txtorcon.socks._TorSocksFactory')
+    def test_resolve_ptr_str(self, fac):
+        socks_ep = Mock()
+        transport = proto_helpers.StringTransport()
+        d = socks.resolve_ptr(socks_ep, 'meejah.ca')
+        self.assertEqual(1, len(fac.mock_calls))
+        self.assertTrue(
+            isinstance(fac.mock_calls[0][1][0], text_type)
+        )
+        return d
+
+    @patch('txtorcon.socks._TorSocksFactory')
+    def test_resolve_str(self, fac):
+        socks_ep = Mock()
+        transport = proto_helpers.StringTransport()
+        d = socks.resolve(socks_ep, 'meejah.ca')
+        self.assertEqual(1, len(fac.mock_calls))
+        self.assertTrue(
+            isinstance(fac.mock_calls[0][1][0], text_type)
+        )
+        return d

@@ -592,6 +592,8 @@ def resolve(tor_endpoint, hostname):
 
     :param hostname: the hostname to look up.
     """
+    if six.PY2 and isinstance(hostname, str):
+        hostname = unicode(hostname)
     factory = _TorSocksFactory(
         hostname, 0, 'RESOLVE', None,
     )
