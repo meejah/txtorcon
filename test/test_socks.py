@@ -14,14 +14,14 @@ class SocksStateMachine(unittest.TestCase):
 
     def test_illegal_request(self):
         with self.assertRaises(ValueError) as ctx:
-            socks.SocksMachine('FOO_RESOLVE', u'meejah.ca', 443)
+            socks._SocksMachine('FOO_RESOLVE', u'meejah.ca', 443)
         self.assertTrue(
             'Unknown request type' in str(ctx.exception)
         )
 
     def test_illegal_host(self):
         with self.assertRaises(ValueError) as ctx:
-            socks.SocksMachine('RESOLVE', 1234, 443)
+            socks._SocksMachine('RESOLVE', 1234, 443)
         self.assertTrue(
             "'host' must be" in str(ctx.exception)
         )
@@ -35,7 +35,7 @@ class SocksStateMachine(unittest.TestCase):
 
     def test_connect_but_no_creator(self):
         with self.assertRaises(ValueError) as ctx:
-            socks.SocksMachine(
+            socks._SocksMachine(
                 'CONNECT', u'foo.bar',
             )
         self.assertTrue(
@@ -56,7 +56,7 @@ class SocksStateMachine(unittest.TestCase):
                     self._buffer = b''
                     self.transport.write(b'\x05\x01\x01')
 
-        factory = socks._TorSocksFactory2(u'meejah.ca', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory(u'meejah.ca', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -93,7 +93,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2(u'1.2.3.4', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory(u'1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -131,7 +131,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2(u'1.2.3.4', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory(u'1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -170,7 +170,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2(u'1.2.3.4', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory(u'1.2.3.4', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         server_transport = FakeTransport(server_proto, isServer=True)
 
@@ -210,7 +210,7 @@ class SocksStateMachine(unittest.TestCase):
                 assert got == expecting, "wanted {} but got {}".format(repr(expecting), repr(got))
                 self.transport.write(to_send)
 
-        factory = socks._TorSocksFactory2(u'2002:4493:5105::a299:9bff:fe0e:4471', 1234, 'CONNECT', Mock())
+        factory = socks._TorSocksFactory(u'2002:4493:5105::a299:9bff:fe0e:4471', 1234, 'CONNECT', Mock())
         server_proto = BadSocksServer()
         expected_address = object()
         server_transport = FakeTransport(server_proto, isServer=True)
@@ -238,7 +238,7 @@ class SocksStateMachine(unittest.TestCase):
         dis = []
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
+        sm = socks._SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
         sm.connection()
 
         sm.feed_data(b'\x05')
@@ -260,7 +260,7 @@ class SocksStateMachine(unittest.TestCase):
         dis = []
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
+        sm = socks._SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
         sm.connection()
 
         sm.feed_data(b'\x06')
@@ -282,7 +282,7 @@ class SocksStateMachine(unittest.TestCase):
         dis = []
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine(
+        sm = socks._SocksMachine(
             'CONNECT', u'1.2.3.4', 443,
             on_disconnect=on_disconnect,
             create_connection=lambda a, p: None,
@@ -315,7 +315,7 @@ class SocksStateMachine(unittest.TestCase):
 
         def on_disconnect(error_message):
             dis.append(error_message)
-        sm = socks.SocksMachine(
+        sm = socks._SocksMachine(
             'CONNECT', u'1.2.3.4', 443,
             on_disconnect=on_disconnect,
             create_connection=lambda a, p: the_proto,
@@ -338,7 +338,7 @@ class SocksStateMachine(unittest.TestCase):
         self.assertTrue("it's fine" in str(Proto.lost[0]))
 
     def test_end_to_end_success(self):
-        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
+        sm = socks._SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
 
         sm.feed_data(b'\x05')
@@ -354,7 +354,7 @@ class SocksStateMachine(unittest.TestCase):
         )
 
     def test_end_to_end_connect_and_relay(self):
-        sm = socks.SocksMachine(
+        sm = socks._SocksMachine(
             'CONNECT', u'1.2.3.4', 443,
             create_connection=lambda a, p: None,
         )
@@ -376,7 +376,7 @@ class SocksStateMachine(unittest.TestCase):
     def test_resolve(self):
         # kurt: most things use (hsot, port) tuples, this probably
         # should too
-        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
+        sm = socks._SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
         sm.version_reply(0x00)
 
@@ -392,7 +392,7 @@ class SocksStateMachine(unittest.TestCase):
     def test_resolve_with_reply(self):
         # kurt: most things use (hsot, port) tuples, this probably
         # should too
-        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
+        sm = socks._SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
         sm.version_reply(0x00)
 
@@ -423,7 +423,7 @@ class SocksStateMachine(unittest.TestCase):
     def test_unknown_response_type(self):
         # kurt: most things use (hsot, port) tuples, this probably
         # should too
-        sm = socks.SocksMachine('RESOLVE', u'meejah.ca', 443)
+        sm = socks._SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
         # don't actually support username/password (which is version 0x02) yet
         #sm.version_reply(0x02)
@@ -446,7 +446,7 @@ class SocksStateMachine(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_resolve_ptr(self):
-        sm = socks.SocksMachine('RESOLVE_PTR', u'1.2.3.4', 443)
+        sm = socks._SocksMachine('RESOLVE_PTR', u'1.2.3.4', 443)
         sm.connection()
         sm.version_reply(0x00)
 
@@ -464,7 +464,7 @@ class SocksStateMachine(unittest.TestCase):
         self.assertEqual('0.1.2.255', addr)
 
     def test_connect(self):
-        sm = socks.SocksMachine(
+        sm = socks._SocksMachine(
             'CONNECT', u'1.2.3.4', 443,
             create_connection=lambda a, p: None,
         )
@@ -654,7 +654,7 @@ class SocksConnectTests(unittest.TestCase):
         # normally, .get_address is only called via the
         # attach_stream() method on Circuit
         addr = object()
-        factory = socks._TorSocksFactory2()
+        factory = socks._TorSocksFactory()
         d = factory.get_address()
         self.assertFalse(d.called)
         factory._did_connect(addr)

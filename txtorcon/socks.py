@@ -24,6 +24,14 @@ import automat
 from txtorcon import util
 
 
+__all__ = (
+    'resolve',
+    'resolve_ptr',
+    'SocksError',
+    'TorSocksEndpoint',
+)
+
+
 _socks_reply_code_to_string = {
     0x00: 'succeeded',
     0x01: 'general SOCKS server failure',
@@ -55,7 +63,7 @@ def _create_ip_address(host, port):
     return addr
 
 
-class SocksMachine(object):
+class _SocksMachine(object):
     """
     trying to prototype the SOCKS state-machine in automat
 
@@ -488,10 +496,10 @@ class SocksMachine(object):
     }
 
 
-class _TorSocksProtocol2(Protocol):
+class _TorSocksProtocol(Protocol):
 
     def __init__(self, host, port, socks_method, factory):
-        self._machine = SocksMachine(
+        self._machine = _SocksMachine(
             req_type=socks_method,
             host=host,  # unicode() on py3, py2? we want idna, actually?
             port=port,
@@ -538,8 +546,8 @@ class _TorSocksProtocol2(Protocol):
         # self.transport.abortConnection()#SocksError(error_message)) ?
 
 
-class _TorSocksFactory2(Factory):
-    protocol = _TorSocksProtocol2
+class _TorSocksFactory(Factory):
+    protocol = _TorSocksProtocol
 
     def __init__(self, *args, **kw):
         self._args = args
@@ -584,7 +592,7 @@ def resolve(tor_endpoint, hostname):
 
     :param hostname: the hostname to look up.
     """
-    factory = _TorSocksFactory2(
+    factory = _TorSocksFactory(
         hostname, 0, 'RESOLVE', None,
     )
     proto = yield tor_endpoint.connect(factory)
@@ -596,7 +604,7 @@ def resolve(tor_endpoint, hostname):
 def resolve_ptr(tor_endpoint, hostname):
     if six.PY2 and isinstance(hostname, str):
         hostname = unicode(hostname)
-    factory = _TorSocksFactory2(
+    factory = _TorSocksFactory(
         hostname, 0, 'RESOLVE_PTR', None,
     )
     proto = yield tor_endpoint.connect(factory)
@@ -646,11 +654,11 @@ class TorSocksEndpoint(object):
             from twisted.internet.ssl import optionsForClientTLS
             context = optionsForClientTLS(self._host)
             tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
-            socks_factory = _TorSocksFactory2(
+            socks_factory = _TorSocksFactory(
                 self._host, self._port, 'CONNECT', tls_factory,
             )
         else:
-            socks_factory = _TorSocksFactory2(
+            socks_factory = _TorSocksFactory(
                 self._host, self._port, 'CONNECT', factory,
             )
 
