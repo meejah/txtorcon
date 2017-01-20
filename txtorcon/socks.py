@@ -217,6 +217,14 @@ class SocksMachine(object):
     def _make_connection(self, addr, port):
         "make our proxy connection"
         sender = self._create_connection(addr, port)
+        # XXX look out! we're depending on this "sender" implementing
+        # certain Twisted APIs, and the state-machine shouldn't depend
+        # on that.
+
+        # XXX also, if sender implements producer/consumer stuff, we
+        # should register ourselves (and implement it to) -- but this
+        # should really be taking place outside the state-machine in
+        # "the I/O-doing" stuff
         self._sender = sender
         self._when_done.fire(sender)
 
@@ -293,6 +301,9 @@ class SocksMachine(object):
         if self._data:
             d = self._data
             self._data = b''
+            # XXX this is "doing I/O" in the state-machine and it
+            # really shouldn't be ... probably want a passed-in
+            # "relay_data" callback or similar?
             self._sender.dataReceived(d)
 
     def _send_connect_request(self):
