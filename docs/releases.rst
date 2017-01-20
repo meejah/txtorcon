@@ -19,7 +19,13 @@ Rendered docs on `txtorcon.readthedocs <http://txtorcon.readthedocs.io/en/releas
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.18.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.19.0*
+
+ * Full Python3 support
+ * Drop `txsocksx` and use a custom implementation (this also
+   implements the custom Tor SOCKS5 methods RESOLVE and RESOLVE_PTR
+ * Drop support for older Twisted releases (12, 13 and 14 are no
+   longer supported).
 
 
 v0.18.0
