@@ -588,7 +588,6 @@ class FakeTorSocksEndpoint(object):
 
 
 class TestTorClientEndpoint(unittest.TestCase):
-    skip = "no txsocksx on py3" if six.PY3 else None
 
     def test_client_connection_failed(self):
         """
@@ -652,7 +651,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         tor_endpoint = FakeTorSocksEndpoint(*args, **kw)
         endpoint = TorClientEndpoint('', 0, socks_endpoint=tor_endpoint)
         endpoint.connect(Mock)
-        self.assertEqual(tor_endpoint.transport.value(), '\x05\x01\x00')
+        self.assertEqual(tor_endpoint.transport.value(), b'\x05\x01\x00')
 
     @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
@@ -685,7 +684,7 @@ class TestTorClientEndpoint(unittest.TestCase):
 
             endpoint = TorClientEndpoint('', 0, socks_endpoint=tor_endpoint)
             endpoint.connect(None)
-            self.assertEqual(tor_endpoint.transport.value(), '\x05\x01\x00')
+            self.assertEqual(tor_endpoint.transport.value(), b'\x05\x01\x00')
 
     def test_bad_port_retry(self):
         """
