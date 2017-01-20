@@ -36,7 +36,6 @@ from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory
 from txtorcon.endpoints import get_global_tor                       # FIXME
-from txtorcon.endpoints import _HAVE_TLS
 
 from . import util
 
@@ -746,11 +745,6 @@ class TestTorClientEndpoint(unittest.TestCase):
     @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
     def test_tls_socks_no_endpoint(self, ep_mock):
-
-        if not _HAVE_TLS:
-            print("no TLS support")
-            return
-
         the_proto = object()
         proto = defer.succeed(the_proto)
         class FakeSocks5(object):
@@ -772,11 +766,6 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         Same as above, except we provide an explicit endpoint
         """
-
-        if not _HAVE_TLS:
-            print("no TLS support")
-            return
-
         the_proto = object()
         proto_d = defer.succeed(the_proto)
         class FakeSocks5(object):

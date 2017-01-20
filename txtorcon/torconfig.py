@@ -7,7 +7,6 @@ from __future__ import with_statement
 import os
 import sys
 import six
-import types
 import functools
 import tempfile
 import warnings
@@ -702,9 +701,9 @@ class _ListWrapper(list):
     def __repr__(self):
         return '_ListWrapper' + super(_ListWrapper, self).__repr__()
 
+
 if six.PY2:
     setattr(_ListWrapper, '__setslice__', _wrapture(list.__setslice__))
-
 
 
 class HiddenServiceClientAuth(object):

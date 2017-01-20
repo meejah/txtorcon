@@ -9,7 +9,6 @@ from __future__ import print_function
 import six
 import struct
 from socket import inet_pton, inet_ntoa, inet_aton, AF_INET6, AF_INET
-import functools
 
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.protocol import Protocol, Factory
@@ -17,24 +16,12 @@ from twisted.internet.address import IPv4Address, IPv6Address, HostnameAddress
 from twisted.python.failure import Failure
 from twisted.protocols import portforward
 from twisted.protocols import tls
-# from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 import ipaddress
+import automat
 
-from txtorcon.spaghetti import FSM, State, Transition
 from txtorcon import util
-
-
-
-# okay, so what i want to do to fix this crap up is:
-# - state-machine is separate (doesn't do parsing)
-# - parsing incoming data into symbols for the state-machine
-# - (the parser sadly has to know the current state, because no SOCKS framing)
-# - ideally also make it "IO neutral", i.e. so could be basis for a
-#   synchronous SOCKS thing
-
-# so, e.g. states ge
 
 
 _socks_reply_code_to_string = {
@@ -49,8 +36,6 @@ _socks_reply_code_to_string = {
     0x08: 'Address type not supported',
 }
 
-import automat
-
 
 def _create_ip_address(host, port):
     if not isinstance(host, six.text_type):
@@ -59,7 +44,7 @@ def _create_ip_address(host, port):
         )
     try:
         a = ipaddress.ip_address(host)
-    except ValueError as e:
+    except ValueError:
         a = None
     if isinstance(a, ipaddress.IPv4Address):
         return IPv4Address('TCP', host, port)
@@ -186,11 +171,9 @@ class SocksMachine(object):
         if len(self._data) < (5 + addrlen + 2):
             return
         addr = self._data[5:5 + addrlen]
-        port = struct.unpack('H', self._data[5 + addrlen:5 + addrlen + 2])[0]
+        # port = struct.unpack('H', self._data[5 + addrlen:5 + addrlen + 2])[0]
         self._data = self._data[5 + addrlen + 2:]
         self.reply_domain_name(addr)
-
-
 
     @_machine.output()
     def _parse_request_reply(self):
@@ -296,11 +279,7 @@ class SocksMachine(object):
             self._on_disconnect(error_message)
         if self._sender:
             self._sender.connectionLost(SocksError(error_message))
-        # XXX what's the 'happy path' exit? i.e. do we ever .fire()
-        # without a Failure?
         self._when_done.fire(Failure(SocksError(error_message)))
-        #if not self._done.called:
-        #    self._done.callback(reason)
 
     @_machine.output()
     def _send_request(self, auth_method):
@@ -336,9 +315,7 @@ class SocksMachine(object):
                 )
             )
         else:
-            #host = str(host)
             host = host.encode('ascii')
-            print("HOST", host, type(host))
             if not isinstance(host, bytes):
                 raise RuntimeError("you're gunna have a bad time")
             self._data_to_send(
@@ -374,9 +351,8 @@ class SocksMachine(object):
     @_machine.output()
     def _send_resolve_ptr_request(self):
         "sends RESOLVE_PTR request (Tor custom)"
-        host = self._addr.host.encode()
         addr_type = 0x04 if isinstance(self._addr, ipaddress.IPv4Address) else 0x01
-        encoded_host =                 inet_aton(self._addr.host)
+        encoded_host = inet_aton(self._addr.host)
         self._data_to_send(
             struct.pack(
                 '!BBBB4sH',
@@ -496,20 +472,6 @@ class SocksMachine(object):
         outputs=[],
     )
 
-#    sent_version.upon(
-#        error_reply,
-#        # we could go back to 'sent_version' if we had some way to
-#        # remember / input (type, host, port) as an @input
-#        enter=abort,
-#        output=[_close_connection]
-#    )
-#    sent_version.upon(
-#        answer,
-#        enter=got_answer,
-#        output=[_start_relay]
-#    )
-
-
     _dispatch = {
         'CONNECT': _send_connect_request,
         'RESOLVE': _send_resolve_request,
@@ -564,8 +526,7 @@ class _TorSocksProtocol2(Protocol):
 
     def _on_disconnect(self, error_message):
         self.transport.loseConnection()
-        #self.transport.abortConnection()#SocksError(error_message))
-        #self._machine.disconnect(error_message)
+        # self.transport.abortConnection()#SocksError(error_message)) ?
 
 
 class _TorSocksFactory2(Factory):

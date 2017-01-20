@@ -23,15 +23,6 @@ except ImportError:
     from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor
     _HAVE_TX_14 = False
 
-try:
-    from twisted.internet.ssl import optionsForClientTLS
-    from twisted.protocols.tls import TLSMemoryBIOProtocol
-#    from txsocksx.tls import TLSWrapClientEndpoint
-    _HAVE_TLS = True
-except ImportError:
-    _HAVE_TLS = False
-
-
 from twisted.internet import defer, reactor
 from twisted.python import log
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
@@ -674,11 +665,6 @@ class TorClientEndpoint(object):
         self.socks_username = socks_username
         self.socks_password = socks_password
         self.tls = tls
-
-        if self.tls and not _HAVE_TLS:
-            raise ValueError(
-                "'tls=True' but we don't have TLS support"
-            )
 
         # backwards-compatibility: you used to specify a TCP SOCKS
         # endpoint via socks_hostname= and socks_port= kwargs

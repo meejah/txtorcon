@@ -9,7 +9,6 @@ import os
 import stat
 import types
 import warnings
-import six
 
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -316,7 +315,7 @@ class TorState(object):
             args[1],                  # nickname
             args[2],                  # idhash
             args[3],                  # orhash
-            args[4] + ' ' + args[5], # modified (like '%Y-%m-%f %H:%M:%S')
+            args[4] + ' ' + args[5],  # modified (like '%Y-%m-%f %H:%M:%S')
             args[6],                  # ip address
             args[7],                  # ORPort
             args[8],                  # DirPort

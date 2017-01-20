@@ -15,7 +15,6 @@ import ipaddress
 import struct
 import re
 import six
-from functools import wraps
 
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
@@ -23,7 +22,6 @@ from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.endpoints import serverFromString
 
 from zope.interface import implementer
-from zope.interface import Interface
 
 try:
     import GeoIP as _GeoIP
@@ -355,7 +353,7 @@ class SingleObserver(object):
 
     def fire(self, value):
         if self._observers is None:
-            return  #raise RuntimeError("already fired")
+            return  # raise RuntimeError("already fired") ?
         self._fired = value
         for d in self._observers:
             d.callback(self._fired)
