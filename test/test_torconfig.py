@@ -149,6 +149,17 @@ class ConfigTests(unittest.TestCase):
         cfg = TorConfig(self.protocol)
         return self.assertFailure(cfg.post_bootstrap, ValueError)
 
+    def test_create(self):
+
+        @implementer(ITorControlProtocol)
+        class FakeProtocol(object):
+            post_bootstrap = defer.succeed(None)
+            def add_event_listener(*args, **kw):
+                pass
+            def get_info_raw(*args, **kw):
+                return defer.succeed('config/names=')
+        trc = TorConfig.from_protocol(FakeProtocol())
+
     def test_contains(self):
         cfg = TorConfig()
         cfg.ControlPort = 4455
