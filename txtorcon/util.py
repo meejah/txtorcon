@@ -15,7 +15,6 @@ import ipaddress
 import struct
 import re
 import six
-from functools import wraps
 
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
@@ -132,6 +131,8 @@ def maybe_ip_addr(addr):
     TODO consider explicitly checking for .exit or .onion at the end?
     """
 
+    if six.PY2 and isinstance(addr, str):
+        addr = unicode(addr)
     try:
         return ipaddress.ip_address(addr)
     except ValueError:
@@ -458,58 +459,8 @@ class SingleObserver(object):
 
     def fire(self, value):
         if self._observers is None:
-            return  #raise RuntimeError("already fired")
+            return  # raise RuntimeError("already fired") ?
         self._fired = value
         for d in self._observers:
             d.callback(self._fired)
         self._observers = None
-
-
-# am i just being silly here? why not just "self.when_foo =
-# SingleObserver()"?
-
-def observable(f):
-    """
-    This is a decorator that makes this method a one-shot observable
-    -- a method that returns a Deferred each time it's called, and all
-    those Deferreds are fired once.
-
-    For example, a "when_something()" method which fires when
-    "something" happens.
-
-    You "fire" it by calling .fire() on the *method* itself, like
-    this:
-
-        class Foo(object):
-            @observable
-            def when_something(self):
-                "Returns a Deferred that fires when 'something' happens"
-
-            def unrelated_method(self):
-                self.when_something.fire('value')
-    """
-
-    shot_observers = {}
-    #@wraps(f)
-    def the_observer(s):
-        if s in shot_observers:
-            obs = shot_observers[s]
-        else:
-            obs = SingleObserver()
-            shot_observers[s] = obs
-        return obs.when_fired()
-
-    def fire(s, arg):
-        try:
-            shot_observers[s].fire(arg)
-            # XXX is this still fine? i.e. are we "re-using" a
-            # Deferred here? I don't think so... but then aren't we
-            # just going to have a giant memory-leak here,
-            # i.e. hash-table will contain *every* instance we've ever
-            # had an @observer on...?
-            #shot_observers[s] = None
-        except KeyError:
-            print("no observers", s)
-
-    the_observer.fire = fire
-    return the_observer

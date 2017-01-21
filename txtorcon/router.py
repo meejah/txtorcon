@@ -12,6 +12,7 @@ from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
 from twisted.internet import defer
+import six
 
 
 def hexIdFromHash(thehash):
@@ -168,7 +169,7 @@ class Router(object):
         There is some current work in Twisted for open-ended constants
         (enums) support however, it seems.
         """
-        if isinstance(flags, (six.text_type, str)):
+        if isinstance(flags, (six.text_type, bytes)):
             flags = flags.split()
         self._flags = [x.lower() for x in flags]
         self.name_is_unique = 'named' in self._flags

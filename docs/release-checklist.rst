@@ -19,9 +19,9 @@ Release Checklist
    * update heading, date
 
 * on both signing-machine and build-machine shells:
-   * export VERSION=0.16.1
+   * export VERSION=0.18.0
 
-* (if on signing machine) "make dist" and "make dist-sig"
+* (if on signing machine) "make dist" and "make dist-sigs"
    * creates:
      dist/txtorcon-${VERSION}.tar.gz.asc
      dist/txtorcon-${VERSION}-py2-none-any.whl.asc

@@ -2,8 +2,8 @@ import datetime
 from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.python.failure import Failure
-from zope.interface import implementer
 from mock import patch
+from zope.interface import implementer
 
 from txtorcon import Circuit
 

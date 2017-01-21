@@ -370,9 +370,9 @@ OK''' % cookietmp.name)
             cookietmp.flush()
 
             self.protocol._do_authenticate('''PROTOCOLINFO 1
-AUTH METHODS=SAFECOOKIE COOKIEFILE="%s"
+AUTH METHODS=SAFECOOKIE COOKIEFILE="{}"
 VERSION Tor="0.2.2.35"
-OK''' % cookietmp.name)
+OK'''.format(cookietmp.name))
             self.assertTrue(
                 b'AUTHCHALLENGE SAFECOOKIE ' in self.transport.value()
             )
@@ -386,8 +386,8 @@ OK''' % cookietmp.name)
             )
 
             self.send(
-                b'250 AUTHCHALLENGE SERVERHASH=' +
-                base64.b16encode(server_hash) + b' SERVERNONCE=' +
+                b'250 AUTHCHALLENGE SERVERHASH=' + \
+                base64.b16encode(server_hash) + b' SERVERNONCE=' + \
                 base64.b16encode(server_nonce) + b'\r\n'
             )
             self.assertTrue(b'AUTHENTICATE ' in self.transport.value())

@@ -748,9 +748,10 @@ class TorState(object):
                     first = False
                 else:
                     cmd += ','
-                if isinstance(router, (six.text_type, str)) and len(router) == 40 \
+                # XXX should we really accept bytes here?
+                if isinstance(router, bytes) and len(router) == 40 \
                    and hashFromHexId(router):
-                    cmd += router
+                    cmd += router.decode('utf8')
                 else:
                     cmd += router.id_hex[1:]
         d = self.protocol.queue_command(cmd)
@@ -841,7 +842,7 @@ class TorState(object):
             try:
                 # we've got a valid Circuit instance; issue the command
                 yield self.protocol.queue_command(
-                    "ATTACHSTREAM %d %d" % (stream.id, circ.id)
+                    b"ATTACHSTREAM %d %d" % (stream.id, circ.id)
                 )
             except Exception:
                 used_attacher.attach_stream_failure(stream, Failure())

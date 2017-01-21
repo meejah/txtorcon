@@ -4,12 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
-import os
-import re
-import sys
-import base64
-import traceback
-from binascii import b2a_hex
+from binascii import b2a_hex, hexlify
 
 from twisted.python import log
 from twisted.internet import defer
@@ -559,7 +554,7 @@ class TorControlProtocol(LineOnlyReceiver):
         """
 
         if not isinstance(cmd, bytes):
-            cmd = cmd.encode('utf8')
+            cmd = cmd.encode('ascii')
         d = defer.Deferred()
         self.commands.append((d, cmd, arg))
         self._maybe_issue_command()
@@ -576,7 +571,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
         self.debuglog.write(line + b'\n')
         self.debuglog.flush()
-        self.fsm.process(line.decode('utf8'))
+        self.fsm.process(line.decode('ascii'))
 
     def connectionMade(self):
         "Protocol API"
@@ -712,13 +707,24 @@ class TorControlProtocol(LineOnlyReceiver):
                 cookiefile = unescape_quoted_string(cookiefile)
                 try:
                     self._read_cookie(cookiefile)
+                    cookie_auth = True
                 except IOError as why:
                     txtorlog.msg("Reading COOKIEFILE failed: " + str(why))
-                    cookie_auth = False
-                else:
-                    cookie_auth = True
+                    if self.password_function and 'HASHEDPASSWORD' in methods:
+                        txtorlog.msg("Falling back to password")
+                    else:
+                        raise RuntimeError(
+                            "Failed to read COOKIEFILE '{fname}': {msg}\n".format(
+                                fname=cookiefile,
+                                msg=str(why),
+                            )
+                            # "On Debian, join the debian-tor group"
+                        )
             else:
                 txtorlog.msg("Didn't get COOKIEFILE")
+                raise RuntimeError(
+                    "Got 'COOKIE' or 'SAFECOOKIE' method, but no 'COOKIEFILE'"
+                )
 
         if cookie_auth:
             if 'SAFECOOKIE' in methods:
@@ -727,7 +733,7 @@ class TorControlProtocol(LineOnlyReceiver):
                 self.client_nonce = os.urandom(32)
 
                 cmd = b'AUTHCHALLENGE SAFECOOKIE ' + \
-                      b2a_hex(self.client_nonce)
+                      hexlify(self.client_nonce)
                 d = self.queue_command(cmd)
                 d.addCallback(self._safecookie_authchallenge)
                 d.addCallback(self._bootstrap)
@@ -756,7 +762,8 @@ class TorControlProtocol(LineOnlyReceiver):
 
         raise RuntimeError(
             "The Tor I connected to doesn't support SAFECOOKIE nor COOKIE"
-            " authentication and I have no password_function specified."
+            " authentication (or we can't read the cookie files) and I have"
+            " no password_function specified."
         )
 
     def _do_password_authentication(self, passwd):
@@ -835,7 +842,6 @@ class TorControlProtocol(LineOnlyReceiver):
 
     def _is_continuation_line(self, line):
         "for FSM"
-        # print("isContinuationLine",self.code,line,line[3],'-')
         code = int(line[:3])
         if self.code and self.code != code:
             raise RuntimeError("Unexpected code %d, wanted %d" % (code,

@@ -14,7 +14,7 @@ def fake_import(orig, name, *args, **kw):
 class TestImports(unittest.TestCase):
 
     @skipIf('pypy' in sys.version.lower() or '3' in sys.version.lower(), "Doesn't work in PYPY, Py3")
-    def _test_no_GeoIP(self):
+    def test_no_GeoIP(self):
         """
         Make sure we don't explode if there's no GeoIP module
         """
@@ -38,8 +38,10 @@ class TestImports(unittest.TestCase):
             # now ensure we set up all the databases as "None" when we
             # import w/o the GeoIP thing available.
             import txtorcon.util
-            ipa = txtorcon.util.maybe_ip_addr('127.0.0.1')
-            self.assertTrue(isinstance(ipa, str))
+            loc = txtorcon.util.NetLocation('127.0.0.1')
+            self.assertEqual(loc.city, None)
+            self.assertEqual(loc.asn, None)
+            self.assertEqual(loc.countrycode, '')
 
         finally:
             __import__ = orig

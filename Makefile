@@ -1,9 +1,9 @@
 .PHONY: test html counts coverage sdist clean install doc integration diagrams
 default: test
-VERSION = 0.17.0
+VERSION = 0.18.0
 
 test:
-	trial --reporter=text test
+	PYTHONPATH=. trial --reporter=text test
 
 tox:
 	tox -i http://localhost:3141/root/pypi
@@ -49,9 +49,8 @@ doc: docs/*.rst
 	-cp dist/txtorcon-${VERSION}.tar.gz docs/_build/html
 
 coverage:
-	coverage run --source=txtorcon -m pytest test
-#-coverage report --show-missing
-	-cuv graph
+	PYTHONPATH=. coverage run --source=txtorcon `which trial` test
+	cuv graph
 
 htmlcoverage:
 	coverage run --source=txtorcon `which trial` test

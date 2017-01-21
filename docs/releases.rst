@@ -46,7 +46,22 @@ will be kept. Rendered docs are available already, at
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.18.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v0.19.0*
+
+ * Full Python3 support
+ * Drop `txsocksx` and use a custom implementation (this also
+   implements the custom Tor SOCKS5 methods RESOLVE and RESOLVE_PTR
+ * Drop support for older Twisted releases (12, 13 and 14 are no
+   longer supported).
+
+
+v0.18.0
+-------
+
+January 11, 2017
+
+ * `txtorcon-0.18.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.18.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.18.0>`_ (:download:`local-sig </../signatues/txtorcon-0.18.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.18.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.18.0.tar.gz>`_)
+ * `issue 200 <https://github.com/meejah/txtorcon/issues/200>`_: better feedback if the cookie data can't be read
 
 
 v0.17.0

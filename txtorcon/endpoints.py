@@ -11,26 +11,11 @@ import weakref
 import tempfile
 import functools
 
+from txtorcon.util import available_tcp_port
 from txtorcon.socks import TorSocksEndpoint
 
-# backwards-compatibility dance: we "should" be using the
-# ...WithReactor class, but in Twisted prior to 14, there is no such
-# class (and the parse() doesn't provide a 'reactor' argument).
-try:
-    from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor  # noqa
-    _TX_CLIENT_ENDPOINT_REACTOR = True
-except ImportError:  # pragma: no cover
-    from twisted.internet.interfaces import IStreamClientEndpointStringParser as IStreamClientEndpointStringParserWithReactor  # noqa
-    _TX_CLIENT_ENDPOINT_REACTOR = False
-
-try:
-    from twisted.internet.ssl import optionsForClientTLS
-    from twisted.protocols import tls
-    _HAVE_TLS = True
-except ImportError:  # pragma: no cover
-    _HAVE_TLS = False
-
-from twisted.internet import defer, error
+from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
+from twisted.internet import defer, reactor, error
 from twisted.python import log
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamServerEndpoint
@@ -58,47 +43,6 @@ _global_tor = None  # instance of txtorcon.controller.Tor
 _global_tor_lock = defer.DeferredLock()
 # we need the lock because we (potentially) yield several times while
 # "creating" the TorConfig instance
-
-
-if _HAVE_TLS:
-    # XXX straight out of txsocksx
-    @implementer(IStreamClientEndpoint)
-    class TLSWrapClientEndpoint(object):
-        """An endpoint which automatically starts TLS.
-
-        :param contextFactory: A `ContextFactory`__ instance.
-        :param wrappedEndpoint: The endpoint to wrap.
-
-        __ http://twistedmatrix.com/documents/current/api/twisted.internet.protocol.ClientFactory.html
-
-        """
-
-        _wrapper = tls.TLSMemoryBIOFactory
-
-        def __init__(self, contextFactory, wrappedEndpoint):
-            self.contextFactory = contextFactory
-            self.wrappedEndpoint = wrappedEndpoint
-
-        def connect(self, fac):
-            """Connect to the wrapped endpoint, then start TLS.
-
-            The TLS negotiation is done by way of wrapping the provided factory
-            with `TLSMemoryBIOFactory`__ during connection.
-
-            :returns: A ``Deferred`` which fires with the same ``Protocol`` as
-                ``wrappedEndpoint.connect(fac)`` fires with. If that
-                ``Deferred`` errbacks, so will the returned deferred.
-
-            __ http://twistedmatrix.com/documents/current/api/twisted.protocols.tls.html
-
-            """
-            fac = self._wrapper(self.contextFactory, True, fac)
-            d = self.wrappedEndpoint.connect(fac)
-            d.addCallback(self._unwrapProtocol)
-            return d
-
-        def _unwrapProtocol(self, proto):
-            return proto.wrappedProtocol
 
 
 # XXX deprecate this, and make one that has a global Tor() instance
@@ -851,15 +795,6 @@ class TorClientEndpoint(object):
         self.host = host
         self.port = int(port)
 
-        self._tls = tls
-        self._socks_endpoint = socks_endpoint
-        self._reactor = reactor
-
-        if self._tls and not _HAVE_TLS:
-            raise ValueError(
-                "'tls=True' but we don't have TLS support"
-            )
-
         # backwards-compatibility: you used to specify a TCP SOCKS
         # endpoint via socks_host= and socks_port= kwargs
         if self._socks_endpoint is None:
@@ -903,6 +838,7 @@ class TorClientEndpoint(object):
     def connect(self, protocolfactory):
         last_error = None
         kwargs = dict()
+        # XXX fix in socks.py stuff
         if self._socks_username is not None and self._socks_password is not None:
             kwargs['methods'] = dict(
                 login=(self._socks_username, self._socks_password),
@@ -997,8 +933,4 @@ class TorClientEndpointStringParser(object):
     def parseStreamClient(self, *args, **kwargs):
         # for Twisted 14 and 15 (and more) the first argument is
         # 'reactor', for older Twisteds it's not
-        if _TX_CLIENT_ENDPOINT_REACTOR:
-            return self._parseClient(*args, **kwargs)
-        else:
-            from twisted.internet import reactor
-            return self._parseClient(reactor, *args, **kwargs)
+        return self._parseClient(*args[1:], **kwargs)

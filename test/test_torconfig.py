@@ -147,6 +147,17 @@ class ConfigTests(unittest.TestCase):
         cfg = TorConfig(self.protocol)
         return self.assertFailure(cfg.post_bootstrap, ValueError)
 
+    def test_create(self):
+
+        @implementer(ITorControlProtocol)
+        class FakeProtocol(object):
+            post_bootstrap = defer.succeed(None)
+            def add_event_listener(*args, **kw):
+                pass
+            def get_info_raw(*args, **kw):
+                return defer.succeed('config/names=')
+        trc = TorConfig.from_protocol(FakeProtocol())
+
     def test_contains(self):
         cfg = TorConfig()
         cfg.ControlPort = 4455
@@ -1162,19 +1173,679 @@ HiddenServiceDir=/fake/path'''
         self.assertTrue(conf.needs_save())
 
 
-@implementer(IListeningPort)
-class FakePort(object):
-    def __init__(self, port):
-        self._port = port
+@implementer(IReactorCore)
+class FakeReactor(task.Clock):
 
     def startListening(self):
         pass
 
-    def stopListening(self):
+
+class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
+
+    pid = -1
+
+    def signalProcess(self, signame):
+        self.process_protocol.processEnded(
+            Failure(error.ProcessTerminated(signal=signame))
+        )
+
+    def closeStdin(self):
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(
+            b'650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=90 '
+            b'TAG=circuit_create SUMMARY="Establishing a Tor circuit"\r\n'
+        )
+        self.protocol.dataReceived(
+            b'650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=100 '
+            b'TAG=done SUMMARY="Done"\r\n'
+        )
+
+
+class FakeProcessTransportNeverBootstraps(FakeProcessTransport):
+
+    pid = -1
+
+    def closeStdin(self):
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(b'250 OK\r\n')
+        self.protocol.dataReceived(
+            b'650 STATUS_CLIENT NOTICE BOOTSTRAP PROGRESS=90 TAG=circuit_create '
+            b'SUMMARY="Establishing a Tor circuit"\r\n')
+
+
+class FakeProcessTransportNoProtocol(FakeProcessTransport):
+    def closeStdin(self):
         pass
 
-    def getHost(self):
-        return IPv4Address('TCP', "127.0.0.1", self._port)
+
+class LaunchTorTests(unittest.TestCase):
+
+    def setUp(self):
+        self.protocol = TorControlProtocol()
+        self.protocol.connectionMade = lambda: None
+        self.transport = proto_helpers.StringTransport()
+        self.protocol.makeConnection(self.transport)
+        self.clock = task.Clock()
+
+    def setup_complete_with_timer(self, proto):
+        proto._check_timeout.stop()
+        proto.checkTimeout()
+
+    def setup_complete_no_errors(self, proto, config, stdout, stderr):
+        self.assertEqual("Bootstrapped 100%\n", stdout.getvalue())
+        self.assertEqual("", stderr.getvalue())
+        todel = proto.to_delete
+        self.assertTrue(len(todel) > 0)
+        # ...because we know it's a TorProcessProtocol :/
+        proto.cleanup()
+        self.assertEqual(len(proto.to_delete), 0)
+        for f in todel:
+            self.assertTrue(not os.path.exists(f))
+        self.assertEqual(proto._timeout_delayed_call, None)
+
+        # make sure we set up the config to track the created tor
+        # protocol connection
+        self.assertEquals(config.protocol, proto.tor_protocol)
+
+    def setup_complete_fails(self, proto, stdout, stderr):
+        self.assertEqual("Bootstrapped 90%\n", stdout.getvalue())
+        self.assertEqual("", stderr.getvalue())
+        todel = proto.to_delete
+        self.assertTrue(len(todel) > 0)
+        # the "12" is just arbitrary, we check it later in the error-message
+        proto.processEnded(
+            Failure(error.ProcessTerminated(12, None, 'statusFIXME'))
+        )
+        self.assertEqual(1, len(self.flushLoggedErrors(RuntimeError)))
+        self.assertEqual(len(proto.to_delete), 0)
+        for f in todel:
+            self.assertTrue(not os.path.exists(f))
+        return None
+
+    @patch('txtorcon.torconfig.os.geteuid')
+    def test_basic_launch(self, geteuid):
+        # pretend we're root to exercise the "maybe chown data dir" codepath
+        geteuid.return_value = 0
+        config = TorConfig()
+        config.ORPort = 1234
+        config.SOCKSPort = 9999
+        config.User = getuser()
+
+        def connector(proto, trans):
+            proto._set_valid_events('STATUS_CLIENT')
+            proto.makeConnection(trans)
+            proto.post_bootstrap.callback(proto)
+            return proto.post_bootstrap
+
+        class OnProgress:
+            def __init__(self, test, expected):
+                self.test = test
+                self.expected = expected
+
+            def __call__(self, percent, tag, summary):
+                self.test.assertEqual(
+                    self.expected[0],
+                    (percent, tag, summary)
+                )
+                self.expected = self.expected[1:]
+                self.test.assertTrue('"' not in summary)
+                self.test.assertTrue(percent >= 0 and percent <= 100)
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 100%\n')
+            proto.progress = OnProgress(
+                self, [
+                    (90, 'circuit_create', 'Establishing a Tor circuit'),
+                    (100, 'done', 'Done'),
+                ]
+            )
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        fakeout = StringIO()
+        fakeerr = StringIO()
+        creator = functools.partial(connector, self.protocol, self.transport)
+        d = launch_tor(
+            config,
+            FakeReactor(self, trans, on_protocol),
+            connection_creator=creator,
+            tor_binary='/bin/echo',
+            stdout=fakeout,
+            stderr=fakeerr
+        )
+        d.addCallback(self.setup_complete_no_errors, config, fakeout, fakeerr)
+        return d
+
+    def check_setup_failure(self, fail):
+        self.assertTrue("with error-code 12" in fail.getErrorMessage())
+        # cancel the errback chain, we wanted this
+        return None
+
+    @defer.inlineCallbacks
+    def test_launch_tor_unix_controlport(self):
+        config = TorConfig()
+        config.ControlPort = "unix:/dev/null"
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        fakeout = StringIO()
+        fakeerr = StringIO()
+
+        def connector(proto, trans):
+            proto._set_valid_events('STATUS_CLIENT')
+            proto.makeConnection(trans)
+            proto.post_bootstrap.callback(proto)
+            return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+
+        reactor = FakeReactor(self, trans, on_protocol)
+        reactor.connectUNIX = Mock()
+        try:
+            yield launch_tor(
+                config,
+                reactor,
+                tor_binary='/bin/echo',
+                stdout=fakeout,
+                stderr=fakeerr
+            )
+        except Exception:
+            pass
+        self.assertTrue(reactor.connectUNIX.called)
+        self.assertEqual(
+            '/dev/null',
+            reactor.connectUNIX.mock_calls[0][1][0],
+        )
+
+    def test_launch_tor_fails(self):
+        config = TorConfig()
+        config.OrPort = 1234
+        config.SocksPort = 9999
+
+        def connector(proto, trans):
+            proto._set_valid_events('STATUS_CLIENT')
+            proto.makeConnection(trans)
+            proto.post_bootstrap.callback(proto)
+            return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        fakeout = StringIO()
+        fakeerr = StringIO()
+        creator = functools.partial(connector, self.protocol, self.transport)
+        d = launch_tor(
+            config,
+            FakeReactor(self, trans, on_protocol),
+            connection_creator=creator,
+            tor_binary='/bin/echo',
+            stdout=fakeout,
+            stderr=fakeerr
+        )
+        d.addCallback(self.setup_complete_fails, fakeout, fakeerr)
+        self.flushLoggedErrors(RuntimeError)
+        return d
+
+    def test_launch_with_timeout_no_ireactortime(self):
+        config = TorConfig()
+        return self.assertRaises(
+            RuntimeError,
+            launch_tor, config, None, timeout=5, tor_binary='/bin/echo'
+        )
+
+    @patch('txtorcon.torconfig.sys')
+    @patch('txtorcon.torconfig.pwd')
+    @patch('txtorcon.torconfig.os.geteuid')
+    @patch('txtorcon.torconfig.os.chown')
+    def test_launch_root_changes_tmp_ownership(self, chown, euid, _pwd, _sys):
+        _pwd.return_value = 1000
+        _sys.platform = 'linux2'
+        euid.return_value = 0
+        config = TorConfig()
+        config.User = 'chuffington'
+        d = launch_tor(config, Mock(), tor_binary='/bin/echo')
+        self.assertEqual(1, chown.call_count)
+
+    @defer.inlineCallbacks
+    def test_launch_timeout_exception(self):
+        self.protocol = FakeControlProtocol([])
+        self.protocol.answers.append('''config/names=
+DataDirectory String
+ControlPort Port''')
+        self.protocol.answers.append({'DataDirectory': 'foo'})
+        self.protocol.answers.append({'ControlPort': 0})
+        config = TorConfig(self.protocol)
+        yield config.post_bootstrap
+        config.DataDirectory = '/dev/null'
+
+        trans = Mock()
+        d = launch_tor(
+            config,
+            FakeReactor(self, trans, Mock()),
+            tor_binary='/bin/echo'
+        )
+        tpp = yield d
+        tpp.transport = trans
+        trans.signalProcess = Mock(side_effect=error.ProcessExitedAlready)
+        trans.loseConnection = Mock()
+
+        # obsolete? conflict from cherry-pick 37bc60f
+        tpp.timeout_expired()
+        self.assertTrue(tpp.transport.loseConnection.called)
+
+    @defer.inlineCallbacks
+    def test_launch_timeout_process_exits(self):
+        # cover the "one more edge case" where we get a processEnded()
+        # but we've already "done" a timeout.
+        self.protocol = FakeControlProtocol([])
+        self.protocol.answers.append('''config/names=
+DataDirectory String
+ControlPort Port''')
+        self.protocol.answers.append({'DataDirectory': 'foo'})
+        self.protocol.answers.append({'ControlPort': 0})
+        config = TorConfig(self.protocol)
+        yield config.post_bootstrap
+        config.DataDirectory = '/dev/null'
+
+        trans = Mock()
+        d = launch_tor(
+            config,
+            FakeReactor(self, trans, Mock()),
+            tor_binary='/bin/echo'
+        )
+        tpp = yield d
+        tpp.timeout_expired()
+        tpp.transport = trans
+        trans.signalProcess = Mock()
+        trans.loseConnection = Mock()
+        status = Mock()
+        status.value.exitCode = None
+        self.assertTrue(tpp._did_timeout)
+        tpp.processEnded(status)
+
+        errs = self.flushLoggedErrors(RuntimeError)
+        self.assertEqual(1, len(errs))
+
+    def test_launch_wrong_stdout(self):
+        config = TorConfig()
+        try:
+            launch_tor(config, None, stdout=object(), tor_binary='/bin/echo')
+            self.fail("Should have thrown an error")
+        except RuntimeError:
+            pass
+
+    def test_launch_with_timeout(self):
+        config = TorConfig()
+        config.OrPort = 1234
+        config.SocksPort = 9999
+        timeout = 5
+
+        def connector(proto, trans):
+            proto._set_valid_events('STATUS_CLIENT')
+            proto.makeConnection(trans)
+            proto.post_bootstrap.callback(proto)
+            return proto.post_bootstrap
+
+        class OnProgress:
+            def __init__(self, test, expected):
+                self.test = test
+                self.expected = expected
+
+            def __call__(self, percent, tag, summary):
+                self.test.assertEqual(
+                    self.expected[0],
+                    (percent, tag, summary)
+                )
+                self.expected = self.expected[1:]
+                self.test.assertTrue('"' not in summary)
+                self.test.assertTrue(percent >= 0 and percent <= 100)
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransportNeverBootstraps()
+        trans.protocol = self.protocol
+        creator = functools.partial(connector, self.protocol, self.transport)
+        react = FakeReactor(self, trans, on_protocol)
+        d = launch_tor(config, react, connection_creator=creator,
+                       timeout=timeout, tor_binary='/bin/echo')
+        # FakeReactor is a task.Clock subclass and +1 just to be sure
+        react.advance(timeout + 1)
+
+        self.assertTrue(d.called)
+        self.assertTrue(
+            d.result.getErrorMessage().strip().endswith('Tor was killed (TERM).')
+        )
+        self.flushLoggedErrors(RuntimeError)
+        return self.assertFailure(d, RuntimeError)
+
+    def test_launch_with_timeout_that_doesnt_expire(self):
+        config = TorConfig()
+        config.OrPort = 1234
+        config.SocksPort = 9999
+        timeout = 5
+
+        def connector(proto, trans):
+            proto._set_valid_events('STATUS_CLIENT')
+            proto.makeConnection(trans)
+            proto.post_bootstrap.callback(proto)
+            return proto.post_bootstrap
+
+        class OnProgress:
+            def __init__(self, test, expected):
+                self.test = test
+                self.expected = expected
+
+            def __call__(self, percent, tag, summary):
+                self.test.assertEqual(
+                    self.expected[0],
+                    (percent, tag, summary)
+                )
+                self.expected = self.expected[1:]
+                self.test.assertTrue('"' not in summary)
+                self.test.assertTrue(percent >= 0 and percent <= 100)
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        creator = functools.partial(connector, self.protocol, self.transport)
+        react = FakeReactor(self, trans, on_protocol)
+        d = launch_tor(config, react, connection_creator=creator,
+                       timeout=timeout, tor_binary='/bin/echo')
+        # FakeReactor is a task.Clock subclass and +1 just to be sure
+        react.advance(timeout + 1)
+
+        self.assertTrue(d.called)
+        self.assertTrue(d.result.tor_protocol == self.protocol)
+
+    def setup_fails_stderr(self, fail, stdout, stderr):
+        self.assertEqual('', stdout.getvalue())
+        self.assertEqual('Something went horribly wrong!\n', stderr.getvalue())
+        self.assertTrue(
+            'Something went horribly wrong!' in fail.getErrorMessage()
+        )
+        # cancel the errback chain, we wanted this
+        return None
+
+    def test_tor_produces_stderr_output(self):
+        config = TorConfig()
+        config.OrPort = 1234
+        config.SocksPort = 9999
+
+        def connector(proto, trans):
+            proto._set_valid_events('STATUS_CLIENT')
+            proto.makeConnection(trans)
+            proto.post_bootstrap.callback(proto)
+            return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.errReceived('Something went horribly wrong!\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        fakeout = StringIO()
+        fakeerr = StringIO()
+        creator = functools.partial(connector, self.protocol, self.transport)
+        d = launch_tor(config, FakeReactor(self, trans, on_protocol),
+                       connection_creator=creator, tor_binary='/bin/echo',
+                       stdout=fakeout, stderr=fakeerr)
+        d.addCallback(self.fail)        # should't get callback
+        d.addErrback(self.setup_fails_stderr, fakeout, fakeerr)
+        self.assertFalse(self.protocol.on_disconnect)
+        return d
+
+    def test_tor_connection_fails(self):
+        """
+        We fail to connect once, and then successfully connect --
+        testing whether we're retrying properly on each Bootstrapped
+        line from stdout.
+        """
+
+        config = TorConfig()
+        config.OrPort = 1234
+        config.SocksPort = 9999
+
+        class Connector:
+            count = 0
+
+            def __call__(self, proto, trans):
+                self.count += 1
+                if self.count < 2:
+                    return defer.fail(
+                        error.CannotListenError(None, None, None)
+                    )
+
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(
+            config,
+            FakeReactor(self, trans, on_protocol),
+            connection_creator=creator,
+            tor_binary='/bin/echo'
+        )
+        d.addCallback(self.setup_complete_fails)
+        return self.assertFailure(d, Exception)
+
+    def test_tor_connection_user_data_dir(self):
+        """
+        Test that we don't delete a user-supplied data directory.
+        """
+
+        config = TorConfig()
+        config.OrPort = 1234
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+
+        my_dir = tempfile.mkdtemp(prefix='tortmp')
+        config.DataDirectory = my_dir
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(
+            config,
+            FakeReactor(self, trans, on_protocol),
+            connection_creator=creator,
+            tor_binary='/bin/echo'
+        )
+
+        def still_have_data_dir(proto, tester):
+            proto.cleanup()  # FIXME? not really unit-testy as this is sort of internal function
+            tester.assertTrue(os.path.exists(my_dir))
+            delete_file_or_tree(my_dir)
+
+        d.addCallback(still_have_data_dir, self)
+        d.addErrback(self.fail)
+        return d
+
+    def test_tor_connection_user_control_port(self):
+        """
+        Confirm we use a user-supplied control-port properly
+        """
+
+        config = TorConfig()
+        config.OrPort = 1234
+        config.ControlPort = 4321
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(
+            config,
+            FakeReactor(self, trans, on_protocol),
+            connection_creator=creator,
+            tor_binary='/bin/echo'
+        )
+
+        def check_control_port(proto, tester):
+            # we just want to ensure launch_tor() didn't mess with
+            # the controlport we set
+            tester.assertEquals(config.ControlPort, 4321)
+
+        d.addCallback(check_control_port, self)
+        d.addErrback(self.fail)
+        return d
+
+    def test_tor_connection_default_control_port(self):
+        """
+        Confirm a default control-port is set if not user-supplied.
+        """
+
+        config = TorConfig()
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        def on_protocol(proto):
+            proto.outReceived('Bootstrapped 90%\n')
+            proto.outReceived('Bootstrapped 100%\n')
+
+        trans = FakeProcessTransport()
+        trans.protocol = self.protocol
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        d = launch_tor(
+            config,
+            FakeReactor(self, trans, on_protocol),
+            connection_creator=creator,
+            tor_binary='/bin/echo'
+        )
+
+        def check_control_port(proto, tester):
+            # ensure ControlPort was set to a default value
+            tester.assertEquals(config.ControlPort, 9052)
+
+        d.addCallback(check_control_port, self)
+        d.addErrback(self.fail)
+        return d
+
+    def test_progress_updates(self):
+        self.got_progress = False
+
+        def confirm_progress(p, t, s):
+            self.assertEqual(p, 10)
+            self.assertEqual(t, 'tag')
+            self.assertEqual(s, 'summary')
+            self.got_progress = True
+        process = TorProcessProtocol(None, confirm_progress)
+        process.progress(10, 'tag', 'summary')
+        self.assertTrue(self.got_progress)
+
+    def test_quit_process(self):
+        process = TorProcessProtocol(None)
+        process.transport = Mock()
+
+        d = process.quit()
+        self.assertFalse(d.called)
+
+        process.processExited(Failure(error.ProcessTerminated(exitCode=15)))
+        self.assertTrue(d.called)
+        process.processEnded(Failure(error.ProcessDone(None)))
+        self.assertTrue(d.called)
+        errs = self.flushLoggedErrors()
+        self.assertEqual(1, len(errs))
+        self.assertTrue("Tor exited with error-code" in str(errs[0]))
+
+    def test_quit_process_already(self):
+        process = TorProcessProtocol(None)
+        process.transport = Mock()
+
+        def boom(sig):
+            self.assertEqual(sig, 'TERM')
+            raise error.ProcessExitedAlready()
+        process.transport.signalProcess = Mock(side_effect=boom)
+
+        d = process.quit()
+        process.processEnded(Failure(error.ProcessDone(None)))
+        self.assertTrue(d.called)
+        errs = self.flushLoggedErrors()
+        self.assertEqual(1, len(errs))
+        self.assertTrue("Tor exited with error-code" in str(errs[0]))
+
+    def test_status_updates(self):
+        process = TorProcessProtocol(None)
+        process.status_client("NOTICE CONSENSUS_ARRIVED")
+
+    def test_tor_launch_success_then_shutdown(self):
+        """
+        There was an error where we double-callbacked a deferred,
+        i.e. success and then shutdown. This repeats it.
+        """
+        process = TorProcessProtocol(None)
+        process.status_client(
+            'STATUS_CLIENT BOOTSTRAP PROGRESS=100 TAG=foo SUMMARY=cabbage'
+        )
+
+        class Value(object):
+            exitCode = 123
+
+        class Status(object):
+            value = Value()
+        process.processEnded(Status())
+        self.assertEquals(len(self.flushLoggedErrors(RuntimeError)), 1)
+
+    def test_launch_tor_no_control_port(self):
+        '''
+        See Issue #80. This allows you to launch tor with a TorConfig
+        with ControlPort=0 in case you don't want a control connection
+        at all. In this case you get back a TorProcessProtocol and you
+        own both pieces. (i.e. you have to kill it yourself).
+        '''
+
+        config = TorConfig()
+        config.ControlPort = 0
+        trans = FakeProcessTransportNoProtocol()
+        trans.protocol = self.protocol
+
+        def creator(*args, **kw):
+            print("Bad: connection creator called")
+            self.fail()
+
+        def on_protocol(proto):
+            self.process_proto = proto
+        pp = launch_tor(config,
+                        FakeReactor(self, trans, on_protocol),
+                        connection_creator=creator, tor_binary='/bin/echo')
+        self.assertTrue(pp.called)
+        self.assertEqual(pp.result, self.process_proto)
+        return pp
 
 
 class IteratorTests(unittest.TestCase):

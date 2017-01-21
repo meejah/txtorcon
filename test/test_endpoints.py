@@ -4,6 +4,7 @@ import tempfile
 
 from mock import patch
 from mock import Mock, MagicMock
+import six
 
 from zope.interface import implementer
 
@@ -32,7 +33,6 @@ from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory
 from txtorcon.endpoints import get_global_tor                       # FIXME
-from txtorcon.endpoints import _HAVE_TLS
 from txtorcon.endpoints import EphemeralHiddenServiceClient
 from txtorcon.circuit import TorCircuitEndpoint
 from txtorcon.controller import Tor
@@ -1063,17 +1063,8 @@ class TestTorClientEndpoint(unittest.TestCase):
     @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
     def test_tls_socks_no_endpoint(self, ep_mock):
-
-        if not _HAVE_TLS:
-            print("no TLS support")
-            return
-
-        class FakeWrappedProto(object):
-            wrappedProtocol = object()
-
-        wrap = FakeWrappedProto()
-        proto = defer.succeed(wrap)
-
+        the_proto = object()
+        proto = defer.succeed(the_proto)
         class FakeSocks5(object):
 
             def __init__(self, *args, **kw):
@@ -1086,7 +1077,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         reactor = Mock()
         endpoint = TorClientEndpoint(reactor, 'torproject.org', 0, tls=True)
         p2 = yield endpoint.connect(None)
-        self.assertTrue(wrap.wrappedProtocol is p2)
+        self.assertTrue(the_proto is p2)
 
     @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
@@ -1094,24 +1085,15 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         Same as above, except we provide an explicit endpoint
         """
-
-        if not _HAVE_TLS:
-            print("no TLS support")
-            return
-
-        class FakeWrappedProto(object):
-            wrappedProtocol = object()
-
-        wrap = FakeWrappedProto()
-        proto = defer.succeed(wrap)
-
+        the_proto = object()
+        proto_d = defer.succeed(the_proto)
         class FakeSocks5(object):
 
             def __init__(self, *args, **kw):
                 pass
 
             def connect(self, *args, **kw):
-                return proto
+                return proto_d
 
         reactor = Mock()
         ep_mock.side_effect = FakeSocks5
@@ -1122,7 +1104,7 @@ class TestTorClientEndpoint(unittest.TestCase):
             tls=True,
         )
         p2 = yield endpoint.connect(None)
-        self.assertTrue(wrap.wrappedProtocol is p2)
+        self.assertTrue(p2 is the_proto)
 
     def test_client_endpoint_old_api(self):
         """

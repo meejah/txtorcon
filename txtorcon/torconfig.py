@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import os
+import sys
 import six
 import functools
 import warnings
