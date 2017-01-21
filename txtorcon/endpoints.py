@@ -25,6 +25,8 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.ssl import optionsForClientTLS
+from twisted.protocols.tls import TLSMemoryBIOFactory
 # from twisted.internet.endpoints import UNIXClientEndpoint
 # from twisted.internet import error
 from twisted.plugin import IPlugin
@@ -780,20 +782,30 @@ class TorClientEndpoint(object):
 
     socks_ports_to_try = [9050, 9150]
 
-    # XXX FIXME broke backwards compat in this branch
     def __init__(self,
-                 reactor,
                  host, port,
                  socks_endpoint=None,  # can be Deferred
                  tls=False,
 
                  # XXX our custom SOCKS stuff doesn't support auth (yet?)
-                 socks_username=None, socks_password=None, **kw):
+                 socks_username=None, socks_password=None,
+                 reactor=None, **kw):
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
         self.host = host
         self.port = int(port)
+        self._socks_endpoint = socks_endpoint
+        self._socks_username = socks_username
+        self._socks_password = socks_password
+        self._tls = tls
+        # XXX FIXME we 'should' probably include 'reactor' as the
+        # first arg to this class, but technically that's a
+        # breaking change :(
+        self._reactor = reactor
+        if reactor is None:
+            from twisted.internet import reactor
+            self._reactor = reactor
 
         # backwards-compatibility: you used to specify a TCP SOCKS
         # endpoint via socks_host= and socks_port= kwargs
@@ -836,6 +848,7 @@ class TorClientEndpoint(object):
     # this is the one from the "original" release-1.x branch, i think?
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
+        print("connecting", protocolfactory)
         last_error = None
         kwargs = dict()
         # XXX fix in socks.py stuff
@@ -849,9 +862,6 @@ class TorClientEndpoint(object):
                 self.host, self.port,
                 self._tls,
             )
-            if self._tls:
-                context = optionsForClientTLS(six.text_type(self.host))
-                socks_ep = TLSWrapClientEndpoint(context, socks_ep)
             proto = yield socks_ep.connect(protocolfactory)
             defer.returnValue(proto)
         else:
@@ -862,11 +872,6 @@ class TorClientEndpoint(object):
                     socks_port,
                 )
                 socks_ep = TorSocksEndpoint(tor_ep, self.host, self.port, self._tls)
-                if self._tls:
-                    # XXX only twisted 14+
-                    context = optionsForClientTLS(six.text_type(self.host))
-                    socks_ep = TLSWrapClientEndpoint(context, socks_ep)
-
                 try:
                     proto = yield socks_ep.connect(protocolfactory)
                     defer.returnValue(proto)
@@ -923,7 +928,6 @@ class TorClientEndpointStringParser(object):
             # us pass one ...
             ep = TCP4ClientEndpoint(reactor, socksHostname, int(socksPort))
         return TorClientEndpoint(
-            reactor,
             host, port,
             socks_endpoint=ep,
             socks_username=socksUsername,
@@ -933,4 +937,4 @@ class TorClientEndpointStringParser(object):
     def parseStreamClient(self, *args, **kwargs):
         # for Twisted 14 and 15 (and more) the first argument is
         # 'reactor', for older Twisteds it's not
-        return self._parseClient(*args[1:], **kwargs)
+        return self._parseClient(*args, **kwargs)

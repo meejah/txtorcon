@@ -22,7 +22,7 @@ from txtorcon.util import available_tcp_port
 from txtorcon.util import version_at_least
 from txtorcon.util import default_control_port
 from txtorcon.util import _Listener, _ListenerCollection
-from txtorcon.util import observable
+from txtorcon.util import SingleObserver
 
 
 class FakeState:
@@ -464,13 +464,13 @@ class TestObserver(unittest.TestCase):
     def test_simple(self):
 
         class Foo(object):
+            _something = SingleObserver()
 
-            @observable
             def when_something(self):
-                pass
+                return self._something.when_fired()
 
             def do_it(self):
-                self.when_something.fire(self, 'foo')
+                self._something.fire('foo')
 
         f = Foo()
         d = f.when_something()
@@ -484,9 +484,10 @@ class TestObserver(unittest.TestCase):
     def test_multiple(self):
 
         class Foo(object):
-            @observable
+            _something = SingleObserver()
+
             def when_something(self):
-                pass
+                return self._something.when_fired()
 
         f = Foo()
         d0 = f.when_something()
@@ -497,7 +498,7 @@ class TestObserver(unittest.TestCase):
         self.assertTrue(d0 is not d1)
 
         result = object()
-        f.when_something.fire(f, result)
+        f._something.fire(result)
 
         self.assertEqual(result, d0.result)
         self.assertEqual(result, d1.result)
@@ -506,15 +507,10 @@ class TestObserver(unittest.TestCase):
 
     def test_already_fired(self):
 
-        class Foo(object):
-            @observable
-            def when_something(self):
-                pass
-
-        f = Foo()
-        d0 = f.when_something()
-        f.when_something.fire(f, 'boom')
-        d1 = f.when_something()
+        something = SingleObserver()
+        d0 = something.when_fired()
+        something.fire('boom')
+        d1 = something.when_fired()
 
         self.assertTrue(d0.called)
         self.assertTrue(d1.called)

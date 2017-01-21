@@ -587,9 +587,10 @@ class Tor(object):
             socks_ep = self._config.create_socks_endpoint(self._reactor, socks_port)
         # socks_ep will be a a Deferred, but TorClientEndpoint handles it
         return TorClientEndpoint(
-            self._reactor, host, port,
-            socks_ep,
+            host, port,
+            socks_endpoint=socks_ep,
             tls=tls,
+            reactor=self._reactor,
         )
 
     # XXX One Onion Method To Rule Them All, or

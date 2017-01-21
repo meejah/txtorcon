@@ -232,9 +232,9 @@ class Circuit(object):
         """
         from .endpoints import TorClientEndpoint
         ep = TorClientEndpoint(
-            reactor, host, port,
-            socks_endpoint,
+            host, port, socks_endpoint,
             tls=use_tls,
+            reactor=reactor,
         )
         return TorCircuitEndpoint(reactor, self._torstate, self, ep)
 

@@ -10,7 +10,7 @@ from mock import Mock, patch
 from zope.interface import implementer, directlyProvides
 from twisted.trial import unittest
 from twisted.test import proto_helpers
-from twisted.internet import defer
+from twisted.internet import defer, task
 from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IListeningPort
 from twisted.internet.address import IPv4Address

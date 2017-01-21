@@ -4,6 +4,11 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
+import os
+import re
+import sys
+import base64
+import traceback
 from binascii import b2a_hex, hexlify
 
 from twisted.python import log
