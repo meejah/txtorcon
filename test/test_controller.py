@@ -1,7 +1,6 @@
 import os
 import shutil
 import functools
-import tempfile
 from os.path import join
 from mock import Mock, patch
 from six.moves import StringIO
@@ -24,6 +23,7 @@ from txtorcon import connect
 from txtorcon import TCPHiddenServiceEndpoint
 from txtorcon.controller import _is_non_public_numeric_address
 from txtorcon.util import delete_file_or_tree
+from .util import TempDir
 
 from zope.interface import implementer, directlyProvides
 
@@ -174,22 +174,22 @@ class LaunchTorTests(unittest.TestCase):
         reactor = FakeReactor(self, trans, on_protocol, [9050])
         reactor.connectUNIX = Mock()
         # prepare a suitable directory for tor unix socket
-        tmpdir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tmpdir)
-        os.chmod(tmpdir, 0700)
-        socket_file = join(tmpdir, 'test_socket_file')
-        with patch('txtorcon.controller.UNIXClientEndpoint') as uce:
-            endpoint = Mock()
-            endpoint.connect = Mock(return_value=defer.succeed(self.protocol))
-            uce.return_value = endpoint
+        with TempDir() as tmp:
+            tmpdir = str(tmp)
+            os.chmod(tmpdir, 0700)
+            socket_file = join(tmpdir, 'test_socket_file')
+            with patch('txtorcon.controller.UNIXClientEndpoint') as uce:
+                endpoint = Mock()
+                endpoint.connect = Mock(return_value=defer.succeed(self.protocol))
+                uce.return_value = endpoint
 
-            yield launch(
-                reactor,
-                control_port="unix:{}".format(socket_file),
-                tor_binary="/bin/echo",
-                stdout=Mock(),
-                stderr=Mock(),
-            )
+                yield launch(
+                    reactor,
+                    control_port="unix:{}".format(socket_file),
+                    tor_binary="/bin/echo",
+                    stdout=Mock(),
+                    stderr=Mock(),
+                )
 
         self.assertTrue(endpoint.connect.called)
         self.assertTrue(uce.called)
