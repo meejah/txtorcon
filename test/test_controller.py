@@ -198,6 +198,39 @@ class LaunchTorTests(unittest.TestCase):
             uce.mock_calls[0][1][1],
         )
 
+    @defer.inlineCallbacks
+    def test_launch_tor_unix_controlport_wrong_perms(self):
+        reactor = FakeReactor(self, Mock(), None, [9050])
+        with self.assertRaises(ValueError) as ctx:
+            with TempDir() as tmp:
+                tmpdir = str(tmp)
+                os.chmod(tmpdir, 0777)
+                socket_file = join(tmpdir, 'socket_test')
+                yield launch(
+                    reactor,
+                    control_port="unix:{}".format(socket_file),
+                    tor_binary="/bin/echo",
+                    stdout=Mock(),
+                    stderr=Mock(),
+                )
+        self.assertTrue(
+            "must only be readable by the user" in str(ctx.exception)
+        )
+
+    @defer.inlineCallbacks
+    def test_launch_tor_unix_controlport_no_directory(self):
+        reactor = FakeReactor(self, Mock(), None, [9050])
+        with self.assertRaises(ValueError) as ctx:
+            socket_file = '/does/not/exist'
+            yield launch(
+                reactor,
+                control_port="unix:{}".format(socket_file),
+                tor_binary="/bin/echo",
+                stdout=Mock(),
+                stderr=Mock(),
+            )
+        self.assertTrue("must exist" in str(ctx.exception))
+
     @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @defer.inlineCallbacks
     def test_launch_fails(self, ftb):
