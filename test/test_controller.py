@@ -1,5 +1,11 @@
-import tempfile
 import os
+import shutil
+import functools
+import tempfile
+from os.path import join
+from mock import Mock, patch
+from six.moves import StringIO
+
 from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IStreamClientEndpoint
@@ -20,10 +26,6 @@ from txtorcon.controller import _is_non_public_numeric_address
 from txtorcon.util import delete_file_or_tree
 
 from zope.interface import implementer, directlyProvides
-
-import functools
-from mock import Mock, patch
-from six.moves import StringIO
 
 
 class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
