@@ -143,6 +143,10 @@ class FilesystemOnionService(object):
         config.HiddenServices.append(fhs)
         # we .save() down below, after setting HS_DESC listener
 
+        # XXX I *hate* this version checking crap. Can we discover a
+        # different way if this Tor supports proper HS_DESC stuff? I
+        # think part of the problem here is that "some" Tors have
+        # HS_DESC event, but it's not .. sufficient?
         if not version_at_least(config.tor_protocol.version, 0, 2, 7, 2):
             if progress:
                 progress(
