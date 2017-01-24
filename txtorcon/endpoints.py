@@ -5,17 +5,15 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import os
-import six
 import shutil
 import weakref
 import tempfile
 import functools
 
-from txtorcon.util import available_tcp_port
 from txtorcon.socks import TorSocksEndpoint
 
 from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
-from twisted.internet import defer, reactor, error
+from twisted.internet import defer, error
 from twisted.python import log
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamServerEndpoint
@@ -25,8 +23,6 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.ssl import optionsForClientTLS
-from twisted.protocols.tls import TLSMemoryBIOFactory
 # from twisted.internet.endpoints import UNIXClientEndpoint
 # from twisted.internet import error
 from twisted.plugin import IPlugin
