@@ -176,7 +176,7 @@ class LaunchTorTests(unittest.TestCase):
         # prepare a suitable directory for tor unix socket
         with TempDir() as tmp:
             tmpdir = str(tmp)
-            os.chmod(tmpdir, 0700)
+            os.chmod(tmpdir, 0o0700)
             socket_file = join(tmpdir, 'test_socket_file')
             with patch('txtorcon.controller.UNIXClientEndpoint') as uce:
                 endpoint = Mock()
@@ -204,7 +204,7 @@ class LaunchTorTests(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             with TempDir() as tmp:
                 tmpdir = str(tmp)
-                os.chmod(tmpdir, 0777)
+                os.chmod(tmpdir, 0o0777)
                 socket_file = join(tmpdir, 'socket_test')
                 yield launch(
                     reactor,

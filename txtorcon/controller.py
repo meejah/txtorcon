@@ -228,8 +228,8 @@ def launch(reactor,
                     )
                 )
             # Tor will be sad if the directory isn't 0700
-            mode = (0777 & os.stat(containing_dir).st_mode)
-            if mode & ~(0700):
+            mode = (0o0777 & os.stat(containing_dir).st_mode)
+            if mode & ~(0o0700):
                 raise ValueError(
                     "The directory containing a unix control-socket ('{}') "
                     "must only be readable by the user".format(containing_dir)

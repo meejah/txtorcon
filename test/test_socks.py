@@ -196,7 +196,8 @@ class SocksStateMachine(unittest.TestCase):
                 self._buffer = b''
                 self._recv_stack = [
                     (b'\x05\x01\x00', b'\x05\x00'),
-                    (b'\x05\x01\x00\x04\x20\x02\x44\x93\x04\xd2', b'\x05\x00\x00\x04{}\xbe\xef'.format('\x00' * 16)),
+                    (b'\x05\x01\x00\x04\x20\x02\x44\x93\x04\xd2',
+                     b'\x05\x00\x00\x04' + (b'\x00' * 16) + b'\xbe\xef'),
                 ]
 
             def dataReceived(self, data):
