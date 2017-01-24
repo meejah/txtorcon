@@ -23,6 +23,35 @@ from txtorcon.onion import FilesystemHiddenService, IOnionClient
 from txtorcon.onion import AuthenticatedHiddenService, EphemeralHiddenService
 
 
+@defer.inlineCallbacks
+def launch_tor(config, reactor,
+               tor_binary=None,
+               progress_updates=None,
+               connection_creator=None,
+               timeout=None,
+               kill_on_stderr=True,
+               stdout=None, stderr=None):
+    """
+    Deprecated; use launch() instead.
+    """
+    from .controller import launch
+    # XXX FIXME are we dealing with options in the config "properly"
+    # as far as translating semantics from the old launch_tor to
+    # launch()? DataDirectory, User, ControlPort, ...?
+    tor = yield launch(
+        reactor,
+        stdout=stdout,
+        stderr=stderr,
+        progress_updates=progress_updates,
+        tor_binary=tor_binary,
+        connection_creator=connection_creator,
+        timeout=timeout,
+        kill_on_stderr=kill_on_stderr,
+        _tor_config=config,
+    )
+    defer.returnValue(tor.process)
+
+
 class TorConfigType(object):
     """
     Base class for all configuration types, which function as parsers

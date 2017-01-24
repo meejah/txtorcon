@@ -13,6 +13,7 @@ import functools
 import ipaddress
 from io import StringIO
 from collections import Sequence
+from os.path import dirname, exists
 
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -209,13 +210,30 @@ def launch(reactor,
     # user can pass in a control port, or we set one up here
     if control_port is None:
         # on posix-y systems, we can use a unix-socket
-        if sys.platform in ('linux2', 'darwin'):
+        if sys.platform in ('linux', 'linux2', 'darwin'):
             # note: tor will not accept a relative path for ControlPort
             control_port = 'unix:{}'.format(
                 os.path.join(os.path.realpath(data_directory), 'control.socket')
             )
         else:
             control_port = yield available_tcp_port(reactor)
+    else:
+        if str(control_port).startswith('unix:'):
+            control_path = control_port.lstrip('unix:')
+            containing_dir = dirname(control_path)
+            if not exists(containing_dir):
+                raise ValueError(
+                    "The directory containing '{}' must exist".format(
+                        containing_dir
+                    )
+                )
+            # Tor will be sad if the directory isn't 0700
+            mode = (0777 & os.stat(containing_dir).st_mode)
+            if mode & ~(0700):
+                raise ValueError(
+                    "The directory containing a unix control-socket ('{}') "
+                    "must only be readable by the user".format(containing_dir)
+                )
     config.ControlPort = control_port
 
     config.CookieAuthentication = 1
@@ -763,6 +781,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
             self.connection_creator = connection_creator
         else:
             self.connection_creator = None
+        # use SingleObserver
         self._connected_listeners = []  # list of Deferred (None when we're connected)
 
         self.attempted_connect = False
@@ -909,7 +928,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 
         if status.value.exitCode is None:
             if self._did_timeout:
-                err = RuntimeError("Timeout waiting for Tor launch..")
+                err = RuntimeError("Timeout waiting for Tor launch.")
             else:
                 err = RuntimeError(
                     "Tor was killed (%s)." % status.value.signal)

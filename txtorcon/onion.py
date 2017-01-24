@@ -420,7 +420,7 @@ def _add_ephemeral_service(config, onion, progress):
             "Got: {}".format(res)
         )
 
-    log.msg("Created '{}', waiting for descriptor uploads.".format(onion.hostname))
+    log.msg("{}: waiting for descriptor uploads.".format(onion.hostname))
     yield uploaded
 
 

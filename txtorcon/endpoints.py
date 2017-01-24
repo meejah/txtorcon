@@ -37,6 +37,7 @@ from zope.interface import Interface, Attribute
 
 from .torconfig import TorConfig
 from .onion import FilesystemOnionService, EphemeralOnionService
+from .util import SingleObserver
 FilesystemHiddenService = FilesystemOnionService  # XXX
 EphemeralHiddenService = EphemeralOnionService  # XXX
 
@@ -381,6 +382,8 @@ class TCPHiddenServiceEndpoint(object):
         '''for IProgressProvider to add_progress_listener'''
         self.progress_listeners = []
 
+        # XXX hmm?! we shouldn't be creating a dir if we're an
+        # ephemeral service, right? (but: we do create one)
         if self.hidden_service_dir is None:
             self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
             log.msg('Will delete "%s" at shutdown.' % self.hidden_service_dir)
