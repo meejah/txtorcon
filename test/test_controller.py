@@ -173,6 +173,11 @@ class LaunchTorTests(unittest.TestCase):
         # launch() auto-discovers a SOCKS port
         reactor = FakeReactor(self, trans, on_protocol, [9050])
         reactor.connectUNIX = Mock()
+        # prepare a suitable directory for tor unix socket
+        tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmpdir)
+        os.chmod(tmpdir, 0700)
+        socket_file = join(tmpdir, 'test_socket_file')
         with patch('txtorcon.controller.UNIXClientEndpoint') as uce:
             endpoint = Mock()
             endpoint.connect = Mock(return_value=defer.succeed(self.protocol))
@@ -180,7 +185,7 @@ class LaunchTorTests(unittest.TestCase):
 
             yield launch(
                 reactor,
-                control_port="unix:/dev/null",
+                control_port="unix:{}".format(socket_file),
                 tor_binary="/bin/echo",
                 stdout=Mock(),
                 stderr=Mock(),
@@ -189,7 +194,7 @@ class LaunchTorTests(unittest.TestCase):
         self.assertTrue(endpoint.connect.called)
         self.assertTrue(uce.called)
         self.assertEqual(
-            '/dev/null',
+            socket_file,
             uce.mock_calls[0][1][1],
         )
 
