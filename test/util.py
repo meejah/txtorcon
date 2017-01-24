@@ -2,6 +2,10 @@
 import tempfile
 import shutil
 
+# XXX should move a bunch more stuff in here, but first move this to
+# txtorcon/testutil so it's more accessible. also Fakes can go in
+# there too.
+
 
 class TempDir(object):
     '''
