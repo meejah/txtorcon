@@ -851,7 +851,6 @@ class TorClientEndpoint(object):
     # this is the one from the "original" release-1.x branch, i think?
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
-        print("connecting", protocolfactory)
         last_error = None
         kwargs = dict()
         # XXX fix in socks.py stuff
