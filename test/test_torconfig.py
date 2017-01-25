@@ -2,18 +2,14 @@ import os
 import shutil
 import tempfile
 import functools
-from mock import patch
 from six import StringIO
-
 from mock import Mock, patch
 
 from zope.interface import implementer, directlyProvides
 from twisted.trial import unittest
 from twisted.test import proto_helpers
-from twisted.internet import defer, task
+from twisted.internet import defer
 from twisted.internet.interfaces import IReactorCore
-from twisted.internet.interfaces import IListeningPort
-from twisted.internet.address import IPv4Address
 
 from txtorcon import TorProtocolError
 from txtorcon import ITorControlProtocol
@@ -152,11 +148,13 @@ class ConfigTests(unittest.TestCase):
         @implementer(ITorControlProtocol)
         class FakeProtocol(object):
             post_bootstrap = defer.succeed(None)
+
             def add_event_listener(*args, **kw):
                 pass
+
             def get_info_raw(*args, **kw):
                 return defer.succeed('config/names=')
-        trc = TorConfig.from_protocol(FakeProtocol())
+        TorConfig.from_protocol(FakeProtocol())
 
     def test_contains(self):
         cfg = TorConfig()

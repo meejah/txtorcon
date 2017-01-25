@@ -386,8 +386,8 @@ OK'''.format(cookietmp.name))
             )
 
             self.send(
-                b'250 AUTHCHALLENGE SERVERHASH=' + \
-                base64.b16encode(server_hash) + b' SERVERNONCE=' + \
+                b'250 AUTHCHALLENGE SERVERHASH=' +
+                base64.b16encode(server_hash) + b' SERVERNONCE=' +
                 base64.b16encode(server_nonce) + b'\r\n'
             )
             self.assertTrue(b'AUTHENTICATE ' in self.transport.value())

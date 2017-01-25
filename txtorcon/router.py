@@ -12,7 +12,6 @@ from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
 from twisted.internet import defer
-import six
 
 
 def hexIdFromHash(thehash):

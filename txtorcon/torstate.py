@@ -10,7 +10,6 @@ import stat
 import types
 import warnings
 
-import six
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.endpoints import UNIXClientEndpoint

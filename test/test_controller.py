@@ -1,5 +1,4 @@
 import os
-import shutil
 import functools
 from os.path import join
 from mock import Mock, patch
@@ -632,16 +631,18 @@ class LaunchTorTests(unittest.TestCase):
         def on_protocol(proto):
             proto.outReceived(b'Bootstrapped 90%\n')
 
-        my_dir = tempfile.mkdtemp(prefix='tortmp')
-        config.DataDirectory = my_dir
-        trans = FakeProcessTransport()
-        trans.protocol = self.protocol
-        creator = functools.partial(Connector(), self.protocol, self.transport)
-        d = launch(
-            FakeReactor(self, trans, on_protocol, [1234, 9051]),
-            connection_creator=creator,
-            tor_binary='/bin/echo'
-        )
+        with TempDir(prefix='tortmp') as tmp:
+            my_dir = str(tmp)
+            config.DataDirectory = my_dir
+            trans = FakeProcessTransport()
+            trans.protocol = self.protocol
+            creator = functools.partial(Connector(), self.protocol, self.transport)
+            d = launch(
+                FakeReactor(self, trans, on_protocol, [1234, 9051]),
+                connection_creator=creator,
+                tor_binary='/bin/echo'
+            )
+            return d
 
         def still_have_data_dir(tor, tester):
             tor._process_protocol.cleanup()  # FIXME? not really unit-testy as this is sort of internal function

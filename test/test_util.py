@@ -3,7 +3,6 @@ import sys
 import tempfile
 from mock import patch
 from unittest import skipIf
-import ipaddress
 
 from twisted.trial import unittest
 from twisted.internet import defer

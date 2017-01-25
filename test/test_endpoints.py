@@ -4,7 +4,6 @@ import tempfile
 
 from mock import patch
 from mock import Mock, MagicMock
-import six
 
 from zope.interface import implementer
 
@@ -28,7 +27,7 @@ from txtorcon import TorControlProtocol
 from txtorcon import TorConfig
 from txtorcon import TCPHiddenServiceEndpoint
 from txtorcon import TorClientEndpoint
-from txtorcon import TorClientEndpointStringParser
+# from txtorcon import TorClientEndpointStringParser
 from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory
@@ -1051,6 +1050,7 @@ class TestTorClientEndpoint(unittest.TestCase):
     def test_tls_socks_no_endpoint(self, ep_mock):
         the_proto = object()
         proto = defer.succeed(the_proto)
+
         class FakeSocks5(object):
 
             def __init__(self, *args, **kw):
@@ -1072,6 +1072,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
         the_proto = object()
         proto_d = defer.succeed(the_proto)
+
         class FakeSocks5(object):
 
             def __init__(self, *args, **kw):
@@ -1080,7 +1081,6 @@ class TestTorClientEndpoint(unittest.TestCase):
             def connect(self, *args, **kw):
                 return proto_d
 
-        reactor = Mock()
         ep_mock.side_effect = FakeSocks5
         endpoint = TorClientEndpoint(
             u'torproject.org', 0,
