@@ -204,7 +204,7 @@ def launch(reactor,
     except KeyError:
         pass
     else:
-        if sys.platform in ('linux2', 'darwin') and os.geteuid() == 0:
+        if sys.platform in ('linux', 'linux2', 'darwin') and os.geteuid() == 0:
             os.chown(data_directory, pwd.getpwnam(our_user).pw_uid, -1)
 
     # user can pass in a control port, or we set one up here
