@@ -22,6 +22,7 @@ from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.endpoints import serverFromString
 
 from zope.interface import implementer
+from zope.interface import Interface
 
 try:
     import GeoIP as _GeoIP
@@ -32,6 +33,22 @@ except ImportError:
 city = None
 country = None
 asn = None
+
+
+def version_at_least(version_string, major, minor, micro, patch):
+    """
+    This returns True if the version_string represents a Tor version
+    of at least ``major``.``minor``.``micro``.``patch`` version,
+    ignoring any trailing specifiers.
+    """
+    parts = re.match(
+        r'^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+).*$',
+        version_string,
+    )
+    for ver, gold in zip(parts.group(1, 2, 3, 4), (major, minor, micro, patch)):
+        if int(ver) < int(gold):
+            return False
+    return True
 
 
 def create_geoip(fname):
@@ -139,6 +156,8 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
         a dict of key->value (both strings) of all name=value type
         keywords found in args.
     """
+    if type(args) is bytes:
+        args = args.decode('ascii')
     filtered = [x for x in args if '=' in x and key_filter(x.split('=')[0])]
     return dict(x.split('=', 1) for x in filtered)
 
@@ -312,6 +331,111 @@ def unescape_quoted_string(string):
         # XXX hmmm?
         return bytes(string, 'ascii').decode('unicode-escape')
     return string.decode('string-escape')
+
+
+def default_control_port():
+    """
+    This returns a default control port, which respects an environment
+    variable `TX_CONTROL_PORT`. Without the environment variable, this
+    returns 9151 (the Tor Browser Bundle default).
+
+    You shouldn't use this in "normal" code, this is a convenience for
+    the examples.
+    """
+    try:
+        return int(os.environ['TX_CONTROL_PORT'])
+    except KeyError:
+        return 9151
+
+
+class IListener(Interface):
+    def add(callback):
+        """
+        Add a listener. The arguments to the callback are determined by whomever calls notify()
+        """
+
+    def remove(callback):
+        """
+        Add a listener. The arguments to the callback are determined by whomever calls notify()
+        """
+
+    def notify(*args, **kw):
+        """
+        Calls every listener with the given args and keyword-args.
+
+        XXX errors? just log?
+        """
+
+
+@implementer(IListener)
+class _Listener(object):
+    """
+    Internal helper.
+    """
+
+    def __init__(self):
+        self._listeners = set()
+
+    def add(self, callback):
+        """
+        Add a callback to this listener
+        """
+        self._listeners.add(callback)
+
+    __call__ = add  #: alias for "add"
+
+    def remove(self, callback):
+        """
+        Remove a callback from this listener
+        """
+        self._listeners.remove(callback)
+
+    def notify(self, *args, **kw):
+        """
+        Calls all listeners with the specified args.
+
+        Returns a Deferred which callbacks when all the listeners
+        which return Deferreds have themselves completed.
+        """
+        calls = []
+
+        def failed(fail):
+            # XXX use logger
+            fail.printTraceback()
+
+        for cb in self._listeners:
+            d = defer.maybeDeferred(cb, *args, **kw)
+            d.addErrback(failed)
+            calls.append(d)
+        return defer.DeferredList(calls)
+
+
+class _ListenerCollection(object):
+    """
+    Internal helper.
+
+    This collects all your valid event listeners together in one
+    object if you want.
+    """
+    def __init__(self, valid_events):
+        self._valid_events = valid_events
+        for e in valid_events:
+            setattr(self, e, _Listener())
+
+    def __call__(self, event, callback):
+        if event not in self._valid_events:
+            raise Exception("Invalid event '{}'".format(event))
+        getattr(self, event).add(callback)
+
+    def remove(self, event, callback):
+        if event not in self._valid_events:
+            raise Exception("Invalid event '{}'".format(event))
+        getattr(self, event).remove(callback)
+
+    def notify(self, event, *args, **kw):
+        if event not in self._valid_events:
+            raise Exception("Invalid event '{}'".format(event))
+        getattr(self, event).notify(*args, **kw)
 
 
 # similar to OneShotObserverList in Tahoe-LAFS

@@ -1,19 +1,18 @@
 import datetime
-import time
 from twisted.trial import unittest
-from twisted.internet import defer, task
+from twisted.internet import defer
 from twisted.python.failure import Failure
 from mock import patch
 from zope.interface import implementer
 
 from txtorcon import Circuit
-from txtorcon import build_timeout_circuit
 
 from txtorcon import Stream
 from txtorcon import TorControlProtocol
 from txtorcon import TorState
 from txtorcon import Router
 from txtorcon.router import hexIdFromHash
+from txtorcon.circuit import TorCircuitEndpoint
 from txtorcon.interface import IRouterContainer
 from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
@@ -23,7 +22,10 @@ from txtorcon.interface import ITorControlProtocol
 from mock import Mock
 
 
-@implementer(IRouterContainer, ICircuitListener, ICircuitContainer, ITorControlProtocol)
+@implementer(IRouterContainer)
+@implementer(ICircuitListener)
+@implementer(ICircuitContainer)
+@implementer(ITorControlProtocol)
 class FakeTorController(object):
 
     post_bootstrap = defer.Deferred()
@@ -81,6 +83,7 @@ class FakeRouter:
         self.id_hex = hexIdFromHash(self.id_hash)
         self.location = FakeLocation()
 
+
 examples = ['CIRC 365 LAUNCHED PURPOSE=GENERAL',
             'CIRC 365 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris PURPOSE=GENERAL',
             'CIRC 365 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus PURPOSE=GENERAL',
@@ -88,6 +91,29 @@ examples = ['CIRC 365 LAUNCHED PURPOSE=GENERAL',
             'CIRC 365 BUILT $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL',
             'CIRC 365 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=FINISHED',
             'CIRC 365 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=TIMEOUT']
+
+
+class TestCircuitEndpoint(unittest.TestCase):
+
+    def test_attach(self):
+        @implementer(ICircuitContainer)
+        class FakeContainer(object):
+            pass
+        container = FakeContainer()
+        stream = Stream(container)
+        circuit = Mock()
+        target_endpoint = Mock()
+        reactor = Mock()
+        state = Mock()
+        addr = Mock()
+        addr.host = 'foo.com'
+        got_source = defer.succeed(addr)
+
+        endpoint = TorCircuitEndpoint(
+            reactor, state, circuit, target_endpoint, got_source,
+        )
+
+        endpoint.attach_stream(stream, [])
 
 
 class CircuitTests(unittest.TestCase):
@@ -313,26 +339,38 @@ class CircuitTests(unittest.TestCase):
         circuit.update('123 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL'.split())
 
         self.assertEqual(3, len(circuit.path))
-        d = circuit.close()
+        d0 = circuit.close()
         # we already pretended that Tor answered "OK" to the
         # CLOSECIRCUIT call (see close_circuit() in FakeTorController
         # above) however the circuit isn't "really" closed yet...
-        self.assertTrue(not d.called)
+        self.assertTrue(not d0.called)
         # not unit-test-y? shouldn't probably delve into internals I
         # suppose...
         self.assertTrue(circuit._closing_deferred is not None)
+
+        # if we try to close it again (*before* the actual close has
+        # succeeded!) we should also still be waiting.
+        d1 = circuit.close()
+        self.assertTrue(not d1.called)
+        # ...and this Deferred should *not* be the same as the first
+        self.assertTrue(d0 is not d1)
 
         # simulate that Tor has really closed the circuit for us
         # this should cause our Deferred to callback
         circuit.update('123 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=FINISHED'.split())
 
+        # if we close *after* the close has succeeded, then we should
+        # immediately "succeed"
+        d2 = circuit.close()
+        self.assertTrue(d1.called)
+
         # confirm that our circuit callback has been triggered already
         self.assertRaises(
             defer.AlreadyCalledError,
-            d.callback,
+            d0.callback,
             "should have been called already"
         )
-        return d
+        return defer.DeferredList([d0, d1, d2])
 
     def test_is_built(self):
         tor = FakeTorController()
@@ -382,7 +420,40 @@ class CircuitTests(unittest.TestCase):
         state.circuit_new(circuit)
         d = circuit.when_built()
 
-        state.circuit_closed(circuit)
+        called = []
 
-        self.assertTrue(d.called)
-        self.assertTrue(isinstance(d.result, Failure))
+        def err(f):
+            called.append(f)
+            return None
+        d.addErrback(err)
+
+        state.circuit_closed(circuit, REASON='testing')
+
+        self.assertEqual(1, len(called))
+        self.assertTrue(isinstance(called[0], Failure))
+        self.assertTrue('testing' in str(called[0].value))
+        return d
+
+    def test_stream_success(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+
+        circuit = Circuit(tor)
+        reactor = Mock()
+
+        circuit.stream_via(
+            reactor, 'torproject.org', 443, None,
+            use_tls=True,
+        )
+
+    def test_circuit_web_agent(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+
+        circuit = Circuit(tor)
+        reactor = Mock()
+
+        # just testing this doesn't cause an exception
+        circuit.web_agent(reactor)
