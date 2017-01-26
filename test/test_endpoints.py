@@ -37,6 +37,10 @@ from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory
 from txtorcon.endpoints import get_global_tor                       # FIXME
 
+from .test_controller import FakeReactor  # FIXME put in util or something?
+from .test_controller import FakeProcessTransport  # FIXME importing from other test sucks
+from .test_torconfig import FakeControlProtocol  # FIXME
+from .test_torconfig import FakeControlProtocol
 from . import util
 
 
@@ -61,7 +65,7 @@ class EndpointTests(unittest.TestCase):
         )
         self.protocol.answers.append('HiddenServiceOptions')
         self.patcher = patch(
-            'txtorcon.torconfig.find_tor_binary',
+            'txtorcon.util.find_tor_binary',
             return_value='/not/tor'
         )
         self.patcher.start()
@@ -99,7 +103,7 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_endpoint_properties(self):
-        ep = yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
+        ep = yield TCPHiddenServiceEndpoint.private_tor(self.reactor, 80)
         self.assertEqual(None, ep.onion_private_key)
         self.assertEqual(None, ep.onion_uri)
         ep.hiddenservice = Mock()
@@ -125,7 +129,6 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_system_tor(self):
-        from .test_torconfig import FakeControlProtocol
 
         def boom(*args):
             # why does the new_callable thing need a callable that
@@ -252,8 +255,8 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_explicit_data_dir(self):
-        d = tempfile.mkdtemp()
-        try:
+        with util.TempDir() as tmp:
+            d = str(tmp)
             with open(os.path.join(d, 'hostname'), 'w') as f:
                 f.write('public')
 
@@ -267,9 +270,6 @@ class EndpointTests(unittest.TestCase):
             self.assertEqual(1, len(config.HiddenServices))
             self.assertEqual(config.HiddenServices[0].dir, d)
             self.assertEqual(config.HiddenServices[0].hostname, 'public')
-
-        finally:
-            shutil.rmtree(d, ignore_errors=True)
 
     def test_failure(self):
         self.reactor.failures = 1
@@ -511,11 +511,6 @@ def port_generator():
     # XXX six has xrange/range stuff?
     for x in range(65535, 0, -1):
         yield x
-
-
-from .test_torconfig import FakeReactor  # FIXME put in util or something?
-from .test_torconfig import FakeProcessTransport  # FIXME importing from other test sucks
-from .test_torconfig import FakeControlProtocol  # FIXME
 
 
 @implementer(IReactorTCP)

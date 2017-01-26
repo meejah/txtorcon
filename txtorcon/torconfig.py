@@ -18,8 +18,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.interface import ITorControlProtocol
-from txtorcon.onion import FilesystemHiddenService, IOnionClient
-from txtorcon.onion import AuthenticatedHiddenService, EphemeralHiddenService
+from txtorcon.util import find_keywords
 
 
 @defer.inlineCallbacks

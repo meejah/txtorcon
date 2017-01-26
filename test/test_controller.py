@@ -1128,16 +1128,6 @@ class FactoryFunctionTests(unittest.TestCase):
     factory-functions.
     """
 
-    def test_create_onion(self):
-        tor = Tor(Mock(), Mock())
-        ep = tor.create_onion_endpoint(80)
-        self.assertTrue(isinstance(ep, TCPHiddenServiceEndpoint))
-
-    def test_create_onion_filesystem(self):
-        tor = Tor(Mock(), Mock())
-        ep = tor.create_onion_disk_endpoint(80, hs_dir='/tmp/foo')
-        self.assertTrue(isinstance(ep, TCPHiddenServiceEndpoint))
-
     @defer.inlineCallbacks
     def test_create_state(self):
         tor = Tor(Mock(), Mock())

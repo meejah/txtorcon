@@ -17,7 +17,7 @@ from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
-from txtorcon import TorProtocolFactory
+from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.stream import Stream
 from txtorcon.circuit import Circuit
 from txtorcon.router import Router, hashFromHexId
