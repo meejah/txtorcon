@@ -24,10 +24,10 @@ from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
 from txtorcon.torconfig import HiddenService
 from txtorcon.torconfig import EphemeralHiddenService
-from txtorcon.torconfig import TorProcessProtocol
 from txtorcon.torconfig import launch_tor  # this one depreceated, use launch()
+from txtorcon.controller import TorProcessProtocol
 from txtorcon.controller import launch  # this is "newer" one
-from txtorcon.torconfig import TorNotFound
+from txtorcon.controller import TorNotFound
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress
