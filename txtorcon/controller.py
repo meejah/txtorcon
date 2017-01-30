@@ -616,6 +616,8 @@ class Tor(object):
     # or ...?
     def create_onion_endpoint(self, port, private_key=None):
         """
+        WARNING: API subject to change
+
         Returns an object that implements IStreamServerEndpoint, which
         will create an "ephemeral" Onion service when ``.listen()`` is
         called. This uses the ``ADD_ONION`` tor control-protocol command.
@@ -644,6 +646,9 @@ class Tor(object):
         )
 
     def create_onion_disk_endpoint(self, port, hs_dir=None, group_readable=False):
+        """
+        WARNING: API subject to change
+        """
         return TCPHiddenServiceEndpoint(
             self._reactor, self.config, port,
             hidden_service_dir=hs_dir,
