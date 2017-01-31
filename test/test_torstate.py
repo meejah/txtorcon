@@ -28,6 +28,7 @@ from txtorcon.interface import ICircuitListener
 from txtorcon.interface import IStreamListener
 from txtorcon.interface import StreamListenerMixin
 from txtorcon.interface import CircuitListenerMixin
+from txtorcon.torstate import _extract_reason
 
 
 @implementer(ICircuitListener)
@@ -311,6 +312,13 @@ class BootstrapTests(unittest.TestCase):
         d = build_local_tor_connection(reactor, socket=None)
         d.addErrback(lambda _: None)
         return d
+
+
+class UtilTests(unittest.TestCase):
+
+    def test_extract_reason_no_reason(self):
+        reason = _extract_reason(dict())
+        self.assertEqual("unknown", reason)
 
 
 class StateTests(unittest.TestCase):
