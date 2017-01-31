@@ -286,6 +286,14 @@ class ProtocolTests(unittest.TestCase):
         except RuntimeError as e:
             self.assertTrue('Unexpected code' in str(e))
 
+    def test_response_with_no_request(self):
+        with self.assertRaises(RuntimeError) as ctx:
+            self.protocol.code = 200
+            self.protocol._broadcast_response('200 OK')
+        self.assertTrue(
+            "didn't issue a command" in str(ctx.exception)
+        )
+
     def auth_failed(self, msg):
         self.assertEqual(str(msg.value), '551 go away')
         self.got_auth_failed = True
