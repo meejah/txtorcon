@@ -4,6 +4,7 @@ import tempfile
 import functools
 from six import StringIO
 from mock import Mock, patch
+from exceptions import DeprecationWarning
 
 from zope.interface import implementer, directlyProvides
 from twisted.trial import unittest
@@ -1176,9 +1177,9 @@ class LegacyLaunchTorTests(unittest.TestCase):
     """
 
     @patch('txtorcon.controller.find_tor_binary', return_value=None)
-    @patch('warnings.warn')
+    @patch('twisted.python.deprecate.warn')
     @defer.inlineCallbacks
-    def test_happy_path(self, ftb, warn):
+    def test_happy_path(self, warn, ftb):
         self.transport = proto_helpers.StringTransport()
 
         class Connector:
@@ -1209,8 +1210,9 @@ class LegacyLaunchTorTests(unittest.TestCase):
                 isinstance(tpp, TorProcessProtocol)
             )
             self.assertIs(tpp, fake_tor.process)
-            print("WARN", warn.mock_calls)
-
+        calls = warn.mock_calls
+        self.assertEqual(1, len(calls))
+        self.assertEqual(calls[0][1][1], DeprecationWarning)
 
 class ErrorTests(unittest.TestCase):
     @patch('txtorcon.controller.find_tor_binary', return_value=None)
