@@ -869,13 +869,6 @@ class TorConfig(object):
             proto.post_bootstrap.addCallback(self.bootstrap)
         return self.__dict__['post_bootstrap']
 
-    def _update_proto(self, proto):
-        """
-        internal method, used by launch_tor to update the protocol after we're
-        set up.
-        """
-        self.__dict__['_protocol'] = proto
-
     def __setattr__(self, name, value):
         """
         we override this so that we can provide direct attribute
