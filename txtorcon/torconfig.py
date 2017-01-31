@@ -31,6 +31,8 @@ def launch_tor(config, reactor,
                stdout=None, stderr=None):
     """
     Deprecated; use launch() instead.
+
+    See also controller.py
     """
     from .controller import launch
     # XXX FIXME are we dealing with options in the config "properly"

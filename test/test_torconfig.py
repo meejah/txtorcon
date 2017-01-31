@@ -13,6 +13,7 @@ from twisted.internet.interfaces import IReactorCore
 
 from txtorcon import TorProtocolError
 from txtorcon import ITorControlProtocol
+from txtorcon import TorProcessProtocol
 from txtorcon import TorConfig
 from txtorcon import DEFAULT_VALUE
 from txtorcon import HiddenService
@@ -22,6 +23,7 @@ from txtorcon import torconfig
 
 from txtorcon.torconfig import parse_client_keys
 from txtorcon.torconfig import CommaList
+from txtorcon.torconfig import launch_tor
 
 
 @implementer(ITorControlProtocol)     # actually, just get_info_raw
@@ -1166,6 +1168,48 @@ class IteratorTests(unittest.TestCase):
         keys = sorted([k for k in cfg])
 
         self.assertEqual(['FooBar', 'Quux'], keys)
+
+
+class LegacyLaunchTorTests(unittest.TestCase):
+    """
+    Test backwards-compatibility on launch_tor()
+    """
+
+    @patch('txtorcon.controller.find_tor_binary', return_value=None)
+    @patch('warnings.warn')
+    @defer.inlineCallbacks
+    def test_happy_path(self, ftb, warn):
+        self.transport = proto_helpers.StringTransport()
+
+        class Connector:
+            def __call__(self, proto, trans):
+                proto._set_valid_events('STATUS_CLIENT')
+                proto.makeConnection(trans)
+                proto.post_bootstrap.callback(proto)
+                return proto.post_bootstrap
+
+        self.protocol = FakeControlProtocol([])
+        trans = Mock()
+        trans.protocol = self.protocol
+        creator = functools.partial(Connector(), self.protocol, self.transport)
+        reactor = Mock()
+        config = Mock()
+        fake_tor = Mock()
+        fake_tor.process = TorProcessProtocol(creator)
+
+        with patch('txtorcon.controller.launch', return_value=fake_tor) as launch:
+            directlyProvides(reactor, IReactorCore)
+            tpp = yield launch_tor(
+                config,
+                reactor,
+                connection_creator=creator
+            )
+            self.assertEqual(1, len(launch.mock_calls))
+            self.assertTrue(
+                isinstance(tpp, TorProcessProtocol)
+            )
+            self.assertIs(tpp, fake_tor.process)
+            print("WARN", warn.mock_calls)
 
 
 class ErrorTests(unittest.TestCase):
