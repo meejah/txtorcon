@@ -11,7 +11,9 @@ import warnings
 from io import StringIO
 from collections import OrderedDict
 
+from incremental import Version
 from twisted.python import log
+from twisted.python.deprecate import deprecated
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
@@ -22,6 +24,7 @@ from txtorcon.util import find_keywords
 
 
 @defer.inlineCallbacks
+@deprecated(Version("txtorcon", 0, 18, 0))
 def launch_tor(config, reactor,
                tor_binary=None,
                progress_updates=None,
