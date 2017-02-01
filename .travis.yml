@@ -3,11 +3,18 @@ sudo: required
 dist: precise
 
 install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install -r requirements.txt && pip install -r dev-requirements.txt"
+
+# NOTE disabling anything less than twisted-14 because
+# "assertRaises()" can't be used as a context-manager before then, and
+# many of the tests do that.
+
 env:
-  - TOX_ENV=twisted-latest-15
-  - TOX_ENV=twisted-latest-16
-  - TOX_ENV=py35
-  - TOX_ENV=pypy
+  - TOX_ENV=py27-tx15
+  - TOX_ENV=py27-tx16
+  - TOX_ENV=py35-tx15
+  - TOX_ENV=py35-tx16
+  - TOX_ENV=pypy-tx15
+  - TOX_ENV=pypy-tx16
 
 script:
   - tox -c tox.ini -e $TOX_ENV
