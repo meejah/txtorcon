@@ -12,7 +12,6 @@ from txtorcon import ITorControlProtocol
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.util import hmac_sha256
 
-import types
 import functools
 import tempfile
 import base64
@@ -286,6 +285,14 @@ class ProtocolTests(unittest.TestCase):
         except RuntimeError as e:
             self.assertTrue('Unexpected code' in str(e))
 
+    def test_response_with_no_request(self):
+        with self.assertRaises(RuntimeError) as ctx:
+            self.protocol.code = 200
+            self.protocol._broadcast_response('200 OK')
+        self.assertTrue(
+            "didn't issue a command" in str(ctx.exception)
+        )
+
     def auth_failed(self, msg):
         self.assertEqual(str(msg.value), '551 go away')
         self.got_auth_failed = True
@@ -363,8 +370,8 @@ OK'''.format(cookietmp.name))
             )
 
             self.send(
-                b'250 AUTHCHALLENGE SERVERHASH=' + \
-                base64.b16encode(server_hash) + b' SERVERNONCE=' + \
+                b'250 AUTHCHALLENGE SERVERHASH=' +
+                base64.b16encode(server_hash) + b' SERVERNONCE=' +
                 base64.b16encode(server_nonce) + b'\r\n'
             )
             self.assertTrue(b'AUTHENTICATE ' in self.transport.value())

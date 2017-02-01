@@ -17,7 +17,7 @@ from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
-from txtorcon import TorProtocolFactory
+from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.stream import Stream
 from txtorcon.circuit import Circuit
 from txtorcon.router import Router, hashFromHexId
@@ -161,6 +161,24 @@ def flags_from_dict(kw):
     # note that we want the leading space if there's at least one
     # flag.
     return flags
+
+
+def _extract_reason(kw):
+    """
+    Internal helper. Extracts a reason (possibly both reasons!) from
+    the kwargs for a circuit failed or closed event.
+    """
+    try:
+        # we "often" have a REASON
+        reason = kw['REASON']
+        try:
+            # ...and sometimes even have a REMOTE_REASON
+            reason = '{}, {}'.format(reason, kw['REMOTE_REASON'])
+        except KeyError:
+            pass  # should still be the 'REASON' error if we had it
+    except KeyError:
+        reason = "unknown"
+    return reason
 
 
 @implementer(ICircuitListener)
@@ -730,9 +748,11 @@ class TorState(object):
         from NS and NEWCONSENSUS events.
         """
 
-        self.all_routers = set()
-        for line in data.split('\n'):
-            self._network_status_parser.process(line)
+        # XXX why are we getting this with 0 data?
+        if len(data):
+            self.all_routers = set()
+            for line in data.split('\n'):
+                self._network_status_parser.process(line)
 
         txtorlog.msg(len(self.routers_by_name), "named routers found.")
         # remove any names we added that turned out to have dups
@@ -932,16 +952,23 @@ class TorState(object):
     def circuit_destroy(self, circuit):
         "Used by circuit_closed and circuit_failed (below)"
         txtorlog.msg("circuit_destroy:", circuit.id)
-        for d in circuit._when_built:
-            d.errback(Exception("Destroying circuit; will never hit BUILT"))
+        circuit._notify_when_built(
+            Exception("Destroying circuit; will never hit BUILT")
+        )
         del self.circuits[circuit.id]
 
     def circuit_closed(self, circuit, **kw):
         "ICircuitListener API"
         txtorlog.msg("circuit_closed", circuit)
+        circuit._notify_when_built(
+            Exception("Circuit closed ('{}')".format(_extract_reason(kw)))
+        )
         self.circuit_destroy(circuit)
 
     def circuit_failed(self, circuit, **kw):
         "ICircuitListener API"
         txtorlog.msg("circuit_failed", circuit, str(kw))
+        circuit._notify_when_built(
+            Exception("Circuit failed ('{}')".format(_extract_reason(kw)))
+        )
         self.circuit_destroy(circuit)

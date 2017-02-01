@@ -11,8 +11,8 @@ import txtorcon
 @inlineCallbacks
 def main(reactor):
     config = txtorcon.TorConfig()
-    config.OrPort = 1234
-    config.SocksPort = 9999
+    config.OrPort = 0  # could set this to be a relay, e.g. 1234
+    config.SocksPort = [9999]
     try:
         yield txtorcon.launch_tor(config, reactor, stdout=stdout)
 
@@ -29,8 +29,11 @@ def main(reactor):
     for c in state.circuits.values():
         print c
 
+    # SOCKSPort is 'really' a list of SOCKS ports in Tor now, so we
+    # have to set it to a list ... :/
     print "Changing our config (SOCKSPort=9876)"
-    config.SOCKSPort = 9876
+    #config.SOCKSPort = ['unix:/tmp/foo/bar']
+    config.SOCKSPort = ['9876']
     yield config.save()
 
     print "Querying to see it changed:"

@@ -1,4 +1,4 @@
-.PHONY: test html counts coverage sdist clean install doc integration
+.PHONY: test html counts coverage sdist clean install doc integration diagrams
 default: test
 VERSION = 0.18.0
 
@@ -7,6 +7,9 @@ test:
 
 tox:
 	tox -i http://localhost:3141/root/pypi
+
+diagrams:
+	automat-visualize --image-directory ./diagrams --image-type png txtorcon
 
 # see also http://docs.docker.io/en/latest/use/baseimages/
 dockerbase-wheezy:
@@ -38,7 +41,7 @@ integration: ## txtorcon-tester
 	python integration/run.py
 
 install:
-	sudo apt-get install python-setuptools python-twisted python-ipaddr python-geoip python-psutil graphviz
+	sudo apt-get install python-setuptools python-twisted python-ipaddress graphviz
 	python setup.py install
 
 doc: docs/*.rst
@@ -47,7 +50,6 @@ doc: docs/*.rst
 
 coverage:
 	PYTHONPATH=. coverage run --source=txtorcon `which trial` test
-	#coverage report --show-missing
 	cuv graph
 
 htmlcoverage:
@@ -124,5 +126,5 @@ venv:
 	@echo "pip install -r dev-requirements.txt"
 	@echo "python examples/monitor.py"
 
-html: docs/README.rst
+html: docs/*.rst
 	cd docs && make html

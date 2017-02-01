@@ -2,13 +2,14 @@ from six import BytesIO, text_type
 from mock import Mock, patch
 
 from twisted.trial import unittest
-from twisted.internet import defer, task
+from twisted.internet import defer
 from twisted.internet.address import IPv4Address
 from twisted.internet.protocol import Protocol
 from twisted.test import proto_helpers
-from twisted.test.iosim import IOPump, connect, FakeTransport
+from twisted.test.iosim import connect, FakeTransport
 
 from txtorcon import socks
+
 
 class SocksStateMachine(unittest.TestCase):
 
@@ -100,7 +101,8 @@ class SocksStateMachine(unittest.TestCase):
         client_proto = factory.buildProtocol('ignored')
         client_transport = FakeTransport(client_proto, isServer=False)
 
-        pump = yield connect(
+        # returns IOPump
+        yield connect(
             server_proto, server_transport,
             client_proto, client_transport,
         )
@@ -140,7 +142,8 @@ class SocksStateMachine(unittest.TestCase):
 
         d = client_proto._machine.when_done()
 
-        pump = yield connect(
+        # returns IOPump
+        yield connect(
             server_proto, server_transport,
             client_proto, client_transport,
         )
@@ -234,8 +237,8 @@ class SocksStateMachine(unittest.TestCase):
         self.assertEqual(b'abcdef', server_proto._buffer)
 
     def test_end_to_end_wrong_method(self):
-
         dis = []
+
         def on_disconnect(error_message):
             dis.append(error_message)
         sm = socks._SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
@@ -256,8 +259,8 @@ class SocksStateMachine(unittest.TestCase):
         self.assertEqual("Wanted method 0 or 2, got 1", dis[0])
 
     def test_end_to_end_wrong_version(self):
-
         dis = []
+
         def on_disconnect(error_message):
             dis.append(error_message)
         sm = socks._SocksMachine('RESOLVE', u'meejah.ca', 443, on_disconnect=on_disconnect)
@@ -278,8 +281,8 @@ class SocksStateMachine(unittest.TestCase):
         self.assertEqual("Expected version 5, got 6", dis[0])
 
     def test_end_to_end_connection_refused(self):
-
         dis = []
+
         def on_disconnect(error_message):
             dis.append(error_message)
         sm = socks._SocksMachine(
@@ -426,7 +429,7 @@ class SocksStateMachine(unittest.TestCase):
         sm = socks._SocksMachine('RESOLVE', u'meejah.ca', 443)
         sm.connection()
         # don't actually support username/password (which is version 0x02) yet
-        #sm.version_reply(0x02)
+        # sm.version_reply(0x02)
         sm.version_reply(0)
 
         # make sure the state-machine wanted to send out the correct
@@ -637,10 +640,10 @@ class SocksConnectTests(unittest.TestCase):
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
-        # calling it before there's a factory 
+        # calling it before there's a factory
         with self.assertRaises(RuntimeError) as ctx:
             yield ep.get_address()
-        proto = yield ep.connect(factory)
+        yield ep.connect(factory)
         addr = yield ep.get_address()
 
         self.assertEqual(addr, IPv4Address('TCP', '10.0.0.1', 12345))
@@ -712,7 +715,6 @@ class SocksResolveTests(unittest.TestCase):
     @patch('txtorcon.socks._TorSocksFactory')
     def test_resolve_ptr_str(self, fac):
         socks_ep = Mock()
-        transport = proto_helpers.StringTransport()
         d = socks.resolve_ptr(socks_ep, 'meejah.ca')
         self.assertEqual(1, len(fac.mock_calls))
         self.assertTrue(
@@ -723,7 +725,6 @@ class SocksResolveTests(unittest.TestCase):
     @patch('txtorcon.socks._TorSocksFactory')
     def test_resolve_str(self, fac):
         socks_ep = Mock()
-        transport = proto_helpers.StringTransport()
         d = socks.resolve(socks_ep, 'meejah.ca')
         self.assertEqual(1, len(fac.mock_calls))
         self.assertTrue(

@@ -1,7 +1,6 @@
 from twisted.trial import unittest
 
 import sys
-import types
 import functools
 from unittest import skipIf
 

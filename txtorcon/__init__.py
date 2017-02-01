@@ -13,7 +13,7 @@ from txtorcon.circuit import Circuit
 from txtorcon.circuit import build_timeout_circuit
 from txtorcon.circuit import CircuitBuildTimedOutError
 from txtorcon.stream import Stream
-from txtorcon.torcontrolprotocol import connect
+from txtorcon.controller import connect
 from txtorcon.torcontrolprotocol import TorControlProtocol
 from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.torcontrolprotocol import TorProtocolFactory
@@ -24,9 +24,11 @@ from txtorcon.torstate import build_local_tor_connection
 from txtorcon.torconfig import TorConfig
 from txtorcon.torconfig import HiddenService
 from txtorcon.torconfig import EphemeralHiddenService
-from txtorcon.torconfig import TorProcessProtocol
-from txtorcon.torconfig import launch_tor
-from txtorcon.torconfig import TorNotFound
+from txtorcon.torconfig import launch_tor  # this one depreceated, use launch()
+from txtorcon.controller import TorProcessProtocol
+from txtorcon.controller import launch  # this is "newer" one
+from txtorcon.controller import TorNotFound
+from txtorcon.controller import Tor
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress
@@ -48,10 +50,11 @@ from txtorcon.interface import (
 )
 
 __all__ = [
+    "connect", "launch",  # connect, launch return instance of Tor()...
+    "Tor",                # ...which is the preferred high-level API
     "Router",
     "Circuit",
     "Stream",
-    "connect",
     "TorControlProtocol", "TorProtocolError", "TorProtocolFactory",
     "TorState", "DEFAULT_VALUE",
     "TorInfo",

@@ -197,6 +197,7 @@ def do_setup(state):
     print "Connected to a Tor version", state.protocol.version
 
     attacher = MyAttacher(state)
+    # XXX ignoring a deferred here
     state.set_attacher(attacher, reactor)
     state.add_circuit_listener(attacher)
 

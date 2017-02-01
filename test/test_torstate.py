@@ -6,7 +6,6 @@ from twisted.python.failure import Failure
 from twisted.internet import task, defer
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 
-import os
 import tempfile
 
 from ipaddress import IPv4Address
@@ -22,12 +21,12 @@ from txtorcon import build_tor_connection
 from txtorcon import build_local_tor_connection
 from txtorcon import build_timeout_circuit
 from txtorcon import CircuitBuildTimedOutError
-from txtorcon.interface import ITorControlProtocol
 from txtorcon.interface import IStreamAttacher
 from txtorcon.interface import ICircuitListener
 from txtorcon.interface import IStreamListener
 from txtorcon.interface import StreamListenerMixin
 from txtorcon.interface import CircuitListenerMixin
+from txtorcon.torstate import _extract_reason
 
 
 @implementer(ICircuitListener)
@@ -147,6 +146,7 @@ class FakeCircuit(Circuit):
         self.streams = []
         self.id = id
         self.state = 'BOGUS'
+
 
 @implementer(IStreamClientEndpoint)
 class FakeEndpoint:
@@ -313,6 +313,13 @@ class BootstrapTests(unittest.TestCase):
         return d
 
 
+class UtilTests(unittest.TestCase):
+
+    def test_extract_reason_no_reason(self):
+        reason = _extract_reason(dict())
+        self.assertEqual("unknown", reason)
+
+
 class StateTests(unittest.TestCase):
 
     def setUp(self):
@@ -341,7 +348,7 @@ class StateTests(unittest.TestCase):
 
     def test_attacher_error_handler(self):
         # make sure error-handling "does something" that isn't blowing up
-        with patch('sys.stdout') as fake_stdout:
+        with patch('sys.stdout'):
             TorState(self.protocol)._attacher_error(Failure(RuntimeError("quote")))
 
     def test_stream_update(self):

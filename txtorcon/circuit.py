@@ -11,11 +11,17 @@ from datetime import datetime
 from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
+
 from .interface import IRouterContainer
 from txtorcon.util import find_keywords
 
+
 # look like "2014-01-25T02:12:14.593772"
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+
+# note to self: TorCircuitEndpoint can be merged only after deciding
+# the attacher API
 
 
 class Circuit(object):
@@ -71,7 +77,7 @@ class Circuit(object):
         """
         self.listeners = []
         self.router_container = IRouterContainer(routercontainer)
-        self.torstate = routercontainer
+        self._torstate = routercontainer  # XXX FIXME
         self.path = []
         self.streams = []
         self.purpose = None
@@ -83,6 +89,7 @@ class Circuit(object):
         # this is used to hold a Deferred that will callback() when
         # this circuit is being CLOSED or FAILED.
         self._closing_deferred = None
+        # XXX ^ should probably be when_closed() etc etc...
 
         # caches parsed value for time_created()
         self._time_created = None
@@ -103,13 +110,20 @@ class Circuit(object):
         If it's already BUILT when this is called, you get an
         already-successful Deferred; otherwise, the state must change
         to BUILT.
+
+        If the circuit will never hit BUILT (e.g. it is abandoned by
+        Tor before it gets to BUILT) you will receive an errback
         """
+        # XXX note to self: we never do an errback; fix this behavior
         d = defer.Deferred()
         if self.state == 'BUILT':
             d.callback(self)
         else:
             self._when_built.append(d)
         return d
+
+    # note to self: web_agent and stream_via should be merged after
+    # working out the set_attacher etc interface.
 
     @property
     def time_created(self):
@@ -145,11 +159,26 @@ class Circuit(object):
         if you included IfUnused.
         """
 
+        # we're already closed; nothing to do
+        if self.state == 'CLOSED':
+            return defer.succeed(None)
+
+        # someone already called close() but we're not closed yet
+        if self._closing_deferred:
+            d = defer.Deferred()
+
+            def closed(arg):
+                d.callback(arg)
+                return arg
+            self._closing_deferred.addBoth(closed)
+            return d
+
+        # actually-close the circuit
         self._closing_deferred = defer.Deferred()
 
         def close_command_is_queued(*args):
             return self._closing_deferred
-        d = self.torstate.close_circuit(self.id, **kw)
+        d = self._torstate.close_circuit(self.id, **kw)
         d.addCallback(close_command_is_queued)
         return self._closing_deferred
 
@@ -182,7 +211,8 @@ class Circuit(object):
         # print "Circuit.update:",args
         if self.id is None:
             self.id = int(args[0])
-            [x.circuit_new(self) for x in self.listeners]
+            for x in self.listeners:
+                x.circuit_new(self)
 
         else:
             if int(args[0]) != self.id:
@@ -198,17 +228,17 @@ class Circuit(object):
 
         if self.state == 'LAUNCHED':
             self.path = []
-            [x.circuit_launched(self) for x in self.listeners]
+            for x in self.listeners:
+                x.circuit_launched(self)
         else:
             if self.state != 'FAILED' and self.state != 'CLOSED':
                 if len(args) > 2:
                     self.update_path(args[2].split(','))
 
         if self.state == 'BUILT':
-            [x.circuit_built(self) for x in self.listeners]
-            for d in self._when_built:
-                d.callback(self)
-            self._when_built = []
+            for x in self.listeners:
+                x.circuit_built(self)
+            self._notify_when_built()
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:
@@ -219,7 +249,8 @@ class Circuit(object):
                                      (self.state, len(self.streams))))
             flags = self._create_flags(kw)
             self.maybe_call_closing_deferred()
-            [x.circuit_closed(self, **flags) for x in self.listeners]
+            for x in self.listeners:
+                x.circuit_closed(self, **flags)
 
         elif self.state == 'FAILED':
             if len(self.streams) > 0:
@@ -227,7 +258,17 @@ class Circuit(object):
                                      (self.state, len(self.streams))))
             flags = self._create_flags(kw)
             self.maybe_call_closing_deferred()
-            [x.circuit_failed(self, **flags) for x in self.listeners]
+            for x in self.listeners:
+                x.circuit_failed(self, **flags)
+
+    # XXX should use the util helper
+    def _notify_when_built(self, err=None):
+        for d in self._when_built:
+            if err is None:
+                d.callback(self)
+            else:
+                d.errback(Failure(err))
+        self._when_built = []
 
     def maybe_call_closing_deferred(self):
         """
@@ -266,7 +307,8 @@ class Circuit(object):
 
             self.path.append(router)
             if len(self.path) > len(oldpath):
-                [x.circuit_extend(self, router) for x in self.listeners]
+                for x in self.listeners:
+                    x.circuit_extend(self, router)
                 oldpath = self.path
 
     def __str__(self):
@@ -276,7 +318,7 @@ class Circuit(object):
 
 
 class CircuitBuildTimedOutError(Exception):
-    """
+        """
     This exception is thrown when using `timed_circuit_build`
     and the circuit build times-out.
     """
