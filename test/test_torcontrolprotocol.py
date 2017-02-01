@@ -12,7 +12,6 @@ from txtorcon import ITorControlProtocol
 from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.util import hmac_sha256
 
-import types
 import functools
 import tempfile
 import base64
@@ -371,8 +370,8 @@ OK'''.format(cookietmp.name))
             )
 
             self.send(
-                b'250 AUTHCHALLENGE SERVERHASH=' + \
-                base64.b16encode(server_hash) + b' SERVERNONCE=' + \
+                b'250 AUTHCHALLENGE SERVERHASH=' +
+                base64.b16encode(server_hash) + b' SERVERNONCE=' +
                 base64.b16encode(server_nonce) + b'\r\n'
             )
             self.assertTrue(b'AUTHENTICATE ' in self.transport.value())

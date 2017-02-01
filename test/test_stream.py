@@ -123,6 +123,7 @@ class StreamTests(unittest.TestCase):
         """A listener throws an exception during notify"""
 
         exc = Exception("the bad stuff happened")
+
         class Bad(StreamListenerMixin):
             def stream_new(*args, **kw):
                 raise exc

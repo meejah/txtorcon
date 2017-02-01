@@ -423,7 +423,7 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append({'SomethingExciting': 'a,b'})
         conf = TorConfig(self.protocol)
 
-        from txtorcon.torconfig import CommaList, HiddenService
+        from txtorcon.torconfig import HiddenService
         self.assertEqual(conf.get_type('SomethingExciting'), CommaList)
         self.assertEqual(conf.get_type('HiddenServices'), HiddenService)
 
@@ -750,7 +750,8 @@ class EventTests(unittest.TestCase):
         protocol.answers.append({'Foo': '0'})
         protocol.answers.append({'Bar': '1'})
 
-        config = TorConfig(protocol)
+        # Doing It For The Side Effects. Hoo boy.
+        TorConfig(protocol)
         # Initial value is not tested here
         try:
             protocol.events['CONF_CHANGED']('Foo=INVALID\nBar=VALUES')
@@ -1213,6 +1214,7 @@ class LegacyLaunchTorTests(unittest.TestCase):
         self.assertEqual(1, len(calls))
         self.assertEqual(calls[0][1][1], DeprecationWarning)
 
+
 class ErrorTests(unittest.TestCase):
     @patch('txtorcon.controller.find_tor_binary', return_value=None)
     @defer.inlineCallbacks
@@ -1300,9 +1302,9 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
 
     def test_wrong_blob(self):
         try:
-            eph = torconfig.EphemeralHiddenService("80 localhost:80", "foo")
+            torconfig.EphemeralHiddenService("80 localhost:80", "foo")
             self.fail("should get exception")
-        except RuntimeError as e:
+        except RuntimeError:
             pass
 
     def test_add(self):
@@ -1351,7 +1353,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         try:
             yield eph.remove_from_tor(proto)
             self.fail("should have gotten exception")
-        except RuntimeError as e:
+        except RuntimeError:
             pass
 
     def test_failed_upload(self):

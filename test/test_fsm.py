@@ -1,6 +1,8 @@
 
 import txtorcon.spaghetti
-from txtorcon.spaghetti import *
+from txtorcon.spaghetti import State
+from txtorcon.spaghetti import Transition
+from txtorcon.spaghetti import FSM
 from twisted.trial import unittest
 
 import os
