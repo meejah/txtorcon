@@ -885,7 +885,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
 # this Deferred into the notifications -- BUT we might try again, so
 # we need to know "have we given up -- had an error" and only in that
 # case send to the connected things. I think?
-##            d.addCallback(self._maybe_notify_connected)
+#            d.addCallback(self._maybe_notify_connected)
 
     def _timeout_expired(self):
         """

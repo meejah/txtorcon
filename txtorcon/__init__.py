@@ -50,10 +50,11 @@ from txtorcon.interface import (
 )
 
 __all__ = [
+    "connect", "launch",  # connect, launch return instance of Tor()...
+    "Tor",                # ...which is the preferred high-level API
     "Router",
     "Circuit",
     "Stream",
-    "connect",
     "TorControlProtocol", "TorProtocolError", "TorProtocolFactory",
     "TorState", "DEFAULT_VALUE",
     "TorInfo",

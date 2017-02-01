@@ -5,18 +5,15 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-import six
 import time
 from datetime import datetime
 
 from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
-from twisted.internet.interfaces import IStreamClientEndpoint
-from zope.interface import implementer
 
-from .interface import IRouterContainer, IStreamAttacher
-from txtorcon.util import find_keywords, maybe_ip_addr
+from .interface import IRouterContainer
+from txtorcon.util import find_keywords
 
 
 # look like "2014-01-25T02:12:14.593772"
