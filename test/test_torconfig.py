@@ -4,7 +4,6 @@ import tempfile
 import functools
 from six import StringIO
 from mock import Mock, patch
-from exceptions import DeprecationWarning
 
 from zope.interface import implementer, directlyProvides
 from twisted.trial import unittest
