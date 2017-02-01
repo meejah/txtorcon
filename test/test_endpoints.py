@@ -219,7 +219,7 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.onion_private_key, None)
         return ep
 
-    @patch('txtorcon.util.find_tor_binary', return_value='/bin/echo')
+    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     def test_multiple_listen(self, ftb):
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d0 = ep.listen(NoOpProtocolFactory())
@@ -250,7 +250,8 @@ class EndpointTests(unittest.TestCase):
         return d
 
     @defer.inlineCallbacks
-    def test_explicit_data_dir(self):
+    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
+    def test_explicit_data_dir(self, ftb):
         with util.TempDir() as tmp:
             d = str(tmp)
             with open(os.path.join(d, 'hostname'), 'w') as f:
