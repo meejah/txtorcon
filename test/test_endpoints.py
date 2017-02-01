@@ -33,6 +33,7 @@ from .test_torconfig import FakeControlProtocol  # FIXME
 from . import util
 
 
+@patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
 class EndpointTests(unittest.TestCase):
 
     def setUp(self):
@@ -67,7 +68,7 @@ class EndpointTests(unittest.TestCase):
         self.patcher.stop()
 
     @defer.inlineCallbacks
-    def test_global_tor(self):
+    def test_global_tor(self, ftb):
         config = yield get_global_tor(
             Mock(),
             _tor_launcher=lambda x, y, z: True
@@ -75,7 +76,7 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(0, config.SOCKSPort)
 
     @defer.inlineCallbacks
-    def test_global_tor_error(self):
+    def test_global_tor_error(self, ftb):
         yield get_global_tor(
             reactor=Mock(),
             _tor_launcher=lambda x, y, z: True
@@ -94,7 +95,7 @@ class EndpointTests(unittest.TestCase):
             pass
 
     @defer.inlineCallbacks
-    def test_endpoint_properties(self):
+    def test_endpoint_properties(self, ftb):
         ep = yield TCPHiddenServiceEndpoint.private_tor(self.reactor, 80)
         self.assertEqual(None, ep.onion_private_key)
         self.assertEqual(None, ep.onion_uri)
@@ -103,7 +104,7 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual('mumble', ep.onion_private_key)
 
     @defer.inlineCallbacks
-    def test_private_tor(self):
+    def test_private_tor(self, ftb):
         m = Mock()
         from txtorcon import endpoints
         endpoints.launch_tor = m
@@ -114,7 +115,7 @@ class EndpointTests(unittest.TestCase):
         self.assertTrue(m.called)
 
     @defer.inlineCallbacks
-    def test_private_tor_no_control_port(self):
+    def test_private_tor_no_control_port(self, ftb):
         m = Mock()
         from txtorcon import endpoints
         endpoints.launch_tor = m
@@ -122,7 +123,7 @@ class EndpointTests(unittest.TestCase):
         self.assertTrue(m.called)
 
     @defer.inlineCallbacks
-    def test_system_tor(self):
+    def test_system_tor(self, ftb):
 
         def boom(*args):
             # why does the new_callable thing need a callable that
@@ -151,7 +152,7 @@ class EndpointTests(unittest.TestCase):
                 self.assertFalse(launch_mock.called)
 
     @defer.inlineCallbacks
-    def test_basic(self):
+    def test_basic(self, ftb):
         listen = RuntimeError("listen")
         connect = RuntimeError("connect")
         reactor = proto_helpers.RaisingMemoryReactor(listen, connect)
@@ -171,7 +172,7 @@ class EndpointTests(unittest.TestCase):
 
         repr(self.config.HiddenServices)
 
-    def test_progress_updates(self):
+    def test_progress_updates(self, ftb):
         config = TorConfig()
         ep = TCPHiddenServiceEndpoint(self.reactor, config, 123)
 
@@ -184,7 +185,6 @@ class EndpointTests(unittest.TestCase):
         ep._tor_progress_update(*args)
         self.assertTrue(ding.called_with(*args))
 
-    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @patch('txtorcon.endpoints.launch_tor')
     def test_progress_updates_private_tor(self, tor, ftb):
         ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
@@ -198,12 +198,12 @@ class EndpointTests(unittest.TestCase):
         return ep
 
     @patch('txtorcon.endpoints.get_global_tor')
-    def test_progress_updates_global_tor(self, tor):
+    def test_progress_updates_global_tor(self, tor, ftb):
         ep = TCPHiddenServiceEndpoint.global_tor(self.reactor, 1234)
         tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
         return ep
 
-    def test_hiddenservice_key_unfound(self):
+    def test_hiddenservice_key_unfound(self, ftb):
         ep = TCPHiddenServiceEndpoint.private_tor(
             self.reactor,
             1234,
@@ -220,7 +220,6 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.onion_private_key, None)
         return ep
 
-    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     def test_multiple_listen(self, ftb):
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d0 = ep.listen(NoOpProtocolFactory())
@@ -244,14 +243,13 @@ class EndpointTests(unittest.TestCase):
         d0.addCallback(check).addErrback(self.fail)
         return d0
 
-    def test_already_bootstrapped(self):
+    def test_already_bootstrapped(self, ftb):
         self.config.bootstrap()
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d = ep.listen(NoOpProtocolFactory())
         return d
 
     @defer.inlineCallbacks
-    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     def test_explicit_data_dir(self, ftb):
         with util.TempDir() as tmp:
             d = str(tmp)
@@ -269,7 +267,7 @@ class EndpointTests(unittest.TestCase):
             self.assertEqual(config.HiddenServices[0].dir, d)
             self.assertEqual(config.HiddenServices[0].hostname, 'public')
 
-    def test_failure(self):
+    def test_failure(self, ftb):
         self.reactor.failures = 1
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d = ep.listen(NoOpProtocolFactory())
@@ -281,7 +279,7 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(failure.type, error.CannotListenError)
         return None
 
-    def test_parse_via_plugin(self):
+    def test_parse_via_plugin(self, ftb):
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
         config = TorConfig()
@@ -300,7 +298,7 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.local_port, 1234)
         self.assertEqual(ep.hidden_service_dir, '/foo/bar')
 
-    def test_parse_user_path(self):
+    def test_parse_user_path(self, ftb):
         # this makes sure we expand users and symlinks in
         # hiddenServiceDir args. see Issue #77
 
@@ -326,7 +324,7 @@ class EndpointTests(unittest.TestCase):
             ep.hidden_service_dir
         )
 
-    def test_parse_relative_path(self):
+    def test_parse_relative_path(self, ftb):
         # this makes sure we convert a relative path to absolute
         # hiddenServiceDir args. see Issue #77
 
@@ -363,7 +361,7 @@ class EndpointTests(unittest.TestCase):
             os.chdir(orig)
 
     @defer.inlineCallbacks
-    def test_stealth_auth(self):
+    def test_stealth_auth(self, ftb):
         '''
         make sure we produce a HiddenService instance with stealth-auth
         lines if we had authentication specified in the first place.
