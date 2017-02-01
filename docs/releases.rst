@@ -31,6 +31,12 @@ unreleased
    :meth:`txtorcon.connect` or :meth:`txtorcon.launch`. These
    instances are intended to be "the" high-level API and most users
    shouldn't need anything else.
+ * Integrated support for `twisted.web.client.Agent`, baked into
+   :class:`txtorcon.Tor`. This allows simple, straightforward use of
+   `treq <https://pypi.python.org/pypi/treq>`_ or "raw"
+   `twisted.web.client` for making client-type Web requests via
+   Tor. Automatically handles configuration of SOCKS ports. See
+   :meth:`txtorcon.Tor.web_agent`
 
 
 v0.18.0
