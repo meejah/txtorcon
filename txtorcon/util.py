@@ -103,7 +103,7 @@ def find_tor_binary(globs=('/usr/sbin/', '/usr/bin/',
     if system_tor:
         try:
             proc = subprocess.Popen(
-                ('which torrr'),
+                ('which tor'),
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 shell=True
             )
@@ -118,7 +118,7 @@ def find_tor_binary(globs=('/usr/sbin/', '/usr/bin/',
     # the browser-bundle. Look in specific places
     for pattern in globs:
         for path in glob.glob(pattern):
-            torbin = os.path.join(path, 'torrr')
+            torbin = os.path.join(path, 'tor')
             if is_executable(torbin):
                 return torbin
     return None
