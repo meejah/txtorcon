@@ -26,6 +26,11 @@ unreleased
    implements the custom Tor SOCKS5 methods RESOLVE and RESOLVE_PTR
  * Drop support for older Twisted releases (12, 13 and 14 are no
    longer supported).
+ * Add a top-level API object, :class:`txtorcon.Tor` that abstracts a
+   running Tor. Instances of this class are created with
+   :meth:`txtorcon.connect` or :meth:`txtorcon.launch`. These
+   instances are intended to be "the" high-level API and most users
+   shouldn't need anything else.
 
 
 v0.18.0
