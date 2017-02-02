@@ -201,7 +201,7 @@ class EndpointTests(unittest.TestCase):
         self.assertTrue(ding.called_with(*args))
 
     @patch('txtorcon.controller.launch')
-    def test_progress_updates_private_tor(self, tor):
+    def test_progress_updates_private_tor(self, tor, launch):
         ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
         self.assertEqual(len(tor.mock_calls), 1)
         tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
