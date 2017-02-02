@@ -485,6 +485,12 @@ class TorState(object):
 
         react = IReactorCore(myreactor)
         if attacher:
+            if self._attacher is attacher:
+                return
+            if self._attacher is not None:
+                raise RuntimeError(
+                    "set_attacher called but we already have an attacher"
+                )
             self._attacher = IStreamAttacher(attacher)
         else:
             self._attacher = None

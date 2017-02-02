@@ -519,6 +519,24 @@ class StateTests(unittest.TestCase):
             b' __LeaveStreamsUnattached=0\r\n'
         )
 
+    def test_attacher_twice(self):
+        """
+        It should be an error to set an attacher twice
+        """
+        @implementer(IStreamAttacher)
+        class MyAttacher(object):
+            pass
+
+        attacher = MyAttacher()
+        self.state.set_attacher(attacher, FakeReactor(self))
+        # attach the *same* instance twice; not an error
+        self.state.set_attacher(attacher, FakeReactor(self))
+        with self.assertRaises(RuntimeError) as ctx:
+            self.state.set_attacher(MyAttacher(), FakeReactor(self))
+        self.assertTrue(
+            "already have an attacher" in str(ctx.exception)
+        )
+
     def test_attacher(self):
         @implementer(IStreamAttacher)
         class MyAttacher(object):
