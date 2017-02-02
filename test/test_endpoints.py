@@ -782,13 +782,12 @@ class TestTorClientEndpoint(unittest.TestCase):
         )
 
     def test_parser_basic(self):
-        ep = clientFromString(None, 'tor:host=timaq4ygg2iegci7.onion:port=80')
+        ep = clientFromString(None, 'tor:host=timaq4ygg2iegci7.onion:port=80:socksPort=9050')
 
         self.assertEqual(ep.host, 'timaq4ygg2iegci7.onion')
         self.assertEqual(ep.port, 80)
         # XXX what's "the Twisted way" to get the port out here?
-        # XXX actually, why was this set to 9050 before? should do the guessing-thing...
-        self.assertEqual(ep._socks_endpoint, None)
+        self.assertEqual(ep._socks_endpoint._port, 9050)
 
     def test_parser_socks_port(self):
         ep = clientFromString(
