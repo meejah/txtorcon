@@ -33,7 +33,6 @@ from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
 from .torconfig import TorConfig, launch_tor, HiddenService
-from .torstate import build_tor_connection
 
 
 _global_tor = None  # instance of txtorcon.controller.Tor
@@ -406,7 +405,7 @@ class TCPHiddenServiceEndpoint(object):
         # self.config is always a Deferred; see __init__
         self.config = yield self.config
         # just to be sure:
-        ##yield self.config.post_bootstrap
+        # yield self.config.post_bootstrap
         # XXX ^-- something fishy with that -- in tests, even when
         # post_bootstrap is definitely already called, the above hangs
         # (but e.g. "yield defer.succeed(None)" does not...
@@ -721,7 +720,6 @@ class TorClientEndpoint(object):
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
         last_error = None
-        kwargs = dict()
         # XXX fix in socks.py stuff for socks_username, socks_password
         if self._socks_username or self._socks_password:
             raise RuntimeError(

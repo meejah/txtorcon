@@ -1,6 +1,4 @@
 import os
-import shutil
-import tempfile
 
 from mock import patch
 from mock import Mock, MagicMock
@@ -11,7 +9,6 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error, tcp, unix
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.python.failure import Failure
@@ -39,6 +36,15 @@ from txtorcon.socks import _TorSocksFactory
 
 from . import util
 from .test_torconfig import FakeControlProtocol  # FIXME
+
+
+@implementer(IReactorCore)
+class MockReactor(Mock):
+    """
+    Just so that our 'provides IReactorCore' assertions pass, but it's
+    still "just a Mock".
+    """
+    pass
 
 
 @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
@@ -84,7 +90,7 @@ class EndpointTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_global_tor(self, ftb):
         tor = Tor(Mock(), self.config)
-        config = yield get_global_tor(
+        yield get_global_tor(
             Mock(),
             _tor_launcher=lambda reactor, **kw: tor,
         )
@@ -118,24 +124,24 @@ class EndpointTests(unittest.TestCase):
         ep.hiddenservice.private_key = 'mumble'
         self.assertEqual('mumble', ep.onion_private_key)
 
-    @patch('txtorcon.controller.launch')
     @defer.inlineCallbacks
-    def test_private_tor(self, launch):
-        yield TCPHiddenServiceEndpoint.private_tor(
-            MockReactor(), 80,
-            control_port=1234,
-        )
-        self.assertTrue(launch.called)
-        # XXX what about a second call, to confirm we call launch again?
+    def test_private_tor(self, ftb):
+        with patch('txtorcon.controller.launch') as launch:
+            yield TCPHiddenServiceEndpoint.private_tor(
+                MockReactor(), 80,
+                control_port=1234,
+            )
+            self.assertTrue(launch.called)
+            # XXX what about a second call, to confirm we call launch again?
 
-    @patch('txtorcon.controller.launch')
     @defer.inlineCallbacks
-    def test_private_tor_no_control_port(self, launch):
-        @implementer(IReactorCore)
-        class Reactor(Mock):
-            pass
-        yield TCPHiddenServiceEndpoint.private_tor(MockReactor(), 80)
-        self.assertTrue(launch.called)
+    def test_private_tor_no_control_port(self, ftb):
+        with patch('txtorcon.controller.launch') as launch:
+            @implementer(IReactorCore)
+            class Reactor(Mock):
+                pass
+            yield TCPHiddenServiceEndpoint.private_tor(MockReactor(), 80)
+            self.assertTrue(launch.called)
 
     @defer.inlineCallbacks
     def test_system_tor(self, ftb):
