@@ -15,6 +15,14 @@ Documentation at https://txtorcon.readthedocs.org
     :target: http://codecov.io/github/meejah/txtorcon?branch=master
     :alt: codecov
 
+.. image:: https://readthedocs.org/projects/txtorcon/badge/?version=latest
+    :target: https://txtorcon.readthedocs.io/en/latest/
+    :alt: ReadTheDocs
+
+.. image:: https://readthedocs.org/projects/txtorcon/badge/?version=release-1.x
+    :target: https://txtorcon.readthedocs.io/en/release-1.x
+    :alt: ReadTheDocs
+
 .. image:: http://api.flattr.com/button/flattr-badge-large.png
     :target: http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub
     :alt: flattr
