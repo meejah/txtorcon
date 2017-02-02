@@ -18,7 +18,6 @@ from twisted.internet.interfaces import IProtocol
 from twisted.internet.interfaces import IReactorTCP
 from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IAddress
-from twisted.internet.interfaces import IStreamClientEndpoint
 
 from txtorcon import TorControlProtocol
 from txtorcon import TorConfig
@@ -202,11 +201,11 @@ class EndpointTests(unittest.TestCase):
         ep._tor_progress_update(*args)
         self.assertTrue(ding.called_with(*args))
 
-    @patch('txtorcon.controller.launch')
-    def test_progress_updates_private_tor(self, tor, launch):
+    @patch('txtorcon.endpoints.launch_tor')
+    def test_progress_updates_private_tor(self, ftb, launch):
         ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
-        self.assertEqual(len(tor.mock_calls), 1)
-        tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
+        self.assertEqual(len(ftb.mock_calls), 1)
+        ftb.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
         return ep
 
     def __test_progress_updates_system_tor(self):
@@ -215,7 +214,7 @@ class EndpointTests(unittest.TestCase):
         return ep
 
     @patch('txtorcon.endpoints.get_global_tor')
-    def test_progress_updates_global_tor(self, tor, ftb):
+    def test_progress_updates_global_tor(self, tor, ggt):
         ep = TCPHiddenServiceEndpoint.global_tor(self.reactor, 1234)
         tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
         return ep
