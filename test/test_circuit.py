@@ -12,6 +12,7 @@ from txtorcon import TorControlProtocol
 from txtorcon import TorState
 from txtorcon import Router
 from txtorcon.router import hexIdFromHash
+from txtorcon.circuit import TorCircuitEndpoint
 from txtorcon.interface import IRouterContainer
 from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
@@ -90,6 +91,29 @@ examples = ['CIRC 365 LAUNCHED PURPOSE=GENERAL',
             'CIRC 365 BUILT $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL',
             'CIRC 365 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=FINISHED',
             'CIRC 365 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=TIMEOUT']
+
+
+class TestCircuitEndpoint(unittest.TestCase):
+
+    def test_attach(self):
+        @implementer(ICircuitContainer)
+        class FakeContainer(object):
+            pass
+        container = FakeContainer()
+        stream = Stream(container)
+        circuit = Mock()
+        target_endpoint = Mock()
+        reactor = Mock()
+        state = Mock()
+        addr = Mock()
+        addr.host = 'foo.com'
+        got_source = defer.succeed(addr)
+
+        endpoint = TorCircuitEndpoint(
+            reactor, state, circuit, target_endpoint, got_source,
+        )
+
+        endpoint.attach_stream(stream, [])
 
 
 class CircuitTests(unittest.TestCase):
@@ -409,3 +433,27 @@ class CircuitTests(unittest.TestCase):
         self.assertTrue(isinstance(called[0], Failure))
         self.assertTrue('testing' in str(called[0].value))
         return d
+
+    def test_stream_success(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+
+        circuit = Circuit(tor)
+        reactor = Mock()
+
+        circuit.stream_via(
+            reactor, 'torproject.org', 443, None,
+            use_tls=True,
+        )
+
+    def test_circuit_web_agent(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+
+        circuit = Circuit(tor)
+        reactor = Mock()
+
+        # just testing this doesn't cause an exception
+        circuit.web_agent(reactor)
