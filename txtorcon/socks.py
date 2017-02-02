@@ -665,6 +665,7 @@ class TorSocksEndpoint(object):
             )
 
         self._socks_factory = socks_factory
+        # XXX isn't this just maybeDeferred()
         if isinstance(self._proxy_ep, Deferred):
             proxy_ep = yield self._proxy_ep
         else:

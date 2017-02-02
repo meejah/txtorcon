@@ -14,7 +14,7 @@ from txtorcon.util import available_tcp_port
 from txtorcon.socks import TorSocksEndpoint
 
 from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
-from twisted.internet import defer, reactor
+from twisted.internet import defer, error
 from twisted.python import log
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamServerEndpoint
@@ -24,7 +24,8 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet import error
+# from twisted.internet.endpoints import UNIXClientEndpoint
+# from twisted.internet import error
 from twisted.plugin import IPlugin
 from twisted.python.util import FancyEqMixin
 
@@ -35,17 +36,18 @@ from .torconfig import TorConfig, launch_tor, HiddenService
 from .torstate import build_tor_connection
 
 
-_global_tor_config = None
+_global_tor = None  # instance of txtorcon.controller.Tor
 _global_tor_lock = defer.DeferredLock()
 # we need the lock because we (potentially) yield several times while
 # "creating" the TorConfig instance
 
 
+# XXX deprecate this, and make one that has a global Tor() instance
+# instead (and this will use that, then call .create_config() etc)
 @defer.inlineCallbacks
 def get_global_tor(reactor, control_port=None,
                    progress_updates=None,
-                   _tor_launcher=lambda r, c, p: launch_tor(
-                       c, r, progress_updates=p)):
+                   _tor_launcher=None):
     """
     See description of :class:`txtorcon.TCPHiddenServiceEndpoint`'s
     class-method ``global_tor``
@@ -64,25 +66,36 @@ def get_global_tor(reactor, control_port=None,
 
     The _tor_launcher keyword arg is internal-only.
     """
-    global _global_tor_config
+
+    # XXX unify with controller.tor stuff
+    global _global_tor
     global _global_tor_lock
     yield _global_tor_lock.acquire()
 
-    try:
-        if _global_tor_config is None:
-            _global_tor_config = config = yield _create_default_config(reactor)
+    if _tor_launcher is None:
+        # XXX :( mutual dependencies...really get_global_tor should be
+        # in controller.py if it's going to return a Tor instance.
+        from .controller import launch
+        _tor_launcher = launch
 
-            # start Tor launching
-            yield _tor_launcher(reactor, config, progress_updates)
-            yield config.post_bootstrap
+    try:
+        if _global_tor is None:
+            _global_tor = yield _tor_launcher(reactor, progress_updates=progress_updates)
 
         else:
-            cp = _global_tor_config.ControlPort
-            if control_port is not None and control_port != cp:
-                raise RuntimeError(
-                    "ControlPort is %s, you wanted %s" % (cp, control_port))
+            try:
+                already_port = _global_tor.config.ControlPort
+                if control_port is not None and control_port != already_port:
+                    raise RuntimeError(
+                        "ControlPort is already '{}', but you wanted '{}'",
+                        already_port,
+                        control_port,
+                    )
+            except KeyError:
+                # XXX i think just from tests?
+                log.msg("No ControlPort in config -- weird, but we'll ignore")
 
-        defer.returnValue(_global_tor_config)
+        defer.returnValue(_global_tor)
     finally:
         _global_tor_lock.release()
 
@@ -170,7 +183,7 @@ class TCPHiddenServiceEndpoint(object):
 
 
     :ivar hiddenServiceDir: the data directory, either passed in or created
-        with ``tempfile.mkstemp``
+        with ``tempfile.mkdtemp``
 
     """
 
@@ -190,14 +203,11 @@ class TCPHiddenServiceEndpoint(object):
             only have Group access. XXX FIXME re-test
         """
 
-        @defer.inlineCallbacks
-        def _connect():
-            tor_protocol = yield build_tor_connection(control_endpoint,
-                                                      build_state=False)
-            config = TorConfig(tor_protocol)
-            yield config.post_bootstrap
-            defer.returnValue(config)
-        return TCPHiddenServiceEndpoint(reactor, _connect(), public_port,
+        from txtorcon.controller import connect
+        tor = connect(reactor, control_endpoint)
+        tor.addCallback(lambda t: t.config)
+        # tor is a Deferred
+        return TCPHiddenServiceEndpoint(reactor, tor, public_port,
                                         hidden_service_dir=hidden_service_dir,
                                         local_port=local_port)
 
@@ -217,7 +227,7 @@ class TCPHiddenServiceEndpoint(object):
         unless you have a specific need to.
 
         You can also access this global txtorcon instance via
-        :method:`txtorcon.get_global_tor` (which is precisely what
+        :meth:`txtorcon.get_global_tor` (which is precisely what
         this method uses to get it).
 
         All keyword options have defaults (e.g. random ports, or
@@ -230,11 +240,13 @@ class TCPHiddenServiceEndpoint(object):
 
         def progress(*args):
             progress.target(*args)
-        config = get_global_tor(
+        tor = get_global_tor(
             reactor,
             control_port=control_port,
             progress_updates=progress
         )
+        config = defer.maybeDeferred(lambda: tor)
+        config.addCallback(lambda t: t.config)
         # config is a Deferred here, but endpoint resolves it in
         # the listen() call
         r = TCPHiddenServiceEndpoint(
@@ -281,11 +293,7 @@ class TCPHiddenServiceEndpoint(object):
             :api:`twisted.internet.interfaces.IReactorTCP` provider
 
         :param config:
-            :class:`txtorcon.TorConfig` instance (doesn't need to be
-            bootstrapped) or a Deferred. Note that ``save()`` will be
-            called on this at least once. FIXME should I just accept a
-            TorControlProtocol instance instead, and create my own
-            TorConfig?
+            :class:`txtorcon.TorConfig` instance.
 
         :param public_port:
             The port number we will advertise in the hidden serivces
@@ -298,7 +306,7 @@ class TCPHiddenServiceEndpoint(object):
         :param hidden_service_dir:
             If not None, point to a HiddenServiceDir directory
             (i.e. with "hostname" and "private_key" files in it). If
-            not provided, one is created with temp.mkstemp() AND
+            not provided, one is created with temp.mkdtemp() AND
             DELETED when the reactor shuts down.
 
         :param stealth_auth:
@@ -328,7 +336,7 @@ class TCPHiddenServiceEndpoint(object):
             self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
             log.msg('Will delete "%s" at shutdown.' % self.hidden_service_dir)
             delete = functools.partial(shutil.rmtree, self.hidden_service_dir)
-            reactor.addSystemEventTrigger('before', 'shutdown', delete)
+            self.reactor.addSystemEventTrigger('before', 'shutdown', delete)
 
     @property
     def onion_uri(self):
@@ -354,12 +362,16 @@ class TCPHiddenServiceEndpoint(object):
 
     def _tor_progress_update(self, prog, tag, summary):
         log.msg('%d%% %s' % (prog, summary))
+        # we re-adjust the percentage-scale, using 105% and 110% for
+        # the two parts of waiting for descriptor upload. That is, we
+        # want: 110 * constant == 100.0
         for p in self.progress_listeners:
-            p(prog, tag, summary)
+            p(prog * (100.0 / 110.0), tag, summary)
 
     @defer.inlineCallbacks
     def listen(self, protocolfactory):
-        """Implement :api:`twisted.internet.interfaces.IStreamServerEndpoint
+        """
+        Implement :api:`twisted.internet.interfaces.IStreamServerEndpoint
         <IStreamServerEndpoint>`.
 
         Returns a Deferred that delivers an
@@ -394,7 +406,10 @@ class TCPHiddenServiceEndpoint(object):
         # self.config is always a Deferred; see __init__
         self.config = yield self.config
         # just to be sure:
-        yield self.config.post_bootstrap
+        ##yield self.config.post_bootstrap
+        # XXX ^-- something fishy with that -- in tests, even when
+        # post_bootstrap is definitely already called, the above hangs
+        # (but e.g. "yield defer.succeed(None)" does not...
 
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would
@@ -579,7 +594,7 @@ class TCPHiddenServiceEndpointParser(object):
     the OS.
 
     If ``hiddenServiceDir`` is not specified, one is created with
-    ``tempfile.mkstemp()``. The IStreamServerEndpoint returned will be
+    ``tempfile.mkdtemp()``. The IStreamServerEndpoint returned will be
     an instance of :class:`txtorcon.TCPHiddenServiceEndpoint`
     """
     prefix = "onion"
@@ -626,42 +641,59 @@ class TCPHiddenServiceEndpointParser(object):
 @implementer(IStreamClientEndpoint)
 class TorClientEndpoint(object):
     """
-    I am an endpoint class who attempts to establish a SOCKS5
-    connection with the system tor process. If no socks_endpoint is
-    given, I will try TCP4 to localhost on ports 9050 then 9150.
+    An IStreamClientEndpoint which establishes a connection via Tor.
 
-    :param socks_endpoint:
-        An IStreamClientEndpoint that will connect to a SOCKS5
-        port. Tor can speak SOCKS5 over either TCP4 or Unix sockets.
+    You should not instantiate these directly; use
+    ``clientFromString()``, :meth:`txtorcon.Tor.stream_via` or
+    :meth:`txtorcon.Circuit.stream_via`
 
-    :param tls:
-        If True, we will attemp TLS negotiation after the SOCKS forwarding
-        is set up.
+    :param host:
+        The hostname to connect to. This of course can be a Tor Hidden
+        Service onion address.
+
+    :param port: The tcp port or Tor Hidden Service port.
+
+    :param socks_endpoint: An IStreamClientEndpoint pointing at (one
+        of) our Tor's SOCKS ports. These can be instantiated with
+        :meth:`txtorcon.TorConfig.socks_endpoint`.
+
+    :param tls: Can be False or True (to get default Browser-like
+        hostname verification) or the result of calling
+        optionsForClientTLS() yourself. Default is True.
     """
-    # XXX should get these via the control connection, i.e. ask Tor
-    # via GETINFO net/listeners/socks or whatever
+
     socks_ports_to_try = [9050, 9150]
 
-    def __init__(self, host, port,
-                 socks_endpoint=None,
-                 socks_username=None, socks_password=None,
+    def __init__(self,
+                 host, port,
+                 socks_endpoint=None,  # can be Deferred
                  tls=False,
-                 **kw):
+
+                 # XXX our custom SOCKS stuff doesn't support auth (yet?)
+                 socks_username=None, socks_password=None,
+                 reactor=None, **kw):
         if host is None or port is None:
             raise ValueError('host and port must be specified')
 
         self.host = host
         self.port = int(port)
-        self.socks_endpoint = socks_endpoint
-        self.socks_username = socks_username
-        self.socks_password = socks_password
-        self.tls = tls
+        self._socks_endpoint = socks_endpoint
+        self._socks_username = socks_username
+        self._socks_password = socks_password
+        self._tls = tls
+        # XXX FIXME we 'should' probably include 'reactor' as the
+        # first arg to this class, but technically that's a
+        # breaking change :(
+        self._reactor = reactor
+        if reactor is None:
+            from twisted.internet import reactor
+            self._reactor = reactor
 
         # backwards-compatibility: you used to specify a TCP SOCKS
-        # endpoint via socks_hostname= and socks_port= kwargs
-        if self.socks_endpoint is None:
+        # endpoint via socks_host= and socks_port= kwargs
+        if self._socks_endpoint is None:
             try:
-                self.socks_endpoint = TCP4ClientEndpoint(
+                self._socks_endpoint = TCP4ClientEndpoint(
                     reactor,
                     kw['socks_hostname'],
                     kw['socks_port'],
@@ -674,34 +706,43 @@ class TorClientEndpoint(object):
         # was None but the user specified the (old)
         # socks_hostname/socks_port (in which case we do NOT want
         # guessing_enabled
-        if self.socks_endpoint is None:
+        if self._socks_endpoint is None:
             self._socks_port_iter = iter(self.socks_ports_to_try)
             self._socks_guessing_enabled = True
         else:
             self._socks_guessing_enabled = False
 
+        # XXX think, do we want to expose these like this? Or some
+        # other way (because they're for stream-isolation, not actual
+        # auth)
+        self._socks_username = socks_username
+        self._socks_password = socks_password
+
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
         last_error = None
         kwargs = dict()
-        # XXX fix in socks.py stuff
-        if self.socks_username is not None and self.socks_password is not None:
-            kwargs['methods'] = dict(
-                login=(self.socks_username, self.socks_password),
+        # XXX fix in socks.py stuff for socks_username, socks_password
+        if self._socks_username or self._socks_password:
+            raise RuntimeError(
+                "txtorcon socks support doesn't yet do username/password"
             )
-        if self.socks_endpoint is not None:
-            socks_ep = TorSocksEndpoint(self.socks_endpoint, self.host, self.port, self.tls)
+        if self._socks_endpoint is not None:
+            socks_ep = TorSocksEndpoint(
+                self._socks_endpoint,
+                self.host, self.port,
+                self._tls,
+            )
             proto = yield socks_ep.connect(protocolfactory)
             defer.returnValue(proto)
         else:
             for socks_port in self._socks_port_iter:
                 tor_ep = TCP4ClientEndpoint(
-                    reactor,
-                    "127.0.0.1",
+                    self._reactor,
+                    "127.0.0.1",  # XXX socks_hostname, no?
                     socks_port,
                 )
-                socks_ep = TorSocksEndpoint(tor_ep, self.host, self.port, self.tls)
-
+                socks_ep = TorSocksEndpoint(tor_ep, self.host, self.port, self._tls)
                 try:
                     proto = yield socks_ep.connect(protocolfactory)
                     defer.returnValue(proto)
@@ -733,8 +774,7 @@ class TorClientEndpointStringParser(object):
     ``tor:host=torproject.org:port=443:socksUsername=foo:socksPassword=bar``
 
     If ``socksPort`` is specified, it means only use that port to
-    attempt to proxy through Tor. If unspecified then try some likely
-    socksPorts such as [9050, 9150].
+    attempt to proxy through Tor. If unspecified, we ... XXX?
 
     NOTE that I'm using camelCase variable names in the endpoint
     string to be consistent with the rest of Twisted's naming (and
@@ -746,19 +786,18 @@ class TorClientEndpointStringParser(object):
     """
     prefix = "tor"
 
-    def _parseClient(self, host=None, port=None,
+    def _parseClient(self, reactor,
+                     host=None, port=None,
                      socksHostname=None, socksPort=None,
                      socksUsername=None, socksPassword=None):
         if port is not None:
             port = int(port)
-        if socksHostname is None:
-            socksHostname = '127.0.0.1'
-        if socksPort is not None:
-            socksPort = int(socksPort)
 
         ep = None
         if socksPort is not None:
-            ep = TCP4ClientEndpoint(reactor, socksHostname, socksPort)
+            # Tor can speak SOCKS over unix, too, but this doesn't let
+            # us pass one ...
+            ep = TCP4ClientEndpoint(reactor, socksHostname, int(socksPort))
         return TorClientEndpoint(
             host, port,
             socks_endpoint=ep,
@@ -769,4 +808,4 @@ class TorClientEndpointStringParser(object):
     def parseStreamClient(self, *args, **kwargs):
         # for Twisted 14 and 15 (and more) the first argument is
         # 'reactor', for older Twisteds it's not
-        return self._parseClient(*args[1:], **kwargs)
+        return self._parseClient(*args, **kwargs)
