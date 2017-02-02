@@ -231,7 +231,7 @@ class TorState(object):
         self.circuit_factory = Circuit
         self.stream_factory = Stream
 
-        self.attacher = None
+        self._attacher = None
         """If set, provides
         :class:`txtorcon.interface.IStreamAttacher` to attach new
         streams we hear about."""
@@ -470,19 +470,26 @@ class TorState(object):
     def set_attacher(self, attacher, myreactor):
         """
         Provide an :class:`txtorcon.interface.IStreamAttacher` to
-        associate streams to circuits. This won't get turned on until
-        after bootstrapping is completed. ('__LeaveStreamsUnattached'
-        needs to be set to '1' and the existing circuits list needs to
-        be populated).
+        associate streams to circuits.
+
+        You are Strongly Encouraged to **not** use this API directly,
+        and instead use :meth:`txtorcon.Circuit.stream_via` or
+        :meth:`txtorcon.Circuit.web_agent` instead. If you do need to
+        use this API, it's an error if you call either of the other
+        two methods.
+
+        This won't get turned on until after bootstrapping is
+        completed. ('__LeaveStreamsUnattached' needs to be set to '1'
+        and the existing circuits list needs to be populated).
         """
 
         react = IReactorCore(myreactor)
         if attacher:
-            self.attacher = IStreamAttacher(attacher)
+            self._attacher = IStreamAttacher(attacher)
         else:
-            self.attacher = None
+            self._attacher = None
 
-        if self.attacher is None:
+        if self._attacher is None:
             d = self.undo_attacher()
             if self._cleanup:
                 react.removeSystemEventTrigger(self._cleanup)
@@ -649,7 +656,7 @@ class TorState(object):
         (neither attaching it, nor telling Tor to attach it).
         """
 
-        if self.attacher is None:
+        if self._attacher is None:
             return None
 
         if stream.target_host is not None \
@@ -663,7 +670,7 @@ class TorState(object):
 
         # handle async or sync .attach() the same
         circ_d = defer.maybeDeferred(
-            self.attacher.attach_stream,
+            self._attacher.attach_stream,
             stream, self.circuits,
         )
 
