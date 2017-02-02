@@ -12,3 +12,4 @@ wheel
 twine
 pyflakes
 pep8
+automat
