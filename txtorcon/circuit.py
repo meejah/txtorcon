@@ -5,23 +5,84 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import six
 import time
 from datetime import datetime
 
 from twisted.python.failure import Failure
 from twisted.python import log
 from twisted.internet import defer
+from twisted.internet.interfaces import IStreamClientEndpoint
+from zope.interface import implementer
 
-from .interface import IRouterContainer
-from txtorcon.util import find_keywords
+from .interface import IRouterContainer, IStreamAttacher
+from txtorcon.util import find_keywords, maybe_ip_addr
 
 
 # look like "2014-01-25T02:12:14.593772"
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 
-# note to self: TorCircuitEndpoint can be merged only after deciding
-# the attacher API
+@implementer(IStreamClientEndpoint)
+@implementer(IStreamAttacher)
+class TorCircuitEndpoint(object):
+    def __init__(self, reactor, torstate, circuit, target_endpoint,
+                 socks_config=None):
+        self._reactor = reactor
+        self._state = torstate
+        self._target_endpoint = target_endpoint  # a TorClientEndpoint
+        self._circuit = circuit
+        self._attached = defer.Deferred()
+        self._socks_config = socks_config
+
+    def attach_stream_failure(self, stream, fail):
+        if not self._attached.called:
+            self._attached.errback(fail)
+        return None
+
+    @defer.inlineCallbacks
+    def attach_stream(self, stream, circuits):
+        real_addr = yield self._target_endpoint.get_address()
+        # joy oh joy, ipaddress wants unicode, Twisted gives us bytes...
+        real_host = maybe_ip_addr(six.text_type(real_addr.host))
+
+        # Note: matching via source port/addr is way better than
+        # target because multiple streams may be headed at the same
+        # target ... but a bit of a pain to pass it all through to here :/
+        if stream.source_addr == real_host and \
+           stream.source_port == real_addr.port:
+
+            if self._circuit.state in ['FAILED', 'CLOSED', 'DETACHED']:
+                self._attached.errback(
+                    Failure(
+                        RuntimeError(
+                            "Circuit {circuit.id} unusable for our stream.".format(
+                                circuit=self._circuit,
+                            )
+                        )
+                    )
+                )
+            else:
+                # XXX could check target_host, target_port to be sure...?
+                self._attached.callback(None)
+                defer.returnValue(self._circuit)
+
+    @defer.inlineCallbacks
+    def connect(self, protocol_factory):
+        """IStreamClientEndpoint API"""
+        # need to:
+        # 1. add 'our' attacher to state
+        # 2. do the "underlying" connect
+        # 3. recognize our stream
+        # 4. attach it to our circuit
+        yield self._state.add_attacher(self, self._reactor)
+        try:
+            proto = yield self._target_endpoint.connect(protocol_factory)
+            yield self._attached  # ensure this fired, too
+            defer.returnValue(proto)
+
+        finally:
+            yield self._state.remove_attacher(self, self._reactor)
 
 
 class Circuit(object):
@@ -122,8 +183,65 @@ class Circuit(object):
             self._when_built.append(d)
         return d
 
-    # note to self: web_agent and stream_via should be merged after
-    # working out the set_attacher etc interface.
+    # XXX use same method for socks_config/endpoint as Tor.web_agent
+    def web_agent(self, reactor, socks_endpoint=None, pool=None):
+        """
+        :param socks_endpoint: create one with
+            :meth:`txtorcon.TorState.socks_endpoint`. Can be a
+            Deferred. Can be None for a default one.
+
+        :param pool: passed on to the Agent (as ``pool=``)
+        """
+        # local import because there isn't Agent stuff on some
+        # platforms we support, so this will only error if you try
+        # this on the wrong platform (pypy [??] and old-twisted)
+        from txtorcon import web
+        return web.tor_agent(
+            reactor,
+            socks_endpoint,
+            circuit=self,
+            pool=pool,
+        )
+
+    # XXX should make this API match above web_agent (i.e. pass a
+    # socks_endpoint) or change the above...
+    def stream_via(self, reactor, host, port,
+                   socks_endpoint,
+                   use_tls=False):
+        """
+        This returns an IStreamClientEndpoint that wraps the passed-in
+        endpoint such that it goes via Tor, and via this parciular
+        circuit.
+
+        We match the streams up using their source-ports, so even if
+        there are many streams in-flight to the same destination they
+        will align correctly. For example, to cause a stream to go to
+        ``torproject.org:443`` via a particular circuit::
+
+            from twisted.internet.endpoints import HostnameEndpoint
+
+            dest = HostnameEndpoint(reactor, "torproject.org", 443)
+            circ = yield torstate.build_circuit()  # lets Tor decide the path
+            tor_ep = circ.stream_via(dest)
+            # 'factory' is for your protocol
+            proto = yield tor_ep.connect(factory)
+
+        Note that if you're doing client-side Web requests, you
+        probably want to use `treq
+        <http://treq.readthedocs.org/en/latest/>`_ or ``Agent``
+        directly so call :meth:`txtorcon.Circuit.web_agent` instead.
+
+        :param socks_endpoint: should be a Deferred firing a valid
+            IStreamClientEndpoint pointing at a Tor SOCKS port (or an
+            IStreamClientEndpoint already).
+        """
+        from .endpoints import TorClientEndpoint
+        ep = TorClientEndpoint(
+            host, port, socks_endpoint,
+            tls=use_tls,
+            reactor=reactor,
+        )
+        return TorCircuitEndpoint(reactor, self._torstate, self, ep)
 
     @property
     def time_created(self):

@@ -32,11 +32,33 @@ class _AgentEndpointFactoryUsingTor(object):
         )
 
 
-# note to self: put circuit-specific agent back in after, and add
-# "circuit=" kwarg too
+@implementer(IAgentEndpointFactory)
+class _AgentEndpointFactoryForCircuit(object):
+    def __init__(self, reactor, tor_socks_endpoint, circ):
+        self._reactor = reactor
+        self._socks_ep = tor_socks_endpoint
+        self._circ = circ
+
+    def endpointForURI(self, uri):
+        """IAgentEndpointFactory API"""
+
+        # we wire up got_source_port here, between TorSocksEndpoint
+        # and TorCircuitEndpoint, because this endpointForURI method
+        # can't return a Deferred. We need that because we must await
+        # knowing the source-port of the stream we're interested in --
+        # but the only async method we have available to use is
+        torsocks = TorSocksEndpoint(
+            self._socks_ep,
+            uri.host, uri.port,
+            tls=uri.scheme == b'https',
+        )
+        from txtorcon.circuit import TorCircuitEndpoint
+        return TorCircuitEndpoint(
+            self._reactor, self._circ._torstate, self._circ, torsocks,
+        )
 
 
-def tor_agent(reactor, socks_endpoint, pool=None):
+def tor_agent(reactor, socks_endpoint, circuit=None, pool=None):
     """
     This is the low-level method used by
     :meth:`txtorcon.Tor.web_agent` and
@@ -53,13 +75,18 @@ def tor_agent(reactor, socks_endpoint, pool=None):
 
     :param torconfig: a :class:`txtorcon.TorConfig` instance
 
+    :param circuit: If supplied, a particular circuit to use
+
     :param socks_endpoint: Deferred that fires w/
         IStreamClientEndpoint (or IStreamClientEndpoint instance)
 
     :param pool: passed on to the Agent (as ``pool=``)
     """
 
-    factory = _AgentEndpointFactoryUsingTor(reactor, socks_endpoint)
+    if circuit is not None:
+        factory = _AgentEndpointFactoryForCircuit(reactor, socks_endpoint, circuit)
+    else:
+        factory = _AgentEndpointFactoryUsingTor(reactor, socks_endpoint)
     return Agent.usingEndpointFactory(reactor, factory, pool=pool)
 
 

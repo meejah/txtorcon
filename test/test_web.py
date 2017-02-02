@@ -11,6 +11,7 @@ try:
 except ImportError:
     _HAVE_WEB = False
 from txtorcon.socks import TorSocksEndpoint
+from txtorcon.circuit import TorCircuitEndpoint
 
 
 class WebAgentTests(unittest.TestCase):
@@ -73,3 +74,28 @@ class WebAgentTests(unittest.TestCase):
         reactor = Mock()
         socks_ep = Mock()
         yield tor_agent(reactor, socks_ep)
+
+    @defer.inlineCallbacks
+    def test_agent_with_circuit(self):
+        reactor = Mock()
+        circuit = Mock()
+        socks_ep = Mock()
+        proto = Mock()
+        gold = object()
+        proto.request = Mock(return_value=defer.succeed(gold))
+
+        def getConnection(key, endpoint):
+            self.assertTrue(isinstance(endpoint, TorCircuitEndpoint))
+            target = endpoint._target_endpoint
+            self.assertTrue(target._tls)
+            self.assertEqual(target._host, b'meejah.ca')
+            self.assertEqual(target._port, 443)
+            return defer.succeed(proto)
+        pool = Mock()
+        pool.getConnection = getConnection
+
+        agent = yield tor_agent(reactor, socks_ep, circuit=circuit, pool=pool)
+
+        # apart from the getConnection asserts...
+        res = yield agent.request(b'GET', b'https://meejah.ca')
+        self.assertIs(res, gold)
