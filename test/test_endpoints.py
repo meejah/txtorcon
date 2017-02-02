@@ -141,15 +141,16 @@ class EndpointTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_system_tor(self, ftb):
 
-        def boom(*args):
+        def boom():
             # why does the new_callable thing need a callable that
             # returns a callable? Feels like I must be doing something
             # wrong somewhere...
             def bam(*args, **kw):
-                return self.protocol
+                self.config.bootstrap()
+                return defer.succeed(Tor(Mock(), self.config))
             return bam
         with patch('txtorcon.endpoints.launch_tor') as launch_mock:
-            with patch('txtorcon.endpoints.build_tor_connection', new_callable=boom):
+            with patch('txtorcon.controller.connect', new_callable=boom):
                 client = clientFromString(
                     self.reactor,
                     "tcp:host=localhost:port=9050"
@@ -788,7 +789,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         self.assertEqual(ep.host, 'timaq4ygg2iegci7.onion')
         self.assertEqual(ep.port, 80)
         # XXX what's "the Twisted way" to get the port out here?
-        self.assertEqual(ep.socks_endpoint._port, 9050)
+        self.assertEqual(ep._socks_endpoint._port, 9050)
 
     def test_parser_user_password(self):
         epstring = 'tor:host=torproject.org:port=443' + \

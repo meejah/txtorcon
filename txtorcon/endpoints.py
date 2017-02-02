@@ -391,10 +391,7 @@ class TCPHiddenServiceEndpoint(object):
         # self.config is always a Deferred; see __init__
         self.config = yield self.config
         # just to be sure:
-        # yield self.config.post_bootstrap
-        # XXX ^-- something fishy with that -- in tests, even when
-        # post_bootstrap is definitely already called, the above hangs
-        # (but e.g. "yield defer.succeed(None)" does not...
+        yield self.config.post_bootstrap
 
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would
