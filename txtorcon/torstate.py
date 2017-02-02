@@ -275,7 +275,7 @@ class TorState(object):
         self.authorities = {}
 
         #: see set_attacher
-        self.cleanup = None
+        self._cleanup = None
 
         class die(object):
             __name__ = 'die'  # FIXME? just to ease spagetti.py:82's pain
@@ -484,14 +484,16 @@ class TorState(object):
 
         if self.attacher is None:
             d = self.undo_attacher()
-            if self.cleanup:
-                react.removeSystemEventTrigger(self.cleanup)
-                self.cleanup = None
+            if self._cleanup:
+                react.removeSystemEventTrigger(self._cleanup)
+                self._cleanup = None
 
         else:
             d = self.protocol.set_conf("__LeaveStreamsUnattached", "1")
-            self.cleanup = react.addSystemEventTrigger('before', 'shutdown',
-                                                       self.undo_attacher)
+            self._cleanup = react.addSystemEventTrigger(
+                'before', 'shutdown',
+                self.undo_attacher,
+            )
         return d
 
     # noqa
