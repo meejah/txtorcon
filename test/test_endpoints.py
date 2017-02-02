@@ -64,7 +64,6 @@ class EndpointTests(unittest.TestCase):
             'descriptor (status 200 ("Service descriptor (v2) stored"))'
         )
         self.config = TorConfig(self.protocol)
-        endpoints._global_tor = Tor(self.reactor, self.config)
         self.protocol.answers.append(
             'config/names=\nHiddenServiceOptions Virtual\nControlPort Integer'
         )
@@ -76,31 +75,27 @@ class EndpointTests(unittest.TestCase):
             return_value='/not/tor'
         )
         self.patcher.start()
-        self.config.bootstrap()
-        assert self.config.post_bootstrap.called
-        return self.config.post_bootstrap
 
     def tearDown(self):
         from txtorcon import endpoints
-        endpoints._global_tor = None
+        endpoints._global_tor_config = None
         del endpoints._global_tor_lock
         endpoints._global_tor_lock = defer.DeferredLock()
         self.patcher.stop()
 
     @defer.inlineCallbacks
     def test_global_tor(self, ftb):
-        tor = Tor(Mock(), self.config)
-        yield get_global_tor(
+        config = yield get_global_tor(
             Mock(),
-            _tor_launcher=lambda reactor, **kw: tor,
+            _tor_launcher=lambda x, y, z: True
         )
-        self.assertIs(tor.config, self.config)
+        self.assertEqual(0, config.SOCKSPort)
 
     @defer.inlineCallbacks
     def test_global_tor_error(self, ftb):
         yield get_global_tor(
-            Mock(),
-            _tor_launcher=lambda reactor, **kw: Tor(reactor, self.config),
+            reactor=Mock(),
+            _tor_launcher=lambda x, y, z: True
         )
         # now if we specify a control_port it should be an error since
         # the above should have launched one.
@@ -126,47 +121,51 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_private_tor(self, ftb):
-        with patch('txtorcon.controller.launch') as launch:
-            yield TCPHiddenServiceEndpoint.private_tor(
-                MockReactor(), 80,
-                control_port=1234,
-            )
-            self.assertTrue(launch.called)
-            # XXX what about a second call, to confirm we call launch again?
+        m = Mock()
+        from txtorcon import endpoints
+        endpoints.launch_tor = m
+        yield TCPHiddenServiceEndpoint.private_tor(
+            Mock(), 80,
+            control_port=1234,
+        )
+        self.assertTrue(m.called)
 
     @defer.inlineCallbacks
     def test_private_tor_no_control_port(self, ftb):
-        with patch('txtorcon.controller.launch') as launch:
-            @implementer(IReactorCore)
-            class Reactor(Mock):
-                pass
-            yield TCPHiddenServiceEndpoint.private_tor(MockReactor(), 80)
-            self.assertTrue(launch.called)
+        m = Mock()
+        from txtorcon import endpoints
+        endpoints.launch_tor = m
+        yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
+        self.assertTrue(m.called)
 
     @defer.inlineCallbacks
     def test_system_tor(self, ftb):
-        config_patch = patch.object(
-            TorConfig, 'from_protocol',
-            MagicMock(return_value=self.config)
-        )
-        with patch('txtorcon.controller.launch') as launch_mock, config_patch:
-            @implementer(IStreamClientEndpoint)
-            class MockEndpoint(object):
-                def connect(this, factory):
-                    return self.protocol
-            client = MockEndpoint()
-            ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
-                                                           client, 80)
-            d = ep.listen(NoOpProtocolFactory())
-            port = yield d
 
-            port.getHost()
-            port.startListening()
-            str(port)
-            port.tor_config
-            # system_tor should be connecting to a running one,
-            # *not* launching a new one.
-            self.assertFalse(launch_mock.called)
+        def boom(*args):
+            # why does the new_callable thing need a callable that
+            # returns a callable? Feels like I must be doing something
+            # wrong somewhere...
+            def bam(*args, **kw):
+                return self.protocol
+            return bam
+        with patch('txtorcon.endpoints.launch_tor') as launch_mock:
+            with patch('txtorcon.endpoints.build_tor_connection', new_callable=boom):
+                client = clientFromString(
+                    self.reactor,
+                    "tcp:host=localhost:port=9050"
+                )
+                ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
+                                                               client, 80)
+                port = yield ep.listen(NoOpProtocolFactory())
+                toa = port.getHost()
+                self.assertTrue(hasattr(toa, 'onion_uri'))
+                self.assertTrue(hasattr(toa, 'onion_port'))
+                port.startListening()
+                str(port)
+                port.tor_config
+                # system_tor should be connecting to a running one,
+                # *not* launching a new one.
+                self.assertFalse(launch_mock.called)
 
     @defer.inlineCallbacks
     def test_basic(self, ftb):
@@ -176,6 +175,8 @@ class EndpointTests(unittest.TestCase):
         reactor.addSystemEventTrigger = Mock()
 
         ep = TCPHiddenServiceEndpoint(reactor, self.config, 123)
+        self.config.bootstrap()
+        yield self.config.post_bootstrap
         self.assertTrue(IProgressProvider.providedBy(ep))
 
         try:
@@ -258,14 +259,14 @@ class EndpointTests(unittest.TestCase):
         d0.addCallback(check).addErrback(self.fail)
         return d0
 
-    def _test_already_bootstrapped(self, ftb):
+    def test_already_bootstrapped(self, ftb):
         self.config.bootstrap()
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d = ep.listen(NoOpProtocolFactory())
         return d
 
     @defer.inlineCallbacks
-    def _test_explicit_data_dir(self, ftb):
+    def test_explicit_data_dir(self, ftb):
         with util.TempDir() as tmp:
             d = str(tmp)
             with open(os.path.join(d, 'hostname'), 'w') as f:
@@ -282,7 +283,7 @@ class EndpointTests(unittest.TestCase):
             self.assertEqual(config.HiddenServices[0].dir, d)
             self.assertEqual(config.HiddenServices[0].hostname, 'public')
 
-    def _test_failure(self, ftb):
+    def test_failure(self, ftb):
         self.reactor.failures = 1
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d = ep.listen(NoOpProtocolFactory())
@@ -303,7 +304,7 @@ class EndpointTests(unittest.TestCase):
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda r, **kw: defer.succeed(Tor(r, config)),
+            _tor_launcher=lambda react, config, prog: defer.succeed(config)
         )
         ep = serverFromString(
             self.reactor,
@@ -325,7 +326,7 @@ class EndpointTests(unittest.TestCase):
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda r, **kw: defer.succeed(Tor(r, config)),
+            _tor_launcher=lambda react, config, prog: defer.succeed(config)
         )
         ep = serverFromString(
             self.reactor,
@@ -351,7 +352,7 @@ class EndpointTests(unittest.TestCase):
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda r, **kw: defer.succeed(Tor(r, config)),
+            _tor_launcher=lambda react, config, prog: defer.succeed(config)
         )
 
         orig = os.path.realpath('.')
@@ -787,14 +788,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         self.assertEqual(ep.host, 'timaq4ygg2iegci7.onion')
         self.assertEqual(ep.port, 80)
         # XXX what's "the Twisted way" to get the port out here?
-        self.assertEqual(ep._socks_endpoint._port, 9050)
-
-    def test_parser_socks_port(self):
-        ep = clientFromString(
-            None,
-            'tor:host=timaq4ygg2iegci7.onion:port=80:socksPort=1234',
-        )
-        self.assertEqual(ep._socks_endpoint._port, 1234)
+        self.assertEqual(ep.socks_endpoint._port, 9050)
 
     def test_parser_user_password(self):
         epstring = 'tor:host=torproject.org:port=443' + \

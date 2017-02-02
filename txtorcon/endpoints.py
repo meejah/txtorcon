@@ -35,18 +35,17 @@ from zope.interface import Interface, Attribute
 from .torconfig import TorConfig, launch_tor, HiddenService
 
 
-_global_tor = None  # instance of txtorcon.controller.Tor
+_global_tor_config = None
 _global_tor_lock = defer.DeferredLock()
 # we need the lock because we (potentially) yield several times while
 # "creating" the TorConfig instance
 
 
-# XXX deprecate this, and make one that has a global Tor() instance
-# instead (and this will use that, then call .create_config() etc)
 @defer.inlineCallbacks
 def get_global_tor(reactor, control_port=None,
                    progress_updates=None,
-                   _tor_launcher=None):
+                   _tor_launcher=lambda r, c, p: launch_tor(
+                       c, r, progress_updates=p)):
     """
     See description of :class:`txtorcon.TCPHiddenServiceEndpoint`'s
     class-method ``global_tor``
@@ -65,36 +64,25 @@ def get_global_tor(reactor, control_port=None,
 
     The _tor_launcher keyword arg is internal-only.
     """
-
-    # XXX unify with controller.tor stuff
-    global _global_tor
+    global _global_tor_config
     global _global_tor_lock
     yield _global_tor_lock.acquire()
 
-    if _tor_launcher is None:
-        # XXX :( mutual dependencies...really get_global_tor should be
-        # in controller.py if it's going to return a Tor instance.
-        from .controller import launch
-        _tor_launcher = launch
-
     try:
-        if _global_tor is None:
-            _global_tor = yield _tor_launcher(reactor, progress_updates=progress_updates)
+        if _global_tor_config is None:
+            _global_tor_config = config = yield _create_default_config(reactor)
+
+            # start Tor launching
+            yield _tor_launcher(reactor, config, progress_updates)
+            yield config.post_bootstrap
 
         else:
-            try:
-                already_port = _global_tor.config.ControlPort
-                if control_port is not None and control_port != already_port:
-                    raise RuntimeError(
-                        "ControlPort is already '{}', but you wanted '{}'",
-                        already_port,
-                        control_port,
-                    )
-            except KeyError:
-                # XXX i think just from tests?
-                log.msg("No ControlPort in config -- weird, but we'll ignore")
+            cp = _global_tor_config.ControlPort
+            if control_port is not None and control_port != cp:
+                raise RuntimeError(
+                    "ControlPort is %s, you wanted %s" % (cp, control_port))
 
-        defer.returnValue(_global_tor)
+        defer.returnValue(_global_tor_config)
     finally:
         _global_tor_lock.release()
 
@@ -239,13 +227,11 @@ class TCPHiddenServiceEndpoint(object):
 
         def progress(*args):
             progress.target(*args)
-        tor = get_global_tor(
+        config = get_global_tor(
             reactor,
             control_port=control_port,
             progress_updates=progress
         )
-        config = defer.maybeDeferred(lambda: tor)
-        config.addCallback(lambda t: t.config)
         # config is a Deferred here, but endpoint resolves it in
         # the listen() call
         r = TCPHiddenServiceEndpoint(
