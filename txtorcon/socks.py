@@ -460,6 +460,12 @@ class _SocksMachine(object):
         enter=abort,
         outputs=[_disconnect],
     )
+# XXX FIXME this needs a test
+    sent_request.upon(
+        disconnected,
+        enter=abort,
+        outputs=[_disconnect],  # ... or is this redundant?
+    )
 
     relaying.upon(
         got_data,
