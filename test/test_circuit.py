@@ -110,10 +110,9 @@ class TestCircuitEndpoint(unittest.TestCase):
         state = Mock()
         addr = Mock()
         addr.host = 'foo.com'
-        got_source = defer.succeed(addr)
 
         TorCircuitEndpoint(
-            reactor, state, circuit, target_endpoint, got_source,
+            reactor, state, circuit, target_endpoint,
         )
 
         attacher = yield _get_circuit_attacher(reactor, state)
