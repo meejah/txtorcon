@@ -989,3 +989,17 @@ class TestTorClientEndpoint(unittest.TestCase):
         self.assertEqual("connectTCP", name)
         self.assertEqual("localhost", args[0])
         self.assertEqual(9050, args[1])
+
+    def test_client_endpoint_get_address(self):
+        """
+        Test the old API of passing socks_host, socks_port
+        """
+
+        reactor = Mock()
+        endpoint = TorClientEndpoint(
+            'torproject.org', 0,
+            socks_endpoint=clientFromString(Mock(), "tcp:localhost:9050"),
+            reactor=reactor,
+        )
+        d = endpoint._get_address()
+        self.assertTrue(not d.called)
