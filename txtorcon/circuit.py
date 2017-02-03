@@ -90,6 +90,7 @@ class _CircuitAttacher(object):
                         circuit=circuit,
                     )
                 )))
+                return
             d.callback(None)
             defer.returnValue(circuit)
         except Exception:
@@ -102,6 +103,8 @@ def _get_circuit_attacher(reactor, state):
         _get_circuit_attacher.attacher = _CircuitAttacher()
         yield state.set_attacher(_get_circuit_attacher.attacher, reactor)
     defer.returnValue(_get_circuit_attacher.attacher)
+
+
 _get_circuit_attacher.attacher = None
 
 

@@ -731,7 +731,7 @@ class TorClientEndpoint(object):
                 self._tls,
             )
             # forward the address to any listeners we have
-            socks_ep._get_address().addBoth(self._when_address.fire)
+            socks_ep._get_address().addCallback(self._when_address.fire)
             proto = yield socks_ep.connect(protocolfactory)
             defer.returnValue(proto)
         else:
@@ -743,7 +743,7 @@ class TorClientEndpoint(object):
                 )
                 socks_ep = TorSocksEndpoint(tor_ep, self.host, self.port, self._tls)
                 # forward the address to any listeners we have
-                socks_ep._get_address().addBoth(self._when_address.fire)
+                socks_ep._get_address().addCallback(self._when_address.fire)
                 try:
                     proto = yield socks_ep.connect(protocolfactory)
                     defer.returnValue(proto)

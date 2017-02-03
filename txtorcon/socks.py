@@ -552,26 +552,19 @@ class _TorSocksFactory(Factory):
     def __init__(self, *args, **kw):
         self._args = args
         self._kw = kw
-        self._connected_d = []
         self._host = None
+        self._when_connected = util.SingleObserver()
 
     def _get_address(self):
         """
         Returns a Deferred that fires with the transport's getHost()
         when this SOCKS protocol becomes connected.
         """
-        d = Deferred()
-        if self._host:
-            d.callback(self._host)
-        else:
-            self._connected_d.append(d)
-        return d
+        return self._when_connected.when_fired()
 
     def _did_connect(self, host):
         self._host = host
-        for d in self._connected_d:
-            d.callback(host)
-        self._connected_d = None
+        self._when_connected.fire(host)
 
     def buildProtocol(self, addr):
         p = self.protocol(*self._args, **self._kw)
