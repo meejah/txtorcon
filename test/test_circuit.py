@@ -119,6 +119,24 @@ class TestCircuitEndpoint(unittest.TestCase):
         attacher.attach_stream(stream, [])
         # hmmm, no assert??
 
+    @defer.inlineCallbacks
+    def test_attach_failure_unfound(self):
+
+        @implementer(ICircuitContainer)
+        class FakeContainer(object):
+            pass
+
+        reactor = Mock()
+        container = FakeContainer()
+        stream = Stream(container)
+        state = Mock()
+        addr = Mock()
+        addr.host = 'foo.com'
+
+        attacher = yield _get_circuit_attacher(reactor, state)
+        attacher.attach_stream_failure(stream, None)
+        # no assert; just making sure this doesn't explode
+
 
 class CircuitTests(unittest.TestCase):
 
