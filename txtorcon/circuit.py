@@ -23,8 +23,89 @@ from txtorcon.util import find_keywords, maybe_ip_addr
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 
-@implementer(IStreamClientEndpoint)
 @implementer(IStreamAttacher)
+class _CircuitAttacher(object):
+    """
+    Internal helper.
+
+    If we've ever called .stream_via or .web_agent, then one of these
+    is added as "the" stream-attacher.
+    """
+    def __init__(self):
+        # map real_host (IPAddress) -> circuit
+        self._circuit_targets = dict()
+
+    def add_endpoint(self, target_ep, circuit):
+        """
+        Returns a Deferred that fires when we've attached this endpoint to
+        the provided circuit.
+        """
+        # This can seem a little .. convulted. What's going on is
+        # we're asking the TorCircuitEndpoint to tell us when it gets
+        # the local address (i.e. when "whomever created the endpoit"
+        # actually connects locally). We need this address to
+        # successfully map incoming streams.
+        d = defer.Deferred()
+        target_ep._get_address().addCallback(self._add_real_target, circuit, d)
+        return d
+
+    def _add_real_target(self, real_addr, circuit, d):
+        # joy oh joy, ipaddress wants unicode, Twisted gives us bytes...
+        real_host = maybe_ip_addr(six.text_type(real_addr.host))
+        real_port = real_addr.port
+        self._circuit_targets[(real_host, real_port)] = (circuit, d)
+
+    def attach_stream_failure(self, stream, fail):
+        """
+        IStreamAttacher API
+        """
+        k = (stream.source_addr, stream.source_port)
+        try:
+            (circ, d) = self._circuit_targets.pop(k)
+            d.errback(fail)
+        except KeyError:
+            pass
+        # so this means ... we got an error, but on a stream we either
+        # don't care about or already .callback()'d so should we log
+        # it? or ignore?
+        return None
+
+    @defer.inlineCallbacks
+    def attach_stream(self, stream, circuits):
+        """
+        IStreamAttacher API
+        """
+
+        k = (stream.source_addr, stream.source_port)
+        try:
+            circuit, d = self._circuit_targets.pop(k)
+        except KeyError:
+            return
+
+        try:
+            yield circuit.when_built()
+            if circuit.state in ['FAILED', 'CLOSED', 'DETACHED']:
+                d.errback(Failure(RuntimeError(
+                    "Circuit {circuit.id} in state {circuit.state} so unusable".format(
+                        circuit=circuit,
+                    )
+                )))
+            d.callback(None)
+            defer.returnValue(circuit)
+        except Exception:
+            d.errback(Failure())
+
+
+@defer.inlineCallbacks
+def _get_circuit_attacher(reactor, state):
+    if _get_circuit_attacher.attacher is None:
+        _get_circuit_attacher.attacher = _CircuitAttacher()
+        yield state.set_attacher(_get_circuit_attacher.attacher, reactor)
+    defer.returnValue(_get_circuit_attacher.attacher)
+_get_circuit_attacher.attacher = None
+
+
+@implementer(IStreamClientEndpoint)
 class TorCircuitEndpoint(object):
     def __init__(self, reactor, torstate, circuit, target_endpoint,
                  socks_config=None):
@@ -32,40 +113,7 @@ class TorCircuitEndpoint(object):
         self._state = torstate
         self._target_endpoint = target_endpoint  # a TorClientEndpoint
         self._circuit = circuit
-        self._attached = defer.Deferred()
         self._socks_config = socks_config
-
-    def attach_stream_failure(self, stream, fail):
-        if not self._attached.called:
-            self._attached.errback(fail)
-        return None
-
-    @defer.inlineCallbacks
-    def attach_stream(self, stream, circuits):
-        real_addr = yield self._target_endpoint.get_address()
-        # joy oh joy, ipaddress wants unicode, Twisted gives us bytes...
-        real_host = maybe_ip_addr(six.text_type(real_addr.host))
-
-        # Note: matching via source port/addr is way better than
-        # target because multiple streams may be headed at the same
-        # target ... but a bit of a pain to pass it all through to here :/
-        if stream.source_addr == real_host and \
-           stream.source_port == real_addr.port:
-
-            if self._circuit.state in ['FAILED', 'CLOSED', 'DETACHED']:
-                self._attached.errback(
-                    Failure(
-                        RuntimeError(
-                            "Circuit {circuit.id} unusable for our stream.".format(
-                                circuit=self._circuit,
-                            )
-                        )
-                    )
-                )
-            else:
-                # XXX could check target_host, target_port to be sure...?
-                self._attached.callback(None)
-                defer.returnValue(self._circuit)
 
     @defer.inlineCallbacks
     def connect(self, protocol_factory):
@@ -75,14 +123,20 @@ class TorCircuitEndpoint(object):
         # 2. do the "underlying" connect
         # 3. recognize our stream
         # 4. attach it to our circuit
-        yield self._state.add_attacher(self, self._reactor)
-        try:
-            proto = yield self._target_endpoint.connect(protocol_factory)
-            yield self._attached  # ensure this fired, too
-            defer.returnValue(proto)
 
-        finally:
-            yield self._state.remove_attacher(self, self._reactor)
+        attacher = yield _get_circuit_attacher(self._reactor, self._state)
+        # note that we'll only ever add an attacher once, and then it
+        # stays there "forever". so if you never call the .stream_via
+        # or .web_agent APIs, set_attacher won't get called .. but if
+        # you *do*, then you can't call set_attacher yourself (because
+        # that's an error). See discussion in set_attacher on
+        # TorState or issue #169
+
+        connect_d = self._target_endpoint.connect(protocol_factory)
+        attached_d = attacher.add_endpoint(self._target_endpoint, self._circuit)
+        proto = yield connect_d
+        yield attached_d
+        defer.returnValue(proto)
 
 
 class Circuit(object):
@@ -206,7 +260,7 @@ class Circuit(object):
     # XXX should make this API match above web_agent (i.e. pass a
     # socks_endpoint) or change the above...
     def stream_via(self, reactor, host, port,
-                   socks_endpoint,
+                   socks_endpoint=None,
                    use_tls=False):
         """
         This returns an IStreamClientEndpoint that wraps the passed-in
@@ -360,11 +414,18 @@ class Circuit(object):
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:
-                # FIXME it seems this can/does happen if a remote
-                # router crashes or otherwise shuts down a circuit
-                # with streams on it still
-                log.err(RuntimeError("Circuit is %s but still has %d streams" %
-                                     (self.state, len(self.streams))))
+                # it seems this can/does happen if a remote router
+                # crashes or otherwise shuts down a circuit with
+                # streams on it still .. also if e.g. you "carml circ
+                # --delete " the circuit while the stream is
+                # in-progress...can we do better than logging?
+                # *should* we do anything else (the stream should get
+                # closed still by Tor).
+                log.msg(
+                    "Circuit is {} but still has {} streams".format(
+                        self.state, len(self.streams)
+                    )
+                )
             flags = self._create_flags(kw)
             self.maybe_call_closing_deferred()
             for x in self.listeners:
@@ -424,6 +485,7 @@ class Circuit(object):
             router = self.router_container.router_from_id(p)
 
             self.path.append(router)
+            # if the path grew, notify listeners
             if len(self.path) > len(oldpath):
                 for x in self.listeners:
                     x.circuit_extend(self, router)

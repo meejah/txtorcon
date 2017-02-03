@@ -10,7 +10,7 @@ import tempfile
 
 from ipaddress import IPv4Address
 
-from mock import patch
+from mock import patch, Mock
 
 from txtorcon import TorControlProtocol
 from txtorcon import TorProtocolError
@@ -531,6 +531,28 @@ class StateTests(unittest.TestCase):
         self.state.set_attacher(attacher, FakeReactor(self))
         # attach the *same* instance twice; not an error
         self.state.set_attacher(attacher, FakeReactor(self))
+        with self.assertRaises(RuntimeError) as ctx:
+            self.state.set_attacher(MyAttacher(), FakeReactor(self))
+        self.assertTrue(
+            "already have an attacher" in str(ctx.exception)
+        )
+
+    def test_attacher_both_apis(self):
+        """
+        similar to above, but first set_attacher is implicit via
+        Circuit.stream_via
+        """
+        @implementer(IStreamAttacher)
+        class MyAttacher(object):
+            pass
+
+        circ = Circuit(self.state)
+
+        # use the "preferred" API, which will set an attacher
+        ep = circ.stream_via(Mock(), 'meejah.ca', 443, Mock())
+        d = ep.connect(Mock())
+
+        # ...now use the low-level API (should be an error)
         with self.assertRaises(RuntimeError) as ctx:
             self.state.set_attacher(MyAttacher(), FakeReactor(self))
         self.assertTrue(

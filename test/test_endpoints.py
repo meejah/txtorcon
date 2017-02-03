@@ -29,7 +29,7 @@ from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory
 from txtorcon.util import SingleObserver
 from txtorcon.endpoints import get_global_tor                       # FIXME
-from txtorcon.circuit import TorCircuitEndpoint
+from txtorcon.circuit import TorCircuitEndpoint, _get_circuit_attacher
 from txtorcon.controller import Tor
 from txtorcon.socks import _TorSocksFactory
 
@@ -660,7 +660,7 @@ class TestTorCircuitEndpoint(unittest.TestCase):
         src_addr = Mock()
         src_addr.host = 'host'
         src_addr.port = 1234
-        target.get_address = Mock(return_value=defer.succeed(src_addr))
+        target._get_address = Mock(return_value=defer.succeed(src_addr))
         stream = Mock()
         stream.source_port = 1234
         stream.source_addr = 'host'
@@ -671,7 +671,8 @@ class TestTorCircuitEndpoint(unittest.TestCase):
 
         # should get a Failure from the connect()
         d = ep.connect(Mock())
-        yield ep.attach_stream(stream, [circ])
+        attacher = yield _get_circuit_attacher(reactor, Mock())
+        attacher.attach_stream(stream, [circ])
         try:
             yield d
             self.fail("Should get exception")
@@ -692,7 +693,7 @@ class TestTorCircuitEndpoint(unittest.TestCase):
         src_addr = Mock()
         src_addr.host = 'host'
         src_addr.port = 1234
-        target.get_address = Mock(return_value=defer.succeed(src_addr))
+        target._get_address = Mock(return_value=defer.succeed(src_addr))
         stream = Mock()
         stream.source_port = 1234
         stream.source_addr = 'host'
@@ -703,7 +704,8 @@ class TestTorCircuitEndpoint(unittest.TestCase):
 
         # should get a Failure from the connect()
         d = ep.connect(Mock())
-        ep.attach_stream_failure(stream, RuntimeError("a bad thing"))
+        attacher = yield _get_circuit_attacher(reactor, Mock())
+        attacher.attach_stream_failure(stream, RuntimeError("a bad thing"))
         try:
             yield d
             self.fail("Should get exception")
@@ -724,7 +726,7 @@ class TestTorCircuitEndpoint(unittest.TestCase):
         src_addr = Mock()
         src_addr.host = 'host'
         src_addr.port = 1234
-        target.get_address = Mock(return_value=defer.succeed(src_addr))
+        target._get_address = Mock(return_value=defer.succeed(src_addr))
         stream = Mock()
         stream.source_port = 1234
         stream.source_addr = 'host'
@@ -735,7 +737,8 @@ class TestTorCircuitEndpoint(unittest.TestCase):
 
         # should get a Failure from the connect()
         d = ep.connect(Mock())
-        yield ep.attach_stream(stream, [circ])
+        attacher = yield _get_circuit_attacher(reactor, torstate)
+        yield attacher.attach_stream(stream, [circ])
         proto = yield d
         self.assertEqual(proto, 'fake proto')
 

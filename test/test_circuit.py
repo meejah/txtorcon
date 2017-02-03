@@ -12,7 +12,7 @@ from txtorcon import TorControlProtocol
 from txtorcon import TorState
 from txtorcon import Router
 from txtorcon.router import hexIdFromHash
-from txtorcon.circuit import TorCircuitEndpoint
+from txtorcon.circuit import TorCircuitEndpoint, _get_circuit_attacher
 from txtorcon.interface import IRouterContainer
 from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
@@ -95,10 +95,13 @@ examples = ['CIRC 365 LAUNCHED PURPOSE=GENERAL',
 
 class TestCircuitEndpoint(unittest.TestCase):
 
+    @defer.inlineCallbacks
     def test_attach(self):
+
         @implementer(ICircuitContainer)
         class FakeContainer(object):
             pass
+
         container = FakeContainer()
         stream = Stream(container)
         circuit = Mock()
@@ -113,7 +116,8 @@ class TestCircuitEndpoint(unittest.TestCase):
             reactor, state, circuit, target_endpoint, got_source,
         )
 
-        endpoint.attach_stream(stream, [])
+        attacher = yield _get_circuit_attacher(reactor, state)
+        attacher.attach_stream(stream, [])
 
 
 class CircuitTests(unittest.TestCase):

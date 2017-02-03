@@ -462,3 +462,4 @@ class SingleObserver(object):
         for d in self._observers:
             d.callback(self._fired)
         self._observers = None
+        return value  # so we're transparent if used as a callback

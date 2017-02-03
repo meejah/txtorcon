@@ -33,6 +33,7 @@ from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
 from .torconfig import TorConfig, launch_tor, HiddenService
+from .util import SingleObserver
 
 
 _global_tor_config = None
@@ -699,6 +700,21 @@ class TorClientEndpoint(object):
         # auth)
         self._socks_username = socks_username
         self._socks_password = socks_password
+        self._when_address = SingleObserver()
+
+    def _get_address(self):
+        """
+        internal helper.
+
+        *le sigh*. This is basically just to support
+        TorCircuitEndpoint; see TorSocksEndpoint._get_address(). There
+        shouldn't be any need for "actual users" to need this!
+
+        This returns a Deferred that fires once:
+          - we have an underlying SOCKS5 endpoint
+          - ...and it has received a local connection (and hence the address/port)
+        """
+        return self._when_address.when_fired()
 
     @defer.inlineCallbacks
     def connect(self, protocolfactory):
@@ -714,6 +730,8 @@ class TorClientEndpoint(object):
                 self.host, self.port,
                 self._tls,
             )
+            # forward the address to any listeners we have
+            socks_ep._get_address().addBoth(self._when_address.fire)
             proto = yield socks_ep.connect(protocolfactory)
             defer.returnValue(proto)
         else:
@@ -724,6 +742,8 @@ class TorClientEndpoint(object):
                     socks_port,
                 )
                 socks_ep = TorSocksEndpoint(tor_ep, self.host, self.port, self._tls)
+                # forward the address to any listeners we have
+                socks_ep._get_address().addBoth(self._when_address.fire)
                 try:
                     proto = yield socks_ep.connect(protocolfactory)
                     defer.returnValue(proto)

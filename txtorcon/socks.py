@@ -555,7 +555,7 @@ class _TorSocksFactory(Factory):
         self._connected_d = []
         self._host = None
 
-    def get_address(self):
+    def _get_address(self):
         """
         Returns a Deferred that fires with the transport's getHost()
         when this SOCKS protocol becomes connected.
@@ -632,8 +632,9 @@ class TorSocksEndpoint(object):
         self._port = port
         self._tls = tls
         self._socks_factory = None
+        self._when_address = util.SingleObserver()
 
-    def get_address(self):
+    def _get_address(self):
         """
         Returns a Deferred that fires with the source IAddress of the
         underlying SOCKS connection (i.e. usually a
@@ -641,11 +642,7 @@ class TorSocksEndpoint(object):
 
         circuit.py uses this; better suggestions welcome!
         """
-        if self._socks_factory is None:
-            raise RuntimeError(
-                "Have to call .connect() before calling .get_address()"
-            )
-        return self._socks_factory.get_address()
+        return self._when_address.when_fired()
 
     @inlineCallbacks
     def connect(self, factory):
@@ -665,6 +662,8 @@ class TorSocksEndpoint(object):
             )
 
         self._socks_factory = socks_factory
+        # forward our address (when we get it) to any listeners
+        self._socks_factory._get_address().addBoth(self._when_address.fire)
         # XXX isn't this just maybeDeferred()
         if isinstance(self._proxy_ep, Deferred):
             proxy_ep = yield self._proxy_ep
