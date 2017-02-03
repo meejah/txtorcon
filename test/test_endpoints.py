@@ -882,6 +882,9 @@ class TestTorClientEndpoint(unittest.TestCase):
             def connect(self, *args, **kw):
                 raise ConnectionRefusedError()
 
+            def _get_address(self):
+                return defer.succeed(None)
+
         ep_mock.side_effect = FakeSocks5
         endpoint = TorClientEndpoint('', 0)
         d = endpoint.connect(Mock())
@@ -904,6 +907,9 @@ class TestTorClientEndpoint(unittest.TestCase):
             def connect(self, *args, **kw):
                 return proto
 
+            def _get_address(self):
+                return defer.succeed(None)
+
         ep_mock.side_effect = FakeSocks5
         endpoint = TorClientEndpoint('', 0)
         p2 = yield endpoint.connect(None)
@@ -922,6 +928,9 @@ class TestTorClientEndpoint(unittest.TestCase):
 
             def connect(self, *args, **kw):
                 return proto
+
+            def _get_address(self):
+                return defer.succeed(None)
 
         ep_mock.side_effect = FakeSocks5
         endpoint = TorClientEndpoint('torproject.org', 0, tls=True)
@@ -944,6 +953,9 @@ class TestTorClientEndpoint(unittest.TestCase):
 
             def connect(self, *args, **kw):
                 return proto_d
+
+            def _get_address(self):
+                return defer.succeed(None)
 
         ep_mock.side_effect = FakeSocks5
         endpoint = TorClientEndpoint(

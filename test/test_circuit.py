@@ -112,12 +112,13 @@ class TestCircuitEndpoint(unittest.TestCase):
         addr.host = 'foo.com'
         got_source = defer.succeed(addr)
 
-        endpoint = TorCircuitEndpoint(
+        TorCircuitEndpoint(
             reactor, state, circuit, target_endpoint, got_source,
         )
 
         attacher = yield _get_circuit_attacher(reactor, state)
         attacher.attach_stream(stream, [])
+        # hmmm, no assert??
 
 
 class CircuitTests(unittest.TestCase):
@@ -232,7 +233,8 @@ class CircuitTests(unittest.TestCase):
         circuit.update('1 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=FINISHED'.split())
         circuit.update('1 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=TIMEOUT'.split())
         errs = self.flushLoggedErrors()
-        self.assertEqual(len(errs), 2)
+        self.assertEqual(len(errs), 1)
+        self.assertTrue('Circuit is FAILED but still has 1 streams' in str(errs[0]))
 
     def test_updates(self):
         tor = FakeTorController()

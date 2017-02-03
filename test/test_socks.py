@@ -640,14 +640,10 @@ class SocksConnectTests(unittest.TestCase):
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
-        # calling it before there's a factory
-        with self.assertRaises(RuntimeError) as ctx:
-            yield ep._get_address()
         yield ep.connect(factory)
         addr = yield ep._get_address()
 
         self.assertEqual(addr, IPv4Address('TCP', '10.0.0.1', 12345))
-        self.assertTrue('call .connect()' in str(ctx.exception))
         self.assertEqual(2, len(delayed_addr))
         self.assertTrue(delayed_addr[0] is not delayed_addr[1])
         self.assertTrue(all([d.called for d in delayed_addr]))
