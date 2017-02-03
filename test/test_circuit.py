@@ -111,7 +111,7 @@ class TestCircuitEndpoint(unittest.TestCase):
         reactor = Mock()
         state = Mock()
 
-        endpoint = TorCircuitEndpoint(
+        TorCircuitEndpoint(
             reactor, state, circuit, target_endpoint,
         )
 
