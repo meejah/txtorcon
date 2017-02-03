@@ -1,12 +1,14 @@
 import datetime
+import ipaddress
+from mock import patch
+
 from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.python.failure import Failure
-from mock import patch
+
 from zope.interface import implementer
 
 from txtorcon import Circuit
-
 from txtorcon import Stream
 from txtorcon import TorControlProtocol
 from txtorcon import TorState
@@ -108,16 +110,49 @@ class TestCircuitEndpoint(unittest.TestCase):
         target_endpoint = Mock()
         reactor = Mock()
         state = Mock()
-        addr = Mock()
-        addr.host = 'foo.com'
+
+        endpoint = TorCircuitEndpoint(
+            reactor, state, circuit, target_endpoint,
+        )
+
+        attacher = yield _get_circuit_attacher(reactor, state)
+        attacher.add_endpoint(target_endpoint, circuit)
+        yield attacher.attach_stream(stream, [])
+        # hmmm, no assert??
+
+    @defer.inlineCallbacks
+    def test_attach_stream_failure(self):
+
+        @implementer(ICircuitContainer)
+        class FakeContainer(object):
+            pass
+
+        container = FakeContainer()
+        stream = Stream(container)
+        stream.source_addr = ipaddress.IPv4Address(u'0.0.0.0')
+        stream.source_port = 12345
+        circuit = Mock()
+        circuit.when_built = Mock(return_value=Failure(Exception('testing1234')))
+        target_endpoint = Mock()
+        src_addr = Mock()
+        src_addr.host = u'0.0.0.0'
+        src_addr.port = 12345
+        target_endpoint._get_address = Mock(return_value=defer.succeed(src_addr))
+        reactor = Mock()
+        state = Mock()
 
         TorCircuitEndpoint(
             reactor, state, circuit, target_endpoint,
         )
 
         attacher = yield _get_circuit_attacher(reactor, state)
-        attacher.attach_stream(stream, [])
-        # hmmm, no assert??
+        d = attacher.add_endpoint(target_endpoint, circuit)
+        self.assertEquals(len(attacher._circuit_targets), 1)
+        # this will fail, but should be ignored
+        yield attacher.attach_stream(stream, [])
+        with self.assertRaises(Exception) as ctx:
+            yield d
+        self.assertTrue("testing1234" in str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_attach_failure_unfound(self):
@@ -130,8 +165,6 @@ class TestCircuitEndpoint(unittest.TestCase):
         container = FakeContainer()
         stream = Stream(container)
         state = Mock()
-        addr = Mock()
-        addr.host = 'foo.com'
 
         attacher = yield _get_circuit_attacher(reactor, state)
         attacher.attach_stream_failure(stream, None)
