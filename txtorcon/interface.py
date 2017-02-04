@@ -97,6 +97,17 @@ class IStreamAttacher(Interface):
     :class:`txtorcon.Circuit` it should be attached to.
     """
 
+    def attach_stream_failure(stream, fail):
+        """
+        :param stream:
+            The stream we were trying to attach.
+
+        :param fail:
+            A Failure instance.
+
+        A failure has occurred while trying to attach the stream.
+        """
+
     def attach_stream(stream, circuits):
         """
         :param stream:
