@@ -16,7 +16,9 @@ class PriorityAttacher(object):
     """
     This can fill the role of an IStreamAttacher to which you can add
     and remove "sub" attachers. These are consulted in order and the
-    first one to return something besides None or DO_NOT_ATTACH wins.
+    first one to return something besides None wins. We use a "heapq"
+    priority queue, with 0 being the "most important" and higher
+    numbers indicating less important.
 
     For example::
 
