@@ -1,9 +1,7 @@
 from mock import Mock
-from datetime import datetime
 from zope.interface import directlyProvides
 
 from twisted.trial import unittest
-from twisted.internet import defer
 
 from txtorcon.attacher import PriorityAttacher
 from txtorcon.interface import IStreamAttacher
