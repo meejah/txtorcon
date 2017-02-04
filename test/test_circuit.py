@@ -1,17 +1,20 @@
 import datetime
+import ipaddress
+from mock import patch
+
 from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.python.failure import Failure
-from mock import patch
+
 from zope.interface import implementer
 
 from txtorcon import Circuit
-
 from txtorcon import Stream
 from txtorcon import TorControlProtocol
 from txtorcon import TorState
 from txtorcon import Router
 from txtorcon.router import hexIdFromHash
+from txtorcon.circuit import TorCircuitEndpoint, _get_circuit_attacher
 from txtorcon.interface import IRouterContainer
 from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
@@ -90,6 +93,82 @@ examples = ['CIRC 365 LAUNCHED PURPOSE=GENERAL',
             'CIRC 365 BUILT $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL',
             'CIRC 365 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=FINISHED',
             'CIRC 365 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=TIMEOUT']
+
+
+class TestCircuitEndpoint(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_attach(self):
+
+        @implementer(ICircuitContainer)
+        class FakeContainer(object):
+            pass
+
+        container = FakeContainer()
+        stream = Stream(container)
+        circuit = Mock()
+        target_endpoint = Mock()
+        reactor = Mock()
+        state = Mock()
+
+        TorCircuitEndpoint(
+            reactor, state, circuit, target_endpoint,
+        )
+
+        attacher = yield _get_circuit_attacher(reactor, state)
+        attacher.add_endpoint(target_endpoint, circuit)
+        yield attacher.attach_stream(stream, [])
+        # hmmm, no assert??
+
+    @defer.inlineCallbacks
+    def test_attach_stream_failure(self):
+
+        @implementer(ICircuitContainer)
+        class FakeContainer(object):
+            pass
+
+        container = FakeContainer()
+        stream = Stream(container)
+        stream.source_addr = ipaddress.IPv4Address(u'0.0.0.0')
+        stream.source_port = 12345
+        circuit = Mock()
+        circuit.when_built = Mock(return_value=Failure(Exception('testing1234')))
+        target_endpoint = Mock()
+        src_addr = Mock()
+        src_addr.host = u'0.0.0.0'
+        src_addr.port = 12345
+        target_endpoint._get_address = Mock(return_value=defer.succeed(src_addr))
+        reactor = Mock()
+        state = Mock()
+
+        TorCircuitEndpoint(
+            reactor, state, circuit, target_endpoint,
+        )
+
+        attacher = yield _get_circuit_attacher(reactor, state)
+        d = attacher.add_endpoint(target_endpoint, circuit)
+        self.assertEquals(len(attacher._circuit_targets), 1)
+        # this will fail, but should be ignored
+        yield attacher.attach_stream(stream, [])
+        with self.assertRaises(Exception) as ctx:
+            yield d
+        self.assertTrue("testing1234" in str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_attach_failure_unfound(self):
+
+        @implementer(ICircuitContainer)
+        class FakeContainer(object):
+            pass
+
+        reactor = Mock()
+        container = FakeContainer()
+        stream = Stream(container)
+        state = Mock()
+
+        attacher = yield _get_circuit_attacher(reactor, state)
+        attacher.attach_stream_failure(stream, None)
+        # no assert; just making sure this doesn't explode
 
 
 class CircuitTests(unittest.TestCase):
@@ -204,7 +283,8 @@ class CircuitTests(unittest.TestCase):
         circuit.update('1 CLOSED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=FINISHED'.split())
         circuit.update('1 FAILED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL REASON=TIMEOUT'.split())
         errs = self.flushLoggedErrors()
-        self.assertEqual(len(errs), 2)
+        self.assertEqual(len(errs), 1)
+        self.assertTrue('Circuit is FAILED but still has 1 streams' in str(errs[0]))
 
     def test_updates(self):
         tor = FakeTorController()
@@ -409,3 +489,27 @@ class CircuitTests(unittest.TestCase):
         self.assertTrue(isinstance(called[0], Failure))
         self.assertTrue('testing' in str(called[0].value))
         return d
+
+    def test_stream_success(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+
+        circuit = Circuit(tor)
+        reactor = Mock()
+
+        circuit.stream_via(
+            reactor, 'torproject.org', 443, None,
+            use_tls=True,
+        )
+
+    def test_circuit_web_agent(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+
+        circuit = Circuit(tor)
+        reactor = Mock()
+
+        # just testing this doesn't cause an exception
+        circuit.web_agent(reactor)

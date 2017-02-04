@@ -229,7 +229,7 @@ class SocksStateMachine(unittest.TestCase):
         # should be relaying now, try sending some datas
 
         client_proto.transport.write(b'abcdef')
-        addr = yield factory.get_address()
+        addr = yield factory._get_address()
 
         # FIXME how shall we test for IPv6-ness?
         assert addr is expected_address
@@ -626,8 +626,8 @@ class SocksConnectTests(unittest.TestCase):
         delayed_addr = []
 
         def connect(factory):
-            delayed_addr.append(factory.get_address())
-            delayed_addr.append(factory.get_address())
+            delayed_addr.append(factory._get_address())
+            delayed_addr.append(factory._get_address())
             factory.startFactory()
             proto = factory.buildProtocol("addr")
             proto.makeConnection(transport)
@@ -640,25 +640,21 @@ class SocksConnectTests(unittest.TestCase):
         factory = Mock()
         factory.buildProtocol = Mock(return_value=protocol)
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
-        # calling it before there's a factory
-        with self.assertRaises(RuntimeError) as ctx:
-            yield ep.get_address()
         yield ep.connect(factory)
-        addr = yield ep.get_address()
+        addr = yield ep._get_address()
 
         self.assertEqual(addr, IPv4Address('TCP', '10.0.0.1', 12345))
-        self.assertTrue('call .connect()' in str(ctx.exception))
         self.assertEqual(2, len(delayed_addr))
         self.assertTrue(delayed_addr[0] is not delayed_addr[1])
         self.assertTrue(all([d.called for d in delayed_addr]))
 
     @defer.inlineCallbacks
     def test_get_address(self):
-        # normally, .get_address is only called via the
+        # normally, ._get_address is only called via the
         # attach_stream() method on Circuit
         addr = object()
         factory = socks._TorSocksFactory()
-        d = factory.get_address()
+        d = factory._get_address()
         self.assertFalse(d.called)
         factory._did_connect(addr)
 
@@ -667,7 +663,7 @@ class SocksConnectTests(unittest.TestCase):
         self.assertEqual(addr, maybe_addr)
 
         # if we do it a second time, should be immediate
-        d = factory.get_address()
+        d = factory._get_address()
         self.assertTrue(d.called)
         self.assertEqual(d.result, addr)
 
