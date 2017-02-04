@@ -37,6 +37,13 @@ unreleased
    `twisted.web.client` for making client-type Web requests via
    Tor. Automatically handles configuration of SOCKS ports. See
    :meth:`txtorcon.Tor.web_agent`
+ * new high-level API for putting streams on specific Circuits. This
+   adds :meth:`txtorcon.Circuit.stream_via` and
+   :meth:`txtorcon.Circuit.web_agent` methods that work the same as
+   the "Tor" equivalent methods except they use a specific
+   circuit. This makes :meth:`txtorcon.TorState.set_attacher` the
+   "low-level" / "expert" interface. Most users should only need the
+   new API.
 
 
 v0.18.0
