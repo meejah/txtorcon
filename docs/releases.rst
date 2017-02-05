@@ -1,3 +1,5 @@
+.. _releases:
+
 Releases
 ========
 
@@ -114,9 +116,9 @@ v0.15.0
    ``build_timeout_circuit`` method which provides a Deferred that
    callbacks only when the circuit is completely built and errbacks if
    the provided timeout expires. This is useful because
-   :doc:`TorState.build_circuit` callbacks as soon as a Circuit
+   :meth:`txtorcon.TorState.build_circuit` callbacks as soon as a Circuit
    instance can be provided (and then you'd use
-   :doc:`Circuit.when_built` to find out when it's done building).
+   :meth:`txtorcon.Circuit.when_built` to find out when it's done building).
  * new feature from `coffeemakr <https://github.com/coffeemakr>`_
    falling back to password authentication if cookie authentication
    isn't available (or fails, e.g. because the file isn't readable).
@@ -233,10 +235,10 @@ v0.10.0
  * In collaboration with `David Stainton <https://github.com/david415>`_ after a pull-request, we
    have endpoint parser plugins for Twisted! This means code like
    ``serverFromString("onion:80").listen(...)`` is enough to start a
-   service. See the **4-line example** :ref:`hello_darkweb.py`
+   service.
  * The above **also** means that **any** endpoint-using Twisted program can immediately offer its TCP services via Hidden Service with **no code changes**.    For example, using Twisted Web to serve a WSGI web application would be simply: ``twistd web --port onion:80 --wsgi web.app``
  * switch to a slightly-modified `Alabaster Sphinx theme <https://github.com/bitprophet/alabaster>`_
- * added :doc:`howtos` to documentation (see :ref:`howto-endpoint`, with demo "video")
+ * added howtos to documentation
 
 
 v0.9.2

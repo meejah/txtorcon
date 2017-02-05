@@ -1,5 +1,5 @@
-Configuration Classes
-=====================
+Reading and Writing Live Tor Configuration
+==========================================
 
 
 TorConfig

@@ -54,7 +54,7 @@ def setup_complete(config, port, proto):
     print '\nTor is now running. The hidden service is available at'
     print '\n\thttp://%s:%i\n' % (config.HiddenServices[0].hostname, port)
     # This is probably more secure than any other httpd...
-    print '### DO NOT RELY ON THIS SERVER TO TRANSFER FILES IN A SECURE WAY ###'
+    print '## DO NOT RELY ON THIS SERVER TO TRANSFER FILES IN A SECURE WAY ##'
 
 
 def setup_failed(arg):
@@ -74,7 +74,7 @@ def main():
         return 1
 
     serve_directory = '.'  # The default directory to serve files from
-    hs_public_port = 8011  # The default port the hidden service is available on
+    hs_public_port = 8011  # The port the hidden service is available on
     web_port = 4711  # The real server's local port
     web_host = '127.0.0.1'  # The real server is bound to localhost
     for o, a in opts:
@@ -103,22 +103,29 @@ def main():
     httpd = SocketServer.TCPServer((web_host, web_port),
                                    SimpleHTTPServer.SimpleHTTPRequestHandler)
     start_httpd(httpd)
-    reactor.addSystemEventTrigger('before', 'shutdown', stop_httpd, httpd=httpd)
+    reactor.addSystemEventTrigger(
+        'before', 'shutdown',
+        stop_httpd, httpd=httpd,
+    )
 
     # Create a directory to hold our hidden service. Twisted will unlink it
     # when we exit.
     hs_temp = tempfile.mkdtemp(prefix='torhiddenservice')
-    reactor.addSystemEventTrigger('before', 'shutdown',
-                                  functools.partial(txtorcon.util.delete_file_or_tree, hs_temp))
+    reactor.addSystemEventTrigger(
+        'before', 'shutdown',
+        functools.partial(txtorcon.util.delete_file_or_tree, hs_temp)
+    )
 
     # Add the hidden service to a blank configuration
     config = txtorcon.TorConfig()
     config.SOCKSPort = 0
     config.ORPort = 9089
-    config.HiddenServices = [txtorcon.HiddenService(config, hs_temp,
-                                                    ['%i %s:%i' % (hs_public_port,
-                                                                   web_host,
-                                                                   web_port)])]
+    config.HiddenServices = [
+        txtorcon.HiddenService(
+            config, hs_temp,
+            ports=['%i %s:%i' % (hs_public_port, web_host, web_port)]
+        )
+    ]
     config.save()
 
     # Now launch tor

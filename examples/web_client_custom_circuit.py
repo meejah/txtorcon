@@ -39,7 +39,7 @@ def main(reactor):
     yield circ.when_built()
     print("Circuit is ready:", circ)
 
-    if False:
+    if True:
         # create a web.Agent that will use this circuit (or fail)
         agent = circ.web_agent(reactor, socks)
 
