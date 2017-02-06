@@ -37,10 +37,21 @@ div.document {
     background-color: #eeeeee;
     padding: .5em;
     margin-top: -.25em;
-    margin-bottom: -.25em;
+    margin-bottom: .5em;
     border: 0.33em solid #ddeedd;
     border-radius: 0.25em;
     box-shadow: 0px 1px 4px 1px #ccc;
+}
+
+.caution {
+    font-size: 110%;
+    font-family: 'source sans pro', sans;
+    background-color: #eedddd;
+    padding: .5em;
+    margin-top: -.25em;
+    margin-bottom: -.25em;
+    border: 0.33em solid #ffeeee;
+    border-radius: 0.25em;
 }
 
 div.documentwrapper {
