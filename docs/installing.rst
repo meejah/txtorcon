@@ -158,6 +158,10 @@ requirements with e.g. ``pip install txtorcon[dev]``.
   does txtorcon (if you find something broken on Py3 please file a
   bug).
 
+- `automat <https://github.com/glyph/automat>`_: "a library for
+  concise, idiomatic Python expression of finite-state automata
+  (particularly deterministic finite-state transducers)."
+
 - `ipaddress <https://docs.python.org/3/library/ipaddress.html>`_: a
   standard module in Python3, but requires installing the backported
   package on Python2.
@@ -169,6 +173,9 @@ requirements with e.g. ``pip install txtorcon[dev]``.
 
 - **dev only**: `coverage <http://nedbatchelder.com/code/coverage/>`_
   to run the code-coverage metrics.
+
+- **dev only** `cuv'ner <https://cuvner.readthedocs.io/en/latest/>`_
+  for coverage visualization
 
 - **dev only**: `Tox <https://testrun.org/tox/latest/>`_ to run
   different library revisions.
