@@ -103,7 +103,7 @@ I like to set up my Python development like this:
 .. code-block:: shell-session
 
     $ git clone https://github.com/meejah/txtorcon.git
-    $ echo "if you later clone it on github, do this:"
+    $ echo "if you later fork it on github, do this:"
     $ git remote add -f github git+ssh://git@github.com/<your github handle>/txtorcon.git
     $ cd txtorcon
     $ virtualenv venv
