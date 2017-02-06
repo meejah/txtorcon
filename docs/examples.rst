@@ -11,17 +11,23 @@ All files are in the :file:`examples/` sub-directory and are ready to
 run, usually with defaults designed to work with Tor Browser Bundle
 (``localhost:9151``).
 
-XXX maybe honour TOR_CONTROL env-var for just examples?
+The examples use `default_control_port()` to determine how to connect
+which you can override with an environment variable:
+`TX_CONTROL_PORT`. So e.g. `export TX_CONTROL_PORT=9050` to run the
+examples again a system-wide Tor daemon.
+
 
 .. contents::
    :depth: 2
    :local:
    :backlinks: none
-	       
+
 
 Web: clients
 ------------
 
+
+.. _web_client.py:
 
 ``web_client.py``
 ~~~~~~~~~~~~~~~~~
@@ -35,7 +41,23 @@ circuit Tor chooses.
 
 .. literalinclude:: ../examples/web_client.py
 
-.. _example_custom_circuit:		   
+
+
+.. _web_client_treq.py:
+
+``web_client_treq.py``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:download:`Download the example <../examples/web_client_treq.py>`.
+
+Uses `treq <https://treq.readthedocs.io/en/latest/>`_ to download a
+Web page via Tor.
+
+.. literalinclude:: ../examples/web_client_treq.py
+
+
+
+.. _web_client_custom_circuit.py:
 
 ``web_client_custom_circuit.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -50,7 +72,7 @@ to download a Web page using the circuit created.
 
 
 Web: servers (services)
------------------------		    
+-----------------------
 
 
 ``web_onion_service.py``

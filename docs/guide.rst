@@ -26,6 +26,10 @@ somewhat.
 Any APIs that will go away will first be deprecated for at least one
 major release before being removed.
 
+There are also some attributes which *don't* have underscores but
+really should; these will get "deprecated" via an ``@property``
+decorator so your code will still work.
+
 
 .. _get_tor_instance:
 
@@ -34,18 +38,19 @@ A Tor Instance
 --------------
 
 You will need a connection to a Tor instance for txtorcon to
-control. This can be either an already-running tor that you're
-authorized to connect to, or a tor instance that has been freshly
+control. This can be either an already-running Tor that you're
+authorized to connect to, or a Tor instance that has been freshly
 launched by txtorcon.
 
-We abstract "a tor instance" behind the :class:`txtorcon.Tor` class,
+We abstract "a Tor instance" behind the :class:`txtorcon.Tor` class,
 which provides a very high-level API for all the other things you
-might want to do with that Tor:
+might want to do:
 
  - make client-type connections over tor (see ":ref:`guide_client_use`");
  - change its configuration (see ":ref:`guide_configuration`");
  - monitor its state (see ":ref:`guide_state`");
- - offer hidden-/onion- services via tor (see ":ref:``");
+ - offer hidden-/onion- services via Tor (see ":ref:`guide_onions`");
+ - create and use custom circuits (see ":ref:`guide_custom_circuits`");
  - issue low-level commands (see ":ref:`protocol`")
 
 The actual control-protocol connection to tor is abstracted behind
@@ -143,7 +148,7 @@ Since :class:`txtorcon.TorConfig` conforms to the Iterator protocol,
 you can easily find all the config-options that Tor supports:
 
 .. sourcecode:: python
-	  
+
     tor = launch(..)
     for config_key in tor.config:
         print("{} has value: {}".format(config_key, getattr(tor.config.config_key)))
@@ -332,10 +337,18 @@ using this API, I'd be curious to learn why the :class:`txtorcon.Tor`
 methods are un-suitable (as those are the suggested API).
 
 
+.. _guide_onions:
+
 .. _server_use:
 
 Onion (Hidden) Services
 -----------------------
+
+.. caution::
+
+  The Onion service APIs are not stable and will still change; the
+  following is written to what they *will probably* become but **DO
+  NOT** document the current state of the code.
 
 An "Onion Service" (also called a "Hidden Service") refers to a
 feature of Tor allowing servers (e.g. a Web site) to get additional

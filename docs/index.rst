@@ -36,10 +36,6 @@ Documentation
    examples
    hacking
 
-..   features
-..   howtos
-..   walkthrough
-
 
 Official Releases:
 ------------------
