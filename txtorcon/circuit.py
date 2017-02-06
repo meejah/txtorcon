@@ -110,13 +110,11 @@ _get_circuit_attacher.attacher = None
 
 @implementer(IStreamClientEndpoint)
 class TorCircuitEndpoint(object):
-    def __init__(self, reactor, torstate, circuit, target_endpoint,
-                 socks_config=None):
+    def __init__(self, reactor, torstate, circuit, target_endpoint):
         self._reactor = reactor
         self._state = torstate
         self._target_endpoint = target_endpoint  # a TorClientEndpoint
         self._circuit = circuit
-        self._socks_config = socks_config
 
     @defer.inlineCallbacks
     def connect(self, protocol_factory):
@@ -240,11 +238,10 @@ class Circuit(object):
             self._when_built.append(d)
         return d
 
-    # XXX use same method for socks_config/endpoint as Tor.web_agent
-    def web_agent(self, reactor, socks_endpoint=None, pool=None):
+    def web_agent(self, reactor, pool=None, _socks_endpoint=None):
         """
-        :param socks_endpoint: create one with
-            :meth:`txtorcon.TorState.socks_endpoint`. Can be a
+        :param _socks_endpoint: create one with
+            :meth:`txtorcon.TorConfig.create_socks_endpoint`. Can be a
             Deferred. Can be None for a default one.
 
         :param pool: passed on to the Agent (as ``pool=``)
@@ -255,7 +252,7 @@ class Circuit(object):
         from txtorcon import web
         return web.tor_agent(
             reactor,
-            socks_endpoint,
+            _socks_endpoint,
             circuit=self,
             pool=pool,
         )
@@ -263,38 +260,42 @@ class Circuit(object):
     # XXX should make this API match above web_agent (i.e. pass a
     # socks_endpoint) or change the above...
     def stream_via(self, reactor, host, port,
-                   socks_endpoint=None,
-                   use_tls=False):
+                   use_tls=False,
+                   _socks_endpoint=None):
         """
-        This returns an IStreamClientEndpoint that wraps the passed-in
-        endpoint such that it goes via Tor, and via this parciular
-        circuit.
+        This returns an `IStreamClientEndpoint`_ that will connect to
+        the given ``host``, ``port`` via Tor -- and via this
+        parciular circuit.
 
         We match the streams up using their source-ports, so even if
         there are many streams in-flight to the same destination they
         will align correctly. For example, to cause a stream to go to
         ``torproject.org:443`` via a particular circuit::
 
-            from twisted.internet.endpoints import HostnameEndpoint
-
-            dest = HostnameEndpoint(reactor, "torproject.org", 443)
-            circ = yield torstate.build_circuit()  # lets Tor decide the path
-            tor_ep = circ.stream_via(dest)
-            # 'factory' is for your protocol
-            proto = yield tor_ep.connect(factory)
+            @inlineCallbacks
+            def main(reactor):
+                circ = yield torstate.build_circuit()  # lets Tor decide the path
+                yield circ.when_built()
+                tor_ep = circ.stream_via(reactor, 'torproject.org', 443)
+                # 'factory' is for your protocol
+                proto = yield tor_ep.connect(factory)
 
         Note that if you're doing client-side Web requests, you
         probably want to use `treq
         <http://treq.readthedocs.org/en/latest/>`_ or ``Agent``
         directly so call :meth:`txtorcon.Circuit.web_agent` instead.
 
-        :param socks_endpoint: should be a Deferred firing a valid
+        :param _socks_endpoint: should be a Deferred firing a valid
             IStreamClientEndpoint pointing at a Tor SOCKS port (or an
-            IStreamClientEndpoint already).
+            IStreamClientEndpoint already). If it is ``None`` (the
+            default) then txtorcon will choose the first configured
+            SOCKS port in the connected Tor.
+
+        .. _istreamclientendpoint: https://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IStreamClientEndpoint.html
         """
         from .endpoints import TorClientEndpoint
         ep = TorClientEndpoint(
-            host, port, socks_endpoint,
+            host, port, _socks_endpoint,
             tls=use_tls,
             reactor=reactor,
         )

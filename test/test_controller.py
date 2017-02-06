@@ -961,6 +961,7 @@ class WebAgentTests(unittest.TestCase):
     def test_web_agent_defaults(self):
         reactor = Mock()
         cfg = Mock()
+        cfg.create_socks_endpoint = Mock(return_value=defer.succeed("9050"))
 
         tor = Tor(reactor, cfg)
         try:
@@ -974,35 +975,13 @@ class WebAgentTests(unittest.TestCase):
         self.assertEqual(self.expected_response, resp)
 
     @defer.inlineCallbacks
-    def test_web_agent_text(self):
-        reactor = Mock()
-        cfg = Mock()
-
-        tor = Tor(reactor, cfg)
-        agent = tor.web_agent(pool=self.pool, _socks_config="9151")
-
-        resp = yield agent.request('GET', b'meejah.ca')
-        self.assertEqual(self.expected_response, resp)
-
-    @defer.inlineCallbacks
     def test_web_agent_deferred(self):
         socks_d = defer.succeed("9151")
         reactor = Mock()
         cfg = Mock()
 
         tor = Tor(reactor, cfg)
-        agent = tor.web_agent(pool=self.pool, _socks_config=socks_d)
-
-        resp = yield agent.request('GET', b'meejah.ca')
-        self.assertEqual(self.expected_response, resp)
-
-    @defer.inlineCallbacks
-    def test_web_agent_unicode(self):
-        reactor = Mock()
-        cfg = Mock()
-
-        tor = Tor(reactor, cfg)
-        agent = tor.web_agent(pool=self.pool, _socks_config=u"9151")
+        agent = tor.web_agent(pool=self.pool, _socks_endpoint=socks_d)
 
         resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
@@ -1015,7 +994,7 @@ class WebAgentTests(unittest.TestCase):
         cfg = Mock()
 
         tor = Tor(reactor, cfg)
-        agent = tor.web_agent(pool=self.pool, _socks_config=socks)
+        agent = tor.web_agent(pool=self.pool, _socks_endpoint=socks)
 
         resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
@@ -1027,9 +1006,9 @@ class WebAgentTests(unittest.TestCase):
 
         tor = Tor(reactor, cfg)
         with self.assertRaises(ValueError) as ctx:
-            agent = tor.web_agent(pool=self.pool, _socks_config=object())
+            agent = tor.web_agent(pool=self.pool, _socks_endpoint=object())
             yield agent.request('GET', b'meejah.ca')
-        self.assertTrue('socks_config' in str(ctx.exception))
+        self.assertTrue("'_socks_endpoint' should be" in str(ctx.exception))
 
 
 class TorAttributeTests(unittest.TestCase):
@@ -1085,12 +1064,6 @@ class TorStreamTests(unittest.TestCase):
         with self.assertRaises(Exception) as ctx:
             self.tor.stream_via('10.0.0.1', '1234')
         self.assertTrue("isn't going to work over Tor", str(ctx.exception))
-
-    def test_stream_via_custom_socks(self):
-        self.tor.stream_via('meejah.ca', '1234', _socks_config='localhost:9050')
-        self.assertEqual(1, len(self.cfg.mock_calls))
-        call = self.cfg.mock_calls[0]
-        self.assertEqual("create_socks_endpoint", call[0])
 
     def test_stream_v6(self):
         with self.assertRaises(Exception) as ctx:
