@@ -41,12 +41,6 @@ class _AgentEndpointFactoryForCircuit(object):
 
     def endpointForURI(self, uri):
         """IAgentEndpointFactory API"""
-
-        # we wire up got_source_port here, between TorSocksEndpoint
-        # and TorCircuitEndpoint, because this endpointForURI method
-        # can't return a Deferred. We need that because we must await
-        # knowing the source-port of the stream we're interested in --
-        # but the only async method we have available to use is
         torsocks = TorSocksEndpoint(
             self._socks_ep,
             uri.host, uri.port,
@@ -73,12 +67,11 @@ def tor_agent(reactor, socks_endpoint, circuit=None, pool=None):
 
     :param reactor: the reactor to use
 
-    :param torconfig: a :class:`txtorcon.TorConfig` instance
-
     :param circuit: If supplied, a particular circuit to use
 
     :param socks_endpoint: Deferred that fires w/
         IStreamClientEndpoint (or IStreamClientEndpoint instance)
+        which points at a SOCKS5 port of our Tor
 
     :param pool: passed on to the Agent (as ``pool=``)
     """

@@ -543,25 +543,87 @@ Note that it's possible for other controllers to create ephemeral
 services that your controller can't enumerate.
 
 
+.. _guide_custom_circuits:
+
 Custom Circuits
 ---------------
 
-txtorcon provides a low-level interface over top of Tor's
-circuit-attachment API, which allows you to specify which circuit any
-new streams use. Often, though, you also want to create custom
-circuits for streams -- and so we also provide a more convenient
-higher-level API (see ":ref:`circuit_builder`").
+Tor provides a way to let controllers like txtorcon decide which
+streams go on which circuits. Since your Tor client will then be
+acting differently from a "normal" Tor client, it **may become easier
+to de-anonymize you**.
 
-For one-shot connections, use
-:meth:`txtorcon.Circuit.create_client_endpoint` to acquire an
-``IStreamClientEndpoint`` instance. Calling ``connect()`` on this
-endpoint instance causes the resulting stream to go via the particular
-:class:`txtorcon.Circuit` instance. (If the circuit has closed by the
-time you call ``connect()``, the connection will fail). See
-:ref:`example_custom_circuit`.
+High Level
+~~~~~~~~~~
 
-Note that Tor doesn't currently allow controllers to attach circuits
-destined for hidden-services (even over an otherwise suitable circuit).
+With that in mind, you may still decide to attach streams to
+circuits. Most often, this means you simply want to make a client
+connection over a particluar circuit. The recommended API uses
+:meth:`txtorcon.Circuit.stream_via` for arbitrary protocols or
+:meth:`txtorcon.Circuit.web_agent` as a convenience for Web
+connections. The latter can be used via `Twisted's Web client
+<https://twistedmatrix.com/documents/current/web/howto/client.html>`_
+or via `treq <https://treq.readthedocs.io/en/latest/>`_ (a
+"requests"-like library for Twisted).
+
+See the following examples:
+
+ - :ref:`web_client.py`
+ - :ref:`web_client_treq.py`
+ - :ref:`web_client_custom_circuit.py`
+
+Note that these APIs mimic :meth:`txtorcon.Tor.stream_via` and
+:meth:`txtorcon.Tor.web_agent` except they use a particular Circuit.
+
+
+Low Level
+~~~~~~~~~
+
+Under the hood of these calls, txtorcon provides a low-level interface
+directly over top of Tor's circuit-attachment API.
+
+This works by:
+
+ - setting ``__LeaveStreamsUnattached 1`` in the Tor's configuration
+ - listening for ``STREAM`` events
+ - telling Tor (via ``ATTACHSTREAM``) what circuit to put each new
+   stream on
+ - (we can also choose to tell Tor "attach this one however you
+   normally would")
+
+This is an asynchronous API (i.e. Tor isn't "asking us" for each
+stream) so arbitrary work can be done on a per-stream basis before
+telling Tor which circuit to use. There are two limitations though:
+
+ - Tor doesn't play nicely with multiple controllers playing the role
+   of attaching circuits. Generally, there's not a good way to know if
+   there's another controller trying to attach streams, but basically the
+   first one to answer "wins".
+ - Tor doesn't currently allow controllers to attach circuits destined
+   for onion-services (even if the circuit is actually suitable and
+   goes to the correct Introduction Point).
+
+In order to do custom stream -> circuit mapping, you call
+:meth:`txtorcon.TorState.set_attacher` with an object implementing
+:class:`txtorcon.interface.IStreamAttacher`. Then every time a new
+stream is detected, txtorcon will call
+:meth:`txtorcon.interface.IStreamAttacher.attach_stream` with the
+:class:`txtorcon.Stream` instance and a list of all available
+circuits. You make an appropriate return.
+
+There can be either no attacher at all or a single attacher
+object. You can "un-set" an attacher by calling ``set_attacher(None)``
+(in which case ``__LeaveStreamsUnattached`` will be set back to 0).
+If you really do need multiple attachers, you can use the utility
+class :class:`txtorcon.attacher.PriorityAttacher` which acts as the
+"top level" one (so you add your multiple attachers to it).
+
+Be aware that txtorcon internally uses this API itself if you've
+*ever* called the "high level" API
+(:meth:`txtorcon.Circuit.stream_via` or
+:meth:`txtorcon.Circuit.web_agent`) and so it is an **error* to set a
+new attacher if there is already an existing attacher.
+
 
 
 Building a Single Circuit
