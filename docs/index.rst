@@ -21,6 +21,18 @@ txtorcon
     If this is your first time exploring txtorcon, please **look at the**
     :ref:`introduction` **first**.
 
+.. comment::
+
+    +---------------+---------+---------+
+    |   Twisted     | 15.5.0+ | 16.3.0+ |
+    +===============+=========+=========+
+    |   Python 2.7+ |    ✓    |    ✓    |
+    +---------------+---------+---------+
+    |   Python 3.5+ |    ✓    |    ✓    |
+    +---------------+---------+---------+
+    |   PyPy 5.0.0+ |    ✓    |    ✓    |
+    +---------------+---------+---------+
+
 Supported and tested platforms: Python 2.7+, Python 3.5+, PyPy 5.0.0+ using Twisted 15.5.0+, 16.3.0+ or later.
 
 

@@ -31,6 +31,31 @@ really should; these will get "deprecated" via an ``@property``
 decorator so your code will still work.
 
 
+.. _guide_overview:
+
+High Level Overview
+-------------------
+
+Interacting with Tor via txtorcon should involve *only* calling
+methods of the :class:`txtorcon.Tor` class.
+
+You get an instance of :class:`txtorcon.Tor` in one of two ways:
+
+ - call :meth:`txtorcon.connect` or;
+ - call :meth:`txtorcon.launch`
+
+Once you've got a ``Tor`` instance you can use it to gain access to
+(or create) instances of the other interesting classes; see
+:ref:`_guide_tor_instance` below for various use-cases.
+
+Note that for historical reasons (namely: ``Tor`` is a relatively new
+class) there are many other functions and classes exported from
+txtorcon but you *shouldn't* need to instantiate these directly. If
+something is missing from this top-level class, please get in touch
+(file a bug, chat on IRC, etc) because it's probably a missing
+feature.
+
+
 .. _get_tor_instance:
 
 
@@ -58,20 +83,30 @@ The actual control-protocol connection to tor is abstracted behind
 most users, but can be useful to issue protocol commands directly,
 listen to raw events, etc.
 
+In general, txtorcon tries to never look at Tor's version and instead
+queries required information directly via the control-protocol (there
+is only one exception to this). So the names of configuration values
+and events may change (or, more typically, expand) depending on what
+version of Tor you're connected to.
+
 
 Connecting to a Running Tor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Tor can listen for control connections on TCP ports, or UNIX
-sockets. See ":ref:`configure_tor`" for information on how to configure
-tor to work with txtorcon. By default, "COOKIE" authentication is
-used; only if that is not available do we try password authentication.
+Tor can listen for control connections on TCP ports or UNIX
+sockets. See ":ref:`configure_tor`" for information on how to
+configure Tor to work with txtorcon. By default, "COOKIE"
+authentication is used; only if that is not available do we try
+password authentication.
 
-To connect, use :meth:`txtorcon.connect` which returns a Deferred
-that will fire with a :class:`txtorcon.Tor` instance. If you need
-access to the :class:`txtorcon.TorControlProtocol` instance, it's
-available via the ``.protocol`` property (there is always exactly one
-of these per :class:`txtorcon.Tor` instance).
+To connect, use :meth:`txtorcon.connect` which returns a Deferred that
+will fire with a :class:`txtorcon.Tor` instance. If you need access to
+the :class:`txtorcon.TorControlProtocol` instance, it's available via
+the ``.protocol`` property (there is always exactly one of these per
+:class:`txtorcon.Tor` instance). Similarly, the current configuration
+is available via ``.config``. You can change the configuration by
+updating attributes on this class but it won't take effect until you
+call :meth:`txtorcon.TorConfig.save`.
 
 
 Launching a New Tor
@@ -84,11 +119,27 @@ factory functions (like
 it via :func:`txtorcon.get_global_tor`. There is exactly zero or one
 of these *per Python process* that uses ``txtorcon``.
 
+ XXX FIXME the above isn't quite true, as that function existed
+ previously and returned a TorConfig so we need to come up with
+ another name :(
+
 To explicitly launch your own Tor instance, use
 :meth:`txtorcon.launch`. You can pass a couple of minimal options
 (``data_directory`` being recommended). If you need to set other Tor
 options, use ``.config`` to retrieve the :class:`txtorcon.TorConfig`
 instance associated with this tor and change configuration afterwards.
+
+Setting ``data_directory`` gives your Tor instance a place to cache
+its state information which includes the current "consensus"
+document. If you don't set it, txtorcon creates a temporary directly
+(which is deleted when this Tor instance exits). Startup time is
+drammatically improved if Tor already has a recent consensus, so when
+integrating with Tor by launching your own client it's highly
+recommended to specify a ``data_directory`` somewhere sensible
+(e.g. ``~/.config/your_program_name/`` is a popular choice on
+Linux). See `the Tor manual
+<https://www.torproject.org/docs/tor-manual.html.en>`_ under the
+``DataDirectory`` option for more information.
 
 
 .. _guide_style:
@@ -124,16 +175,16 @@ easily:
     tor.config.save()
 
 **Only when** ``.save()`` is called are any ``SETCONF`` commands
-issued -- and then, all changed configuration values are sent in a
-single command. All ``TorConfig`` instances subscribe to configuration
-updates from Tor, so "live state" includes actions by any other
-controllers that may be connected.
+issued -- and then, all configuration values are sent in a single
+command. All ``TorConfig`` instances subscribe to configuration
+updates from Tor, so **"live state" includes actions by any other
+controllers that may be connected**.
 
 For some configuration items, the order they're sent to Tor
 matters. Sometimes, if you change one config item, you have to set a
 series of related items. TorConfig handles these cases for you -- you
-just manipulate the configuration, and wait for ``.save()``'s
-``Deferred`` to fire and the running tor's configuration is updated.
+just manipulate the configuration, and wait for ``.save()`` 's
+``Deferred`` to fire and the running Tor's configuration is updated.
 
 Note there is a tiny window during which the state may appear slightly
 inconsistent if you have multiple ``TorConfig`` instances: after Tor
@@ -142,7 +193,9 @@ has acknowledged a ``SETCONF`` command, but before a separate
 (because they're hung up in the networking stack for some
 reason). This shouldn't concern most users. (I'm not even 100% sure
 this is possible; it may be that Tor doesn't send the OK until after
-all the CONF_CHANGED events)
+all the CONF_CHANGED events). In normal use, there should only be a
+single ``TorConfig`` instance for every ``Tor`` instance so this
+shouldn't affect you unless you've created your own ``TorConfig``.
 
 Since :class:`txtorcon.TorConfig` conforms to the Iterator protocol,
 you can easily find all the config-options that Tor supports:
@@ -156,7 +209,7 @@ you can easily find all the config-options that Tor supports:
 .. fixme::  why doesn't dir() work; fix it, or mention it here
 
 
-These come from interrogating tor using ``GETINFO config/names`` and
+These come from interrogating Tor using ``GETINFO config/names`` and
 so represent the configuration options of the current connected Tor
 process. If the value "isn't set" (i.e. is the default), the value
 from Tor will be ``txtorcon.DEFAULT_VALUE``.
@@ -168,7 +221,8 @@ information from ``GETINFO config/names``. So, for example, setting
 fail the whole ``SETCONF`` command if txtorcon happens to allow some
 values that Tor doesn't. Unfortunately, **for any item that's a
 list**, Tor doesn't tell us anything about each element so they're all
-strings.
+strings. This means we can't pre-validate them and so some things may
+not fail until you call ``.save()``.
 
 
 .. _guide_state:
@@ -184,18 +238,25 @@ Tor instance.
 
 As the ``TorState`` instance has subscribed to various events from
 Tor, the "live" state represents an "as up-to-date as possible"
-view.
+view. This includes all other controlers, Tor Browser, etcetera that
+might be interacting with your Tor client.
+
+A ``Tor`` instance doesn't have a ``TorState`` instance by default (it
+can take a few hundred milliseconds to set up) and so one is created
+via the asynchronous method :meth:`txtorcon.Tor.get_state`.
 
 .. note::
 
     If you need to be **absolutely sure** there's nothing stuck in
-    networking buffers, you can issue a do-nothing command to Tor via
+    networking buffers and that your instance is "definitely
+    up-to-date" you can issue a do-nothing command to Tor via
     :meth:`txtorcon.TorControlProtocol.queue_command` (e.g. ``yield
     queue_command("GETINFO version")``). Most users shouldn't have to
-    worry about this edge-case.
+    worry about this edge-case. In any case, there could be a new
+    update that Tor decides to issue at any moment.
 
-You can modify the state of these things in a few simple ways. For
-example, you can call :meth:`txtorcon.Stream.close` or
+You can modify the state of Tor in a few simple ways. For example, you
+can call :meth:`txtorcon.Stream.close` or
 :meth:`txtorcon.Circuit.close` to cause a stream or circuit to be
 closed. You can wait for a circuit to become usable with
 :meth:`txtorcon.Circuit.when_built`.
@@ -210,24 +271,19 @@ returns a `datetime
 are also some convenience functions like :meth:`txtorcon.Circuit.age`.
 
 For sending streams over a particular circuit,
-:meth:`txtorcon.Circuit.stream_to` returns an `IStreamClientEndpoint`_
-implementation that will cause a subsequent ``.connect()`` on it to
-go via the given circuit in Tor.
-
-Combined with a :class:`txtorcon.CircuitBuilder` this gives the power
-to do many things.
+:meth:`txtorcon.Circuit.stream_via` returns an
+`IStreamClientEndpoint`_ implementation that will cause a subsequent
+``.connect()`` on it to go via the given circuit in Tor. A similar
+method (:meth:`txtorcon.Circuit.web_agent`) exists for Web requests.
 
 Listening for certain events to happen can be done by implementing the
 interfaces :class:`txtorcon.interface.IStreamListener` and
 :class:`txtorcon.interface.ICircuitListener`. You can request
-notifications on a tor-wide basis with
+notifications on a Tor-wide basis with
 :meth:`txtorcon.TorState.add_circuit_listener` or
 :meth:`txtorcon.TorState.add_stream_listener`. If you are just
 interested in a single circuit, you can call
 :meth:`txtorcon.Circuit.listen` directly on a ``Circuit`` instance.
-
-(XXX think about the composible-style API; e.g. ``circuit.on('extend',
-call_back)`` and/or ``state.on('circuit_extend', call_back)``)
 
 The Tor relays are abstracted with :class:`txtorcon.Router`
 instances. Again, these have read-only attributes for interesting
@@ -272,7 +328,7 @@ SOCKS5
 Tor exposes a SOCKS5 interface to make client-type connections over
 the network. There are also a couple of `custom extensions
 <https://gitweb.torproject.org/torspec.git/tree/socks-extensions.txt>`_
-tor provides to do DNS resolution over a Tor circuit (txtorcon
+Tor provides to do DNS resolution over a Tor circuit (txtorcon
 supports these, too).
 
 All client-side interactions are via instances that implement
@@ -296,27 +352,21 @@ instance which you can acquire with :meth:`txtorcon.Tor.web_agent` or
 request over a specific circuit. Usually, txtorcon will simply use one
 of the available SOCKS ports configured in the Tor it is connected to
 -- if you care which one, you can specify it as the optional
-``socks_endpoint=`` argument.
+``_socks_endpoint=`` argument (this starts with an underscore on
+purpose as it's not recommended for "public" use and its semantics
+might change in the future).
 
 .. note::
 
    Tor supports SOCKS over Unix sockets. So does txtorcon. To take
    advantage of this, simply pass a valid ``SocksPort`` value for unix
-   sockets (e.g. ``unix:/tmp/foo/socks``) as the ``socks_config``
+   sockets (e.g. ``unix:/tmp/foo/socks``) as the ``_socks_endpoint``
    argument to either ``web_agent()`` call. If this doesn't already
    exist in the underlying Tor, it will be added. Tor has particular
    requirements for the directory in which the socket file is
-   (``0700``).
-
-If you need a stream to go over a specific circuit, see
-":ref:`circuit_builder`".
-
-(notes to self):
-
- - CircuitBuilder (for the the open ticket making a higher-level Attacher)
-   - a factory/builder that creates Circuit instances
- - Circuit.create_client_endpoint() ? (i.e. makes an endpoint whose streams all go over this circuit)
-   - hence can use via TorState or via CircuitBuilder
+   (``0700``). We don't have a way (yet?) to auto-discover if the Tor
+   we're connected to can support Unix sockets so the default is to
+   use TCP.
 
 You can also use Twisted's `clientFromString`_ API as txtorcon
 registers a ``tor:`` plugin. This also implies that any Twisted-using
@@ -325,7 +375,7 @@ program that supports configuring endpoint strings gets Tor support
 ``tor:timaq4ygg2iegci7.onion:80`` to `clientFromString`_ will return
 an endpoint that will connect to txtorcon's hidden-service
 website. Note that these endpoints will use the "global to txtorcon"
-tor instance (available from :meth:`txtorcon.get_global_tor`). Thus,
+Tor instance (available from :meth:`txtorcon.get_global_tor`). Thus,
 if you want to control *which* tor instance your circuit goes over,
 this is not a suitable API.
 
@@ -621,9 +671,18 @@ class :class:`txtorcon.attacher.PriorityAttacher` which acts as the
 Be aware that txtorcon internally uses this API itself if you've
 *ever* called the "high level" API
 (:meth:`txtorcon.Circuit.stream_via` or
-:meth:`txtorcon.Circuit.web_agent`) and so it is an **error* to set a
+:meth:`txtorcon.Circuit.web_agent`) and so it is an **error** to set a
 new attacher if there is already an existing attacher.
 
+
+.. _guide_building_circuits:
+
+Building Your Own Circuits
+--------------------------
+
+To re-iterate the warning above, making your own circuits differently
+from how Tor normally does **runs a high risk of de-anonymizing
+you**. That said, you can build custom circuits using txtorcon.
 
 
 Building a Single Circuit
@@ -646,13 +705,20 @@ client).
 
 If you don't actually care which relays are used, but simply want a
 fresh circuit, you can call :meth:`txtorcon.TorState.build_circuit`
-without any arguments (or, set ``routers=None``).
+without any arguments at all which asks Tor to build a new circuit in
+the way it normally would (i.e. respecting your guard nodes etc).
 
 
 .. _circuit_builder:
 
 Building Many Circuits
 ~~~~~~~~~~~~~~~~~~~~~~
+
+.. caution::
+
+   This API doesn't exist yet; this is documenting what **may** become
+   a new API in a future version of txtorcon. Please get in touch if
+   you want this now.
 
 If you would like to build many circuits, you'll want an instance that
 implements :class:`txtorcon.ICircuitBuilder` (which is usually simply
@@ -669,19 +735,6 @@ XXX what about a "config object" idea, e.g. could have keys:
    all relays), ``weighted`` (selected randomly, but weighted by
    consensus weight -- basically same way as Tor would select).
 
-
-Attaching Streams to Circuits
------------------------------
-
-Tor allows the controller to decide how to attach new streams to
-circuits. This doesn't work for hidden-service bound streams. The
-lower-level API is to implement an :class:`txtorcon.IStreamAttacher`
-and call :meth:`txtorcon.TorState.set_stream_attacher` on your
-``TorState`` instance.
-
-Often, however, making low-level per-stream decisions isn't what you
-want -- you just want to create a stream that goes over a particular
-circuit. For this use-case, you use :meth:`txtorcon.Circuit`.
 
 .. _istreamclientendpoint: http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IStreamClientEndpoint.html
 .. _istreamserverendpoint: http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IStreamServerEndpoint.html
