@@ -16,8 +16,10 @@ txtorcon
   .. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
       :target: http://codecov.io/github/meejah/txtorcon?branch=master
 
-If this is your first time exploring txtorcon, please **look at the**
-:ref:`introduction` **first**.
+.. container:: first_time
+
+    If this is your first time exploring txtorcon, please **look at the**
+    :ref:`introduction` **first**.
 
 Supported and tested platforms: Python 2.7+, Python 3.5+, PyPy 5.0.0+ using Twisted 15.5.0+, 16.3.0+ or later.
 

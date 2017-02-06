@@ -31,6 +31,18 @@ div.document {
     margin: 30px auto 0 auto;
 }
 
+.first-time {
+    font-size: 110%;
+    font-family: 'source sans pro', sans;
+    background-color: #eeeeee;
+    padding: .5em;
+    margin-top: -.25em;
+    margin-bottom: -.25em;
+    border: 0.33em solid #ddeedd;
+    border-radius: 0.25em;
+    box-shadow: 0px 1px 4px 1px #ccc;
+}
+
 div.documentwrapper {
     float: left;
     width: 100%;
