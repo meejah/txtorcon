@@ -8,15 +8,6 @@ in master your project depends upon, let me know and I'll do a
 release. Starting with v0.8.0 versions are following `semantic
 versioning <http://semver.org/>`_.
 
-release-1.x
------------
-
-A branch is in development fixing, updating and/or breaking some APIs
-and adding a new object to represent the running tor instance and a
-completel documentation re-write. This is not ready for release quite
-yet, but feedback appreciated, especially on the documentation!
-Rendered docs on `txtorcon.readthedocs <http://txtorcon.readthedocs.io/en/release-1.x/>`_.
-
 
 unreleased
 ----------
@@ -46,6 +37,9 @@ unreleased
    circuit. This makes :meth:`txtorcon.TorState.set_attacher` the
    "low-level" / "expert" interface. Most users should only need the
    new API.
+ * big revamp / re-write of the documentation, including the new
+   `Programming Guide
+   <https://txtorcon.readthedocs.io/en/latest/guide.html>`_
 
 
 v0.18.0

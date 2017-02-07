@@ -429,9 +429,9 @@ class Tor(object):
     for several useful objects you will probably want. There are two
     ways to create a Tor instance:
 
-       - :func:`txtorcon.connect`` to connect to a tor that is already
+       - :func:`txtorcon.connect` to connect to a Tor that is already
          running (e.g. Tor Browser Bundle, a system Tor, ...).
-       - :func:`txtorcon.launch`` to launch a fresh tor instance
+       - :func:`txtorcon.launch` to launch a fresh Tor instance
 
     If you desire more control, there are "lower level" APIs which are
     the very ones used by this class. However, this "highest level"
