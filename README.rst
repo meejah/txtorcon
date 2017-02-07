@@ -69,7 +69,7 @@ endpoints (like ``twistd`` does) your server or client can make use of
 Tor immediately, with no code changes. Start your own Tor or connect
 to one and get live stream, circuit, relay updates; read and change
 config; monitor events; build circuits; create onion services;
-etcetera (`ReadTheDocs <https://txtorcon.readthedocs.org>`).
+etcetera (`ReadTheDocs <https://txtorcon.readthedocs.org>`_).
 
 
 Try It Now On Debian/Ubuntu
