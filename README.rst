@@ -46,7 +46,12 @@ txtorcon
 - **docs**: https://txtorcon.readthedocs.org or http://timaq4ygg2iegci7.onion
 - **code**: https://github.com/meejah/txtorcon
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
-- MIT-licensed; Python 2.7, PyPy, 3.4+; depends on `Twisted <https://twistedmatrix.com>`_ (`ipaddress <https://pypi.python.org/pypi/ipaddress>`_ for 2.7)
+- MIT-licensed;
+- Python 2.7, PyPy 5.0.0+, Python 3.4+;
+- depends on
+  `Twisted <https://twistedmatrix.com>`_,
+  `Automat <https://github.com/glyph/automat>`_,
+  (and the `ipaddress <https://pypi.python.org/pypi/ipaddress>`_ backport for non Python 3)
 
 
 Ten Thousand Feet
@@ -61,7 +66,10 @@ for `Tor <https://www.torproject.org/>`_ using the `Twisted
 This is useful for writing utilities to control or make use of Tor in
 event-based Python programs. If your Twisted program supports
 endpoints (like ``twistd`` does) your server or client can make use of
-Tor immediately, with no code changes.
+Tor immediately, with no code changes. Start your own Tor or connect
+to one and get live stream, circuit, relay updates; read and change
+config; monitor events; build circuits; create onion services;
+etcetera (`ReadTheDocs <https://txtorcon.readthedocs.org>`).
 
 
 Try It Now On Debian/Ubuntu
