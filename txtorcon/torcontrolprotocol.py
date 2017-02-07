@@ -449,16 +449,18 @@ class TorControlProtocol(LineOnlyReceiver):
         return self.queue_command('SIGNAL %s' % nm)
 
     def add_event_listener(self, evt, callback):
-        """:param evt: event name, see also
-        :var:`txtorcon.TorControlProtocol.events` .keys()
-
+        """
         Add a listener to an Event object. This may be called multiple
         times for the same event. If it's the first listener, a new
         SETEVENTS call will be initiated to Tor.
 
-        Currently the callback is any callable that takes a single
-        argument, that is the text collected for the event from the
-        tor control protocol.
+        :param evt: event name, see also
+            :attr:`txtorcon.TorControlProtocol.events` .keys(). These
+            event names are queried from Tor (with `GETINFO events/names`)
+
+        :param callback: any callable that takes a single argument
+             which receives the text collected for the event from the
+             tor control protocol.
 
         For more information on the events supported, see
         `control-spec section 4.1
@@ -472,9 +474,8 @@ class TorControlProtocol(LineOnlyReceiver):
         :Return: ``None``
 
         .. todo::
-            need an interface for the callback
-            show how to tie in Stem parsing if you want
-
+            - should have an interface for the callback
+            - show how to tie in Stem parsing if you want
         """
 
         if evt not in self.valid_events.values():
@@ -490,6 +491,13 @@ class TorControlProtocol(LineOnlyReceiver):
         return None
 
     def remove_event_listener(self, evt, cb):
+        """
+        The opposite of :meth:`TorControlProtocol.add_event_listener`
+
+        :param evt: the event name (or an Event object)
+
+        :param cb: the callback object to remove
+        """
         if evt not in self.valid_events.values():
             # this lets us pass a string or a real event-object
             try:

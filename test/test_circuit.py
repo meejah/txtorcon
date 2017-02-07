@@ -499,7 +499,7 @@ class CircuitTests(unittest.TestCase):
         reactor = Mock()
 
         circuit.stream_via(
-            reactor, 'torproject.org', 443, None,
+            reactor, 'torproject.org', 443,
             use_tls=True,
         )
 

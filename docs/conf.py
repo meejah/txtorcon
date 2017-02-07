@@ -27,6 +27,10 @@ sys.path.insert(0, os.path.join(os.path.split(__file__)[0], '_themes'))
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
+#keep_warnings = True
+pygments_style = 'monokai'
+#pygments_style = 'solarized_dark256'
+
 ## trying to set t his somewhere...
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'show-inheritance', 'undoc-members']
@@ -34,14 +38,15 @@ autoclass_content = 'both'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.todo',
-              'sphinx.ext.autosummary',
-              'sphinx.ext.todo',
-              'sphinx.ext.coverage',
-              'repoze.sphinx.autointerface',
-              'apilinks_sphinxext'
-              ]
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.todo',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    'repoze.sphinx.autointerface',
+    'apilinks_sphinxext',
+]
 
 todo_include_todos = True
 
@@ -100,7 +105,7 @@ exclude_patterns = ['_build']
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+#pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -152,7 +157,7 @@ html_theme_options = {
     'logo_name': 'true',
     'description': 'Control Tor from Twisted',
     'logo_text_align': 'center',
-    'flattr_uri': 'http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub',
+##    'flattr_uri': 'http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub',
     'note_bg': '#ccddcc',
     'note_border': '#839496',
 }

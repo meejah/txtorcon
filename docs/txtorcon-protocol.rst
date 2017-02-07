@@ -1,9 +1,16 @@
-Protocol and Helper Classes
-===========================
+.. _protocol:
 
-connect
--------
-.. autofunction:: txtorcon.connect
+Low-Level Protocol Classes
+==========================
+
+build_tor_connection
+--------------------
+.. autofunction:: txtorcon.build_tor_connection
+
+
+build_local_tor_connection
+--------------------------
+.. autofunction:: txtorcon.build_local_tor_connection
 
 
 TorControlProtocol
@@ -20,7 +27,3 @@ TorProcessProtocol
 ------------------
 .. autoclass:: txtorcon.TorProcessProtocol
 
-
-TCPHiddenServiceEndpoint
-------------------------
-.. autoclass:: txtorcon.TCPHiddenServiceEndpoint
