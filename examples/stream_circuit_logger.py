@@ -6,24 +6,25 @@
 import sys
 from twisted.python import log
 from twisted.internet import reactor
+from twisted.internet.task import react
+from twisted.internet.defer import inlineCallbacks, Deferred
 import txtorcon
 
 
-def logCircuit(circuit):
+def log_circuit(circuit):
     path = '->'.join(map(lambda x: str(x.location.countrycode), circuit.path))
     log.msg('Circuit %d (%s) is %s for purpose "%s"' %
             (circuit.id, path, circuit.state, circuit.purpose))
 
 
-def logStream(stream, state):
+def log_stream(stream):
     circ = ''
     if stream.circuit:
-        path = '->'.join(map(lambda x: x.location.countrycode, stream.circuit.path))
+        path = '->'.join(map(lambda x: str(x.location.countrycode), stream.circuit.path))
         circ = ' via circuit %d (%s)' % (stream.circuit.id, path)
     proc = txtorcon.util.process_from_address(
         stream.source_addr,
         stream.source_port,
-        state
     )
     if proc:
         proc = ' from process "%s"' % (proc, )
@@ -41,50 +42,41 @@ def logStream(stream, state):
 class StreamCircuitLogger(txtorcon.StreamListenerMixin,
                           txtorcon.CircuitListenerMixin):
 
-    def __init__(self, state):
-        self.state = state
-
     def stream_attach(self, stream, circuit):
-        logStream(stream, self.state)
+        log_stream(stream)
 
     def stream_failed(self, stream, reason='', remote_reason='', **kw):
         print 'Stream %d failed because "%s"' % (stream.id, remote_reason)
 
     def circuit_built(self, circuit):
-        logCircuit(circuit)
+        log_circuit(circuit)
 
     def circuit_failed(self, circuit, **kw):
         log.msg('Circuit %d failed "%s"' % (circuit.id, kw['REASON']))
 
 
-def setup(state):
-    log.msg('Connected to a Tor version %s' % state.protocol.version)
+@react
+@inlineCallbacks
+def main(reactor):
+    log.startLogging(sys.stdout)
 
-    listener = StreamCircuitLogger(state)
+    tor = yield txtorcon.connect(reactor)
+    log.msg('Connected to a Tor version %s' % tor.protocol.version)
+    state = yield tor.create_state()
+
+    listener = StreamCircuitLogger()
     state.add_circuit_listener(listener)
     state.add_stream_listener(listener)
 
-    state.protocol.add_event_listener('STATUS_GENERAL', log.msg)
-    state.protocol.add_event_listener('STATUS_SERVER', log.msg)
-    state.protocol.add_event_listener('STATUS_CLIENT', log.msg)
+    tor.protocol.add_event_listener('STATUS_GENERAL', log.msg)
+    tor.protocol.add_event_listener('STATUS_SERVER', log.msg)
+    tor.protocol.add_event_listener('STATUS_CLIENT', log.msg)
 
     log.msg('Existing state when we connected:')
     for s in state.streams.values():
-        logStream(s, state)
+        log_stream(s, state)
 
     log.msg('Existing circuits:')
     for c in state.circuits.values():
-        logCircuit(c)
-
-
-def setup_failed(arg):
-    print "SETUP FAILED", arg
-    log.err(arg)
-    reactor.stop()
-
-
-log.startLogging(sys.stdout)
-
-d = txtorcon.build_local_tor_connection(reactor)
-d.addCallback(setup).addErrback(setup_failed)
-reactor.run()
+        log_circuit(c)
+    yield Deferred()

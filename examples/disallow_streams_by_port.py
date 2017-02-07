@@ -61,7 +61,7 @@ def main(reactor):
         version=tor.protocol.version,
     ))
     state = yield tor.create_state()
-    yield state.add_attacher(PortFilterAttacher(state), reactor)
+    yield state.set_attacher(PortFilterAttacher(state), reactor)
 
     print("Existing streams:")
     for s in state.streams.values():

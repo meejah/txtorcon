@@ -56,6 +56,7 @@ def main(reactor):
     # actual launching of (or connecting to) tor.
     site = server.Site(Simple())
     port = yield hs_endpoint.listen(site)
+    # XXX new accessor in newer API
     hs = port.onion_service
 
     # "port" is an IAddress implementor, in this case TorOnionAddress

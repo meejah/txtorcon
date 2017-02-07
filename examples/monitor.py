@@ -4,13 +4,14 @@
 # prints out the contents, so functions like a log monitor.
 
 from twisted.internet import task, defer
-from twisted.internet.endpoints import UNIXEndpoint
+from twisted.internet.endpoints import UNIXClientEndpoint
 import txtorcon
 
 
+@task.react
 @defer.inlineCallbacks
 def main(reactor):
-    ep = UNIXEndpoint(reactor, '/var/run/tor/control')
+    ep = UNIXClientEndpoint(reactor, '/var/run/tor/control')
     tor = yield txtorcon.connect(reactor, ep)
 
     def log(msg):
@@ -20,7 +21,5 @@ def main(reactor):
         tor.protocol.add_event_listener(event, log)
     is_current = yield tor.protocol.get_info('status/version/current')
     version = yield tor.protocol.get_info('version')
-    print("Version '{}', is_current={}".format(version, is_current))
-
-
-task.react(main)
+    print("Version '{}', is_current={}".format(version, is_current['status/version/current']))
+    yield defer.Deferred()
