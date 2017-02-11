@@ -53,6 +53,12 @@ txtorcon
   `Automat <https://github.com/glyph/automat>`_,
   (and the `ipaddress <https://pypi.python.org/pypi/ipaddress>`_ backport for non Python 3)
 
+.. caution::
+
+  Several large, new features have landed on master. If you're working
+  directly from master, note that some of these APIs may change before
+  the next release.
+
 
 Ten Thousand Feet
 -----------------
