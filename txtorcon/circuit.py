@@ -238,11 +238,11 @@ class Circuit(object):
             self._when_built.append(d)
         return d
 
-    def web_agent(self, reactor, pool=None, _socks_endpoint=None):
+    def web_agent(self, reactor, socks_endpoint, pool=None):
         """
-        :param _socks_endpoint: create one with
+        :param socks_endpoint: create one with
             :meth:`txtorcon.TorConfig.create_socks_endpoint`. Can be a
-            Deferred. Can be None for a default one.
+            Deferred.
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
@@ -252,7 +252,7 @@ class Circuit(object):
         from txtorcon import web
         return web.tor_agent(
             reactor,
-            _socks_endpoint,
+            socks_endpoint,
             circuit=self,
             pool=pool,
         )
@@ -260,8 +260,8 @@ class Circuit(object):
     # XXX should make this API match above web_agent (i.e. pass a
     # socks_endpoint) or change the above...
     def stream_via(self, reactor, host, port,
-                   use_tls=False,
-                   _socks_endpoint=None):
+                   socks_endpoint,
+                   use_tls=False):
         """
         This returns an `IStreamClientEndpoint`_ that will connect to
         the given ``host``, ``port`` via Tor -- and via this
@@ -285,17 +285,15 @@ class Circuit(object):
         <http://treq.readthedocs.org/en/latest/>`_ or ``Agent``
         directly so call :meth:`txtorcon.Circuit.web_agent` instead.
 
-        :param _socks_endpoint: should be a Deferred firing a valid
+        :param socks_endpoint: should be a Deferred firing a valid
             IStreamClientEndpoint pointing at a Tor SOCKS port (or an
-            IStreamClientEndpoint already). If it is ``None`` (the
-            default) then txtorcon will choose the first configured
-            SOCKS port in the connected Tor.
+            IStreamClientEndpoint already).
 
         .. _istreamclientendpoint: https://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IStreamClientEndpoint.html
         """
         from .endpoints import TorClientEndpoint
         ep = TorClientEndpoint(
-            host, port, _socks_endpoint,
+            host, port, socks_endpoint,
             tls=use_tls,
             reactor=reactor,
         )

@@ -76,6 +76,10 @@ def tor_agent(reactor, socks_endpoint, circuit=None, pool=None):
     :param pool: passed on to the Agent (as ``pool=``)
     """
 
+    if socks_endpoint is None:
+        raise ValueError(
+            "Must provide socks_endpoint as Deferred or IStreamClientEndpoint"
+        )
     if circuit is not None:
         factory = _AgentEndpointFactoryForCircuit(reactor, socks_endpoint, circuit)
     else:
