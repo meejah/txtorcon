@@ -500,6 +500,7 @@ class CircuitTests(unittest.TestCase):
 
         circuit.stream_via(
             reactor, 'torproject.org', 443,
+            Mock(),
             use_tls=True,
         )
 
@@ -512,4 +513,4 @@ class CircuitTests(unittest.TestCase):
         reactor = Mock()
 
         # just testing this doesn't cause an exception
-        circuit.web_agent(reactor)
+        circuit.web_agent(reactor, Mock())
