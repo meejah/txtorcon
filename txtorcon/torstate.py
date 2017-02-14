@@ -843,7 +843,6 @@ class TorState(object):
 
     event_map = {'STREAM': _stream_update,
                  'CIRC': _circuit_update,
-                 'NS': _update_network_status,
                  'NEWCONSENSUS': _update_network_status,
                  'ADDRMAP': _addr_map}
     """event_map used by add_events to map event_name -> unbound method"""
