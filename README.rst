@@ -80,7 +80,7 @@ etcetera (`ReadTheDocs <https://txtorcon.readthedocs.org>`_).
 Some Possibly Motivational Example Code
 ---------------------------------------
 
-.. source-code:: python
+.. code:: python
 
     from twisted.internet.task import react
     from twisted.internet.defer import inlineCallbacks
