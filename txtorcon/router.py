@@ -13,6 +13,7 @@ from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
 from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.web.client import readBody
 
 
 def hexIdFromHash(thehash):
@@ -179,9 +180,7 @@ class Router(object):
         :meth:`txtorcon.Circuit.web_agent`.
         """
 
-        from twisted.web.client import readBody
-
-        uri = b'https://onionoo.torproject.org/details?lookup={}'.format(self.id_hex[1:])
+        uri = 'https://onionoo.torproject.org/details?lookup={}'.format(self.id_hex[1:]).encode('ascii')
 
         resp = yield agent.request(b'GET', uri)
         if resp.code != 200:
