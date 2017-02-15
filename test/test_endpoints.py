@@ -1,9 +1,8 @@
 import os
-
 from mock import patch
 from mock import Mock, MagicMock
 
-from zope.interface import implementer
+from zope.interface import implementer, directlyProvides
 
 from twisted.trial import unittest
 from twisted.test import proto_helpers
@@ -13,6 +12,7 @@ from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.python.failure import Failure
 from twisted.internet.error import ConnectionRefusedError
+from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IProtocol
 from twisted.internet.interfaces import IReactorTCP
@@ -201,23 +201,26 @@ class EndpointTests(unittest.TestCase):
         ep._tor_progress_update(*args)
         self.assertTrue(ding.called_with(*args))
 
-    @patch('txtorcon.endpoints.launch_tor')
-    def test_progress_updates_private_tor(self, ftb, launch):
-        ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
-        self.assertEqual(len(ftb.mock_calls), 1)
-        ftb.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
-        return ep
+    def test_progress_updates_private_tor(self, ftb):
+        with patch('txtorcon.endpoints.launch_tor') as tor:
+            ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
+            self.assertEqual(len(tor.mock_calls), 1)
+            tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
+            return ep
 
-    def __test_progress_updates_system_tor(self):
-        ep = TCPHiddenServiceEndpoint.system_tor(self.reactor, 1234)
+    def test_progress_updates_system_tor(self, ftb):
+        control_ep = Mock()
+        control_ep.connect = Mock(return_value=defer.succeed(None))
+        directlyProvides(control_ep, IStreamClientEndpoint)
+        ep = TCPHiddenServiceEndpoint.system_tor(self.reactor, control_ep, 1234)
         ep._tor_progress_update(40, "FOO", "foo to bar")
         return ep
 
-    @patch('txtorcon.endpoints.get_global_tor')
-    def test_progress_updates_global_tor(self, tor, ggt):
-        ep = TCPHiddenServiceEndpoint.global_tor(self.reactor, 1234)
-        tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
-        return ep
+    def test_progress_updates_global_tor(self, ftb):
+        with patch('txtorcon.endpoints.get_global_tor') as tor:
+            ep = TCPHiddenServiceEndpoint.global_tor(self.reactor, 1234)
+            tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
+            return ep
 
     def test_hiddenservice_key_unfound(self, ftb):
         ep = TCPHiddenServiceEndpoint.private_tor(
