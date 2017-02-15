@@ -188,7 +188,7 @@ class Router(object):
                 'Failed to lookup relay details for {}'.format(self.id_hex)
             )
         body = yield readBody(resp)
-        data = json.loads(body)
+        data = json.loads(body.decode('ascii'))
         if len(data['relays']) != 1:
             raise RuntimeError(
                 'Got multiple relays for {}'.format(self.id_hex)

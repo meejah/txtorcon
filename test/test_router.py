@@ -220,7 +220,7 @@ class OnionOOTests(unittest.TestCase):
                     },
                 ]
             }
-            protocol.dataReceived(json.dumps(config))
+            protocol.dataReceived(json.dumps(config).encode())
             protocol.connectionLost(Failure(ResponseDone()))
         resp.deliverBody = Mock(side_effect=feed_response)
         agent.request = Mock(return_value=defer.succeed(resp))
@@ -247,7 +247,7 @@ class OnionOOTests(unittest.TestCase):
                     }
                 ]
             }
-            protocol.dataReceived(json.dumps(config))
+            protocol.dataReceived(json.dumps(config).encode())
             protocol.connectionLost(Failure(ResponseDone()))
         resp.deliverBody = Mock(side_effect=feed_response)
         agent.request = Mock(return_value=defer.succeed(resp))
@@ -273,7 +273,7 @@ class OnionOOTests(unittest.TestCase):
                     },
                 ]
             }
-            protocol.dataReceived(json.dumps(config))
+            protocol.dataReceived(json.dumps(config).encode())
             protocol.connectionLost(Failure(ResponseDone()))
         resp.deliverBody = Mock(side_effect=feed_response)
         agent.request = Mock(return_value=defer.succeed(resp))
