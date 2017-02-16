@@ -16,12 +16,12 @@ txtorcon
   .. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
       :target: http://codecov.io/github/meejah/txtorcon?branch=master
 
-  .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=latest
-      :target: https://txtorcon.readthedocs.io/en/latest/
+  .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=stable
+      :target: https://txtorcon.readthedocs.io/en/stable
       :alt: ReadTheDocs
 
-  .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=release-1.x
-      :target: https://txtorcon.readthedocs.io/en/release-1.x
+  .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=latest
+      :target: https://txtorcon.readthedocs.io/en/latest
       :alt: ReadTheDocs
 
   .. image:: https://landscape.io/github/meejah/txtorcon/master/landscape.svg?style=flat
