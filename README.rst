@@ -23,7 +23,7 @@
     :target: http://codecov.io/github/meejah/txtorcon?branch=master
     :alt: codecov
 
-.. image:: https://readthedocs.org/projects/txtorcon/badge/?version=latest
+.. image:: https://readthedocs.org/projects/txtorcon/badge/?version=stable
     :target: https://txtorcon.readthedocs.io/en/latest/
     :alt: ReadTheDocs
 
