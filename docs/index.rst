@@ -45,7 +45,7 @@ txtorcon
     |   PyPy 5.0.0+ |    ✓    |    ✓    |
     +---------------+---------+---------+
 
-Supported and tested platforms: Python 2.7+, Python 3.5+, PyPy 5.0.0+ using Twisted 15.5.0+, 16.3.0+ or later.
+Supported and tested platforms: Python 2.7+, Python 3.5+, PyPy 5.0.0+ using Twisted 15.5.0+, 16.3.0+, and 17.1.0+.
 
 
 Documentation
