@@ -24,11 +24,11 @@
     :alt: codecov
 
 .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=stable
-    :target: https://txtorcon.readthedocs.io/en/latest/
+    :target: https://txtorcon.readthedocs.io/en/stable
     :alt: ReadTheDocs
 
-.. image:: https://readthedocs.org/projects/txtorcon/badge/?version=release-1.x
-    :target: https://txtorcon.readthedocs.io/en/release-1.x
+.. image:: https://readthedocs.org/projects/txtorcon/badge/?version=latest
+    :target: https://txtorcon.readthedocs.io/en/latest
     :alt: ReadTheDocs
 
 .. image:: http://api.flattr.com/button/flattr-badge-large.png
