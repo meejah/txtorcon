@@ -88,3 +88,15 @@ class StateTests(unittest.TestCase):
         self.assertTrue('flags' not in relays[0])
         self.assertTrue('flags' in relays[1])
         self.assertTrue('FutureProof' in relays[1]['flags'])
+
+    def test_bad_line(self):
+        relays = []
+
+        def create_relay(**kw):
+            relays.append(kw)
+        m = MicrodescriptorParser(create_relay)
+
+        with self.assertRaises(Exception) as ctx:
+            m.feed_line('x blam')
+        self.assertTrue('Unknown microdescriptor' in str(ctx.exception))
+        self.assertEqual(0, len(relays))
