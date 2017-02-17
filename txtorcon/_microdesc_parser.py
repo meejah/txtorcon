@@ -41,6 +41,10 @@ class MicrodescriptorParser(object):
     def _p_line(self, *args):
         pass
 
+    @_machine.input()
+    def _a_line(self, *args):
+        pass
+
     @_machine.output()
     def create_relay(self, *args):
         r = self._create_relay(**self._relay_attrs)
@@ -75,6 +79,17 @@ class MicrodescriptorParser(object):
         assert 'Bandwidth' in kw
         self._relay_attrs['bandwidth'] = kw['Bandwidth']
 
+    @_machine.output()
+    def _parse_a(self, *args):
+        try:
+            self._relay_attrs['ip_v6'].extend(args)
+        except KeyError:
+            self._relay_attrs['ip_v6'] = list(args)
+
+    @_machine.output()
+    def _error(self, *args):
+        raise RuntimeError("Illegal state in microdescriptor parser")
+
     @_machine.state(initial=True)
     def waiting_r(self):
         """
@@ -93,15 +108,25 @@ class MicrodescriptorParser(object):
         waiting for an 's' line
         """
 
+    @_machine.state()
+    def error(self):
+        """
+        something bad happened
+        """
+
     def feed_line(self, data):
         args = data.split()
         try:
-            dict(
-                r=self._r_line,
-                s=self._s_line,
-                w=self._w_line,
-                p=self._p_line,
-            )[args[0]](*args[1:])
+            {
+                'r': self._r_line,
+                's': self._s_line,
+                'w': self._w_line,
+                'p': self._p_line,
+                'a': self._a_line,
+                'OK': lambda: None,  # ignore
+                'ns/all=': lambda: None,  # ignore
+                '.': lambda: None,  # ignore
+            }[args[0]](*args[1:])
         except KeyError:
             raise Exception(
                 'Unknown microdescriptor line: "{}"'.format(args[0])
@@ -125,13 +150,23 @@ class MicrodescriptorParser(object):
 
     waiting_s.upon(
         _r_line,
-        enter=waiting_s,
-        outputs=[create_relay, start_relay, _parse_r],
+        enter=error,
+        outputs=[_error],
     )
+#    waiting_s.upon(
+#        _r_line,
+#        enter=waiting_s,
+#        outputs=[create_relay, start_relay, _parse_r],
+#    )
     waiting_s.upon(
         _s_line,
         enter=waiting_w,
         outputs=[_parse_s],
+    )
+    waiting_s.upon(
+        _a_line,
+        enter=waiting_s,
+        outputs=[_parse_a],
     )
     waiting_s.upon(
         done,
@@ -143,6 +178,16 @@ class MicrodescriptorParser(object):
         _w_line,
         enter=waiting_r,
         outputs=[_parse_w, create_relay],
+    )
+    waiting_w.upon(
+        _r_line,
+        enter=waiting_s,
+        outputs=[create_relay, start_relay, _parse_r],
+    )
+    waiting_w.upon(
+        _a_line,
+        enter=waiting_w,
+        outputs=[_parse_a],
     )
     waiting_w.upon(
         done,
