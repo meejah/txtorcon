@@ -1014,6 +1014,7 @@ p reject 1-65535
 650 OK
 '''.split(b'\n')))
 
+        self.assertEqual(1, len(self.state.all_routers))
         self.assertTrue('Unnamed' in self.state.routers)
         self.assertTrue('$00126582E505CF596F412D23ABC9E14DD4625C49' in self.state.routers)
 

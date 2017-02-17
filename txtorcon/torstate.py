@@ -342,6 +342,12 @@ class TorState(object):
         if self._router.id_hex in self.routers:
             # FIXME should I do an update() on this one??
             self._router = self.routers[self._router.id_hex]
+        else:
+            if self._router.name in self.routers:
+                self.routers[self._router.name] = None
+
+            else:
+                self.routers[self._router.name] = self._router
 
         if self._router.name in self.routers_by_name:
             self.routers_by_name[self._router.name].append(self._router)
@@ -349,11 +355,6 @@ class TorState(object):
         else:
             self.routers_by_name[self._router.name] = [self._router]
 
-        if self._router.name in self.routers:
-            self.routers[self._router.name] = None
-
-        else:
-            self.routers[self._router.name] = self._router
         self.routers[self._router.id_hex] = self._router
         self.routers_by_hash[self._router.id_hex] = self._router
         self.all_routers.add(self._router)
