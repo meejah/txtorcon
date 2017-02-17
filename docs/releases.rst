@@ -40,6 +40,7 @@ unreleased
  * big revamp / re-write of the documentation, including the new
    `Programming Guide
    <https://txtorcon.readthedocs.io/en/latest/guide.html>`_
+ * `Issue 203 <https://github.com/meejah/txtorcon/issues/203>`_
 
 
 v0.18.0
