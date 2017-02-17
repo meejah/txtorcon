@@ -342,7 +342,6 @@ class TorState(object):
         if self._router.id_hex in self.routers:
             # FIXME should I do an update() on this one??
             self._router = self.routers[self._router.id_hex]
-            return
 
         if self._router.name in self.routers_by_name:
             self.routers_by_name[self._router.name].append(self._router)
@@ -760,7 +759,7 @@ class TorState(object):
     def _update_network_status(self, data):
         """
         Used internally as a callback for updating Router information
-        from NS and NEWCONSENSUS events.
+        from NEWCONSENSUS events.
         """
 
         # XXX why are we getting this with 0 data?
