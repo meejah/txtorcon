@@ -89,6 +89,7 @@ Known Users
 - `carml <https://github.com/meejah/carml>`_ command-line utilities for Tor
 - `foolscap <https://github.com/warner/foolscap/>`_ RPC system inspired by Twisted's built-in "Perspective Broker" package.
 - `bwscanner <https://github.com/TheTorProject/bwscanner>`_ next-gen bandwidth scanner for Tor network
+- `unmessage <https://github.com/AnemoneLabs/unmessage>`_ Privacy enhanced instant messenger
 - `APAF <https://github.com/globaleaks/APAF>`_ anonymous Python application framework
 - `OONI <https://ooni.torproject.org/>`_ the Open Observatory of Network Interference
 - `exitaddr <https://github.com/arlolra/exitaddr>`_ scan Tor exit addresses
