@@ -893,7 +893,7 @@ p accept 43,53,79-81,110,143,194,220,443,953,989-990,993,995,1194,1293,1723,1863
             self.fail()
 
         except RuntimeError as e:
-            self.assertTrue('"s "' in str(e))
+            self.assertTrue('Illegal state' in str(e))
 
     def test_routers_no_policy(self):
         """

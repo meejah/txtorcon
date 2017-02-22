@@ -32,7 +32,8 @@ from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
 from txtorcon.interface import IStreamListener
 from txtorcon.interface import IStreamAttacher
-from .spaghetti import FSM, State, Transition
+from ._microdesc_parser import MicrodescriptorParser
+from .router import hexIdFromHash
 
 
 def _build_state(proto):
@@ -277,108 +278,60 @@ class TorState(object):
         #: see set_attacher
         self._cleanup = None
 
-        class die(object):
-            __name__ = 'die'  # FIXME? just to ease spagetti.py:82's pain
-
-            def __init__(self, msg):
-                self.msg = msg
-
-            def __call__(self, *args):
-                raise RuntimeError(self.msg % tuple(args))
-
-        waiting_r = State("waiting_r")
-        waiting_w = State("waiting_w")
-        waiting_p = State("waiting_p")
-        waiting_s = State("waiting_s")
-
-        def ignorable_line(x):
-            x = x.strip()
-            return x in ['.', 'OK', ''] or x.startswith('ns/')
-
-        waiting_r.add_transition(Transition(waiting_r, ignorable_line, None))
-        waiting_r.add_transition(Transition(waiting_s, lambda x: x.startswith('r '), self._router_begin))
-        # FIXME use better method/func than die!!
-        waiting_r.add_transition(Transition(waiting_r, lambda x: not x.startswith('r '), die('Expected "r " while parsing routers not "%s"')))
-
-        waiting_s.add_transition(Transition(waiting_w, lambda x: x.startswith('s '), self._router_flags))
-        waiting_s.add_transition(Transition(waiting_s, lambda x: x.startswith('a '), self._router_address))
-        waiting_s.add_transition(Transition(waiting_r, ignorable_line, None))
-        waiting_s.add_transition(Transition(waiting_r, lambda x: not x.startswith('s ') and not x.startswith('a '), die('Expected "s " while parsing routers not "%s"')))
-        waiting_s.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', None))
-
-        waiting_w.add_transition(Transition(waiting_p, lambda x: x.startswith('w '), self._router_bandwidth))
-        waiting_w.add_transition(Transition(waiting_r, ignorable_line, None))
-        waiting_w.add_transition(Transition(waiting_s, lambda x: x.startswith('r '), self._router_begin))  # "w" lines are optional
-        waiting_w.add_transition(Transition(waiting_r, lambda x: not x.startswith('w '), die('Expected "w " while parsing routers not "%s"')))
-        waiting_w.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', None))
-
-        waiting_p.add_transition(Transition(waiting_r, lambda x: x.startswith('p '), self._router_policy))
-        waiting_p.add_transition(Transition(waiting_r, ignorable_line, None))
-        waiting_p.add_transition(Transition(waiting_s, lambda x: x.startswith('r '), self._router_begin))  # "p" lines are optional
-        waiting_p.add_transition(Transition(waiting_r, lambda x: x[:2] != 'p ', die('Expected "p " while parsing routers not "%s"')))
-        waiting_p.add_transition(Transition(waiting_r, lambda x: x.strip() == '.', None))
-
-        self._network_status_parser = FSM([waiting_r, waiting_s, waiting_w, waiting_p])
+        self._network_status_parser = MicrodescriptorParser(self._create_router)
 
         self.post_bootstrap = defer.Deferred()
         if bootstrap:
             self.protocol.post_bootstrap.addCallback(self._bootstrap)
             self.protocol.post_bootstrap.addErrback(self.post_bootstrap.errback)
 
-    def _router_begin(self, data):
-        args = data.split()
-        self._router = Router(self.protocol)
-        self._router.from_consensus = True
-        self._router.update(
-            args[1],                  # nickname
-            args[2],                  # idhash
-            args[3],                  # orhash
-            args[4] + ' ' + args[5],  # modified (like '%Y-%m-%f %H:%M:%S')
-            args[6],                  # ip address
-            args[7],                  # ORPort
-            args[8],                  # DirPort
+    def _create_router(self, **kw):
+        id_hex = hexIdFromHash(kw['idhash'])
+        try:
+            router = self.routers[id_hex]
+        except KeyError:
+            router = Router(self.protocol)
+            self.routers[router.id_hex] = router
+        router.from_consensus = True
+        router.update(
+            kw['nickname'],
+            kw['idhash'],
+            kw['orhash'],
+            kw['modified'],
+            kw['ip'],
+            kw['orport'],
+            kw['dirport'],
         )
+        router.flags = kw.get('flags', [])
+        if 'bandwidth' in kw:
+            router.bandwidth = kw['bandwidth']
+        if 'ip_v6' in kw:
+            router.ip_v6.extend(kw['ip_v6'])
 
-        if self._router.id_hex in self.routers:
+        if 'guard' in router.flags:
+            self.guards[router.id_hex] = router
+        if 'authority' in router.flags:
+            self.authorities[router.name] = router
+
+        if router.id_hex in self.routers:
             # FIXME should I do an update() on this one??
-            self._router = self.routers[self._router.id_hex]
+            router = self.routers[router.id_hex]
         else:
-            if self._router.name in self.routers:
-                self.routers[self._router.name] = None
+            if router.name in self.routers:
+                self.routers[router.name] = None
 
             else:
-                self.routers[self._router.name] = self._router
+                self.routers[router.name] = router
 
-        if self._router.name in self.routers_by_name:
-            self.routers_by_name[self._router.name].append(self._router)
+        if router.name in self.routers_by_name:
+            self.routers_by_name[router.name].append(router)
 
         else:
-            self.routers_by_name[self._router.name] = [self._router]
+            self.routers_by_name[router.name] = [router]
 
-        self.routers[self._router.id_hex] = self._router
-        self.routers_by_hash[self._router.id_hex] = self._router
-        self.all_routers.add(self._router)
-
-    def _router_flags(self, data):
-        args = data.split()
-        self._router.flags = args[1:]
-        if 'guard' in self._router.flags:
-            self.guards[self._router.id_hex] = self._router
-        if 'authority' in self._router.flags:
-            self.authorities[self._router.name] = self._router
-
-    def _router_address(self, data):
-        """only for IPv6 addresses"""
-        self._router.ip_v6.append(data.split()[1].strip())
-
-    def _router_bandwidth(self, data):
-        args = data.split()
-        self._router.bandwidth = int(args[1].split('=')[1])
-
-    def _router_policy(self, data):
-        args = data.split()
-        self._router.policy = args[1:]
-        self._router = None
+        self.routers[router.id_hex] = router
+        self.routers_by_hash[router.id_hex] = router
+        self.all_routers.add(router)
 
     @defer.inlineCallbacks
     def _bootstrap(self, arg=None):
@@ -393,7 +346,7 @@ class TorState(object):
 
         ns = yield self.protocol.get_info_incremental(
             'ns/all',
-            self._network_status_parser.process
+            lambda _: None
         )
         self._update_network_status(ns)
 
@@ -767,7 +720,8 @@ class TorState(object):
         if len(data):
             self.all_routers = set()
             for line in data.split('\n'):
-                self._network_status_parser.process(line)
+                self._network_status_parser.feed_line(line)
+            self._network_status_parser.done()
 
         txtorlog.msg(len(self.routers_by_name), "named routers found.")
         # remove any names we added that turned out to have dups
