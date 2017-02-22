@@ -26,10 +26,9 @@ unreleased
    shouldn't need anything else.
  * Integrated support for `twisted.web.client.Agent`, baked into
    :class:`txtorcon.Tor`. This allows simple, straightforward use of
-   `treq <https://pypi.python.org/pypi/treq>`_ or "raw"
-   `twisted.web.client` for making client-type Web requests via
-   Tor. Automatically handles configuration of SOCKS ports. See
-   :meth:`txtorcon.Tor.web_agent`
+   treq_ or "raw" `twisted.web.client` for making client-type Web
+   requests via Tor. Automatically handles configuration of SOCKS
+   ports. See :meth:`txtorcon.Tor.web_agent`
  * new high-level API for putting streams on specific Circuits. This
    adds :meth:`txtorcon.Circuit.stream_via` and
    :meth:`txtorcon.Circuit.web_agent` methods that work the same as
@@ -41,6 +40,10 @@ unreleased
    `Programming Guide
    <https://txtorcon.readthedocs.io/en/latest/guide.html>`_
  * `Issue 203 <https://github.com/meejah/txtorcon/issues/203>`_
+ * Use Automat_ for microdescriptor parsing state-machine
+
+.. _Automat: https://github.com/glyph/automat
+.. _treq: https://pypi.python.org/pypi/treq
 
 
 v0.18.0
