@@ -224,7 +224,7 @@ class BootstrapTests(unittest.TestCase):
 
     def confirm_consensus(self, x):
         self.assertEqual(1, len(x.all_routers))
-        self.assertEqual('fake', x.routers.values()[0].name)
+        self.assertEqual('fake', list(x.routers.values())[0].name)
         return x
 
     def test_build(self):
