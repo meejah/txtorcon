@@ -189,7 +189,13 @@ class FakeEndpointAnswers:
         return ans[:-2]                 # don't want trailing \r\n
 
     def get_info_incremental(self, key, linecb):
-        linecb('%s=%s' % (key, self.answers.pop()))
+        data = self.answers.pop().split('\n')
+        if len(data) == 1:
+            linecb('{}={}'.format(key, data[0]))
+        else:
+            linecb('{}='.format(key))
+            for line in data:
+                linecb(line)
         return defer.succeed('')
 
     def connect(self, protocol_factory):
@@ -209,10 +215,16 @@ class BootstrapTests(unittest.TestCase):
     def confirm_proto(self, x):
         self.assertTrue(isinstance(x, TorControlProtocol))
         self.assertTrue(x.post_bootstrap.called)
+        return x
 
     def confirm_state(self, x):
-        self.assertTrue(isinstance(x, TorState))
+        self.assertIsInstance(x, TorState)
         self.assertTrue(x.post_bootstrap.called)
+        return x
+
+    def confirm_consensus(self, x):
+        self.assertEqual(1, len(x.all_routers))
+        self.assertEqual('fake', x.routers.values()[0].name)
         return x
 
     def test_build(self):
@@ -254,6 +266,7 @@ class BootstrapTests(unittest.TestCase):
 
     def confirm_pid(self, state):
         self.assertEqual(state.tor_pid, 1234)
+        return state
 
     def confirm_no_pid(self, state):
         self.assertEqual(state.tor_pid, 0)
@@ -270,6 +283,29 @@ class BootstrapTests(unittest.TestCase):
         d = build_tor_connection(p, build_state=True)
         d.addCallback(self.confirm_state).addErrback(self.fail)
         d.addCallback(self.confirm_pid).addErrback(self.fail)
+        p.proto.post_bootstrap.callback(p.proto)
+        return d
+
+    def test_build_with_answers_ns(self):
+        fake_consensus = '\n'.join([
+            'r fake YkkmgCNRV1/35OPWDvo7+1bmfoo tanLV/4ZfzpYQW0xtGFqAa46foo 2011-12-12 16:29:16 11.11.11.11 443 80',
+            's Exit Fast Guard HSDir Named Running Stable V2Dir Valid FutureProof',
+            'r ekaf foooooooooooooooooooooooooo barbarbarbarbarbarbarbarbar 2011-11-11 16:30:00 22.22.22.22 443 80',
+            's Exit Fast Guard HSDir Named Running Stable V2Dir Valid FutureProof',
+            '',
+        ])
+        p = FakeEndpointAnswers([fake_consensus,     # ns/all
+                                 '',     # circuit-status
+                                 '',     # stream-status
+                                 '',     # address-mappings/all
+                                 '',     # entry-guards
+                                 '1234'  # PID
+                                 ])
+
+        d = build_tor_connection(p, build_state=True)
+        d.addCallback(self.confirm_state).addErrback(self.fail)
+        d.addCallback(self.confirm_pid).addErrback(self.fail)
+        d.addCallback(self.confirm_consensus).addErrback(self.fail)
         p.proto.post_bootstrap.callback(p.proto)
         return d
 

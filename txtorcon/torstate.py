@@ -338,15 +338,11 @@ class TorState(object):
         "This takes an arg so we can use it as a callback (see __init__)."
 
         # update list of routers (must be before we do the
-        # circuit-status) note that we're feeding each line
-        # incrementally to a state-machine called
-        # _network_status_parser, set up in constructor. "ns" should
-        # be the empty string, but we call _update_network_status for
-        # the de-duplication of named routers
+        # circuit-status)
 
         # look out! we're depending on get_info_incremental returning
-        # *lines*, which isn't documented but will be true because
-        # we're a LineReceiver...
+        # *lines*, which isn't documented -- but will be true because
+        # TorControlProtocol is a LineReceiver...
         yield self.protocol.get_info_incremental(
             'ns/all',
             self._network_status_parser.feed_line,

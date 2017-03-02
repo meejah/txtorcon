@@ -115,6 +115,8 @@ class MicrodescriptorParser(object):
         """
 
     def feed_line(self, data):
+        if not data:
+            return
         args = data.split()
         try:
             {
