@@ -344,11 +344,13 @@ class TorState(object):
         # be the empty string, but we call _update_network_status for
         # the de-duplication of named routers
 
-        ns = yield self.protocol.get_info_incremental(
+        # look out! we're depending on get_info_incremental returning
+        # *lines*, which isn't documented but will be true because
+        # we're a LineReceiver...
+        yield self.protocol.get_info_incremental(
             'ns/all',
-            lambda _: None
+            self._network_status_parser.feed_line,
         )
-        self._update_network_status(ns)
 
         # update list of existing circuits
         cs = yield self.protocol.get_info_raw('circuit-status')
