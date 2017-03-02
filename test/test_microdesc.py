@@ -1,6 +1,4 @@
 
-from mock import Mock
-
 from twisted.trial import unittest
 
 from txtorcon._microdesc_parser import MicrodescriptorParser

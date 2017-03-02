@@ -2,6 +2,7 @@
 from .util import find_keywords
 import automat
 
+
 class MicrodescriptorParser(object):
     """
     Parsers microdescriptors line by line. New relays are emitted via
