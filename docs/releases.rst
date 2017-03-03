@@ -41,6 +41,8 @@ unreleased
    <https://txtorcon.readthedocs.io/en/latest/guide.html>`_
  * `Issue 203 <https://github.com/meejah/txtorcon/issues/203>`_
  * Use Automat_ for microdescriptor parsing state-machine
+ * new helper: :meth:`txtorcon.Router.get_onionoo_details`_
+ * new helper: :func:`txtorcon.util.create_tbb_web_headers`_
 
 .. _Automat: https://github.com/glyph/automat
 .. _treq: https://pypi.python.org/pypi/treq

@@ -1,6 +1,11 @@
+import json
 from datetime import datetime
+from mock import Mock
+
 from twisted.trial import unittest
-from twisted.internet import defer
+from twisted.internet import defer, error
+from twisted.python.failure import Failure
+from twisted.web.client import ResponseDone
 
 from txtorcon.router import Router, hexIdFromHash, hashFromHexId
 
@@ -173,3 +178,109 @@ class RouterTests(unittest.TestCase):
     def test_repr_no_update(self):
         router = Router(FakeController())
         repr(router)
+
+
+class OnionOOTests(unittest.TestCase):
+
+    def setUp(self):
+        self.router = Router(FakeController())
+        self.router.update(
+            "foo",
+            "AHhuQ8zFQJdT8l42Axxc6m6kNwI",
+            "MAANkj30tnFvmoh7FsjVFr+cmcs",
+            "2011-12-16 15:11:34",
+            "1.2.3.4",
+            "24051", "24052"
+        )
+
+    @defer.inlineCallbacks
+    def test_onionoo_get_fails(self):
+        agent = Mock()
+        resp = Mock()
+        resp.code = 500
+        agent.request = Mock(return_value=defer.succeed(resp))
+
+        with self.assertRaises(Exception) as ctx:
+            yield self.router.get_onionoo_details(agent)
+        self.assertTrue(
+            "Failed to lookup" in str(ctx.exception)
+        )
+
+    @defer.inlineCallbacks
+    def test_onionoo_success(self):
+        agent = Mock()
+        resp = Mock()
+        resp.code = 200
+
+        def feed_response(protocol):
+            config = {
+                "relays": [
+                    {
+                        "fingerprint": "00786E43CCC5409753F25E36031C5CEA6EA43702",
+                    },
+                ]
+            }
+            protocol.dataReceived(json.dumps(config).encode())
+            protocol.connectionLost(Failure(ResponseDone()))
+        resp.deliverBody = Mock(side_effect=feed_response)
+        agent.request = Mock(return_value=defer.succeed(resp))
+
+        data = yield self.router.get_onionoo_details(agent)
+
+        self.assertTrue('fingerprint' in data)
+        self.assertTrue(data['fingerprint'] == "00786E43CCC5409753F25E36031C5CEA6EA43702")
+
+    @defer.inlineCallbacks
+    def test_onionoo_too_many_answers(self):
+        agent = Mock()
+        resp = Mock()
+        resp.code = 200
+
+        def feed_response(protocol):
+            config = {
+                "relays": [
+                    {
+                        "fingerprint": "00786E43CCC5409753F25E36031C5CEA6EA43702",
+                    },
+                    {
+                        "fingerprint": "boom",
+                    }
+                ]
+            }
+            protocol.dataReceived(json.dumps(config).encode())
+            protocol.connectionLost(Failure(ResponseDone()))
+        resp.deliverBody = Mock(side_effect=feed_response)
+        agent.request = Mock(return_value=defer.succeed(resp))
+
+        with self.assertRaises(Exception) as ctx:
+            data = yield self.router.get_onionoo_details(agent)
+
+        self.assertTrue(
+            "multiple relays for" in str(ctx.exception)
+        )
+
+    @defer.inlineCallbacks
+    def test_onionoo_wrong_fingerprint(self):
+        agent = Mock()
+        resp = Mock()
+        resp.code = 200
+
+        def feed_response(protocol):
+            config = {
+                "relays": [
+                    {
+                        "fingerprint": "boom",
+                    },
+                ]
+            }
+            protocol.dataReceived(json.dumps(config).encode())
+            protocol.connectionLost(Failure(ResponseDone()))
+        resp.deliverBody = Mock(side_effect=feed_response)
+        agent.request = Mock(return_value=defer.succeed(resp))
+
+        with self.assertRaises(Exception) as ctx:
+            data = yield self.router.get_onionoo_details(agent)
+
+        self.assertTrue(
+            " but got data for " in str(ctx.exception)
+        )

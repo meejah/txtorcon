@@ -18,8 +18,8 @@ import six
 
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
-
 from twisted.internet.endpoints import serverFromString
+from twisted.web.http_headers import Headers
 
 from zope.interface import implementer
 from zope.interface import Interface
@@ -33,6 +33,20 @@ except ImportError:
 city = None
 country = None
 asn = None
+
+
+def create_tbb_web_headers():
+    """
+    Returns a new `twisted.web.http_headers.Headers` instance
+    populated with tags to mimic Tor Browser. These include values for
+    `User-Agent`, `Accept`, `Accept-Language` and `Accept-Encoding`.
+    """
+    return Headers({
+        b"User-Agent": [b"Mozilla/5.0 (Windows NT 6.1; rv:45.0) Gecko/20100101 Firefox/45.0"],
+        b"Accept": [b"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],
+        b"Accept-Language": [b"en-US,en;q=0.5"],
+        b"Accept-Encoding": [b"gzip, deflate"],
+    })
 
 
 def version_at_least(version_string, major, minor, micro, patch):

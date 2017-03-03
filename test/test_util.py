@@ -22,6 +22,7 @@ from txtorcon.util import available_tcp_port
 from txtorcon.util import version_at_least
 from txtorcon.util import default_control_port
 from txtorcon.util import _Listener, _ListenerCollection
+from txtorcon.util import create_tbb_web_headers
 
 
 class FakeState:
@@ -366,6 +367,12 @@ class TestVersions(unittest.TestCase):
         self.assertTrue(
             version_at_least("2.1.1.1", 2, 0, 0, 0)
         )
+
+
+class TestHeaders(unittest.TestCase):
+
+    def test_simple(self):
+        create_tbb_web_headers()
 
 
 class TestDefaultPort(unittest.TestCase):

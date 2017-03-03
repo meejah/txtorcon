@@ -5,11 +5,15 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import json
 from datetime import datetime
 from .util import NetLocation
 import six
 from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
+
+from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.web.client import readBody
 
 
 def hexIdFromHash(thehash):
@@ -166,6 +170,43 @@ class Router(object):
     @bandwidth.setter
     def bandwidth(self, bw):
         self._bandwidth = int(bw)
+
+    @inlineCallbacks
+    def get_onionoo_details(self, agent):
+        """
+        Requests the 'details' document from onionoo.torproject.org via
+        the given `twisted.web.iweb.IAgent` -- you can get a suitable
+        instance to pass here by calling either :meth:`txtorcon.Tor.web_agent` or
+        :meth:`txtorcon.Circuit.web_agent`.
+        """
+
+        uri = 'https://onionoo.torproject.org/details?lookup={}'.format(self.id_hex[1:]).encode('ascii')
+
+        resp = yield agent.request(b'GET', uri)
+        if resp.code != 200:
+            raise RuntimeError(
+                'Failed to lookup relay details for {}'.format(self.id_hex)
+            )
+        body = yield readBody(resp)
+        data = json.loads(body.decode('ascii'))
+        if len(data['relays']) != 1:
+            raise RuntimeError(
+                'Got multiple relays for {}'.format(self.id_hex)
+            )
+        relay_data = data['relays'][0]
+        if relay_data['fingerprint'].lower() != self.id_hex[1:].lower():
+            raise RuntimeError(
+                'Expected "{}" but got data for "{}"'.format(self.id_hex, relay_data['fingerprint'])
+            )
+        returnValue(relay_data)
+
+
+
+    # note that exit-policy is no longer included in the
+    # microdescriptors by default, so this stuff is mostly here as a
+    # historic artifact. If you want to use exit-policy for things
+    # your best bet is to tell your tor to download full descriptors
+    # (SETCONF UseMicrodescriptors 0) instead.
 
     @property
     def policy(self):
