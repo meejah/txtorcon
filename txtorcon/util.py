@@ -42,7 +42,7 @@ def create_tbb_web_headers():
     `User-Agent`, `Accept`, `Accept-Language` and `Accept-Encoding`.
     """
     return Headers({
-        b"User-Agent": [b"Mozilla/5.0 (Windows NT 6.1; rv:38.0) Gecko/20100101 Firefox/38.0"],
+        b"User-Agent": [b"Mozilla/5.0 (Windows NT 6.1; rv:45.0) Gecko/20100101 Firefox/45.0"],
         b"Accept": [b"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"],
         b"Accept-Language": [b"en-US,en;q=0.5"],
         b"Accept-Encoding": [b"gzip, deflate"],
