@@ -154,7 +154,7 @@ Read More
 
 All the documentation starts `in docs/index.rst
 <docs/index.rst>`_. Also hosted at `txtorcon.rtfd.org
-<https://txtorcon.readthedocs.org>`_.
+<https://txtorcon.readthedocs.io/en/latest/>`_.
 
 You'll want to start with `the introductions <docs/introduction.rst>`_ (`hosted at RTD
 <https://txtorcon.readthedocs.org/en/latest/introduction.html>`_).
