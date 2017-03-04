@@ -900,13 +900,12 @@ platform Tor 0.2.5.0-alpha-dev on Linux
         except Exception as e:
             self.assertTrue('FOO' in str(e))
 
-    def checkContinuation(self, v):
-        self.assertEqual(v, "key=\nvalue0\nvalue1")
-
-    def test_continuationLine(self):
+    def test_continuation_line(self):
         d = self.protocol.get_info_raw("key")
 
-        d.addCallback(self.checkContinuation)
+        def check_continuation(v):
+            self.assertEqual(v, "key=\nvalue0\nvalue1")
+        d.addCallback(check_continuation)
 
         self.send(b"250+key=")
         self.send(b"value0")
