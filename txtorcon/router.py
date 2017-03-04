@@ -200,8 +200,6 @@ class Router(object):
             )
         returnValue(relay_data)
 
-
-
     # note that exit-policy is no longer included in the
     # microdescriptors by default, so this stuff is mostly here as a
     # historic artifact. If you want to use exit-policy for things

@@ -11,6 +11,7 @@ from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
 from twisted.internet.error import ConnectionDone
 from twisted.protocols.basic import LineOnlyReceiver
+from twisted.python.failure import Failure
 
 from zope.interface import implementer
 
@@ -109,7 +110,17 @@ class Event(object):
 
     def got_update(self, data):
         for cb in self.callbacks:
-            cb(data)
+            try:
+                cb(data)
+            except Exception as e:
+                log.err(Failure())
+                log.err(
+                    "Notifying '{callback}' for '{name}' failed: {e}".format(
+                        callback=cb,
+                        name=self.name,
+                        e=e,
+                    )
+                )
 
 
 def unquote(word):
