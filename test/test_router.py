@@ -3,7 +3,7 @@ from datetime import datetime
 from mock import Mock
 
 from twisted.trial import unittest
-from twisted.internet import defer, error
+from twisted.internet import defer
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseDone
 
@@ -253,7 +253,7 @@ class OnionOOTests(unittest.TestCase):
         agent.request = Mock(return_value=defer.succeed(resp))
 
         with self.assertRaises(Exception) as ctx:
-            data = yield self.router.get_onionoo_details(agent)
+            yield self.router.get_onionoo_details(agent)
 
         self.assertTrue(
             "multiple relays for" in str(ctx.exception)
@@ -279,7 +279,7 @@ class OnionOOTests(unittest.TestCase):
         agent.request = Mock(return_value=defer.succeed(resp))
 
         with self.assertRaises(Exception) as ctx:
-            data = yield self.router.get_onionoo_details(agent)
+            yield self.router.get_onionoo_details(agent)
 
         self.assertTrue(
             " but got data for " in str(ctx.exception)
