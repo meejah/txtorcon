@@ -861,6 +861,8 @@ platform Tor 0.2.5.0-alpha-dev on Linux
                 if self.do_error:
                     raise Exception("the bad thing happened")
 
+        # we make sure the first listener has the errors to prove the
+        # second one still gets called.
         listener0 = EventListener()
         listener0.do_error = True
         listener1 = EventListener()
@@ -874,6 +876,12 @@ platform Tor 0.2.5.0-alpha-dev on Linux
         self.send(b"650 STREAM 2345 NEW 4321 2.3.4.5:666 REASON=MISC")
         self.assertEqual(listener0.stream_events, 2)
         self.assertEqual(listener1.stream_events, 2)
+
+        # should have logged the two errors
+        logged = self.flushLoggedErrors()
+        self.assertEqual(2, len(logged))
+        self.assertTrue("the bad thing happened" in str(logged[0]))
+        self.assertTrue("the bad thing happened" in str(logged[1]))
 
     def test_remove_eventlistener(self):
         self.protocol._set_valid_events('STREAM')
