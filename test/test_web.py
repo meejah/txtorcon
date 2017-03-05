@@ -76,6 +76,14 @@ class WebAgentTests(unittest.TestCase):
         yield tor_agent(reactor, socks_ep)
 
     @defer.inlineCallbacks
+    def test_agent_no_socks(self):
+        reactor = Mock()
+        socks_ep = Mock()
+        with self.assertRaises(Exception) as ctx:
+            yield tor_agent(reactor, None)
+        self.assertTrue('Must provide socks_endpoint' in str(ctx.exception))
+
+    @defer.inlineCallbacks
     def test_agent_with_circuit(self):
         reactor = Mock()
         circuit = Mock()
