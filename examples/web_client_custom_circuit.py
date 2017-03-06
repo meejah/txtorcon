@@ -17,6 +17,7 @@ import txtorcon
 from txtorcon.util import default_control_port
 
 
+@react
 @inlineCallbacks
 def main(reactor):
     # use port 9051 for system tor instances, or:
@@ -79,5 +80,3 @@ def main(reactor):
         yield d
         print("All done, closing the circuit")
         yield circ.close()
-
-react(main)

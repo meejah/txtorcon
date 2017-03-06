@@ -11,6 +11,7 @@ from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks
 
 
+@react
 @inlineCallbacks
 def main(reactor):
     # note that you can pass a few options as kwargs
@@ -55,7 +56,3 @@ def main(reactor):
     print("Querying to see it changed:")
     socksport = yield tor.protocol.get_conf("SOCKSPort")
     print("SOCKSPort", socksport)
-
-
-if __name__ == '__main__':
-    react(main)

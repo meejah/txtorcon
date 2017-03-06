@@ -17,6 +17,7 @@ from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks
 
 
+@react
 @inlineCallbacks
 def main(reactor):
     # we must have a directory owned by us with 0700 permissions to
@@ -57,7 +58,3 @@ def main(reactor):
     body = yield readBody(resp)
     print("received body ({} bytes)".format(len(body)))
     print("{}\n[...]\n{}\n".format(body[:200], body[-200:]))
-
-
-if __name__ == '__main__':
-    react(main)

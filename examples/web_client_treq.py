@@ -18,6 +18,7 @@ except ImportError:
     raise SystemExit(1)
 
 
+@react
 @inlineCallbacks
 def main(reactor):
     ep = TCP4ClientEndpoint(reactor, '127.0.0.1', default_control_port())
@@ -37,6 +38,3 @@ def main(reactor):
         data[:120],
         data[-120:],
     ))
-
-
-react(main)
