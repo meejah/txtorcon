@@ -294,7 +294,7 @@ class _SocksMachine(object):
         if self._on_disconnect:
             self._on_disconnect(error_message)
         if self._sender:
-            self._sender.connectionLost(SocksError(error_message))
+            self._sender.connectionLost(Failure(SocksError(error_message)))
         self._when_done.fire(Failure(SocksError(error_message)))
 
     @_machine.output()
