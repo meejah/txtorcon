@@ -28,21 +28,18 @@ __all__ = (
     'resolve',
     'resolve_ptr',
     'SocksError',
+    'SucceededReply',
+    'GeneralServerFailureError',
+    'ConnectionNotAllowedError',
+    'NetworkUnreachableError',
+    'HostUnreachableError',
+    'ConnectionRefusedError',
+    'TtlExpiredError',
+    'CommandNotSupportedError',
+    'AddressTypeNotSupportedError',
+    'SocksErrorFactory',
     'TorSocksEndpoint',
 )
-
-
-_socks_reply_code_to_string = {
-    0x00: 'succeeded',
-    0x01: 'general SOCKS server failure',
-    0x02: 'connection not allowed by ruleset',
-    0x03: 'Network unreachable',
-    0x04: 'Host unreachable',
-    0x05: 'Connection refused',
-    0x06: 'TTL expired',
-    0x07: 'Command not supported',
-    0x08: 'Address type not supported',
-}
 
 
 def _create_ip_address(host, port):
@@ -203,9 +200,9 @@ class _SocksMachine(object):
             return
 
         if reply != self.SUCCEEDED:
-            try:
-                self.reply_error(_socks_reply_code_to_string[reply])
-            except KeyError:
+            if reply in SocksErrorFactory.socks_errors:
+                self.reply_error(reply)
+            else:
                 self.reply_error("Unknown SOCKS reply code {}".format(reply))
             return
 
@@ -291,11 +288,16 @@ class _SocksMachine(object):
     @_machine.output()
     def _disconnect(self, error_message):
         "done"
+        try:
+            error = SocksErrorFactory.create(error_message)
+        except KeyError:
+            error = SocksError(error_message)
+
         if self._on_disconnect:
-            self._on_disconnect(error_message)
+            self._on_disconnect(error.message)
         if self._sender:
-            self._sender.connectionLost(Failure(SocksError(error_message)))
-        self._when_done.fire(Failure(SocksError(error_message)))
+            self._sender.connectionLost(Failure(error))
+        self._when_done.fire(Failure(error))
 
     @_machine.output()
     def _send_request(self, auth_method):
@@ -579,7 +581,90 @@ class _TorSocksFactory(Factory):
 
 
 class SocksError(Exception):
-    pass
+
+    def __init__(self, message, errno=None):
+        super(SocksError, self).__init__(message)
+        self.errno = errno
+
+
+class SucceededReply(SocksError):
+
+    def __init__(self):
+        super(SucceededReply, self).__init__(
+            message='succeeded',
+            errno=0x00)
+
+
+class GeneralServerFailureError(SocksError):
+
+    def __init__(self):
+        super(GeneralServerFailureError, self).__init__(
+            message='general SOCKS server failure',
+            errno=0x01)
+
+
+class ConnectionNotAllowedError(SocksError):
+
+    def __init__(self):
+        super(ConnectionNotAllowedError, self).__init__(
+            message='connection not allowed by ruleset',
+            errno=0x02)
+
+
+class NetworkUnreachableError(SocksError):
+
+    def __init__(self):
+        super(NetworkUnreachableError, self).__init__(
+            message='Network unreachable',
+            errno=0x03)
+
+
+class HostUnreachableError(SocksError):
+
+    def __init__(self):
+        super(HostUnreachableError, self).__init__(
+            message='Host unreachable',
+            errno=0x04)
+
+
+class ConnectionRefusedError(SocksError):
+
+    def __init__(self):
+        super(ConnectionRefusedError, self).__init__(
+            message='Connection refused',
+            errno=0x05)
+
+
+class TtlExpiredError(SocksError):
+
+    def __init__(self):
+        super(TtlExpiredError, self).__init__(
+            message='TTL expired',
+            errno=0x06)
+
+
+class CommandNotSupportedError(SocksError):
+
+    def __init__(self):
+        super(CommandNotSupportedError, self).__init__(
+            message='Command not supported',
+            errno=0x07)
+
+
+class AddressTypeNotSupportedError(SocksError):
+
+    def __init__(self):
+        super(AddressTypeNotSupportedError, self).__init__(
+            message='Address type not supported',
+            errno=0x08)
+
+
+class SocksErrorFactory(object):
+    socks_errors = {cls().errno: cls for cls in SocksError.__subclasses__()}
+
+    @classmethod
+    def create(cls, errno):
+        return cls.socks_errors[errno]()
 
 
 @inlineCallbacks
