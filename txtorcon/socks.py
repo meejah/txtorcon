@@ -147,9 +147,11 @@ class _SocksMachine(object):
                 self.version_reply(method)
             else:
                 if version != 5:
-                    self.version_error("Expected version 5, got {}".format(version))
+                    self.version_error(SocksError(
+                        "Expected version 5, got {}".format(version)))
                 else:
-                    self.version_error("Wanted method 0 or 2, got {}".format(method))
+                    self.version_error(SocksError(
+                        "Wanted method 0 or 2, got {}".format(method)))
 
     def _parse_ipv4_reply(self):
         if len(self._data) >= 10:
@@ -195,14 +197,12 @@ class _SocksMachine(object):
         (version, reply, _, typ) = struct.unpack('BBBB', msg)
 
         if version != 5:
-            self.reply_error("Expected version 5, got {}".format(version))
+            self.reply_error(SocksError(
+                "Expected version 5, got {}".format(version)))
             return
 
         if reply != self.SUCCEEDED:
-            if reply in _socks_errors:
-                self.reply_error(reply)
-            else:
-                self.reply_error("Unknown SOCKS reply code {}".format(reply))
+            self.reply_error(_create_socks_error(reply))
             return
 
         reply_dispatcher = {
@@ -213,7 +213,8 @@ class _SocksMachine(object):
         try:
             method = reply_dispatcher[typ]
         except KeyError:
-            self.reply_error("Unexpected response type {}".format(typ))
+            self.reply_error(SocksError(
+                "Unexpected response type {}".format(typ)))
             return
         method()
 
@@ -241,7 +242,7 @@ class _SocksMachine(object):
         "begin the protocol (i.e. connection made)"
 
     @_machine.input()
-    def disconnected(self, error_message):
+    def disconnected(self, error):
         "the connection has gone away"
 
     @_machine.input()
@@ -253,11 +254,11 @@ class _SocksMachine(object):
         "the SOCKS server replied with a version"
 
     @_machine.input()
-    def version_error(self, error_message):
+    def version_error(self, error):
         "the SOCKS server replied, but we don't understand"
 
     @_machine.input()
-    def reply_error(self, error_message):
+    def reply_error(self, error):
         "the SOCKS server replied with an error"
 
     @_machine.input()
@@ -285,13 +286,8 @@ class _SocksMachine(object):
         )
 
     @_machine.output()
-    def _disconnect(self, error_message):
+    def _disconnect(self, error):
         "done"
-        try:
-            error = _create_socks_error(error_message)
-        except KeyError:
-            error = SocksError(error_message)
-
         if self._on_disconnect:
             self._on_disconnect(error.message)
         if self._sender:
@@ -528,7 +524,7 @@ class _TorSocksProtocol(Protocol):
         self.factory._did_connect(self.transport.getHost())
 
     def connectionLost(self, reason):
-        self._machine.disconnected(reason)
+        self._machine.disconnected(SocksError(reason))
 
     def dataReceived(self, data):
         self._machine.feed_data(data)
@@ -636,7 +632,11 @@ _socks_errors = {cls().code: cls for cls in SocksError.__subclasses__()}
 
 
 def _create_socks_error(code):
-    return _socks_errors[code]()
+    try:
+        return _socks_errors[code]()
+    except KeyError:
+        return SocksError("Unknown SOCKS reply code {}".format(code),
+                          code=code)
 
 
 @inlineCallbacks

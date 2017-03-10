@@ -336,7 +336,7 @@ class SocksStateMachine(unittest.TestCase):
         # should *not* have disconnected
         self.assertEqual(0, len(dis))
         self.assertTrue(the_proto.data, b"this is some relayed data")
-        sm.disconnected("it's fine")
+        sm.disconnected(socks.SocksError("it's fine"))
         self.assertEqual(1, len(Proto.lost))
         self.assertTrue("it's fine" in str(Proto.lost[0]))
 
