@@ -582,9 +582,9 @@ class _TorSocksFactory(Factory):
 
 class SocksError(Exception):
 
-    def __init__(self, message, errno=None):
+    def __init__(self, message, code=None):
         super(SocksError, self).__init__(message)
-        self.errno = errno
+        self.code = code
 
 
 class SucceededReply(SocksError):
@@ -592,7 +592,7 @@ class SucceededReply(SocksError):
     def __init__(self):
         super(SucceededReply, self).__init__(
             message='succeeded',
-            errno=0x00)
+            code=0x00)
 
 
 class GeneralServerFailureError(SocksError):
@@ -600,7 +600,7 @@ class GeneralServerFailureError(SocksError):
     def __init__(self):
         super(GeneralServerFailureError, self).__init__(
             message='general SOCKS server failure',
-            errno=0x01)
+            code=0x01)
 
 
 class ConnectionNotAllowedError(SocksError):
@@ -608,7 +608,7 @@ class ConnectionNotAllowedError(SocksError):
     def __init__(self):
         super(ConnectionNotAllowedError, self).__init__(
             message='connection not allowed by ruleset',
-            errno=0x02)
+            code=0x02)
 
 
 class NetworkUnreachableError(SocksError):
@@ -616,7 +616,7 @@ class NetworkUnreachableError(SocksError):
     def __init__(self):
         super(NetworkUnreachableError, self).__init__(
             message='Network unreachable',
-            errno=0x03)
+            code=0x03)
 
 
 class HostUnreachableError(SocksError):
@@ -624,7 +624,7 @@ class HostUnreachableError(SocksError):
     def __init__(self):
         super(HostUnreachableError, self).__init__(
             message='Host unreachable',
-            errno=0x04)
+            code=0x04)
 
 
 class ConnectionRefusedError(SocksError):
@@ -632,7 +632,7 @@ class ConnectionRefusedError(SocksError):
     def __init__(self):
         super(ConnectionRefusedError, self).__init__(
             message='Connection refused',
-            errno=0x05)
+            code=0x05)
 
 
 class TtlExpiredError(SocksError):
@@ -640,7 +640,7 @@ class TtlExpiredError(SocksError):
     def __init__(self):
         super(TtlExpiredError, self).__init__(
             message='TTL expired',
-            errno=0x06)
+            code=0x06)
 
 
 class CommandNotSupportedError(SocksError):
@@ -648,7 +648,7 @@ class CommandNotSupportedError(SocksError):
     def __init__(self):
         super(CommandNotSupportedError, self).__init__(
             message='Command not supported',
-            errno=0x07)
+            code=0x07)
 
 
 class AddressTypeNotSupportedError(SocksError):
@@ -656,15 +656,15 @@ class AddressTypeNotSupportedError(SocksError):
     def __init__(self):
         super(AddressTypeNotSupportedError, self).__init__(
             message='Address type not supported',
-            errno=0x08)
+            code=0x08)
 
 
 class SocksErrorFactory(object):
-    socks_errors = {cls().errno: cls for cls in SocksError.__subclasses__()}
+    socks_errors = {cls().code: cls for cls in SocksError.__subclasses__()}
 
     @classmethod
-    def create(cls, errno):
-        return cls.socks_errors[errno]()
+    def create(cls, code):
+        return cls.socks_errors[code]()
 
 
 @inlineCallbacks
