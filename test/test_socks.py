@@ -149,7 +149,7 @@ class SocksStateMachine(unittest.TestCase):
         )
         with self.assertRaises(Exception) as ctx:
             yield d
-        self.assertIn('Unknown SOCKS reply code', str(ctx.exception))
+        self.assertIn('Unknown SOCKS error-code', str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_socks_relay_data(self):
@@ -595,7 +595,7 @@ class SocksConnectTests(unittest.TestCase):
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
-        self.assertTrue('Unknown SOCKS reply code' in str(ctx.exception))
+        self.assertTrue('Unknown SOCKS error-code' in str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_connect_socks_illegal_byte(self):

@@ -629,7 +629,7 @@ def _create_socks_error(code):
     try:
         return _socks_errors[code]()
     except KeyError:
-        return SocksError("Unknown SOCKS reply code {}".format(code),
+        return SocksError("Unknown SOCKS error-code {}".format(code),
                           code=code)
 
 
