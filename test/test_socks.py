@@ -729,3 +729,26 @@ class SocksResolveTests(unittest.TestCase):
             isinstance(fac.mock_calls[0][1][0], text_type)
         )
         return d
+
+
+class SocksErrorTests(unittest.TestCase):
+    def test_socks_error_factory(self):
+        for cls in socks.SocksError.__subclasses__():
+            error = socks._create_socks_error(cls.code)
+            self.assertEquals(error.code, cls.code)
+            self.assertEquals(error.message, cls.message)
+            self.assertTrue(isinstance(error, cls))
+
+    def test_custom_error(self):
+        def check(e, c, m):
+            self.assertEquals(e.code, c)
+            self.assertEquals(e.message, m)
+
+        code = 0xFF
+        message = 'Custom error message'
+
+        check(socks.SocksError(message), None, message)
+        check(socks.SocksError(message=message), None, message)
+        check(socks.SocksError(code=code), code, None)
+        check(socks.SocksError(message, code=code), code, message)
+        check(socks.SocksError(message=message, code=code), code, message)
