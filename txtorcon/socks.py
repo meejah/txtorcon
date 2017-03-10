@@ -37,7 +37,6 @@ __all__ = (
     'TtlExpiredError',
     'CommandNotSupportedError',
     'AddressTypeNotSupportedError',
-    'SocksErrorFactory',
     'TorSocksEndpoint',
 )
 
@@ -200,7 +199,7 @@ class _SocksMachine(object):
             return
 
         if reply != self.SUCCEEDED:
-            if reply in SocksErrorFactory.socks_errors:
+            if reply in _socks_errors:
                 self.reply_error(reply)
             else:
                 self.reply_error("Unknown SOCKS reply code {}".format(reply))
@@ -289,7 +288,7 @@ class _SocksMachine(object):
     def _disconnect(self, error_message):
         "done"
         try:
-            error = SocksErrorFactory.create(error_message)
+            error = _create_socks_error(error_message)
         except KeyError:
             error = SocksError(error_message)
 
@@ -633,12 +632,11 @@ class AddressTypeNotSupportedError(SocksError):
     message = 'Address type not supported'
 
 
-class SocksErrorFactory(object):
-    socks_errors = {cls().code: cls for cls in SocksError.__subclasses__()}
+_socks_errors = {cls().code: cls for cls in SocksError.__subclasses__()}
 
-    @classmethod
-    def create(cls, code):
-        return cls.socks_errors[code]()
+
+def _create_socks_error(code):
+    return _socks_errors[code]()
 
 
 @inlineCallbacks
