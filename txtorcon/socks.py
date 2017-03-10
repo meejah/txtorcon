@@ -28,7 +28,6 @@ __all__ = (
     'resolve',
     'resolve_ptr',
     'SocksError',
-    'SucceededReply',
     'GeneralServerFailureError',
     'ConnectionNotAllowedError',
     'NetworkUnreachableError',
@@ -581,11 +580,6 @@ class SocksError(Exception):
     def __init__(self, message=None, code=None):
         super(SocksError, self).__init__(message or self.message)
         self.code = code or self.code
-
-
-class SucceededReply(SocksError):
-    code = 0x00
-    message = 'succeeded'
 
 
 class GeneralServerFailureError(SocksError):
