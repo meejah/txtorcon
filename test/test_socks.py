@@ -299,7 +299,7 @@ class SocksStateMachine(unittest.TestCase):
         sm.feed_data(b'\x05\x05\x00\x01\x00\x00\x00\x00\xff\xff')
 
         self.assertEqual(1, len(dis))
-        self.assertEqual("Connection refused", dis[0])
+        self.assertEqual(socks.ConnectionRefusedError.message, dis[0])
 
     def test_end_to_end_successful_relay(self):
 
@@ -573,7 +573,8 @@ class SocksConnectTests(unittest.TestCase):
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
-        self.assertTrue('general SOCKS server failure' in str(ctx.exception))
+        self.assertTrue(isinstance(ctx.exception,
+                                   socks.GeneralServerFailureError))
 
     @defer.inlineCallbacks
     def test_connect_socks_error_unknown(self):
@@ -617,7 +618,8 @@ class SocksConnectTests(unittest.TestCase):
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
-        self.assertTrue('general SOCKS server failure' in str(ctx.exception))
+        self.assertTrue(isinstance(ctx.exception,
+                                   socks.GeneralServerFailureError))
 
     @defer.inlineCallbacks
     def test_get_address_endpoint(self):
