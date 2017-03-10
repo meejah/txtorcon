@@ -53,6 +53,7 @@ class PortFilterAttacher:
         return None
 
 
+@react
 @inlineCallbacks
 def main(reactor):
     control_ep = clientFromString(reactor, "tcp:localhost:9051")
@@ -67,6 +68,3 @@ def main(reactor):
     for s in state.streams.values():
         print("  ", s)
     yield Deferred()
-
-
-react(main)

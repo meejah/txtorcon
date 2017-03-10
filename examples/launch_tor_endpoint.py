@@ -23,6 +23,7 @@ class Simple(resource.Resource):
         return "<html>Hello, world! I'm a hidden service!</html>"
 
 
+@react
 @inlineCallbacks
 def main(reactor):
     # several ways to proceed here and what they mean:
@@ -88,6 +89,3 @@ def main(reactor):
     for i in range(10):
         print("Stopping in {}...".format(10 - i))
         yield sleep(1)
-
-
-react(main)

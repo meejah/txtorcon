@@ -7,6 +7,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 import txtorcon
 
 
+@react
 @inlineCallbacks
 def main(reactor):
     ep = TCP4ClientEndpoint(reactor, "localhost", 9051)
@@ -21,6 +22,3 @@ def main(reactor):
     print("Tor state created. Circuits:")
     for circuit in state.circuits.values():
         print("  {circuit.id}: {circuit.path}".format(circuit=circuit))
-
-
-react(main)

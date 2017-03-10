@@ -6,6 +6,7 @@ from twisted.internet.endpoints import clientFromString
 import txtorcon
 
 
+@react
 @inlineCallbacks
 def main(reactor):
     control_ep = clientFromString(reactor, "tcp:localhost:9051")
@@ -17,7 +18,3 @@ def main(reactor):
         print("Doing PTR on {}".format(ans))
         ans = yield tor.dns_resolve_ptr(ans)
         print("...got answer: {}".format(ans))
-
-
-if __name__ == '__main__':
-    react(main)

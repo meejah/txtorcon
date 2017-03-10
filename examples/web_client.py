@@ -12,6 +12,7 @@ import txtorcon
 from txtorcon.util import default_control_port
 
 
+@react
 @inlineCallbacks
 def main(reactor):
     # use port 9051 for system tor instances, or:
@@ -39,7 +40,3 @@ def main(reactor):
     body = yield readBody(resp)
     print("received body ({} bytes)".format(len(body)))
     print("{}\n[...]\n{}\n".format(body[:200], body[-200:]))
-
-
-if __name__ == '__main__':
-    react(main)
