@@ -743,6 +743,7 @@ class SocksErrorTests(unittest.TestCase):
         def check(e, c, m):
             self.assertEquals(e.code, c)
             self.assertEquals(e.message, m)
+            self.assertTrue(isinstance(e, socks.SocksError))
 
         code = 0xFF
         message = 'Custom error message'
