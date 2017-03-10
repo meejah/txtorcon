@@ -628,7 +628,7 @@ class AddressTypeNotSupportedError(SocksError):
     message = 'Address type not supported'
 
 
-_socks_errors = {cls().code: cls for cls in SocksError.__subclasses__()}
+_socks_errors = {cls.code: cls for cls in SocksError.__subclasses__()}
 
 
 def _create_socks_error(code):
