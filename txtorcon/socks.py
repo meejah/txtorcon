@@ -28,21 +28,16 @@ __all__ = (
     'resolve',
     'resolve_ptr',
     'SocksError',
+    'GeneralServerFailureError',
+    'ConnectionNotAllowedError',
+    'NetworkUnreachableError',
+    'HostUnreachableError',
+    'ConnectionRefusedError',
+    'TtlExpiredError',
+    'CommandNotSupportedError',
+    'AddressTypeNotSupportedError',
     'TorSocksEndpoint',
 )
-
-
-_socks_reply_code_to_string = {
-    0x00: 'succeeded',
-    0x01: 'general SOCKS server failure',
-    0x02: 'connection not allowed by ruleset',
-    0x03: 'Network unreachable',
-    0x04: 'Host unreachable',
-    0x05: 'Connection refused',
-    0x06: 'TTL expired',
-    0x07: 'Command not supported',
-    0x08: 'Address type not supported',
-}
 
 
 def _create_ip_address(host, port):
@@ -151,9 +146,11 @@ class _SocksMachine(object):
                 self.version_reply(method)
             else:
                 if version != 5:
-                    self.version_error("Expected version 5, got {}".format(version))
+                    self.version_error(SocksError(
+                        "Expected version 5, got {}".format(version)))
                 else:
-                    self.version_error("Wanted method 0 or 2, got {}".format(method))
+                    self.version_error(SocksError(
+                        "Wanted method 0 or 2, got {}".format(method)))
 
     def _parse_ipv4_reply(self):
         if len(self._data) >= 10:
@@ -199,14 +196,12 @@ class _SocksMachine(object):
         (version, reply, _, typ) = struct.unpack('BBBB', msg)
 
         if version != 5:
-            self.reply_error("Expected version 5, got {}".format(version))
+            self.reply_error(SocksError(
+                "Expected version 5, got {}".format(version)))
             return
 
         if reply != self.SUCCEEDED:
-            try:
-                self.reply_error(_socks_reply_code_to_string[reply])
-            except KeyError:
-                self.reply_error("Unknown SOCKS reply code {}".format(reply))
+            self.reply_error(_create_socks_error(reply))
             return
 
         reply_dispatcher = {
@@ -217,7 +212,8 @@ class _SocksMachine(object):
         try:
             method = reply_dispatcher[typ]
         except KeyError:
-            self.reply_error("Unexpected response type {}".format(typ))
+            self.reply_error(SocksError(
+                "Unexpected response type {}".format(typ)))
             return
         method()
 
@@ -245,7 +241,7 @@ class _SocksMachine(object):
         "begin the protocol (i.e. connection made)"
 
     @_machine.input()
-    def disconnected(self, error_message):
+    def disconnected(self, error):
         "the connection has gone away"
 
     @_machine.input()
@@ -257,11 +253,11 @@ class _SocksMachine(object):
         "the SOCKS server replied with a version"
 
     @_machine.input()
-    def version_error(self, error_message):
+    def version_error(self, error):
         "the SOCKS server replied, but we don't understand"
 
     @_machine.input()
-    def reply_error(self, error_message):
+    def reply_error(self, error):
         "the SOCKS server replied with an error"
 
     @_machine.input()
@@ -289,13 +285,13 @@ class _SocksMachine(object):
         )
 
     @_machine.output()
-    def _disconnect(self, error_message):
+    def _disconnect(self, error):
         "done"
         if self._on_disconnect:
-            self._on_disconnect(error_message)
+            self._on_disconnect(str(error))
         if self._sender:
-            self._sender.connectionLost(Failure(SocksError(error_message)))
-        self._when_done.fire(Failure(SocksError(error_message)))
+            self._sender.connectionLost(Failure(error))
+        self._when_done.fire(Failure(error))
 
     @_machine.output()
     def _send_request(self, auth_method):
@@ -527,7 +523,7 @@ class _TorSocksProtocol(Protocol):
         self.factory._did_connect(self.transport.getHost())
 
     def connectionLost(self, reason):
-        self._machine.disconnected(reason)
+        self._machine.disconnected(SocksError(reason))
 
     def dataReceived(self, data):
         self._machine.feed_data(data)
@@ -579,7 +575,64 @@ class _TorSocksFactory(Factory):
 
 
 class SocksError(Exception):
-    pass
+    code = None
+    message = ''
+
+    def __init__(self, message='', code=None):
+        super(SocksError, self).__init__(message or self.message)
+        self.message = message or self.message
+        self.code = code or self.code
+
+
+class GeneralServerFailureError(SocksError):
+    code = 0x01
+    message = 'general SOCKS server failure'
+
+
+class ConnectionNotAllowedError(SocksError):
+    code = 0x02
+    message = 'connection not allowed by ruleset'
+
+
+class NetworkUnreachableError(SocksError):
+    code = 0x03
+    message = 'Network unreachable'
+
+
+class HostUnreachableError(SocksError):
+    code = 0x04
+    message = 'Host unreachable'
+
+
+class ConnectionRefusedError(SocksError):
+    code = 0x05
+    message = 'Connection refused'
+
+
+class TtlExpiredError(SocksError):
+    code = 0x06
+    message = 'TTL expired'
+
+
+class CommandNotSupportedError(SocksError):
+    code = 0x07
+    message = 'Command not supported'
+
+
+class AddressTypeNotSupportedError(SocksError):
+    code = 0x08
+    message = 'Address type not supported'
+
+
+_socks_errors = {cls.code: cls for cls in SocksError.__subclasses__()}
+
+
+def _create_socks_error(code):
+    try:
+        return _socks_errors[code]()
+    except KeyError:
+        return SocksError("Unknown SOCKS error-code {}".format(code),
+                          code=code)
 
 
 @inlineCallbacks

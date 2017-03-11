@@ -149,7 +149,7 @@ class SocksStateMachine(unittest.TestCase):
         )
         with self.assertRaises(Exception) as ctx:
             yield d
-        self.assertIn('Unknown SOCKS reply code', str(ctx.exception))
+        self.assertIn('Unknown SOCKS error-code', str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_socks_relay_data(self):
@@ -299,7 +299,7 @@ class SocksStateMachine(unittest.TestCase):
         sm.feed_data(b'\x05\x05\x00\x01\x00\x00\x00\x00\xff\xff')
 
         self.assertEqual(1, len(dis))
-        self.assertEqual("Connection refused", dis[0])
+        self.assertEqual(socks.ConnectionRefusedError.message, dis[0])
 
     def test_end_to_end_successful_relay(self):
 
@@ -336,7 +336,7 @@ class SocksStateMachine(unittest.TestCase):
         # should *not* have disconnected
         self.assertEqual(0, len(dis))
         self.assertTrue(the_proto.data, b"this is some relayed data")
-        sm.disconnected("it's fine")
+        sm.disconnected(socks.SocksError("it's fine"))
         self.assertEqual(1, len(Proto.lost))
         self.assertTrue("it's fine" in str(Proto.lost[0]))
 
@@ -573,7 +573,8 @@ class SocksConnectTests(unittest.TestCase):
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
-        self.assertTrue('general SOCKS server failure' in str(ctx.exception))
+        self.assertTrue(isinstance(ctx.exception,
+                                   socks.GeneralServerFailureError))
 
     @defer.inlineCallbacks
     def test_connect_socks_error_unknown(self):
@@ -595,7 +596,7 @@ class SocksConnectTests(unittest.TestCase):
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
-        self.assertTrue('Unknown SOCKS reply code' in str(ctx.exception))
+        self.assertTrue('Unknown SOCKS error-code' in str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_connect_socks_illegal_byte(self):
@@ -617,7 +618,8 @@ class SocksConnectTests(unittest.TestCase):
         ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=True)
         with self.assertRaises(Exception) as ctx:
             yield ep.connect(factory)
-        self.assertTrue('general SOCKS server failure' in str(ctx.exception))
+        self.assertTrue(isinstance(ctx.exception,
+                                   socks.GeneralServerFailureError))
 
     @defer.inlineCallbacks
     def test_get_address_endpoint(self):
@@ -727,3 +729,31 @@ class SocksResolveTests(unittest.TestCase):
             isinstance(fac.mock_calls[0][1][0], text_type)
         )
         return d
+
+
+class SocksErrorTests(unittest.TestCase):
+    def _check_error(self, error, cls_, code, message):
+        self.assertTrue(isinstance(error, cls_))
+        self.assertEquals(error.code, code)
+        self.assertEquals(error.message, message)
+        self.assertEquals(str(error), message)
+
+    def test_error_factory(self):
+        for cls in socks.SocksError.__subclasses__():
+            error = socks._create_socks_error(cls.code)
+            self._check_error(error, cls, cls.code, cls.message)
+
+    def test_custom_error(self):
+        code = 0xFF
+        message = 'Custom error message'
+
+        self._check_error(socks.SocksError(message),
+                          socks.SocksError, None, message)
+        self._check_error(socks.SocksError(message=message),
+                          socks.SocksError, None, message)
+        self._check_error(socks.SocksError(code=code),
+                          socks.SocksError, code, '')
+        self._check_error(socks.SocksError(message, code=code),
+                          socks.SocksError, code, message)
+        self._check_error(socks.SocksError(message=message, code=code),
+                          socks.SocksError, code, message)
