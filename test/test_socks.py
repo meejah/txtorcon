@@ -751,7 +751,7 @@ class SocksErrorTests(unittest.TestCase):
         self._check_error(socks.SocksError(message=message),
                           socks.SocksError, None, message)
         self._check_error(socks.SocksError(code=code),
-                          socks.SocksError, code, None)
+                          socks.SocksError, code, '')
         self._check_error(socks.SocksError(message, code=code),
                           socks.SocksError, code, message)
         self._check_error(socks.SocksError(message=message, code=code),

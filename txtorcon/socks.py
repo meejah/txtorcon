@@ -576,9 +576,9 @@ class _TorSocksFactory(Factory):
 
 class SocksError(Exception):
     code = None
-    message = None
+    message = ''
 
-    def __init__(self, message=None, code=None):
+    def __init__(self, message='', code=None):
         super(SocksError, self).__init__(message or self.message)
         self.message = message or self.message
         self.code = code or self.code
