@@ -732,24 +732,27 @@ class SocksResolveTests(unittest.TestCase):
 
 
 class SocksErrorTests(unittest.TestCase):
+    def _check_error(self, error, cls_, code, message):
+        self.assertTrue(isinstance(error, cls_))
+        self.assertEquals(error.code, code)
+        self.assertEquals(error.message, message)
+
     def test_socks_error_factory(self):
         for cls in socks.SocksError.__subclasses__():
             error = socks._create_socks_error(cls.code)
-            self.assertEquals(error.code, cls.code)
-            self.assertEquals(error.message, cls.message)
-            self.assertTrue(isinstance(error, cls))
+            self._check_error(error, cls, cls.code, cls.message)
 
     def test_custom_error(self):
-        def check(e, c, m):
-            self.assertEquals(e.code, c)
-            self.assertEquals(e.message, m)
-            self.assertTrue(isinstance(e, socks.SocksError))
-
         code = 0xFF
         message = 'Custom error message'
 
-        check(socks.SocksError(message), None, message)
-        check(socks.SocksError(message=message), None, message)
-        check(socks.SocksError(code=code), code, None)
-        check(socks.SocksError(message, code=code), code, message)
-        check(socks.SocksError(message=message, code=code), code, message)
+        self._check_error(socks.SocksError(message),
+                          socks.SocksError, None, message)
+        self._check_error(socks.SocksError(message=message),
+                          socks.SocksError, None, message)
+        self._check_error(socks.SocksError(code=code),
+                          socks.SocksError, code, None)
+        self._check_error(socks.SocksError(message, code=code),
+                          socks.SocksError, code, message)
+        self._check_error(socks.SocksError(message=message, code=code),
+                          socks.SocksError, code, message)
