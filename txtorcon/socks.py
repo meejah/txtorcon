@@ -288,7 +288,7 @@ class _SocksMachine(object):
     def _disconnect(self, error):
         "done"
         if self._on_disconnect:
-            self._on_disconnect(error.message)
+            self._on_disconnect(str(error))
         if self._sender:
             self._sender.connectionLost(Failure(error))
         self._when_done.fire(Failure(error))
