@@ -141,6 +141,11 @@ Linux). See `the Tor manual
 <https://www.torproject.org/docs/tor-manual.html.en>`_ under the
 ``DataDirectory`` option for more information.
 
+Tor itself will create a missing ``data_directory`` with the correct
+permissions and Tor will also ``chdir`` into its ``DataDirectory``
+when running. For these reasons, txtorcon doesn't try to create the
+``data_directory`` nor do any ``chdir``-ing, and neither should you.
+
 
 .. _guide_style:
 
