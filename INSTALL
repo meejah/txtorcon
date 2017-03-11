@@ -13,6 +13,7 @@ assuming homebrew is installed):
 
    brew install geoip
    pip install -r requirements.txt
+   pip install -r dev-requirements.txt
 
 Or, instead of installing locally, simply:
 
