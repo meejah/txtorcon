@@ -736,6 +736,7 @@ class SocksErrorTests(unittest.TestCase):
         self.assertTrue(isinstance(error, cls_))
         self.assertEquals(error.code, code)
         self.assertEquals(error.message, message)
+        self.assertEquals(str(error), message)
 
     def test_socks_error_factory(self):
         for cls in socks.SocksError.__subclasses__():
