@@ -1104,7 +1104,7 @@ class TorConfig(object):
                 self._setup_hidden_services(servicelines)
                 continue
 
-            if value == 'Dependant':
+            if value == 'Dependant' or value == 'Dependent':
                 continue
 
             # there's a thing called "Boolean+Auto" which is -1 for
