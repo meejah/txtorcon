@@ -87,31 +87,25 @@ Some Possibly Motivational Example Code
 
     from twisted.internet.task import react
     from twisted.internet.defer import inlineCallbacks
-    from twisted.internet.endpoints import TCP4ClientEndpoint
-    import treq  # 'like requests, but for twisted'
+    from twisted.internet.endpoints import UNIXClientEndpoint
+    import treq
     import txtorcon
 
     @react
     @inlineCallbacks
     def main(reactor):
-
-        def update(percent, tag, summary):
-            print("{}%: {}".format(int(percent), summary))
-        tor = yield txtorcon.launch(
+        tor = yield txtorcon.connect(
             reactor,
-            progress_updates=update,
-            data_directory='./tordata',
+            UNIXClientEndpoint(reactor, "/var/run/tor/control")
         )
 
-        print("Tor started: {}".format(tor))
+        print("Connected to Tor version {}".format(tor.version))
 
-        # make a request via Tor
-        resp = yield treq.get(
-            'https://www.torproject.org:443',
-            agent=tor.web_agent(),
-        )
+        url = 'https://www.torproject.org:443'
+        print("Downloading {}".format(url))
+        resp = yield treq.get(url, agent=tor.web_agent())
 
-        print("Retrieving {} bytes".format(resp.length))
+        print("   {} bytes".format(resp.length))
         data = yield resp.text()
         print("Got {} bytes:\n{}\n[...]{}".format(
             len(data),
@@ -119,15 +113,13 @@ Some Possibly Motivational Example Code
             data[-120:],
         ))
 
-        # create a new circuit
-        print("creating circuit")
+        print("Creating a circuit")
         state = yield tor.create_state()
         circ = yield state.build_circuit()
         yield circ.when_built()
         print("  path: {}".format(" -> ".join([r.ip for r in circ.path])))
 
-        # make a request via our new circuit
-        print("Downloading meejah's public key...")
+        print("Downloading meejah's public key via above circuit...")
         resp = yield treq.get(
             'https://meejah.ca/meejah.asc',
             agent=circ.web_agent(reactor, tor.config.socks_endpoint(reactor)),
