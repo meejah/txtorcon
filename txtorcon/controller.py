@@ -496,6 +496,10 @@ class Tor(object):
         return self._protocol
 
     @property
+    def version(self):
+        return self._protocol.version
+
+    @property
     def config(self):
         """
         The TorConfig instance associated with the tor instance we
