@@ -612,7 +612,7 @@ class LaunchTorTests(unittest.TestCase):
         self.assertTrue(isinstance(tor, Tor))
         self.assertEqual(1, len(errs))
 
-    def _test_tor_connection_user_data_dir(self):
+    def test_tor_connection_user_data_dir(self):
         """
         Test that we don't delete a user-supplied data directory.
         """
@@ -630,7 +630,7 @@ class LaunchTorTests(unittest.TestCase):
         def on_protocol(proto):
             proto.outReceived(b'Bootstrapped 90%\n')
 
-        with TempDir(prefix='tortmp') as tmp:
+        with TempDir() as tmp:
             my_dir = str(tmp)
             config.DataDirectory = my_dir
             trans = FakeProcessTransport()
@@ -639,18 +639,18 @@ class LaunchTorTests(unittest.TestCase):
             d = launch(
                 FakeReactor(self, trans, on_protocol, [1234, 9051]),
                 connection_creator=creator,
-                tor_binary='/bin/echo'
+                tor_binary='/bin/echo',
+                data_directory=my_dir,
+                control_port=0,
             )
+
+            def still_have_data_dir(tor, tester):
+                tor._process_protocol.cleanup()  # FIXME? not really unit-testy as this is sort of internal function
+                tester.assertTrue(os.path.exists(my_dir))
+
+            d.addCallback(still_have_data_dir, self)
+            d.addErrback(self.fail)
             return d
-
-        def still_have_data_dir(tor, tester):
-            tor._process_protocol.cleanup()  # FIXME? not really unit-testy as this is sort of internal function
-            tester.assertTrue(os.path.exists(my_dir))
-            delete_file_or_tree(my_dir)
-
-        d.addCallback(still_have_data_dir, self)
-        d.addErrback(self.fail)
-        return d
 
     def _test_tor_connection_user_control_port(self):
         """

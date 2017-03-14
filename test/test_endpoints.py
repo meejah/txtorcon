@@ -424,7 +424,7 @@ class EndpointLaunchTests(unittest.TestCase):
         hash(addr)
 
     def test_onion_parse_unix_socket(self):
-        r = Mock()
+        r = proto_helpers.MemoryReactor()
         serverFromString(r, "onion:80:controlPort=/tmp/foo")
 
     @patch('txtorcon.TCPHiddenServiceEndpoint.system_tor')
