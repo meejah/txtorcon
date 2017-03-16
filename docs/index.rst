@@ -31,7 +31,7 @@ txtorcon
 .. container:: first_time
 
     If this is your first time exploring txtorcon, please **look at the**
-    :ref:`introduction` **first**.
+    :ref:`introduction` **first**. These docs are for version |version|.
 
 .. comment::
 
