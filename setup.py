@@ -22,6 +22,8 @@ with open('txtorcon/_metadata.py') as f:
 description = '''
     Twisted-based Tor controller client, with state-tracking and
     configuration abstractions.
+    https://txtorcon.readthedocs.org
+    https://github.com/meejah/txtorcon
 '''
 
 sphinx_rst_files = [x for x in listdir('docs') if x[-3:] == 'rst']
