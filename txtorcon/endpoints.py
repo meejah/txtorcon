@@ -699,6 +699,19 @@ class TorClientEndpoint(object):
 
     socks_ports_to_try = [9050, 9150]
 
+    @classmethod
+    def from_connection(cls, reactor, control_protocol, host, port,
+                        tls=None,
+                        socks_endpoint=None):
+        if socks_endpoint is None:
+            socks_endpoint = _create_socks_endpoint(reactor, control_protocol)
+        return TorClientEndpoint(
+            host, port,
+            socks_endpoint=socks_endpoint,
+            tls=tls,
+            reactor=reactor,
+        )
+
     def __init__(self,
                  host, port,
                  socks_endpoint=None,  # can be Deferred
