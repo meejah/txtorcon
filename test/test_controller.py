@@ -330,11 +330,12 @@ class LaunchTorTests(unittest.TestCase):
 
     @patch('txtorcon.controller.socks')
     @defer.inlineCallbacks
-    def OBSOLETE_test_dns_resolve_no_configured_socks(self, fake_socks):
+    def test_dns_resolve_no_configured_socks(self, fake_socks):
         answer = object()
         proto = Mock()
         proto.get_conf = Mock(return_value=defer.succeed({"SocksPort": "9050"}))
-        tor = Tor(Mock(), proto)
+        cfg = Mock()
+        tor = Tor(Mock(), proto, _tor_config=cfg)
 
         def boom(*args, **kw):
             raise RuntimeError("no socks")
