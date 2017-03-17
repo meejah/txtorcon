@@ -615,6 +615,32 @@ def parse_client_keys(stream):
     return parser_state.keys
 
 
+def _endpoint_from_socksport_line(reactor, socks_config):
+    """
+    Internal helper.
+
+    Returns an IStreamClientEndpoint for the given config, which is of
+    the same format expected by the SOCKSPort option in Tor.
+    """
+    if socks_config.startswith('unix:'):
+        # XXX wait, can SOCKSPort lines with "unix:/path" still
+        # include options afterwards? What about if the path has a
+        # space in it?
+        return UNIXClientEndpoint(reactor, socks_config[5:])
+
+    # options like KeepAliveIsolateSOCKSAuth can be appended
+    # to a SocksPort line...
+    if ' ' in socks_config:
+        socks_config = socks_config.split()[0]
+    if ':' in socks_config:
+        host, port = socks_config.split(':', 1)
+        port = int(port)
+    else:
+        host = '127.0.0.1'
+        port = int(socks_config)
+    return TCP4ClientEndpoint(reactor, host, port)
+
+
 class TorConfig(object):
     """This class abstracts out Tor's config, and can be used both to
     create torrc files from nothing and track live configuration of a Tor
@@ -760,31 +786,7 @@ class TorConfig(object):
                 "No SOCKSPort configured for port {}".format(port)
             )
 
-        return self._endpoint_from_socksport_line(reactor, socks_config)
-
-    def _endpoint_from_socksport_line(self, reactor, socks_config):
-        """
-        Internal helper. Returns an IStreamClientEndpoint for the give
-        config, which is of the same format expected by the SOCKSPort
-        option in Tor.
-        """
-        if socks_config.startswith('unix:'):
-            # XXX wait, can SOCKSPort lines with "unix:/path" still
-            # include options afterwards? What about if the path has a
-            # space in it?
-            return UNIXClientEndpoint(reactor, socks_config[5:])
-
-        # options like KeepAliveIsolateSOCKSAuth can be appended
-        # to a SocksPort line...
-        if ' ' in socks_config:
-            socks_config = socks_config.split()[0]
-        if ':' in socks_config:
-            host, port = socks_config.split(':', 1)
-            port = int(port)
-        else:
-            host = '127.0.0.1'
-            port = int(socks_config)
-        return TCP4ClientEndpoint(reactor, host, port)
+        return _endpoint_from_socksport_line(reactor, socks_config)
 
     @defer.inlineCallbacks
     def create_socks_endpoint(self, reactor, socks_config):
@@ -839,7 +841,7 @@ class TorConfig(object):
                     )
 
         defer.returnValue(
-            self._endpoint_from_socksport_line(reactor, socks_config)
+            _endpoint_from_socksport_line(reactor, socks_config)
         )
 
     # FIXME should re-name this to "tor_protocol" to be consistent

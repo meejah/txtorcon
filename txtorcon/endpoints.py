@@ -33,6 +33,7 @@ from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
 from .torconfig import TorConfig, launch_tor, HiddenService
+from .torconfig import _endpoint_from_socksport_line
 from .util import SingleObserver
 
 
@@ -619,6 +620,57 @@ class TCPHiddenServiceEndpointParser(object):
                                                    hidden_service_dir=hsd,
                                                    local_port=localPort,
                                                    control_port=controlPort)
+
+
+@defer.inlineCallbacks
+def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
+    """
+    Internal helper.
+
+    This uses an already-configured SOCKS endpoint from the attached
+    Tor, or creates a new TCP one (and configures Tor with it). If
+    socks_config is non-None, it is a SOCKSPort line and will either
+    be used if it already exists or will be created.
+    """
+    socks_ports = yield control_protocol.get_conf('SOCKSPort')
+    socks_ports = socks_ports.values()[0]
+    if not isinstance(socks_ports, list):
+        socks_ports = [socks_ports]
+
+    # could check platform? but why would you have unix ports on a
+    # platform that doesn't?
+    unix_ports = set([p.startswith('unix:') for p in socks_ports])
+    tcp_ports = set(socks_ports) - unix_ports
+
+    socks_endpoint = None
+    for p in list(unix_ports) + list(tcp_ports):  # prefer unix-ports
+        if socks_config and p != socks_config:
+            continue
+        try:
+            socks_endpoint = _endpoint_from_socksport_line(reactor, p)
+        except Exception as e:
+            log.msg("clientFromString('{}') failed: {}".format(p, e))
+
+    # if we still don't have an endpoint, nothing worked (or there
+    # were no SOCKSPort lines at all) so we add config to tor
+    if socks_endpoint is None:
+        if socks_config is None:
+            # is a unix-socket in /tmp on a supported platform better than
+            # this?
+            port = yield available_tcp_port(reactor)
+            socks_config = str(port)
+        socks_ports.append(socks_config)
+
+        # NOTE! We must set all the ports in one command or we'll
+        # destroy pre-existing config
+        args = []
+        for p in socks_ports:
+            args.append('SOCKSPort')
+            args.append(p)
+        yield control_protocol.set_conf(*args)
+        socks_endpoint = _endpoint_from_socksport_line(reactor, socks_config)
+
+    defer.returnValue(socks_endpoint)
 
 
 @implementer(IStreamClientEndpoint)

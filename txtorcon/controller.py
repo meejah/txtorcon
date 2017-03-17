@@ -30,7 +30,7 @@ from txtorcon.log import txtorlog
 from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
-from txtorcon.endpoints import TorClientEndpoint
+from txtorcon.endpoints import TorClientEndpoint, _create_socks_endpoint
 from . import socks
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
@@ -629,18 +629,9 @@ class Tor(object):
         (which might mean setting one up in our attacked Tor if it
         doesn't have one)
         """
-        if self._socks_endpoint is not None:
-            returnValue(self._socks_endpoint)
-        else:
-            try:
-                ep = self._config.socks_endpoint(self._reactor)
-            except RuntimeError:
-                # should we try to use unix socket on platforms that
-                # support it?
-                port = yield available_tcp_port(self._reactor)
-                ep = yield self._config.create_socks_endpoint(self._reactor, str(port))
-            self._socks_endpoint = ep
-            returnValue(self._socks_endpoint)
+        if self._socks_endpoint is None:
+            self._socks_endpoint = yield _create_socks_endpoint(self._reactor, self._protocol)
+        returnValue(self._socks_endpoint)
 
 
 # XXX from magic-wormhole
