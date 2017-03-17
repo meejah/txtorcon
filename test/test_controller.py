@@ -1062,10 +1062,25 @@ class TorAttributeTests(unittest.TestCase):
     def test_protocol_exists(self):
         self.tor.protocol
 
+    def test_version_passthrough(self):
+        self.tor.version
+
+
+class TorAttributeTestsNoConfig(unittest.TestCase):
+
+    def setUp(self):
+        reactor = Mock()
+        proto = Mock()
+        directlyProvides(proto, ITorControlProtocol)
+        self.tor = Tor(reactor, proto)
+
     @defer.inlineCallbacks
     def test_get_config(self):
-        cfg = yield self.tor.get_config()
-        self.assertEqual(self.cfg, cfg)
+        with patch('txtorcon.controller.TorConfig') as torcfg:
+            gold = object()
+            torcfg.from_protocol = Mock(return_value=defer.succeed(gold))
+            cfg = yield self.tor.get_config()
+            self.assertEqual(gold, cfg)
 
 
 class TorStreamTests(unittest.TestCase):

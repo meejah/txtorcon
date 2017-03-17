@@ -371,11 +371,6 @@ def connect(reactor, control_endpoint=None, password_function=None):
         a Deferred that fires with a :class:`txtorcon.Tor` instance
     """
 
-    if not IReactorCore.providedBy(reactor):
-        raise ValueError(
-            "'reactor' must provide IReactorCore"
-        )
-
     @inlineCallbacks
     def try_endpoint(control_ep):
         assert IStreamClientEndpoint.providedBy(control_ep)
