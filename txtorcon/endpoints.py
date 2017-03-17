@@ -194,7 +194,7 @@ class TCPHiddenServiceEndpoint(object):
 
         from txtorcon.controller import connect
         tor = connect(reactor, control_endpoint)
-        tor.addCallback(lambda t: t.config)
+        tor.addCallback(lambda t: t.get_config())
         # tor is a Deferred
         return TCPHiddenServiceEndpoint(reactor, tor, public_port,
                                         hidden_service_dir=hidden_service_dir,

@@ -148,7 +148,7 @@ class EndpointTests(unittest.TestCase):
             # wrong somewhere...
             def bam(*args, **kw):
                 self.config.bootstrap()
-                return defer.succeed(Tor(Mock(), self.config))
+                return defer.succeed(Tor(Mock(), self.protocol, _tor_config=self.config))
             return bam
         with patch('txtorcon.endpoints.launch_tor') as launch_mock:
             with patch('txtorcon.controller.connect', new_callable=boom):

@@ -322,7 +322,8 @@ def launch(reactor,
     returnValue(
         Tor(
             reactor,
-            config,
+            config.protocol,
+            _tor_config=config,
             _process_proto=process_protocol,
         )
     )
@@ -384,7 +385,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
             )
         )
         config = yield TorConfig.from_protocol(proto)
-        tor = Tor(reactor, config)
+        tor = Tor(reactor, proto, _tor_config=config)
         returnValue(tor)
 
     if control_endpoint is None:
@@ -454,13 +455,13 @@ class Tor(object):
             print(port.getHost())
     """
 
-    def __init__(self, reactor, _tor_config=None, _process_proto=None):
+    def __init__(self, reactor, control_protocol, _tor_config=None, _process_proto=None):
         """
         don't instantiate this class yourself -- instead use the factory
         methods :func:`txtorcon.launch` or :func:`txtorcon.connect`
         """
+        self._protocol = control_protocol
         self._config = _tor_config
-        self._protocol = tor_config.protocol
         self._reactor = reactor
         # this only passed/set when we launch()
         self._process_protocol = _process_proto
@@ -531,9 +532,8 @@ class Tor(object):
         # local import since not all platforms have this
         from txtorcon import web
 
-        # XXX make this a method, use in Circuit.web_agent
         if _socks_endpoint is None:
-            _socks_endpoint = self.config.create_socks_endpoint(self._reactor, None)
+            _socks_endpoint = _create_socks_endpoint(self._reactor, self._protocol)
         if not isinstance(_socks_endpoint, Deferred):
             if not IStreamClientEndpoint.providedBy(_socks_endpoint):
                 raise ValueError(
