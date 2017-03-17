@@ -454,12 +454,12 @@ class Tor(object):
             print(port.getHost())
     """
 
-    def __init__(self, reactor, tor_config, _process_proto=None):
+    def __init__(self, reactor, _tor_config=None, _process_proto=None):
         """
         don't instantiate this class yourself -- instead use the factory
         methods :func:`txtorcon.launch` or :func:`txtorcon.connect`
         """
-        self._config = tor_config
+        self._config = _tor_config
         self._protocol = tor_config.protocol
         self._reactor = reactor
         # this only passed/set when we launch()
@@ -504,14 +504,17 @@ class Tor(object):
     def version(self):
         return self._protocol.version
 
-    @property
-    def config(self):
+    @inlineCallbacks
+    def get_config(self):
         """
-        The TorConfig instance associated with the tor instance we
-        launched. This instance represents up-to-date configuration of
-        the tor instance (even if another controller is connected).
+        :return: a Deferred that fires with a TorConfig instance. This
+            instance represents up-to-date configuration of the tor
+            instance (even if another controller is connected). If you
+            call this more than once you'll get the same TorConfig back.
         """
-        return self._config
+        if self._config is None:
+            self._config = yield TorConfig.from_protocol(self._protocol)
+        returnValue(self._config)
 
     def web_agent(self, pool=None, _socks_endpoint=None):
         """
