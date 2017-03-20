@@ -413,6 +413,20 @@ class EndpointTests(unittest.TestCase):
         config.HiddenServices[0].hostname = 'oh my'
         self.assertEqual('oh my', ep.onion_uri)
 
+    @defer.inlineCallbacks
+    def test_factory(self, ftb):
+        reactor = Mock()
+        cp = Mock()
+        cp.get_conf = Mock(return_value=dict())
+
+        with patch(u'txtorcon.endpoints.available_tcp_port', return_value=9999):
+            ep = yield TorClientEndpoint.from_connection(reactor, cp, 'localhost', 1234)
+
+        self.assertTrue(isinstance(ep, TorClientEndpoint))
+        self.assertEqual(ep.host, 'localhost')
+        self.assertEqual(ep.port, 1234)
+
+
 
 class EndpointLaunchTests(unittest.TestCase):
 
