@@ -391,6 +391,10 @@ There are also lower-level APIs to create
 using this API, I'd be curious to learn why the :class:`txtorcon.Tor`
 methods are un-suitable (as those are the suggested API).
 
+You should expect these APIs to raise SOCKS5 errors, which can all be
+handled by catching the :class:`txtorcon.socks.SocksError` class. If
+you need to work with each specific error, see the ":ref:`socks`" for
+a list of them.
 
 .. _guide_onions:
 
