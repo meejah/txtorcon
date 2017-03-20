@@ -320,7 +320,7 @@ def launch(reactor,
         # boostrapped if necessary
 
     returnValue(
-        Tor(
+        _Tor(
             reactor,
             config.protocol,
             _tor_config=config,
@@ -380,7 +380,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
             )
         )
         config = yield TorConfig.from_protocol(proto)
-        tor = Tor(reactor, proto, _tor_config=config)
+        tor = _Tor(reactor, proto, _tor_config=config)
         returnValue(tor)
 
     if control_endpoint is None:
@@ -424,7 +424,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
     )
 
 
-class Tor(object):
+class _Tor(object):
     """
     I represent a single instance of Tor and act as a Builder/Factory
     for several useful objects you will probably want. There are two
@@ -616,7 +616,7 @@ class Tor(object):
         returnValue(state)
 
     def __str__(self):
-        return "<Tor version='{tor_version}'>".format(
+        return "<_Tor version='{tor_version}'>".format(
             tor_version=self._protocol.version,
         )
 

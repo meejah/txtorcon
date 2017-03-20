@@ -634,7 +634,7 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
     """
     socks_ports = yield control_protocol.get_conf('SOCKSPort')
     if socks_ports:
-        socks_ports = socks_ports.values()[0]
+        socks_ports = list(socks_ports.values())[0]
         if not isinstance(socks_ports, list):
             socks_ports = [socks_ports]
     else:
