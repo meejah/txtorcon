@@ -633,9 +633,13 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
     be used if it already exists or will be created.
     """
     socks_ports = yield control_protocol.get_conf('SOCKSPort')
-    socks_ports = socks_ports.values()[0]
-    if not isinstance(socks_ports, list):
-        socks_ports = [socks_ports]
+    if socks_ports:
+        socks_ports = socks_ports.values()[0]
+        if not isinstance(socks_ports, list):
+            socks_ports = [socks_ports]
+    else:
+        # return from get_conf was an empty dict; we want a list
+        socks_ports = []
 
     # could check platform? but why would you have unix ports on a
     # platform that doesn't?

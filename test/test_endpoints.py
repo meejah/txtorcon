@@ -1027,3 +1027,16 @@ class TestSocksFactory(unittest.TestCase):
         ep = yield _create_socks_endpoint(reactor, cp, socks_config='unix:/tmp/boom')
 
         self.assertTrue(isinstance(ep, UNIXClientEndpoint))
+
+    @defer.inlineCallbacks
+    def test_nothing_exists(self):
+        reactor = Mock()
+        cp = Mock()
+        cp.get_conf = Mock(return_value=dict())
+
+        with patch(u'txtorcon.endpoints.available_tcp_port', return_value=9999):
+            ep = yield _create_socks_endpoint(reactor, cp)
+
+        self.assertTrue(isinstance(ep, TCP4ClientEndpoint))
+        # internal details, but ...
+        self.assertEqual(ep._port, 9999)
