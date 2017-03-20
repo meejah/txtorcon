@@ -1106,7 +1106,9 @@ class TorConfig(object):
                 self._setup_hidden_services(servicelines)
                 continue
 
-            if value == 'Dependant' or value == 'Dependent':
+            # XXX for Virtual check that it's one of the *Ports things
+            # (because if not it should be an error)
+            if value in ('Dependant', 'Dependent', 'Virtual'):
                 continue
 
             # there's a thing called "Boolean+Auto" which is -1 for
