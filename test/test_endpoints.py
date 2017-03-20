@@ -427,7 +427,6 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.port, 1234)
 
 
-
 class EndpointLaunchTests(unittest.TestCase):
 
     def setUp(self):
