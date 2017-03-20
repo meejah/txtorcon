@@ -10,6 +10,7 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer, error, tcp, unix
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.python.failure import Failure
@@ -31,6 +32,7 @@ from txtorcon import TorOnionAddress
 from txtorcon.util import NoOpProtocolFactory
 from txtorcon.util import SingleObserver
 from txtorcon.endpoints import get_global_tor                       # FIXME
+from txtorcon.endpoints import _create_socks_endpoint
 from txtorcon.circuit import TorCircuitEndpoint, _get_circuit_attacher
 from txtorcon.controller import Tor
 from txtorcon.socks import _TorSocksFactory
@@ -1008,3 +1010,20 @@ class TestTorClientEndpoint(unittest.TestCase):
         )
         d = endpoint._get_address()
         self.assertTrue(not d.called)
+
+
+class TestSocksFactory(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_explicit_socks(self):
+        reactor = Mock()
+        cp = Mock()
+        cp.get_conf = Mock(
+            return_value={
+                'SocksPort': ['9050', '9150', 'unix:/tmp/boom']
+            }
+        )
+
+        ep = yield _create_socks_endpoint(reactor, cp, socks_config='unix:/tmp/boom')
+
+        self.assertTrue(isinstance(ep, UNIXClientEndpoint))
