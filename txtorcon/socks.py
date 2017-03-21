@@ -656,6 +656,13 @@ def resolve(tor_endpoint, hostname):
 
 @inlineCallbacks
 def resolve_ptr(tor_endpoint, hostname):
+    """
+    This is easier to use via :meth:`txtorcon.Tor.dns_resolve_ptr`
+
+    :param tor_endpoint: the Tor SOCKS endpoint to use.
+
+    :param hostname: the hostname to look up.
+    """
     if six.PY2 and isinstance(hostname, str):
         hostname = unicode(hostname)
     factory = _TorSocksFactory(
