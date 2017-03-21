@@ -393,8 +393,9 @@ methods are un-suitable (as those are the suggested API).
 
 You should expect these APIs to raise SOCKS5 errors, which can all be
 handled by catching the :class:`txtorcon.socks.SocksError` class. If
-you need to work with each specific error, see the ":ref:`socks`" for
-a list of them.
+you need to work with each specific error (corresponding to the
+`RFC-specified SOCKS5 replies`_), see the ":ref:`socks`" for a list of
+them.
 
 .. _guide_onions:
 
@@ -751,3 +752,4 @@ XXX what about a "config object" idea, e.g. could have keys:
 .. _serverfromstring: http://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.html#serverFromString
 .. _ilisteningport: http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IListeningPort.html
 .. _treq: https://github.com/twisted/treq
+.. _`rfc-specified socks5 replies`: https://tools.ietf.org/html/rfc1928#section-6
