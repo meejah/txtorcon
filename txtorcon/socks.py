@@ -655,18 +655,18 @@ def resolve(tor_endpoint, hostname):
 
 
 @inlineCallbacks
-def resolve_ptr(tor_endpoint, hostname):
+def resolve_ptr(tor_endpoint, ip):
     """
     This is easier to use via :meth:`txtorcon.Tor.dns_resolve_ptr`
 
     :param tor_endpoint: the Tor SOCKS endpoint to use.
 
-    :param hostname: the hostname to look up.
+    :param ip: the IP address to look up.
     """
-    if six.PY2 and isinstance(hostname, str):
-        hostname = unicode(hostname)
+    if six.PY2 and isinstance(ip, str):
+        ip = unicode(ip)
     factory = _TorSocksFactory(
-        hostname, 0, 'RESOLVE_PTR', None,
+        ip, 0, 'RESOLVE_PTR', None,
     )
     proto = yield tor_endpoint.connect(factory)
     result = yield proto.when_done()
