@@ -52,10 +52,9 @@ AddressTypeNotSupportedError
 
 
 .. note::
-    The following sections present low-level APIs which might change
-    anytime and break your program. If you are able to work with the
-    high-level APIs that use these, you should do so. Otherwise, go
-    ahead as you know what you are doing.
+    The following sections present low-level APIs. If you are able
+    to work with :class:`txtorcon.Tor`'s corresponding high-level
+    APIs, you should do so.
 
 
 resolve
