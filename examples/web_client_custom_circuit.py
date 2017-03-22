@@ -36,7 +36,8 @@ def main(reactor):
     print("Building a circuit:", circ)
 
     # at this point, the circuit will be "under way" but may not yet
-    # be in BUILT state -- and hence usable. So, we wait.
+    # be in BUILT state -- and hence usable. So, we wait. (Just for
+    # demo purposes: the underlying connect will wait too)
     yield circ.when_built()
     print("Circuit is ready:", circ)
 
@@ -55,7 +56,7 @@ def main(reactor):
 
     if True:
         # make a plain TCP connection to a thing
-        ep = circ.stream_via(reactor, 'torproject.org', 80)
+        ep = circ.stream_via(reactor, 'torproject.org', 80, tor.config.socks_endpoint(reactor))
 
         d = Deferred()
 
@@ -73,8 +74,8 @@ def main(reactor):
                 print("  received {} bytes".format(len(d)))
 
             def connectionLost(self, reason):
-                print("disconnected")
-                d.callback(reason)
+                print("disconnected: {}".format(reason.value))
+                d.callback(None)
 
         proto = yield ep.connect(Factory.forProtocol(ToyWebRequestProtocol))
         yield d

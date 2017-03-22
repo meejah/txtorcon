@@ -133,6 +133,7 @@ class TorCircuitEndpoint(object):
         # that's an error). See discussion in set_attacher on
         # TorState or issue #169
 
+        yield self._circuit.when_built()
         connect_d = self._target_endpoint.connect(protocol_factory)
         attached_d = attacher.add_endpoint(self._target_endpoint, self._circuit)
         proto = yield connect_d
