@@ -15,5 +15,6 @@ place to start**.
     txtorcon-config
     txtorcon-endpoints
     txtorcon-protocol
+    txtorcon-socks
     txtorcon-interface
     txtorcon-util
