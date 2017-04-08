@@ -534,7 +534,7 @@ class StateTests(unittest.TestCase):
         self.send(b"250 OK")
 
         self.assertTrue(self.state.find_circuit(123))
-        self.assertEquals(len(self.state.circuits), 1)
+        self.assertEqual(len(self.state.circuits), 1)
 
         return d
 
