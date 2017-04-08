@@ -39,7 +39,7 @@ def recursive_dump(indent, obj, depth=0):
             v = v.replace('\n', '\\')
             if len(v) > 60:
                 v = v[:50] + '...' + v[-7:]
-        except Exception, e:
+        except Exception as e:
             v = 'ERROR: ' + str(e)
         print(v)
 
