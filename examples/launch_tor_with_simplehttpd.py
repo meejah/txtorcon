@@ -11,6 +11,8 @@ Example:
     ./launch_tor_with_simplehttpd.py -p 8080 -d /opt/files/
 '''
 
+from __future__ import print_function
+
 import SimpleHTTPServer
 import SocketServer
 import functools
@@ -26,23 +28,23 @@ import txtorcon
 
 
 def print_help():
-    print __doc__
+    print(__doc__)
 
 
 def print_tor_updates(prog, tag, summary):
     # Prints some status messages while booting tor
-    print 'Tor booting [%d%%]: %s' % (prog, summary)
+    print('Tor booting [%d%%]: %s' % (prog, summary))
 
 
 def start_httpd(httpd):
     # Create a new thread to serve requests
-    print 'Starting httpd...'
+    print('Starting httpd...')
     return thread.start_new_thread(httpd.serve_forever, ())
 
 
 def stop_httpd(httpd):
     # Kill the httpd
-    print 'Stopping httpd...'
+    print('Stopping httpd...')
     httpd.shutdown()
 
 
@@ -51,16 +53,16 @@ def setup_complete(config, port, proto):
     # We create a reference to this function via functools.partial that
     # provides us with a reference to 'config' and 'port', twisted then adds
     # the 'proto' argument
-    print '\nTor is now running. The hidden service is available at'
-    print '\n\thttp://%s:%i\n' % (config.HiddenServices[0].hostname, port)
+    print('\nTor is now running. The hidden service is available at')
+    print('\n\thttp://%s:%i\n' % (config.HiddenServices[0].hostname, port))
     # This is probably more secure than any other httpd...
-    print '## DO NOT RELY ON THIS SERVER TO TRANSFER FILES IN A SECURE WAY ##'
+    print('## DO NOT RELY ON THIS SERVER TO TRANSFER FILES IN A SECURE WAY ##')
 
 
 def setup_failed(arg):
     # Callback from twisted if tor could not boot. Nothing to see here, move
     # along.
-    print 'Failed to launch tor', arg
+    print('Failed to launch tor', arg)
     reactor.stop()
 
 
@@ -69,7 +71,7 @@ def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hd:p:')
     except getopt.GetoptError as excp:
-        print str(excp)
+        print(str(excp))
         print_help()
         return 1
 
@@ -86,20 +88,20 @@ def main():
             print_help()
             return
         else:
-            print 'Unknown option "%s"' % (o, )
+            print('Unknown option "%s"' % (o, ))
             return 1
 
     # Sanitize path and set working directory there (for SimpleHTTPServer)
     serve_directory = os.path.abspath(serve_directory)
     if not os.path.exists(serve_directory):
-        print 'Path "%s" does not exists, can\'t serve from there...' % \
-            (serve_directory, )
+        print('Path "%s" does not exists, can\'t serve from there...' % \
+            (serve_directory, ))
         return 1
     os.chdir(serve_directory)
 
     # Create a new SimpleHTTPServer and serve it from another thread.
     # We create a callback to Twisted to shut it down when we exit.
-    print 'Serving "%s" on %s:%i' % (serve_directory, web_host, web_port)
+    print('Serving "%s" on %s:%i' % (serve_directory, web_host, web_port))
     httpd = SocketServer.TCPServer((web_host, web_port),
                                    SimpleHTTPServer.SimpleHTTPRequestHandler)
     start_httpd(httpd)

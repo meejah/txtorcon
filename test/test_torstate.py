@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from zope.interface import implementer, directlyProvides
 from zope.interface.verify import verifyClass
 from twisted.trial import unittest

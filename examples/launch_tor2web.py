@@ -5,6 +5,8 @@
 # running tor supports, *without* resorting to looking at version
 # numbers.
 
+from __future__ import print_function
+
 import sys
 from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks, Deferred
@@ -19,7 +21,7 @@ def main(reactor, tor_binary):
     config.Tor2WebMode = 1
     # leaving ControlPort unset; launch_tor will choose one
 
-    print "Launching tor...", tor_binary
+    print("Launching tor...", tor_binary)
     try:
         yield txtorcon.launch_tor(
             config,
@@ -27,14 +29,14 @@ def main(reactor, tor_binary):
             tor_binary=tor_binary,
             stdout=sys.stdout
         )
-        print "success! We support Tor2Web mode"
+        print("success! We support Tor2Web mode")
 
     except RuntimeError as e:
-        print "There was a problem:", str(e)
-        print "We do NOT support Tor2Web mode"
+        print("There was a problem:", str(e))
+        print("We do NOT support Tor2Web mode")
         return
 
-    print "quitting in 5 seconds"
+    print("quitting in 5 seconds")
     reactor.callLater(5, lambda: reactor.stop())
     yield Deferred()  # wait forever because we never .callback()
 

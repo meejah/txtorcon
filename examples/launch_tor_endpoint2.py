@@ -5,6 +5,8 @@
 # up. This uses serverFromString to translate the "onion" endpoint descriptor
 # into a TCPHiddenServiceEndpoint object...
 
+from __future__ import print_function
+
 from twisted.internet import reactor
 from twisted.web import server, resource
 from twisted.internet.endpoints import serverFromString
@@ -23,18 +25,18 @@ site = server.Site(Simple())
 
 
 def setup_failed(arg):
-    print "SETUP FAILED", arg
+    print("SETUP FAILED", arg)
 
 
 def setup_complete(port):
     local = txtorcon.IHiddenService(port).local_address.getHost()
-    print "Hidden serivce:", port.getHost()
-    print "    locally at:", local
+    print("Hidden serivce:", port.getHost())
+    print("    locally at:", local)
 
 
 def progress(percent, tag, message):
     bar = int(percent / 10)
-    print '[%s%s] %s' % ('#' * bar, '.' * (10 - bar), message)
+    print('[%s%s] %s' % ('#' * bar, '.' * (10 - bar), message))
 
 
 hs_endpoint1 = serverFromString(reactor, "onion:80")
