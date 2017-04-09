@@ -691,6 +691,8 @@ class TorSocksEndpoint(object):
         self._proxy_ep = socks_endpoint  # can be Deferred
         if six.PY2 and isinstance(host, str):
             host = unicode(host)  # noqa
+        if six.PY3 and isinstance(host, bytes):
+            host = host.decode('ascii')
         self._host = host
         self._port = port
         self._tls = tls
