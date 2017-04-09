@@ -24,6 +24,9 @@ from twisted.web.http_headers import Headers
 from zope.interface import implementer
 from zope.interface import Interface
 
+if six.PY3:
+    import asyncio
+
 try:
     import GeoIP as _GeoIP
     GeoIP = _GeoIP
@@ -146,7 +149,7 @@ def maybe_ip_addr(addr):
     """
 
     if six.PY2 and isinstance(addr, str):
-        addr = unicode(addr)
+        addr = unicode(addr)  # noqa
     try:
         return ipaddress.ip_address(addr)
     except ValueError:
@@ -379,6 +382,19 @@ class IListener(Interface):
         """
 
 
+def maybe_coroutine(obj):
+    """
+    If 'obj' is a coroutine and we're using Python3, wrap it in
+    ensureDeferred. Otherwise return the original object.
+
+    (This is to insert in all callback chains from user code, in case
+    that user code is Python3 and used 'async def')
+    """
+    if six.PY3 and asyncio.iscoroutine(obj):
+        return defer.ensureDeferred(obj)
+    return obj
+
+
 @implementer(IListener)
 class _Listener(object):
     """
@@ -417,6 +433,7 @@ class _Listener(object):
 
         for cb in self._listeners:
             d = defer.maybeDeferred(cb, *args, **kw)
+            d.addCallback(maybe_coroutine)
             d.addErrback(failed)
             calls.append(d)
         return defer.DeferredList(calls)

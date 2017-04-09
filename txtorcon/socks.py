@@ -503,7 +503,7 @@ class _TorSocksProtocol(Protocol):
     def __init__(self, host, port, socks_method, factory):
         self._machine = _SocksMachine(
             req_type=socks_method,
-            host=host,  # unicode() on py3, py2? we want idna, actually?
+            host=host,  # noqa unicode() on py3, py2? we want idna, actually?
             port=port,
             on_disconnect=self._on_disconnect,
             on_data=self._on_data,
@@ -645,7 +645,9 @@ def resolve(tor_endpoint, hostname):
     :param hostname: the hostname to look up.
     """
     if six.PY2 and isinstance(hostname, str):
-        hostname = unicode(hostname)
+        hostname = unicode(hostname)  # noqa
+    elif six.PY3 and isinstance(hostname, bytes):
+        hostname = hostname.decode('ascii')
     factory = _TorSocksFactory(
         hostname, 0, 'RESOLVE', None,
     )
@@ -664,7 +666,9 @@ def resolve_ptr(tor_endpoint, ip):
     :param ip: the IP address to look up.
     """
     if six.PY2 and isinstance(ip, str):
-        ip = unicode(ip)
+        ip = unicode(ip)  # noqa
+    elif six.PY3 and isinstance(ip, bytes):
+        ip = ip.decode('ascii')
     factory = _TorSocksFactory(
         ip, 0, 'RESOLVE_PTR', None,
     )
@@ -686,7 +690,7 @@ class TorSocksEndpoint(object):
     def __init__(self, socks_endpoint, host, port, tls=False):
         self._proxy_ep = socks_endpoint  # can be Deferred
         if six.PY2 and isinstance(host, str):
-            host = unicode(host)
+            host = unicode(host)  # noqa
         self._host = host
         self._port = port
         self._tls = tls

@@ -731,6 +731,26 @@ class SocksResolveTests(unittest.TestCase):
         )
         return d
 
+    @patch('txtorcon.socks._TorSocksFactory')
+    def test_resolve_ptr_bytes(self, fac):
+        socks_ep = Mock()
+        d = socks.resolve_ptr(socks_ep, b'meejah.ca')
+        self.assertEqual(1, len(fac.mock_calls))
+        self.assertTrue(
+            isinstance(fac.mock_calls[0][1][0], text_type)
+        )
+        return d
+
+    @patch('txtorcon.socks._TorSocksFactory')
+    def test_resolve_bytes(self, fac):
+        socks_ep = Mock()
+        d = socks.resolve(socks_ep, b'meejah.ca')
+        self.assertEqual(1, len(fac.mock_calls))
+        self.assertTrue(
+            isinstance(fac.mock_calls[0][1][0], text_type)
+        )
+        return d
+
 
 class SocksErrorTests(unittest.TestCase):
     def _check_error(self, error, cls_, code, message):

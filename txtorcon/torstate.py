@@ -34,6 +34,7 @@ from txtorcon.interface import IStreamListener
 from txtorcon.interface import IStreamAttacher
 from ._microdesc_parser import MicrodescriptorParser
 from .router import hexIdFromHash
+from .util import maybe_coroutine
 
 
 def _build_state(proto):
@@ -630,6 +631,7 @@ class TorState(object):
             self._attacher.attach_stream,
             stream, self.circuits,
         )
+        circ_d.addCallback(maybe_coroutine)
 
         # actually do the attachment logic; .attach() can return 3 things:
         #    1. None: let Tor do whatever it wants
