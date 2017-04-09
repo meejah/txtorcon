@@ -46,6 +46,7 @@ unreleased
  * `Issue 72 <https://github.com/meejah/txtorcon/issues/72>`_
  * `Felipe Dau <https://github.com/felipedau>`_ added specific
    `SocksError` subclasses for all the available SOCKS5 errors.
+ * (more) Python3 fixes from `rodrigc <https://github.com/rodrigc>`_
 
 .. _Automat: https://github.com/glyph/automat
 .. _treq: https://pypi.python.org/pypi/treq
