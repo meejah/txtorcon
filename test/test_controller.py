@@ -685,7 +685,7 @@ class LaunchTorTests(unittest.TestCase):
         def check_control_port(proto, tester):
             # we just want to ensure launch() didn't mess with
             # the controlport we set
-            tester.assertEquals(config.ControlPort, 4321)
+            tester.assertEqual(config.ControlPort, 4321)
 
         d.addCallback(check_control_port, self)
         d.addErrback(self.fail)
@@ -800,7 +800,7 @@ class LaunchTorTests(unittest.TestCase):
         class Status(object):
             value = Value()
         process.processEnded(Status())
-        self.assertEquals(len(self.flushLoggedErrors(RuntimeError)), 1)
+        self.assertEqual(len(self.flushLoggedErrors(RuntimeError)), 1)
 
     @defer.inlineCallbacks
     def test_launch_no_control_port(self):

@@ -65,7 +65,7 @@ class TestGeoIpDatabaseLoading(unittest.TestCase):
         ret_val = util.create_geoip(f)
         delete_file_or_tree(f)
         util.GeoIP = _GeoIP
-        self.assertEquals(ret_val, None)
+        self.assertEqual(ret_val, None)
 
     @skipIf('pypy' in sys.version.lower(), "No GeoIP in PyPy")
     def test_return_geoip_object(self):
@@ -73,7 +73,7 @@ class TestGeoIpDatabaseLoading(unittest.TestCase):
         (fd, f) = tempfile.mkstemp()
         ret_val = util.create_geoip(f)
         delete_file_or_tree(f)
-        self.assertEquals(type(ret_val).__name__, 'GeoIP')
+        self.assertEqual(type(ret_val).__name__, 'GeoIP')
 
 
 class TestFindKeywords(unittest.TestCase):
@@ -111,8 +111,8 @@ class TestNetLocation(unittest.TestCase):
             util.city = FakeGeoIP(version=2)
             nl = util.NetLocation('127.0.0.1')
             self.assertTrue(nl.city)
-            self.assertEquals(nl.city[0], 'City')
-            self.assertEquals(nl.city[1], 'Region')
+            self.assertEqual(nl.city[0], 'City')
+            self.assertEqual(nl.city[1], 'Region')
         finally:
             util.ity = orig
 
@@ -123,8 +123,8 @@ class TestNetLocation(unittest.TestCase):
             util.city = FakeGeoIP(version=3)
             nl = util.NetLocation('127.0.0.1')
             self.assertTrue(nl.city)
-            self.assertEquals(nl.city[0], 'City')
-            self.assertEquals(nl.city[1], 'Region')
+            self.assertEqual(nl.city[0], 'City')
+            self.assertEqual(nl.city[1], 'Region')
         finally:
             util.ity = orig
 
@@ -333,7 +333,7 @@ class TestUnescapeQuotedString(unittest.TestCase):
 
             msg = "Number not decoded correctly: {escaped} -> {result} instead of {expected}"
             msg = msg.format(escaped=escaped, result=repr(result), expected=repr(expected))
-            self.assertEquals(result, expected, msg=msg)
+            self.assertEqual(result, expected, msg=msg)
 
     def test_invalid_string_unescaping(self):
         invalid_escaped = [

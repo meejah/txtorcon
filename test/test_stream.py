@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from txtorcon.util import maybe_ip_addr
 from twisted.trial import unittest
 from twisted.internet import defer

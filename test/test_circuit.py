@@ -147,7 +147,7 @@ class TestCircuitEndpoint(unittest.TestCase):
 
         attacher = yield _get_circuit_attacher(reactor, state)
         d = attacher.add_endpoint(target_endpoint, circuit)
-        self.assertEquals(len(attacher._circuit_targets), 1)
+        self.assertEqual(len(attacher._circuit_targets), 1)
         # this will fail, but should be ignored
         yield attacher.attach_stream(stream, [])
         with self.assertRaises(Exception) as ctx:
@@ -184,7 +184,7 @@ class CircuitTests(unittest.TestCase):
         update = '1 LAUNCHED PURPOSE=GENERAL TIME_CREATED=%s' % now.strftime('%Y-%m-%dT%H:%M:%S')
         circuit.update(update.split())
         diff = circuit.age(now=now)
-        self.assertEquals(diff, 0)
+        self.assertEqual(diff, 0)
         self.assertTrue(circuit.time_created is not None)
 
     @patch('txtorcon.circuit.datetime')
@@ -200,7 +200,7 @@ class CircuitTests(unittest.TestCase):
 
         circuit = Circuit(tor)
         circuit._time_created = datetime.fromtimestamp(0.0)
-        self.assertEquals(circuit.age(), 60)
+        self.assertEqual(circuit.age(), 60)
         self.assertTrue(circuit.time_created is not None)
 
     def test_no_age_yet(self):
@@ -214,7 +214,7 @@ class CircuitTests(unittest.TestCase):
         circuit.update('1 LAUNCHED PURPOSE=GENERAL'.split())
         self.assertTrue(circuit.time_created is None)
         diff = circuit.age(now=now)
-        self.assertEquals(diff, None)
+        self.assertEqual(diff, None)
 
     def test_listener_mixin(self):
         listener = CircuitListenerMixin()

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 from mock import patch
 from mock import Mock, MagicMock

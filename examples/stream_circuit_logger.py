@@ -3,6 +3,8 @@
 # This uses an IStreamListener and an ICircuitListener to log all
 # built circuits and all streams that succeed.
 
+from __future__ import print_function
+
 import sys
 from twisted.python import log
 from twisted.internet import reactor
@@ -46,7 +48,7 @@ class StreamCircuitLogger(txtorcon.StreamListenerMixin,
         log_stream(stream)
 
     def stream_failed(self, stream, reason='', remote_reason='', **kw):
-        print 'Stream %d failed because "%s"' % (stream.id, remote_reason)
+        print('Stream %d failed because "%s"' % (stream.id, remote_reason))
 
     def circuit_built(self, circuit):
         log_circuit(circuit)

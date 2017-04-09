@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 from twisted.internet import reactor
 from nevow.appserver import NevowSite
 from nevow import loaders, tags, livepage
@@ -7,7 +9,7 @@ import txtorcon
 
 
 def setup_failed(fail):
-    print "It went sideways!", fail
+    print("It went sideways!", fail)
     return fail
 
 
@@ -49,7 +51,7 @@ class TorPage(livepage.LivePage):
 
     def tor_update(self, percent, tag, summary):
         if self.ctx is None:
-            print "I have no Web client yet, but got a Tor update:", percent, tag, summary
+            print("I have no Web client yet, but got a Tor update:", percent, tag, summary)
             return
 
         point = int(300 * (float(percent) / 100.0))
@@ -87,7 +89,7 @@ d = txtorcon.launch_tor(config, reactor, progress_updates=top_level.tor_update)
 d.addCallback(top_level.set_tor_state)
 d.addErrback(setup_failed)
 
-print "Launching Tor and providing a Web interface on: \nhttp://localhost:8080\n"
+print("Launching Tor and providing a Web interface on: \nhttp://localhost:8080\n")
 
 # Start up the Web server
 site = NevowSite(top_level)
