@@ -56,7 +56,7 @@ class WebAgentTests(unittest.TestCase):
         def getConnection(key, endpoint):
             self.assertTrue(isinstance(endpoint, TorSocksEndpoint))
             self.assertTrue(endpoint._tls)
-            self.assertEqual(endpoint._host, b'meejah.ca')
+            self.assertEqual(endpoint._host, u'meejah.ca')
             self.assertEqual(endpoint._port, 443)
             return defer.succeed(proto)
         pool = Mock()
@@ -95,7 +95,7 @@ class WebAgentTests(unittest.TestCase):
             self.assertTrue(isinstance(endpoint, TorCircuitEndpoint))
             target = endpoint._target_endpoint
             self.assertTrue(target._tls)
-            self.assertEqual(target._host, b'meejah.ca')
+            self.assertEqual(target._host, u'meejah.ca')
             self.assertEqual(target._port, 443)
             return defer.succeed(proto)
         pool = Mock()
