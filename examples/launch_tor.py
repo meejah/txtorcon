@@ -39,7 +39,7 @@ def main(reactor):
         print("  {}".format(c))
 
     endpoint_d = config.socks_endpoint(reactor, u'unix:/tmp/tor2/socks')
-    agent = tor.web_agent(_socks_endpoint=endpoint_d)
+    agent = tor.web_agent(socks_endpoint=endpoint_d)
     uri = b'https://www.torproject.org'
     print("Downloading {}".format(uri))
     resp = yield agent.request(b'GET', uri)

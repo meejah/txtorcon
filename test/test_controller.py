@@ -996,7 +996,7 @@ class WebAgentTests(unittest.TestCase):
         directlyProvides(proto, ITorControlProtocol)
 
         tor = _Tor(reactor, proto, _tor_config=cfg)
-        agent = tor.web_agent(pool=self.pool, _socks_endpoint=socks_d)
+        agent = tor.web_agent(pool=self.pool, socks_endpoint=socks_d)
 
         resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
@@ -1011,7 +1011,7 @@ class WebAgentTests(unittest.TestCase):
         directlyProvides(proto, ITorControlProtocol)
 
         tor = _Tor(reactor, proto, _tor_config=cfg)
-        agent = tor.web_agent(pool=self.pool, _socks_endpoint=socks)
+        agent = tor.web_agent(pool=self.pool, socks_endpoint=socks)
 
         resp = yield agent.request('GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
@@ -1025,9 +1025,9 @@ class WebAgentTests(unittest.TestCase):
 
         tor = _Tor(reactor, proto, _tor_config=cfg)
         with self.assertRaises(ValueError) as ctx:
-            agent = tor.web_agent(pool=self.pool, _socks_endpoint=object())
+            agent = tor.web_agent(pool=self.pool, socks_endpoint=object())
             yield agent.request('GET', b'meejah.ca')
-        self.assertTrue("'_socks_endpoint' should be" in str(ctx.exception))
+        self.assertTrue("'socks_endpoint' should be" in str(ctx.exception))
 
 
 class TorAttributeTests(unittest.TestCase):

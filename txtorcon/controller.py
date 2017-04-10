@@ -512,9 +512,9 @@ class _Tor(object):
             self._config = yield TorConfig.from_protocol(self._protocol)
         returnValue(self._config)
 
-    def web_agent(self, pool=None, _socks_endpoint=None):
+    def web_agent(self, pool=None, socks_endpoint=None):
         """
-        :param _socks_endpoint: If ``None`` (the default), a suitable
+        :param socks_endpoint: If ``None`` (the default), a suitable
             SOCKS port is chosen from our config (or added). If supplied,
             should be a Deferred which fires an IStreamClientEndpoint
             (e.g. the return-value from
@@ -527,17 +527,17 @@ class _Tor(object):
         # local import since not all platforms have this
         from txtorcon import web
 
-        if _socks_endpoint is None:
-            _socks_endpoint = _create_socks_endpoint(self._reactor, self._protocol)
-        if not isinstance(_socks_endpoint, Deferred):
-            if not IStreamClientEndpoint.providedBy(_socks_endpoint):
+        if socks_endpoint is None:
+            socks_endpoint = _create_socks_endpoint(self._reactor, self._protocol)
+        if not isinstance(socks_endpoint, Deferred):
+            if not IStreamClientEndpoint.providedBy(socks_endpoint):
                 raise ValueError(
-                    "'_socks_endpoint' should be a Deferred or an IStreamClient"
-                    "Endpoint (got '{}')".format(type(_socks_endpoint))
+                    "'socks_endpoint' should be a Deferred or an IStreamClient"
+                    "Endpoint (got '{}')".format(type(socks_endpoint))
                 )
         return web.tor_agent(
             self._reactor,
-            _socks_endpoint,
+            socks_endpoint,
             pool=pool,
         )
 
@@ -567,7 +567,7 @@ class _Tor(object):
         ans = yield socks.resolve_ptr(socks_ep, ip)
         returnValue(ans)
 
-    def stream_via(self, host, port, tls=False, _socks_endpoint=None):
+    def stream_via(self, host, port, tls=False, socks_endpoint=None):
         """
         This returns an IStreamClientEndpoint instance that will use this
         Tor (via SOCKS) to visit the ``(host, port)`` indicated.
@@ -582,7 +582,7 @@ class _Tor(object):
         :param tls: If True, it will wrap the return endpoint in one
             that does TLS (default: False).
 
-        :param _socks_endpoint: Normally not needed (default: None)
+        :param socks_endpoint: Normally not needed (default: None)
             but you can pass an IStreamClientEndpoint_ directed at one
             of the local Tor's SOCKS5 ports (e.g. created with
             :meth:`txtorcon.TorConfig.create_socks_endpoint`). Can be
@@ -591,12 +591,12 @@ class _Tor(object):
         if _is_non_public_numeric_address(host):
             raise ValueError("'{}' isn't going to work over Tor".format(host))
 
-        if _socks_endpoint is None:
-            _socks_endpoint = self._default_socks_endpoint()
+        if socks_endpoint is None:
+            socks_endpoint = self._default_socks_endpoint()
         # socks_endpoint may be a a Deferred, but TorClientEndpoint handles it
         return TorClientEndpoint(
             host, port,
-            socks_endpoint=_socks_endpoint,
+            socks_endpoint=socks_endpoint,
             tls=tls,
             reactor=self._reactor,
         )
