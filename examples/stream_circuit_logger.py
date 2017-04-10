@@ -76,7 +76,7 @@ def main(reactor):
 
     log.msg('Existing state when we connected:')
     for s in state.streams.values():
-        log_stream(s, state)
+        log_stream(s)
 
     log.msg('Existing circuits:')
     for c in state.circuits.values():
