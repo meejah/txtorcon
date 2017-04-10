@@ -800,7 +800,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         """
 
         if self.stdout:
-            self.stdout.write(data)
+            self.stdout.write(data.decode('ascii'))
 
         # minor hack: we can't try this in connectionMade because
         # that's when the process first starts up so Tor hasn't

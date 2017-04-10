@@ -42,7 +42,7 @@ def main(reactor):
     agent = tor.web_agent(_socks_endpoint=endpoint_d)
     uri = b'https://www.torproject.org'
     print("Downloading {}".format(uri))
-    resp = yield agent.request('GET', uri)
+    resp = yield agent.request(b'GET', uri)
     print("Response has {} bytes".format(resp.length))
     body = yield readBody(resp)
     print("received body ({} bytes)".format(len(body)))
