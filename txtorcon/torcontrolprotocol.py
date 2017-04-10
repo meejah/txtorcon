@@ -20,6 +20,7 @@ from txtorcon.log import txtorlog
 
 from txtorcon.interface import ITorControlProtocol
 from .spaghetti import FSM, State, Transition
+from .util import maybe_coroutine
 
 import os
 import re
@@ -757,6 +758,7 @@ class TorControlProtocol(LineOnlyReceiver):
 
         if self.password_function and 'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
+            d.addCallback(maybe_coroutine)
             d.addCallback(self._do_password_authentication)
             d.addErrback(self._auth_failed)
             return
