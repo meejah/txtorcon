@@ -26,8 +26,9 @@ def main(reactor):
     tor = yield txtorcon.connect(reactor, ep)
     print("Connected:", tor)
 
+    config = yield tor.get_config()
     state = yield tor.create_state()
-    socks = tor.config.socks_endpoint(reactor)
+    socks = config.socks_endpoint(reactor)
 
     # create a custom circuit; in this case we're just letting Tor
     # decide the path but you *can* select a path (again: for advanced
@@ -56,7 +57,7 @@ def main(reactor):
 
     if True:
         # make a plain TCP connection to a thing
-        ep = circ.stream_via(reactor, 'torproject.org', 80, tor.config.socks_endpoint(reactor))
+        ep = circ.stream_via(reactor, 'torproject.org', 80, config.socks_endpoint(reactor))
 
         d = Deferred()
 

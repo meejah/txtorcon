@@ -29,6 +29,7 @@ def main(reactor):
     # )
     print("Connected to Tor version '{}'".format(tor.protocol.version))
 
+    config = yield tor.get_config()
     state = yield tor.create_state()
     # or state = yield txtorcon.TorState.from_protocol(tor.protocol)
 
@@ -37,10 +38,11 @@ def main(reactor):
     for c in state.circuits.values():
         print("  {}".format(c))
 
-    agent = tor.web_agent(u'unix:/tmp/tor2/socks')
-    uri = 'https://www.torproject.org'
+    endpoint_d = config.socks_endpoint(reactor, u'unix:/tmp/tor2/socks')
+    agent = tor.web_agent(socks_endpoint=endpoint_d)
+    uri = b'https://www.torproject.org'
     print("Downloading {}".format(uri))
-    resp = yield agent.request('GET', uri)
+    resp = yield agent.request(b'GET', uri)
     print("Response has {} bytes".format(resp.length))
     body = yield readBody(resp)
     print("received body ({} bytes)".format(len(body)))
@@ -49,9 +51,9 @@ def main(reactor):
     # SOCKSPort is 'really' a list of SOCKS ports in Tor now, so we
     # have to set it to a list ... :/
     print("Changing our config (SOCKSPort=9876)")
-    #tor.config.SOCKSPort = ['unix:/tmp/foo/bar']
-    tor.config.SOCKSPort = ['9876']
-    yield tor.config.save()
+    # config.SOCKSPort = ['unix:/tmp/foo/bar']
+    config.SOCKSPort = ['9876']
+    yield config.save()
 
     print("Querying to see it changed:")
     socksport = yield tor.protocol.get_conf("SOCKSPort")

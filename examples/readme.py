@@ -35,9 +35,10 @@ def main(reactor):
     print("  path: {}".format(" -> ".join([r.ip for r in circ.path])))
 
     print("Downloading meejah's public key via above circuit...")
+    config = yield tor.get_config()
     resp = yield treq.get(
         'https://meejah.ca/meejah.asc',
-        agent=circ.web_agent(reactor, tor.config.socks_endpoint(reactor)),
+        agent=circ.web_agent(reactor, config.socks_endpoint(reactor)),
     )
     data = yield resp.text()
     print(data)

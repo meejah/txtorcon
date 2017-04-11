@@ -28,7 +28,6 @@ from txtorcon.torconfig import launch_tor  # this one depreceated, use launch()
 from txtorcon.controller import TorProcessProtocol
 from txtorcon.controller import launch  # this is "newer" one
 from txtorcon.controller import TorNotFound
-from txtorcon.controller import Tor
 from txtorcon.torinfo import TorInfo
 from txtorcon.addrmap import AddrMap
 from txtorcon.endpoints import TorOnionAddress
@@ -46,12 +45,12 @@ from txtorcon.interface import (
     ITorControlProtocol,
     IStreamListener, IStreamAttacher, StreamListenerMixin,
     ICircuitContainer, ICircuitListener, CircuitListenerMixin,
-    IRouterContainer, IAddrListener,
+    IRouterContainer, IAddrListener, ITor
 )
 
 __all__ = [
     "connect", "launch",  # connect, launch return instance of Tor()...
-    "Tor",                # ...which is the preferred high-level API
+    "ITor",               # ...which is the preferred high-level API
     "Router",
     "Circuit",
     "Stream",

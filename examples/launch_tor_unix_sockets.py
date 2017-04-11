@@ -49,11 +49,12 @@ def main(reactor):
     for c in state.circuits.values():
         print("  {}".format(c))
 
-    socks_ep = tor.config.create_socks_endpoint(reactor, u'unix:{}'.format(socks_path))
-    agent = tor.web_agent(_socks_endpoint=socks_ep)
-    uri = 'https://www.torproject.org'
+    config = yield tor.get_config()
+    socks_ep = config.create_socks_endpoint(reactor, u'unix:{}'.format(socks_path))
+    agent = tor.web_agent(socks_endpoint=socks_ep)
+    uri = b'https://www.torproject.org'
     print("Downloading {} via Unix socket".format(uri))
-    resp = yield agent.request('GET', uri)
+    resp = yield agent.request(b'GET', uri)
     print("Response has {} bytes".format(resp.length))
     body = yield readBody(resp)
     print("received body ({} bytes)".format(len(body)))

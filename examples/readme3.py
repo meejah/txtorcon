@@ -16,7 +16,7 @@ async def main(reactor):
 
     print("Connected to Tor version {}".format(tor.version))
 
-    url = u'https://www.torproject.org:443'
+    url =u'https://www.torproject.org:443'
     print(u"Downloading {}".format(repr(url)))
     resp = await treq.get(url, agent=tor.web_agent())
 
@@ -35,9 +35,10 @@ async def main(reactor):
     print(u"  path: {}".format(" -> ".join([r.ip for r in circ.path])))
 
     print(u"Downloading meejah's public key via above circuit...")
+    config = await tor.get_config()
     resp = await treq.get(
         u'https://meejah.ca/meejah.asc',
-        agent=circ.web_agent(reactor, tor.config.socks_endpoint(reactor)),
+        agent=circ.web_agent(reactor, config.socks_endpoint(reactor)),
     )
     data = await resp.text()
     print(data)

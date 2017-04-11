@@ -9,6 +9,92 @@ from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
 
+class ITor(Interface):
+    """
+    Represents a tor instance. This high-level API should provide all
+    objects you need to interact with tor.
+    """
+
+    process = Attribute("TorProcessProtocol instance if we launched this Tor")
+    protocol = Attribute("A TorControlProtocol connected to our Tor")
+    version = Attribute("The version of the Tor we're connected to")
+
+    def quit(self):
+        """
+        Closes the control connection, and if we launched this Tor
+        instance we'll send it a TERM and wait until it exits.
+
+        :return: a Deferred that fires when we've quit
+        """
+
+    def get_config(self):
+        """
+        :return: a Deferred that fires with a TorConfig instance. This
+            instance represents up-to-date configuration of the tor
+            instance (even if another controller is connected). If you
+            call this more than once you'll get the same TorConfig back.
+        """
+
+    def create_state(self):
+        """
+        returns a Deferred that fires with a ready-to-go
+        :class:`txtorcon.TorState` instance.
+        """
+
+    def web_agent(self, pool=None, _socks_endpoint=None):
+        """
+        :param _socks_endpoint: If ``None`` (the default), a suitable
+            SOCKS port is chosen from our config (or added). If supplied,
+            should be a Deferred which fires an IStreamClientEndpoint
+            (e.g. the return-value from
+            :meth:`txtorcon.TorConfig.socks_endpoint`) or an immediate
+            IStreamClientEndpoint You probably don't need to mess with
+            this.
+
+        :param pool: passed on to the Agent (as ``pool=``)
+        """
+
+    def dns_resolve(self, hostname):
+        """
+        :param hostname: a string
+
+        :returns: a Deferred that calbacks with the hostname as looked-up
+            via Tor (or errback).  This uses Tor's custom extension to the
+            SOCKS5 protocol.
+        """
+
+    def dns_resolve_ptr(self, ip):
+        """
+        :param ip: a string, like "127.0.0.1"
+
+        :returns: a Deferred that calbacks with the IP address as
+            looked-up via Tor (or errback).  This uses Tor's custom
+            extension to the SOCKS5 protocol.
+        """
+
+    def stream_via(self, host, port, tls=False, _socks_endpoint=None):
+        """
+        This returns an IStreamClientEndpoint instance that will use this
+        Tor (via SOCKS) to visit the ``(host, port)`` indicated.
+
+        :param host: The host to connect to. You MUST pass host-names
+            to this. If you absolutely know that you've not leaked DNS
+            (e.g. you save IPs in your app's configuration or similar)
+            then you can pass an IP.
+
+        :param port: Port to connect to.
+
+        :param tls: If True, it will wrap the return endpoint in one
+            that does TLS (default: False).
+
+        :param _socks_endpoint: Normally not needed (default: None)
+            but you can pass an IStreamClientEndpoint_ directed at one
+            of the local Tor's SOCKS5 ports (e.g. created with
+            :meth:`txtorcon.TorConfig.create_socks_endpoint`). Can be
+            a Deferred.
+        """
+
+
 class IStreamListener(Interface):
     """
     Notifications about changes to a :class:`txtorcon.Stream`.

@@ -30,7 +30,7 @@ from txtorcon.log import txtorlog
 from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
-from txtorcon.endpoints import TorClientEndpoint
+from txtorcon.endpoints import TorClientEndpoint, _create_socks_endpoint
 from . import socks
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
@@ -320,9 +320,10 @@ def launch(reactor,
         # boostrapped if necessary
 
     returnValue(
-        Tor(
+        _Tor(
             reactor,
-            config,
+            config.protocol,
+            _tor_config=config,
             _process_proto=process_protocol,
         )
     )
@@ -370,11 +371,6 @@ def connect(reactor, control_endpoint=None, password_function=None):
         a Deferred that fires with a :class:`txtorcon.Tor` instance
     """
 
-    if not IReactorCore.providedBy(reactor):
-        raise ValueError(
-            "'reactor' must provide IReactorCore"
-        )
-
     @inlineCallbacks
     def try_endpoint(control_ep):
         assert IStreamClientEndpoint.providedBy(control_ep)
@@ -384,7 +380,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
             )
         )
         config = yield TorConfig.from_protocol(proto)
-        tor = Tor(reactor, config)
+        tor = _Tor(reactor, proto, _tor_config=config)
         returnValue(tor)
 
     if control_endpoint is None:
@@ -428,7 +424,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
     )
 
 
-class Tor(object):
+class _Tor(object):
     """
     I represent a single instance of Tor and act as a Builder/Factory
     for several useful objects you will probably want. There are two
@@ -454,13 +450,13 @@ class Tor(object):
             print(port.getHost())
     """
 
-    def __init__(self, reactor, tor_config, _process_proto=None):
+    def __init__(self, reactor, control_protocol, _tor_config=None, _process_proto=None):
         """
         don't instantiate this class yourself -- instead use the factory
         methods :func:`txtorcon.launch` or :func:`txtorcon.connect`
         """
-        self._config = tor_config
-        self._protocol = tor_config.protocol
+        self._protocol = control_protocol
+        self._config = _tor_config
         self._reactor = reactor
         # this only passed/set when we launch()
         self._process_protocol = _process_proto
@@ -504,18 +500,21 @@ class Tor(object):
     def version(self):
         return self._protocol.version
 
-    @property
-    def config(self):
+    @inlineCallbacks
+    def get_config(self):
         """
-        The TorConfig instance associated with the tor instance we
-        launched. This instance represents up-to-date configuration of
-        the tor instance (even if another controller is connected).
+        :return: a Deferred that fires with a TorConfig instance. This
+            instance represents up-to-date configuration of the tor
+            instance (even if another controller is connected). If you
+            call this more than once you'll get the same TorConfig back.
         """
-        return self._config
+        if self._config is None:
+            self._config = yield TorConfig.from_protocol(self._protocol)
+        returnValue(self._config)
 
-    def web_agent(self, pool=None, _socks_endpoint=None):
+    def web_agent(self, pool=None, socks_endpoint=None):
         """
-        :param _socks_endpoint: If ``None`` (the default), a suitable
+        :param socks_endpoint: If ``None`` (the default), a suitable
             SOCKS port is chosen from our config (or added). If supplied,
             should be a Deferred which fires an IStreamClientEndpoint
             (e.g. the return-value from
@@ -528,18 +527,17 @@ class Tor(object):
         # local import since not all platforms have this
         from txtorcon import web
 
-        # XXX make this a method, use in Circuit.web_agent
-        if _socks_endpoint is None:
-            _socks_endpoint = self.config.create_socks_endpoint(self._reactor, None)
-        if not isinstance(_socks_endpoint, Deferred):
-            if not IStreamClientEndpoint.providedBy(_socks_endpoint):
+        if socks_endpoint is None:
+            socks_endpoint = _create_socks_endpoint(self._reactor, self._protocol)
+        if not isinstance(socks_endpoint, Deferred):
+            if not IStreamClientEndpoint.providedBy(socks_endpoint):
                 raise ValueError(
-                    "'_socks_endpoint' should be a Deferred or an IStreamClient"
-                    "Endpoint (got '{}')".format(type(_socks_endpoint))
+                    "'socks_endpoint' should be a Deferred or an IStreamClient"
+                    "Endpoint (got '{}')".format(type(socks_endpoint))
                 )
         return web.tor_agent(
             self._reactor,
-            _socks_endpoint,
+            socks_endpoint,
             pool=pool,
         )
 
@@ -569,7 +567,7 @@ class Tor(object):
         ans = yield socks.resolve_ptr(socks_ep, ip)
         returnValue(ans)
 
-    def stream_via(self, host, port, tls=False, _socks_endpoint=None):
+    def stream_via(self, host, port, tls=False, socks_endpoint=None):
         """
         This returns an IStreamClientEndpoint instance that will use this
         Tor (via SOCKS) to visit the ``(host, port)`` indicated.
@@ -584,7 +582,7 @@ class Tor(object):
         :param tls: If True, it will wrap the return endpoint in one
             that does TLS (default: False).
 
-        :param _socks_endpoint: Normally not needed (default: None)
+        :param socks_endpoint: Normally not needed (default: None)
             but you can pass an IStreamClientEndpoint_ directed at one
             of the local Tor's SOCKS5 ports (e.g. created with
             :meth:`txtorcon.TorConfig.create_socks_endpoint`). Can be
@@ -593,12 +591,12 @@ class Tor(object):
         if _is_non_public_numeric_address(host):
             raise ValueError("'{}' isn't going to work over Tor".format(host))
 
-        if _socks_endpoint is None:
-            _socks_endpoint = self._default_socks_endpoint()
+        if socks_endpoint is None:
+            socks_endpoint = self._default_socks_endpoint()
         # socks_endpoint may be a a Deferred, but TorClientEndpoint handles it
         return TorClientEndpoint(
             host, port,
-            socks_endpoint=_socks_endpoint,
+            socks_endpoint=socks_endpoint,
             tls=tls,
             reactor=self._reactor,
         )
@@ -618,7 +616,7 @@ class Tor(object):
         returnValue(state)
 
     def __str__(self):
-        return "<Tor version='{tor_version}'>".format(
+        return "<_Tor version='{tor_version}'>".format(
             tor_version=self._protocol.version,
         )
 
@@ -629,18 +627,9 @@ class Tor(object):
         (which might mean setting one up in our attacked Tor if it
         doesn't have one)
         """
-        if self._socks_endpoint is not None:
-            returnValue(self._socks_endpoint)
-        else:
-            try:
-                ep = self._config.socks_endpoint(self._reactor)
-            except RuntimeError:
-                # should we try to use unix socket on platforms that
-                # support it?
-                port = yield available_tcp_port(self._reactor)
-                ep = yield self._config.create_socks_endpoint(self._reactor, str(port))
-            self._socks_endpoint = ep
-            returnValue(self._socks_endpoint)
+        if self._socks_endpoint is None:
+            self._socks_endpoint = yield _create_socks_endpoint(self._reactor, self._protocol)
+        returnValue(self._socks_endpoint)
 
 
 # XXX from magic-wormhole
@@ -811,7 +800,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         """
 
         if self.stdout:
-            self.stdout.write(data)
+            self.stdout.write(data.decode('ascii'))
 
         # minor hack: we can't try this in connectionMade because
         # that's when the process first starts up so Tor hasn't
