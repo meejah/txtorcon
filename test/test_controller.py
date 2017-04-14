@@ -971,9 +971,16 @@ class WebAgentTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_web_agent_defaults(self):
         reactor = Mock()
+        # XXX is there a faster way to do this? better reactor fake?
+        fake_host = Mock()
+        fake_host.port = 1234
+        fake_port = Mock()
+        fake_port.getHost = Mock(return_value=fake_host)
+        reactor.listenTCP = Mock(return_value=fake_port)
         cfg = Mock()
         cfg.create_socks_endpoint = Mock(return_value=defer.succeed("9050"))
         proto = Mock()
+        proto.get_conf = Mock(return_value=defer.succeed({}))
         directlyProvides(proto, ITorControlProtocol)
 
         tor = _Tor(reactor, proto, _tor_config=cfg)

@@ -417,7 +417,7 @@ class EndpointTests(unittest.TestCase):
     def test_factory(self, ftb):
         reactor = Mock()
         cp = Mock()
-        cp.get_conf = Mock(return_value=dict())
+        cp.get_conf = Mock(return_value=defer.succeed(dict()))
 
         with patch(u'txtorcon.endpoints.available_tcp_port', return_value=9999):
             ep = yield TorClientEndpoint.from_connection(reactor, cp, 'localhost', 1234)
@@ -1032,9 +1032,9 @@ class TestSocksFactory(unittest.TestCase):
         reactor = Mock()
         cp = Mock()
         cp.get_conf = Mock(
-            return_value={
+            return_value=defer.succeed({
                 'SocksPort': ['9050', '9150', 'unix:/tmp/boom']
-            }
+            })
         )
 
         ep = yield _create_socks_endpoint(reactor, cp, socks_config='unix:/tmp/boom')
@@ -1045,7 +1045,7 @@ class TestSocksFactory(unittest.TestCase):
     def test_nothing_exists(self):
         reactor = Mock()
         cp = Mock()
-        cp.get_conf = Mock(return_value=dict())
+        cp.get_conf = Mock(return_value=defer.succeed(dict()))
 
         with patch(u'txtorcon.endpoints.available_tcp_port', return_value=9999):
             ep = yield _create_socks_endpoint(reactor, cp)
