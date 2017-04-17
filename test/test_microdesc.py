@@ -64,6 +64,7 @@ class ParserTests(unittest.TestCase):
         self.assertTrue('flags' in relays[1])
         self.assertTrue('FutureProof' in relays[1]['flags'])
 
+    # re-enable when we switch back to Automat
     def test_bad_line(self):
         relays = []
 
@@ -73,7 +74,8 @@ class ParserTests(unittest.TestCase):
 
         with self.assertRaises(Exception) as ctx:
             m.feed_line('x blam')
-        self.assertTrue('Unknown microdescriptor' in str(ctx.exception))
+        # self.assertTrue('Unknown microdescriptor' in str(ctx.exception))
+        self.assertTrue('Expected "r " ' in str(ctx.exception))
         self.assertEqual(0, len(relays))
 
     def test_single_ipv6(self):
