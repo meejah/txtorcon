@@ -71,52 +71,6 @@ to download a Web page using the circuit created.
 .. literalinclude:: ../examples/web_client_custom_circuit.py
 
 
-Web: servers (services)
------------------------
-
-
-``web_onion_service.py``
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-:download:`Download the example <../examples/web_onion_service.py>`.
-
-Set up a `twisted.web.server <https://twistedmatrix.com/FIXME>`_ listening as a onion service. This uses the ``ADD_ONION`` API from Tor. If you don't know what that means, see `the spec <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1365>`_. If you know you want to keep the private key for your onion service on disk somewhere, see the next example.
-
-.. literalinclude:: ../examples/web_onion_service.py
-
-
-
-``web_onion_service_endpoints.py``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:download:`Download the example <../examples/web_onion_service_endpoints.py>`.
-
-This uses a server endpoint string via the `serverFromString` API in Twisted to do "whatever it takes" to set up a new Onion (location-hidden) service. If a Twisted application lets you configure server endpoint strings to listen on, you may get hidden-service support without having to change any code.
-
-If, instead, you're writing Python code and wish to have more control over the endpoint used (and e.g. whether a new Tor instance is launched or not) use one of the following examples.
-
-
-.. literalinclude:: ../examples/web_onion_service_endpoints.py
-
-
-
-``web_onion_service_klein.py``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:download:`Download the example <../examples/web_onion_service_klein.py>`.
-
-
-Set up a `twisted.web.server <>`_ listening as a onion service. This
-uses the ``ADD_ONION`` API from Tor. If you don't know what that
-means, see `the spec
-<https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1365>`_. If
-you know you want to keep the private key for your onion service on
-disk somewhere, see the next example.
-
-.. literalinclude:: ../examples/web_onion_service_klein.py
-
-
-		    
 Starting Tor
 ------------
 
