@@ -34,7 +34,7 @@ from txtorcon.util import SingleObserver
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import _create_socks_endpoint
 from txtorcon.circuit import TorCircuitEndpoint, _get_circuit_attacher
-from txtorcon.controller import _Tor
+from txtorcon.controller import Tor
 from txtorcon.socks import _TorSocksFactory
 
 from . import util
@@ -150,7 +150,7 @@ class EndpointTests(unittest.TestCase):
             # wrong somewhere...
             def bam(*args, **kw):
                 self.config.bootstrap()
-                return defer.succeed(_Tor(Mock(), self.protocol, _tor_config=self.config))
+                return defer.succeed(Tor(Mock(), self.protocol, _tor_config=self.config))
             return bam
         with patch('txtorcon.endpoints.launch_tor') as launch_mock:
             with patch('txtorcon.controller.connect', new_callable=boom):

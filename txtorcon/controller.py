@@ -24,6 +24,8 @@ from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.interfaces import IReactorTime, IReactorCore
 from twisted.internet.interfaces import IStreamClientEndpoint
 
+from zope.interface import implementer
+
 from txtorcon.util import delete_file_or_tree, find_keywords
 from txtorcon.util import find_tor_binary, available_tcp_port
 from txtorcon.log import txtorlog
@@ -32,6 +34,7 @@ from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TorClientEndpoint, _create_socks_endpoint
 from . import socks
+from .interface import ITor
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
@@ -320,7 +323,7 @@ def launch(reactor,
         # boostrapped if necessary
 
     returnValue(
-        _Tor(
+        Tor(
             reactor,
             config.protocol,
             _tor_config=config,
@@ -380,7 +383,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
             )
         )
         config = yield TorConfig.from_protocol(proto)
-        tor = _Tor(reactor, proto, _tor_config=config)
+        tor = Tor(reactor, proto, _tor_config=config)
         returnValue(tor)
 
     if control_endpoint is None:
@@ -424,7 +427,8 @@ def connect(reactor, control_endpoint=None, password_function=None):
     )
 
 
-class _Tor(object):
+@implementer(ITor)
+class Tor(object):
     """
     I represent a single instance of Tor and act as a Builder/Factory
     for several useful objects you will probably want. There are two
@@ -433,6 +437,8 @@ class _Tor(object):
        - :func:`txtorcon.connect` to connect to a Tor that is already
          running (e.g. Tor Browser Bundle, a system Tor, ...).
        - :func:`txtorcon.launch` to launch a fresh Tor instance
+
+    The stable API provided by this class is :class:`txtorcon.interface.ITor`
 
     If you desire more control, there are "lower level" APIs which are
     the very ones used by this class. However, this "highest level"
@@ -569,7 +575,7 @@ class _Tor(object):
 
     def stream_via(self, host, port, tls=False, socks_endpoint=None):
         """
-        This returns an IStreamClientEndpoint instance that will use this
+        This returns an IStreamClientEndpoint_ instance that will use this
         Tor (via SOCKS) to visit the ``(host, port)`` indicated.
 
         :param host: The host to connect to. You MUST pass host-names
@@ -587,6 +593,8 @@ class _Tor(object):
             of the local Tor's SOCKS5 ports (e.g. created with
             :meth:`txtorcon.TorConfig.create_socks_endpoint`). Can be
             a Deferred.
+
+        .. _IStreamClientEndpoint: https://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IStreamClientEndpoint.html
         """
         if _is_non_public_numeric_address(host):
             raise ValueError("'{}' isn't going to work over Tor".format(host))
@@ -616,7 +624,7 @@ class _Tor(object):
         returnValue(state)
 
     def __str__(self):
-        return "<_Tor version='{tor_version}'>".format(
+        return "<Tor version='{tor_version}'>".format(
             tor_version=self._protocol.version,
         )
 

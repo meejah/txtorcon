@@ -1,6 +1,5 @@
 
 from .util import find_keywords
-import automat
 
 
 # putting the old parser back in here for now until there's a solution

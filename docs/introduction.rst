@@ -78,6 +78,15 @@ from asciinema.org:
 :raw-html:`<script type="text/javascript" src="https://asciinema.org/a/eh2gxfz3rc1ztgapkcol47d6o.js" id="asciicast-eh2gxfz3rc1ztgapkcol47d6o" async></script>`
 
 
+Example Code
+------------
+
+`download <examples/readme.py>`_
+(also `python3 style <examples/readme3.py>`_)
+
+.. literalinclude:: ../examples/readme.py
+
+
 .. _known_users:
 
 Known Users

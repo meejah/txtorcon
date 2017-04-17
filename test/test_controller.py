@@ -18,7 +18,7 @@ from txtorcon import TorControlProtocol
 from txtorcon import TorProcessProtocol
 from txtorcon import launch
 from txtorcon import connect
-from txtorcon.controller import _is_non_public_numeric_address, _Tor
+from txtorcon.controller import _is_non_public_numeric_address, Tor
 from txtorcon.interface import ITorControlProtocol
 from .util import TempDir
 
@@ -280,18 +280,18 @@ class LaunchTorTests(unittest.TestCase):
         tpp.side_effect = foo
 
         tor = yield launch(reactor, _tor_config=config)
-        self.assertTrue(isinstance(tor, _Tor))
+        self.assertTrue(isinstance(tor, Tor))
 
     @defer.inlineCallbacks
     def test_quit(self):
-        tor = _Tor(Mock(), Mock())
+        tor = Tor(Mock(), Mock())
         tor._protocol = Mock()
         tor._process_protocol = Mock()
         yield tor.quit()
 
     @defer.inlineCallbacks
     def test_quit_no_protocol(self):
-        tor = _Tor(Mock(), Mock())
+        tor = Tor(Mock(), Mock())
         tor._protocol = None
         tor._process_protocol = None
         with self.assertRaises(RuntimeError) as ctx:
@@ -305,7 +305,7 @@ class LaunchTorTests(unittest.TestCase):
         cfg = Mock()
         proto = Mock()
         proto.get_conf = Mock(return_value=defer.succeed({"SocksPort": "9050"}))
-        tor = _Tor(Mock(), proto, _tor_config=cfg)
+        tor = Tor(Mock(), proto, _tor_config=cfg)
         fake_socks.resolve = Mock(return_value=defer.succeed(answer))
         ans = yield tor.dns_resolve("meejah.ca")
         self.assertEqual(ans, answer)
@@ -316,7 +316,7 @@ class LaunchTorTests(unittest.TestCase):
         answer = object()
         proto = Mock()
         proto.get_conf = Mock(return_value=defer.succeed({"SocksPort": "9050"}))
-        tor = _Tor(Mock(), proto)
+        tor = Tor(Mock(), proto)
         fake_socks.resolve = Mock(return_value=defer.succeed(answer))
         ans0 = yield tor.dns_resolve("meejah.ca")
 
@@ -334,7 +334,7 @@ class LaunchTorTests(unittest.TestCase):
         proto = Mock()
         proto.get_conf = Mock(return_value=defer.succeed({"SocksPort": "9050"}))
         cfg = Mock()
-        tor = _Tor(Mock(), proto, _tor_config=cfg)
+        tor = Tor(Mock(), proto, _tor_config=cfg)
 
         def boom(*args, **kw):
             raise RuntimeError("no socks")
@@ -350,7 +350,7 @@ class LaunchTorTests(unittest.TestCase):
         answer = object()
         proto = Mock()
         proto.get_conf = Mock(return_value=defer.succeed({"SocksPort": "9050"}))
-        tor = _Tor(Mock(), proto)
+        tor = Tor(Mock(), proto)
         fake_socks.resolve_ptr = Mock(return_value=defer.succeed(answer))
         ans = yield tor.dns_resolve_ptr("4.3.2.1")
         self.assertEqual(ans, answer)
@@ -382,7 +382,7 @@ class LaunchTorTests(unittest.TestCase):
         config = TorConfig()
 
         tor = yield launch(reactor, _tor_config=config, control_port='1234', timeout=30)
-        self.assertTrue(isinstance(tor, _Tor))
+        self.assertTrue(isinstance(tor, Tor))
 
     @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @patch('txtorcon.controller.sys')
@@ -407,7 +407,7 @@ class LaunchTorTests(unittest.TestCase):
         tpp.side_effect = foo
 
         tor = yield launch(reactor, _tor_config=config)
-        self.assertTrue(isinstance(tor, _Tor))
+        self.assertTrue(isinstance(tor, Tor))
 
     @patch('txtorcon.controller.sys')
     @patch('txtorcon.controller.pwd')
@@ -618,7 +618,7 @@ class LaunchTorTests(unittest.TestCase):
 
         tor = yield launch(reactor, _tor_config=config, control_port='1234', timeout=30)
         errs = self.flushLoggedErrors()
-        self.assertTrue(isinstance(tor, _Tor))
+        self.assertTrue(isinstance(tor, Tor))
         self.assertEqual(1, len(errs))
 
     def test_tor_connection_user_data_dir(self):
@@ -983,7 +983,7 @@ class WebAgentTests(unittest.TestCase):
         proto.get_conf = Mock(return_value=defer.succeed({}))
         directlyProvides(proto, ITorControlProtocol)
 
-        tor = _Tor(reactor, proto, _tor_config=cfg)
+        tor = Tor(reactor, proto, _tor_config=cfg)
         try:
             agent = tor.web_agent(pool=self.pool)
         except ImportError as e:
@@ -1002,7 +1002,7 @@ class WebAgentTests(unittest.TestCase):
         proto = Mock()
         directlyProvides(proto, ITorControlProtocol)
 
-        tor = _Tor(reactor, proto, _tor_config=cfg)
+        tor = Tor(reactor, proto, _tor_config=cfg)
         agent = tor.web_agent(pool=self.pool, socks_endpoint=socks_d)
 
         resp = yield agent.request('GET', b'meejah.ca')
@@ -1017,7 +1017,7 @@ class WebAgentTests(unittest.TestCase):
         proto = Mock()
         directlyProvides(proto, ITorControlProtocol)
 
-        tor = _Tor(reactor, proto, _tor_config=cfg)
+        tor = Tor(reactor, proto, _tor_config=cfg)
         agent = tor.web_agent(pool=self.pool, socks_endpoint=socks)
 
         resp = yield agent.request('GET', b'meejah.ca')
@@ -1030,7 +1030,7 @@ class WebAgentTests(unittest.TestCase):
         proto = Mock()
         directlyProvides(proto, ITorControlProtocol)
 
-        tor = _Tor(reactor, proto, _tor_config=cfg)
+        tor = Tor(reactor, proto, _tor_config=cfg)
         with self.assertRaises(ValueError) as ctx:
             agent = tor.web_agent(pool=self.pool, socks_endpoint=object())
             yield agent.request('GET', b'meejah.ca')
@@ -1044,7 +1044,7 @@ class TorAttributeTests(unittest.TestCase):
         proto = Mock()
         directlyProvides(proto, ITorControlProtocol)
         self.cfg = Mock()
-        self.tor = _Tor(reactor, proto, _tor_config=self.cfg)
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
 
     def test_process(self):
         with self.assertRaises(Exception) as ctx:
@@ -1079,7 +1079,7 @@ class TorAttributeTestsNoConfig(unittest.TestCase):
         reactor = Mock()
         proto = Mock()
         directlyProvides(proto, ITorControlProtocol)
-        self.tor = _Tor(reactor, proto)
+        self.tor = Tor(reactor, proto)
 
     @defer.inlineCallbacks
     def test_get_config(self):
@@ -1097,7 +1097,7 @@ class TorStreamTests(unittest.TestCase):
         proto = Mock()
         proto.get_conf = Mock(return_value=defer.succeed({"SocksPort": "9050"}))
         self.cfg = Mock()
-        self.tor = _Tor(reactor, proto, _tor_config=self.cfg)
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
 
     def test_sanity(self):
         self.assertTrue(_is_non_public_numeric_address(u'10.0.0.0'))
@@ -1149,13 +1149,13 @@ class FactoryFunctionTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_create_state(self):
-        tor = _Tor(Mock(), Mock())
+        tor = Tor(Mock(), Mock())
         with patch('txtorcon.controller.TorState') as ts:
             ts.post_boostrap = defer.succeed('boom')
             yield tor.create_state()
         # no assertions; we just testing this doesn't raise
 
     def test_str(self):
-        tor = _Tor(Mock(), Mock())
+        tor = Tor(Mock(), Mock())
         str(tor)
         # just testing the __str__ method doesn't explode

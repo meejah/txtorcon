@@ -6,7 +6,7 @@ This is the recommended API. See the :ref:`programming_guide` for
 
 
 Tor
----
+----
 .. autoclass:: txtorcon.Tor
 
 

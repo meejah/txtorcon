@@ -182,56 +182,6 @@ see what's going on.
 .. literalinclude:: ../examples/stream_circuit_logger.py
 
 
-
-.. _attach_streams_by_country.py:
-
-:file:`attach_streams_by_country.py`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:download:`Download the example <../examples/attach_streams_by_country.py>`.
-This is one of the more complicated examples. It uses a custom Stream
-attacher (via :class:`~txtorcon.torstate.IStreamAttacher`) to only attach
-Streams to a Circuit with an exit node in the same country as the
-server to which the Stream is going (as determined by GeoIP). Caveat:
-the DNS lookups go via a Tor-assigned stream, so for sites which use
-DNS trickery to get you to a "close" server, this won't be as
-interesting. For bonus points, if there is no Circuit exiting in the
-correct country, one is created before the Stream is attached.
-
-.. literalinclude:: ../examples/attach_streams_by_country.py
-
-
-.. _schedule_bandwidth.py:
-
-:file:`schedule_bandwidth.py`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:download:`Download the example <../examples/schedule_bandwidth.py>`.
-This is pretty similar to a feature Tor already has and is basically
-useless as-is since what it does is toggle the amount of relay
-bandwidth you're willing to carry from 0 to 20KiB/s every 20
-minutes. A slightly-more-entertaining way to illustate config
-changes. (This is useless because your relay takes at least an hour to
-appear in the consensus).
-
-.. literalinclude:: ../examples/schedule_bandwidth.py
-
-
-Configuration
--------------
-
-
-.. _dump_config.py:
-
-:file:`dump_config.py`
-~~~~~~~~~~~~~~~~~~~~~~
-
-:download:`Download the example <../examples/dump_config.py>`.
-Very simple read-only use of :class:`txtorcon.TorConfig`
-
-.. literalinclude:: ../examples/dump_config.py
-
-
 Events
 ------
 
@@ -269,17 +219,6 @@ the details.
 
 .. literalinclude:: ../examples/stem_relay_descriptor.py
 
-
-
-
-.. _circuit_failure_rates.py:
-
-:file:`circuit_failure_rates.py`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:download:`Download the example <../examples/circuit_failure_rates.py>`.
-
-.. literalinclude:: ../examples/circuit_failure_rates.py
 
 
 
