@@ -181,6 +181,10 @@ class IStreamAttacher(Interface):
     Each time a new :class:`txtorcon.Stream` is created, this
     interface will be queried to find out which
     :class:`txtorcon.Circuit` it should be attached to.
+
+    Only advanced use-cases should need to use this directly; for most
+    users, using the :func:`txtorcon.Circuit.stream_via` interface
+    should be preferred.
     """
 
     def attach_stream_failure(stream, fail):
@@ -211,9 +215,6 @@ class IStreamAttacher(Interface):
         circuit. In this case, you will probably need to be aware that
         the callback from :meth:`txtorcon.TorState.build_circuit` does
         not wait for the circuit to be in BUILT state.
-
-        See :ref:`attach_streams_by_country.py` for a complete
-        example of using a Deferred in an IStreamAttacher.
 
         Alternatively, you may return None in which case the Tor
         controller will be told to choose a circuit itself.

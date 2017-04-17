@@ -45,8 +45,8 @@ You get an instance of :class:`txtorcon.Tor` in one of two ways:
  - call :meth:`txtorcon.launch`
 
 Once you've got a ``Tor`` instance you can use it to gain access to
-(or create) instances of the other interesting classes; see
-:ref:`_guide_tor_instance` below for various use-cases.
+(or create) instances of the other interesting classes; see "A Tor
+Instance" below for various use-cases.
 
 Note that for historical reasons (namely: ``Tor`` is a relatively new
 class) there are many other functions and classes exported from
@@ -56,8 +56,7 @@ something is missing from this top-level class, please get in touch
 feature.
 
 
-.. _get_tor_instance:
-
+.. _guide_tor_instance:
 
 A Tor Instance
 --------------
@@ -341,7 +340,7 @@ All client-side interactions are via instances that implement
 create suitable instances.
 
 The recommended API is to acquire a :class:`txtorcon.Tor` instance
-(see ":ref:`get_tor_instance`") and then call
+(see ":ref:`guide_tor_instance`") and then call
 :meth:`txtorcon.Tor.create_client_endpoint`. To do DNS lookups (or
 reverse lookups) via a Tor circuit, use
 :meth:`txtorcon.Tor.dns_resolve` and

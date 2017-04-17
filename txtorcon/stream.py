@@ -60,7 +60,7 @@ class Stream(object):
     def __init__(self, circuitcontainer, addrmap=None):
         """
         :param circuitcontainer: an object which implements
-        :class:`interface.ICircuitContainer`
+            :class:`interface.ICircuitContainer`
         """
 
         self.circuit_container = ICircuitContainer(circuitcontainer)
@@ -121,7 +121,7 @@ class Stream(object):
         listen to all streams.
 
         :param listen: something that knows
-        :class:`txtorcon.interface.IStreamListener`
+            :class:`txtorcon.interface.IStreamListener`
         """
 
         listener = IStreamListener(listen)

@@ -680,10 +680,10 @@ class TorConfig(object):
     FIXME:
 
         - HiddenServiceOptions is special: GETCONF on it returns
-        several (well, two) values. Besides adding the two keys 'by
-        hand' do we need to do anything special? Can't we just depend
-        on users doing 'conf.hiddenservicedir = foo' AND
-        'conf.hiddenserviceport = bar' before a save() ?
+          several (well, two) values. Besides adding the two keys 'by
+          hand' do we need to do anything special? Can't we just depend
+          on users doing 'conf.hiddenservicedir = foo' AND
+          'conf.hiddenserviceport = bar' before a save() ?
 
         - once I determine a value is default, is there any way to
           actually get what this value is?

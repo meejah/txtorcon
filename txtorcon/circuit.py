@@ -163,25 +163,25 @@ class Circuit(object):
     :ivar state:
         contains a string from Tor describing the current state of the
         stream. From control-spec.txt section 4.1.1, these are:
-           - LAUNCHED: circuit ID assigned to new circuit
-           - BUILT: all hops finished, can now accept streams
-           - EXTENDED: one more hop has been completed
-           - FAILED: circuit closed (was not built)
-           - CLOSED: circuit closed (was built)
+
+            - LAUNCHED: circuit ID assigned to new circuit
+            - BUILT: all hops finished, can now accept streams
+            - EXTENDED: one more hop has been completed
+            - FAILED: circuit closed (was not built)
+            - CLOSED: circuit closed (was built)
 
     :ivar purpose:
-        The reason this circuit was built. Values can currently be one
-        of (but see control-spec.txt 4.1.1):
-          - GENERAL
-          - HS_CLIENT_INTRO
-          - HS_CLIENT_REND
-          - HS_SERVICE_INTRO
-          - HS_SERVICE_REND
-          - TESTING
-          - CONTROLLER
+        The reason this circuit was built. For most purposes, you'll
+        want to look at `GENERAL` circuits only. Values can currently
+        be one of (but see control-spec.txt 4.1.1):
 
-    For most purposes, you'll want to look at GENERAL circuits only.
-
+            - GENERAL
+            - HS_CLIENT_INTRO
+            - HS_CLIENT_REND
+            - HS_SERVICE_INTRO
+            - HS_SERVICE_REND
+            - TESTING
+            - CONTROLLER
 
     :ivar id:
         The ID of this circuit, a number (or None if unset).
@@ -329,9 +329,9 @@ class Circuit(object):
         "IfUnused". So for example: circ.close(IfUnused=True)
 
         :return: Deferred which callbacks with this Circuit instance
-        ONLY after Tor has confirmed it is gone (not simply that the
-        CLOSECIRCUIT command has been queued). This could be a while
-        if you included IfUnused.
+            ONLY after Tor has confirmed it is gone (not simply that the
+            CLOSECIRCUIT command has been queued). This could be a while
+            if you included IfUnused.
         """
 
         # we're already closed; nothing to do
