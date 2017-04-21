@@ -39,7 +39,7 @@ Release Checklist
      * gpg --verify dist/txtorcon-${VERSION}.tar.gz.asc
 
 * generate sha256sum for each:
-     sha256sum dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2-none-any.whl
+     sha256sum dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2.py3-none-any.whl
 
 * copy signature files to <root of dist>/signatures and commit them
   along with the above changes for versions, etc.
