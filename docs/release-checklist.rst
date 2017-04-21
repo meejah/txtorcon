@@ -19,7 +19,7 @@ Release Checklist
    * update heading, date
 
 * on both signing-machine and build-machine shells:
-   * export VERSION=0.18.0
+   * export VERSION=0.19.0
 
 * (if on signing machine) "make dist" and "make dist-sigs"
    * creates:
