@@ -34,7 +34,8 @@ directory over an onion service:
    $ sudo apt-get install python-txtorcon
    $ twistd web --port "onion:80" --path ~/public_html
 
-txtorcon strives to provide sane and **safe** defaults.
+txtorcon strives to provide sane and **safe** defaults. txtorcon is `a
+Tor project <https://www.torproject.org/projects/projects.html.en>`_.
 
 
 .. _features:
