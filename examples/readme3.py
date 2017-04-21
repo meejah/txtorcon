@@ -16,7 +16,7 @@ async def main(reactor):
 
     print("Connected to Tor version {}".format(tor.version))
 
-    url =u'https://www.torproject.org:443'
+    url = u'https://www.torproject.org:443'
     print(u"Downloading {}".format(repr(url)))
     resp = await treq.get(url, agent=tor.web_agent())
 
@@ -42,6 +42,7 @@ async def main(reactor):
     )
     data = await resp.text()
     print(data)
+
 
 @react
 def _main(reactor):
