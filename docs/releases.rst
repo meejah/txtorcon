@@ -5,8 +5,12 @@ Releases
 
 There isn't a "release schedule" in any sense. If there is something
 in master your project depends upon, let me know and I'll do a
-release. Starting with v0.8.0 versions are following `semantic
-versioning <http://semver.org/>`_.
+release.
+
+Starting after v0.19.0 versions are following `calendar versioning
+<http://calver.org/>`_ with the major version being the 2-digit
+year. The second digit will be "non-trivial" releases and the third
+will be for bugfix releases.
 
 
 unreleased
