@@ -62,6 +62,9 @@ Some example pull-requests:
   * good discussion + more commits: `PR #150 <https://github.com/meejah/txtorcon/pull/150>`_;
   * a simple one that was "ready-to-go": `PR #51 <https://github.com/meejah/txtorcon/pull/51>`_.
 
+If you want an easy thing to start with, here are `all issues tagged
+"easy" <https://github.com/meejah/txtorcon/labels/easy_ticket>`_
+
 
 Making a Release
 ----------------
