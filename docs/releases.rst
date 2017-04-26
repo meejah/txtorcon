@@ -19,6 +19,16 @@ unreleased
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v17.0.0*
 
 
+v0.19.1
+-------
+
+April 26, 2017
+
+ * `txtorcon-0.19.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.19.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.1>`_ (:download:`local-sig </../signatues/txtorcon-0.19.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.19.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.1.tar.gz>`_)
+
+ * Fix a regression in ``launch_tor``, see `Issue 227 <https://github.com/meejah/txtorcon/issues/227>`_
+
+
 v0.19.0
 -------
 
