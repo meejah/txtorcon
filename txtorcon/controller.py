@@ -197,6 +197,20 @@ def launch(reactor,
             functools.partial(delete_file_or_tree, data_directory)
         )
 
+    # things that used launch_tor() had to set ControlPort and/or
+    # SocksPort on the config to pass them, so we honour that here.
+    if control_port is None and _tor_config is not None:
+        try:
+            control_port = config.ControlPort
+        except KeyError:
+            control_port = None
+
+    if socks_port is None and _tor_config is not None:
+        try:
+            socks_port = config.SocksPort
+        except KeyError:
+            socks_port = None
+
     if socks_port is None:
         socks_port = yield available_tcp_port(reactor)
     config.SOCKSPort = socks_port
