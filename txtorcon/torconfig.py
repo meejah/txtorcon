@@ -1214,7 +1214,11 @@ class TorConfig(object):
         string which is also a valid ``torrc`` file
         '''
 
-        for (k, v) in list(self.config.items()) + list(self.unsaved.items()):
+        everything = dict()
+        everything.update(self.config)
+        everything.update(self.unsaved)
+
+        for (k, v) in list(everything.items()):
             if type(v) is _ListWrapper:
                 if k.lower() == 'hiddenservices':
                     for x in v:
