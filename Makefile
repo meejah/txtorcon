@@ -11,6 +11,9 @@ tox:
 diagrams:
 	automat-visualize --image-directory ./diagrams --image-type png txtorcon
 
+diagrams:
+	automat-visualize --image-directory ./diagrams --image-type png txtorcon
+
 # see also http://docs.docker.io/en/latest/use/baseimages/
 dockerbase-wheezy:
 	@echo 'Building a minimal "wheezy" system.'
