@@ -463,6 +463,8 @@ class EphemeralHiddenService(object):
         self.hostname = ans['ServiceID'] + '.onion'
         if self._key_blob.startswith('NEW:'):
             self.private_key = ans['PrivateKey']
+        else:
+            self.private_key = self._key_blob
 
         log.msg('Created hidden-service at', self.hostname)
 
