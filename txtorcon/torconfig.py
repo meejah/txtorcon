@@ -461,7 +461,7 @@ class EphemeralHiddenService(object):
         ans = yield protocol.queue_command(cmd)
         ans = find_keywords(ans.split('\n'))
         self.hostname = ans['ServiceID'] + '.onion'
-        if self._key_blob == 'NEW:BEST':
+        if self._key_blob.startswith('NEW:'):
             self.private_key = ans['PrivateKey']
 
         log.msg('Created hidden-service at', self.hostname)
