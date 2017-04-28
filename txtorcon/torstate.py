@@ -11,6 +11,7 @@ import types
 import warnings
 
 from twisted.internet import defer
+from twisted.python.failure import Failure
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.interfaces import IReactorCore
@@ -920,23 +921,23 @@ class TorState(object):
     def circuit_destroy(self, circuit):
         "Used by circuit_closed and circuit_failed (below)"
         txtorlog.msg("circuit_destroy:", circuit.id)
-        circuit._notify_when_built(
-            Exception("Destroying circuit; will never hit BUILT")
+        circuit._when_built.fire(
+            Failure(Exception("Destroying circuit; will never hit BUILT"))
         )
         del self.circuits[circuit.id]
 
     def circuit_closed(self, circuit, **kw):
         "ICircuitListener API"
         txtorlog.msg("circuit_closed", circuit)
-        circuit._notify_when_built(
-            Exception("Circuit closed ('{}')".format(_extract_reason(kw)))
+        circuit._when_built.fire(
+            Failure(Exception("Circuit closed ('{}')".format(_extract_reason(kw))))
         )
         self.circuit_destroy(circuit)
 
     def circuit_failed(self, circuit, **kw):
         "ICircuitListener API"
         txtorlog.msg("circuit_failed", circuit, str(kw))
-        circuit._notify_when_built(
-            Exception("Circuit failed ('{}')".format(_extract_reason(kw)))
+        circuit._when_built.fire(
+            Failure(Exception("Circuit failed ('{}')".format(_extract_reason(kw))))
         )
         self.circuit_destroy(circuit)

@@ -399,7 +399,7 @@ class CircuitTests(unittest.TestCase):
         # we already pretended that Tor answered "OK" to the
         # CLOSECIRCUIT call (see close_circuit() in FakeTorController
         # above) however the circuit isn't "really" closed yet...
-        self.assertTrue(not d0.called)
+        self.assertTrue(not d0.result.called)
         # not unit-test-y? shouldn't probably delve into internals I
         # suppose...
         self.assertTrue(circuit._closing_deferred is not None)
