@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import os
+import re
 import six
 import functools
 import warnings
@@ -443,11 +444,10 @@ class EphemeralHiddenService(object):
         self._key_blob = key_blob_or_type
         self.auth = auth  # FIXME ununsed
         # FIXME nicer than assert, plz
-        assert ' ' not in self._key_blob
         assert isinstance(ports, list)
-        if not key_blob_or_type.startswith('NEW:') \
-           and (len(key_blob_or_type) > 825 or len(key_blob_or_type) < 820):
-            raise ValueError('Wrong size key-blob')
+        if not re.match(r'[^ :]+:[^ :]+$', key_blob_or_type):
+            raise ValueError('key_blob_or_type must be in the formats '
+                             '"NEW:<ALGORITHM>" or "<ALGORITHM>:<KEY>"')
 
     @defer.inlineCallbacks
     def add_to_tor(self, protocol):
