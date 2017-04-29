@@ -445,9 +445,11 @@ class EphemeralHiddenService(object):
         self.auth = auth  # FIXME ununsed
         # FIXME nicer than assert, plz
         assert isinstance(ports, list)
-        if not re.match(r'[^ :]+:[^ :]+$', key_blob_or_type):
-            raise ValueError('key_blob_or_type must be in the formats '
-                             '"NEW:<ALGORITHM>" or "<ALGORITHM>:<KEY>"')
+        if not (isinstance(key_blob_or_type, str) and
+                re.match(r'[^ :]+:[^ :]+$', key_blob_or_type)):
+            raise ValueError(
+                'key_blob_or_type must be a string in the formats '
+                '"NEW:<ALGORITHM>" or "<ALGORITHM>:<KEY>"')
 
     @defer.inlineCallbacks
     def add_to_tor(self, protocol):
