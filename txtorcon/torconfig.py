@@ -447,7 +447,7 @@ class EphemeralHiddenService(object):
         assert isinstance(ports, list)
         if not key_blob_or_type.startswith('NEW:') \
            and (len(key_blob_or_type) > 825 or len(key_blob_or_type) < 820):
-            raise RuntimeError('Wrong size key-blob')
+            raise ValueError('Wrong size key-blob')
 
     @defer.inlineCallbacks
     def add_to_tor(self, protocol):
