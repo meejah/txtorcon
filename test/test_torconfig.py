@@ -1306,7 +1306,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         try:
             torconfig.EphemeralHiddenService("80 localhost:80", "foo")
             self.fail("should get exception")
-        except RuntimeError:
+        except ValueError:
             pass
 
     def test_add(self):
