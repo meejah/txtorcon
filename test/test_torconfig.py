@@ -1320,6 +1320,15 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("blam", eph.private_key)
         self.assertEqual("ohai.onion", eph.hostname)
 
+    def test_add_keyblob(self):
+        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80", "alg:blam")
+        proto = Mock()
+        proto.queue_command = Mock(return_value="ServiceID=ohai")
+        eph.add_to_tor(proto)
+
+        self.assertEqual("alg:blam", eph.private_key)
+        self.assertEqual("ohai.onion", eph.hostname)
+
     def test_descriptor_wait(self):
         eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
         proto = Mock()
