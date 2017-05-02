@@ -424,6 +424,11 @@ class EphemeralHiddenService(object):
     https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1295
     '''
 
+    @classmethod
+    def _is_valid_keyblob(cls, key_blob_or_type):
+        return (isinstance(key_blob_or_type, str) and
+                re.match(r'[^ :]+:[^ :]+$', key_blob_or_type))
+
     # XXX the "ports" stuff is still kind of an awkward API, especialy
     # making the actual list public (since it'll have
     # "80,127.0.0.1:80" instead of with a space
@@ -445,8 +450,7 @@ class EphemeralHiddenService(object):
         self.auth = auth  # FIXME ununsed
         # FIXME nicer than assert, plz
         assert isinstance(ports, list)
-        if not (isinstance(key_blob_or_type, str) and
-                re.match(r'[^ :]+:[^ :]+$', key_blob_or_type)):
+        if not EphemeralHiddenService._is_valid_keyblob(key_blob_or_type):
             raise ValueError(
                 'key_blob_or_type must be a string in the formats '
                 '"NEW:<ALGORITHM>" or "<ALGORITHM>:<KEY>"')
