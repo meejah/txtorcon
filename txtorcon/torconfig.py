@@ -12,7 +12,6 @@ import warnings
 from io import StringIO
 from collections import OrderedDict
 
-from incremental import Version
 from twisted.python import log
 from twisted.python.deprecate import deprecated
 from twisted.internet import defer
@@ -24,8 +23,28 @@ from txtorcon.interface import ITorControlProtocol
 from txtorcon.util import find_keywords
 
 
+class _Version(object):
+    """
+    Replacement for incremental.Version until
+    https://github.com/meejah/txtorcon/issues/233 and/or
+    https://github.com/hawkowl/incremental/issues/31 is fixed.
+    """
+    # as of latest incremental, it should only access .package and
+    # .short() via the getVersionString() method that Twisted's
+    # deprecated() uses...
+
+    def __init__(self, package, major, minor, patch):
+        self.package = package
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+
+    def short(self):
+        return '{}.{}.{}'.format(self.major, self.minor, self.patch)
+
+
 @defer.inlineCallbacks
-@deprecated(Version("txtorcon", 0, 18, 0))
+@deprecated(_Version("txtorcon", 0, 18, 0))
 def launch_tor(config, reactor,
                tor_binary=None,
                progress_updates=None,
