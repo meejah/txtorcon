@@ -1303,11 +1303,13 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual(eph._ports, ["80,localhost:80"])
 
     def test_wrong_blob(self):
-        try:
-            torconfig.EphemeralHiddenService("80 localhost:80", "foo")
-            self.fail("should get exception")
-        except RuntimeError:
-            pass
+        wrong_blobs = ["", " ", "foo", ":", " : ", "foo:", ":foo", 0]
+        for b in wrong_blobs:
+            try:
+                torconfig.EphemeralHiddenService("80 localhost:80", b)
+                self.fail("should get exception")
+            except ValueError:
+                pass
 
     def test_add(self):
         eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
@@ -1316,6 +1318,15 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         eph.add_to_tor(proto)
 
         self.assertEqual("blam", eph.private_key)
+        self.assertEqual("ohai.onion", eph.hostname)
+
+    def test_add_keyblob(self):
+        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80", "alg:blam")
+        proto = Mock()
+        proto.queue_command = Mock(return_value="ServiceID=ohai")
+        eph.add_to_tor(proto)
+
+        self.assertEqual("alg:blam", eph.private_key)
         self.assertEqual("ohai.onion", eph.hostname)
 
     def test_descriptor_wait(self):

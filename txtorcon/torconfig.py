@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import os
+import re
 import six
 import functools
 import warnings
@@ -423,6 +424,11 @@ class EphemeralHiddenService(object):
     https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1295
     '''
 
+    @classmethod
+    def _is_valid_keyblob(cls, key_blob_or_type):
+        return (isinstance(key_blob_or_type, str) and
+                re.match(r'[^ :]+:[^ :]+$', key_blob_or_type))
+
     # XXX the "ports" stuff is still kind of an awkward API, especialy
     # making the actual list public (since it'll have
     # "80,127.0.0.1:80" instead of with a space
@@ -443,11 +449,11 @@ class EphemeralHiddenService(object):
         self._key_blob = key_blob_or_type
         self.auth = auth  # FIXME ununsed
         # FIXME nicer than assert, plz
-        assert ' ' not in self._key_blob
         assert isinstance(ports, list)
-        if not key_blob_or_type.startswith('NEW:') \
-           and (len(key_blob_or_type) > 825 or len(key_blob_or_type) < 820):
-            raise RuntimeError('Wrong size key-blob')
+        if not EphemeralHiddenService._is_valid_keyblob(key_blob_or_type):
+            raise ValueError(
+                'key_blob_or_type must be a string in the formats '
+                '"NEW:<ALGORITHM>" or "<ALGORITHM>:<KEY>"')
 
     @defer.inlineCallbacks
     def add_to_tor(self, protocol):
@@ -461,8 +467,10 @@ class EphemeralHiddenService(object):
         ans = yield protocol.queue_command(cmd)
         ans = find_keywords(ans.split('\n'))
         self.hostname = ans['ServiceID'] + '.onion'
-        if self._key_blob == 'NEW:BEST':
+        if self._key_blob.startswith('NEW:'):
             self.private_key = ans['PrivateKey']
+        else:
+            self.private_key = self._key_blob
 
         log.msg('Created hidden-service at', self.hostname)
 
