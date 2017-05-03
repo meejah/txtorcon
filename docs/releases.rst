@@ -18,6 +18,9 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v17.0.0*
 
+ * Work around a bug in `incremental` (see `Issue 233 <https://github.com/meejah/txtorcon/issues/233>`_)
+ * Fix for `Issue 190 <https://github.com/meejah/txtorcon/issues/190>`_ from Felipe Dau.
+
 
 v0.19.1
 -------
