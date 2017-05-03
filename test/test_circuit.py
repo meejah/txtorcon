@@ -463,6 +463,32 @@ class CircuitTests(unittest.TestCase):
         self.assertTrue(built1.result == circuit)
         self.assertTrue(built2.result == circuit)
 
+    def test_when_closed(self):
+        tor = FakeTorController()
+        a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
+        b = FakeRouter('$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5', 'b')
+        c = FakeRouter('$253DFF1838A2B7782BE7735F74E50090D46CA1BC', 'c')
+        tor.routers['$E11D2B2269CC25E67CA6C9FB5843497539A74FD0'] = a
+        tor.routers['$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5'] = b
+        tor.routers['$253DFF1838A2B7782BE7735F74E50090D46CA1BC'] = c
+
+        circuit = Circuit(tor)
+        circuit.listen(tor)
+
+        circuit.update('123 EXTENDED $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL'.split())
+        d0 = circuit.when_closed()
+
+        self.assertFalse(d0.called)
+
+        circuit.update('123 BUILT $E11D2B2269CC25E67CA6C9FB5843497539A74FD0=eris,$50DD343021E509EB3A5A7FD0D8A4F8364AFBDCB5=venus,$253DFF1838A2B7782BE7735F74E50090D46CA1BC=chomsky PURPOSE=GENERAL'.split())
+        circuit.update('123 CLOSED'.split())
+
+        d1 = circuit.when_closed()
+
+        self.assertTrue(d0 is not d1)
+        self.assertTrue(d0.called)
+        self.assertTrue(d1.called)
+
     def test_is_built_errback(self):
         tor = FakeTorController()
         a = FakeRouter('$E11D2B2269CC25E67CA6C9FB5843497539A74FD0', 'a')
