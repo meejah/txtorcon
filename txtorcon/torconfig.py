@@ -761,7 +761,7 @@ class TorConfig(object):
         if self.protocol:
             if self.protocol.post_bootstrap:
                 self.protocol.post_bootstrap.addCallback(
-                    self.bootstrap).addErrback(log.err)
+                    self.bootstrap).addErrback(self.post_bootstrap.errback)
             else:
                 self.bootstrap()
 
