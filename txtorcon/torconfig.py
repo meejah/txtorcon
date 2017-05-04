@@ -13,6 +13,7 @@ from io import StringIO
 from collections import OrderedDict
 
 from twisted.python import log
+from twisted.python.compat import nativeString
 from twisted.python.deprecate import deprecated
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
@@ -445,8 +446,12 @@ class EphemeralHiddenService(object):
 
     @classmethod
     def _is_valid_keyblob(cls, key_blob_or_type):
-        return (isinstance(key_blob_or_type, str) and
-                re.match(r'[^ :]+:[^ :]+$', key_blob_or_type))
+        try:
+            key_blob_or_type = nativeString(key_blob_or_type)
+        except (UnicodeError, TypeError):
+            return False
+        else:
+            return re.match(r'[^ :]+:[^ :]+$', key_blob_or_type)
 
     # XXX the "ports" stuff is still kind of an awkward API, especialy
     # making the actual list public (since it'll have
@@ -465,14 +470,15 @@ class EphemeralHiddenService(object):
         # the public API the same and fix up the space. Or of course
         # you can just use the "real" comma-syntax if you wanted.
         self._ports = [x.replace(' ', ',') for x in ports]
-        self._key_blob = key_blob_or_type
-        self.auth = auth  # FIXME ununsed
-        # FIXME nicer than assert, plz
-        assert isinstance(ports, list)
-        if not EphemeralHiddenService._is_valid_keyblob(key_blob_or_type):
+        if EphemeralHiddenService._is_valid_keyblob(key_blob_or_type):
+            self._key_blob = nativeString(key_blob_or_type)
+        else:
             raise ValueError(
                 'key_blob_or_type must be a string in the formats '
                 '"NEW:<ALGORITHM>" or "<ALGORITHM>:<KEY>"')
+        self.auth = auth  # FIXME ununsed
+        # FIXME nicer than assert, plz
+        assert isinstance(ports, list)
 
     @defer.inlineCallbacks
     def add_to_tor(self, protocol):
