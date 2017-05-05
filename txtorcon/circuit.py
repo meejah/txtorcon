@@ -16,7 +16,7 @@ from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
 from .interface import IRouterContainer, IStreamAttacher
-from txtorcon.util import find_keywords, maybe_ip_addr
+from txtorcon.util import find_keywords, maybe_ip_addr, SingleObserver
 
 
 # look like "2014-01-25T02:12:14.593772"
@@ -211,8 +211,9 @@ class Circuit(object):
         # caches parsed value for time_created()
         self._time_created = None
 
-        # all notifications for when_built
-        self._when_built = []
+        # all notifications for when_built, when_closed
+        self._when_built = SingleObserver()
+        self._when_closed = SingleObserver()
 
     # XXX backwards-compat for old .is_built for now
     @property
@@ -232,12 +233,18 @@ class Circuit(object):
         Tor before it gets to BUILT) you will receive an errback
         """
         # XXX note to self: we never do an errback; fix this behavior
-        d = defer.Deferred()
         if self.state == 'BUILT':
-            d.callback(self)
-        else:
-            self._when_built.append(d)
-        return d
+            return defer.succeed(self)
+        return self._when_built.when_fired()
+
+    def when_closed(self):
+        """
+        Returns a Deferred that callback()'s (with this Circuit instance)
+        when this circuit hits CLOSED or FAILED.
+        """
+        if self.state in ['CLOSED', 'FAILED']:
+            return defer.succeed(self)
+        return self._when_closed.when_fired()
 
     def web_agent(self, reactor, socks_endpoint, pool=None):
         """
@@ -355,7 +362,7 @@ class Circuit(object):
             return self._closing_deferred
         d = self._torstate.close_circuit(self.id, **kw)
         d.addCallback(close_command_is_queued)
-        return self._closing_deferred
+        return d
 
     def age(self, now=None):
         """
@@ -413,7 +420,7 @@ class Circuit(object):
         if self.state == 'BUILT':
             for x in self.listeners:
                 x.circuit_built(self)
-            self._notify_when_built()
+            self._when_built.fire(self)
 
         elif self.state == 'CLOSED':
             if len(self.streams) > 0:
@@ -443,15 +450,6 @@ class Circuit(object):
             for x in self.listeners:
                 x.circuit_failed(self, **flags)
 
-    # XXX should use the util helper
-    def _notify_when_built(self, err=None):
-        for d in self._when_built:
-            if err is None:
-                d.callback(self)
-            else:
-                d.errback(Failure(err))
-        self._when_built = []
-
     def maybe_call_closing_deferred(self):
         """
         Used internally to callback on the _closing_deferred if it
@@ -461,6 +459,7 @@ class Circuit(object):
         if self._closing_deferred:
             self._closing_deferred.callback(self)
             self._closing_deferred = None
+        self._when_closed.fire(self)
 
     def update_path(self, path):
         """
