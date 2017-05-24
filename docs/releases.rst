@@ -19,8 +19,18 @@ unreleased
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v17.0.0*
 
 
+v0.19.3
+-------
+
+May 24, 2017
+
+ * `txtorcon-0.19.3.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.19.3.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.3>`_ (:download:`local-sig </../signatues/txtorcon-0.19.3.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.19.3.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.3.tar.gz>`_)
+
+ * Incorrect parsing of SocksPort options (see `Issue 237 <https://github.com/meejah/txtorcon/issues/237>`_)
+
+
 v0.19.2
-----------
+-------
 
 May 11, 2017
 
