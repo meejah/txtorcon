@@ -1042,6 +1042,21 @@ class TestSocksFactory(unittest.TestCase):
         self.assertTrue(isinstance(ep, UNIXClientEndpoint))
 
     @defer.inlineCallbacks
+    def test_unix_socket_with_options(self):
+        reactor = Mock()
+        cp = Mock()
+        cp.get_conf = Mock(
+            return_value=defer.succeed({
+                'SocksPort': ['unix:/tmp/boom SomeOption']
+            })
+        )
+
+        ep = yield _create_socks_endpoint(reactor, cp)
+
+        self.assertTrue(isinstance(ep, UNIXClientEndpoint))
+        self.assertEqual("/tmp/boom", ep._path)
+
+    @defer.inlineCallbacks
     def test_nothing_exists(self):
         reactor = Mock()
         cp = Mock()

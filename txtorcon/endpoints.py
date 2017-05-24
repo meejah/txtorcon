@@ -641,6 +641,11 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
         # return from get_conf was an empty dict; we want a list
         socks_ports = []
 
+    # everything in the SocksPort list can include "options" after the
+    # initial value. We don't care about those, but do need to strip
+    # them.
+    socks_ports = [port.split()[0] for port in socks_ports]
+
     # could check platform? but why would you have unix ports on a
     # platform that doesn't?
     unix_ports = set([p.startswith('unix:') for p in socks_ports])
