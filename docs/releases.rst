@@ -21,6 +21,7 @@ unreleased
  * doc fixes from `hotelzululima <https://twitter.com/hotelzululima>`_
  * fix endpoints so `.connect` on them works properly more than once
    from `Brian Warner <https://github.com/warner`_
+ * allow a `CertificateOptions` to be passed as `tls=`
 
 
 v0.19.3
