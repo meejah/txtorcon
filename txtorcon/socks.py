@@ -716,7 +716,10 @@ class TorSocksEndpoint(object):
         if self._tls:
             # XXX requires Twisted 14+
             from twisted.internet.ssl import optionsForClientTLS
-            context = optionsForClientTLS(self._host)
+            if self._tls is True:
+                context = optionsForClientTLS(self._host)
+            else:
+                context = self._tls
             tls_factory = tls.TLSMemoryBIOFactory(context, True, factory)
             socks_factory = _TorSocksFactory(
                 self._host, self._port, 'CONNECT', tls_factory,
