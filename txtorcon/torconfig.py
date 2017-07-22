@@ -1139,9 +1139,12 @@ class TorConfig(object):
                 self._setup_hidden_services(servicelines)
                 continue
 
+            if name in ['SocksPort']:
+                value = 'LineList'
+
             # XXX for Virtual check that it's one of the *Ports things
             # (because if not it should be an error)
-            if value in ('Dependant', 'Dependent', 'Virtual'):
+            elif value in ('Dependant', 'Dependent', 'Virtual'):
                 continue
 
             # there's a thing called "Boolean+Auto" which is -1 for
