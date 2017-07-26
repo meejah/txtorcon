@@ -554,6 +554,34 @@ class SocksConnectTests(unittest.TestCase):
         proto = yield ep.connect(factory)
         self.assertEqual(proto, protocol)
 
+
+    @defer.inlineCallbacks
+    def test_connect_tls_context(self):
+        socks_ep = Mock()
+        transport = proto_helpers.StringTransport()
+
+        def connect(factory):
+            factory.startFactory()
+            proto = factory.buildProtocol("addr")
+            proto.makeConnection(transport)
+            self.assertEqual(b'\x05\x01\x00', transport.value())
+            proto.dataReceived(b'\x05\x00')
+            proto.dataReceived(b'\x05\x00\x00\x01\x00\x00\x00\x00\x00\x00')
+            return proto
+        socks_ep.connect = connect
+        protocol = Mock()
+        factory = Mock()
+        factory.buildProtocol = Mock(return_value=protocol)
+
+        from OpenSSL import SSL
+        class CertificateOptions(object):
+            def getContext(self, *args, **kw):
+                return SSL.Context(SSL.TLSv1_METHOD)
+
+        ep = socks.TorSocksEndpoint(socks_ep, u'meejah.ca', 443, tls=CertificateOptions())
+        proto = yield ep.connect(factory)
+        self.assertEqual(proto, protocol)
+
     @defer.inlineCallbacks
     def test_connect_socks_error(self):
         socks_ep = Mock()
