@@ -305,6 +305,12 @@ class HiddenService(object):
         self.version = ver
         self.group_readable = group_readable
 
+        # lazy-loaded if the @properties are accessed
+        self._private_key = None
+        self._clients = None
+        self._hostname = None
+        self._client_keys = None
+
         # HiddenServiceAuthorizeClient is a list
         # in case people are passing '' for the auth
         if not auth:
@@ -343,24 +349,17 @@ class HiddenService(object):
                 self.conf.mark_unsaved, 'HiddenServices'))
         self.__dict__[name] = value
 
-    def __getattr__(self, name):
-        '''
-        FIXME can't we just move this to @property decorated methods
-        instead?
-        '''
+    @property
+    def private_key(self):
+        if self._private_key is None:
+            with open(os.path.join(self.dir, 'private_key')) as f:
+                self._private_key = f.read().strip()
+        return self._private_key
 
-        # For stealth authentication, the .onion is per-client. So in
-        # that case, we really have no choice here -- we can't have
-        # "a" hostname. So we just barf; it's an error to access to
-        # hostname this way. Instead, use .clients.{hostname, cookie}
-
-        if name == 'private_key':
-            with open(os.path.join(self.dir, name)) as f:
-                data = f.read().strip()
-            self.__dict__[name] = data
-
-        elif name == 'clients':
-            clients = []
+    @property
+    def clients(self):
+        if self._clients is None:
+            self._clients = []
             try:
                 with open(os.path.join(self.dir, 'hostname')) as f:
                     for line in f.readlines():
@@ -368,15 +367,17 @@ class HiddenService(object):
                         # XXX should be a dict?
                         if len(args) > 1:
                             # tag, onion-uri?
-                            clients.append((args[0], args[1]))
+                            self._clients.append((args[0], args[1]))
                         else:
-                            clients.append(('default', args[0]))
+                            self._clients.append(('default', args[0]))
             except IOError:
                 pass
-            self.__dict__[name] = clients
+        return self._clients
 
-        elif name == 'hostname':
-            with open(os.path.join(self.dir, name)) as f:
+    @property
+    def hostname(self):
+        if self._hostname is None:
+            with open(os.path.join(self.dir, 'hostname')) as f:
                 data = f.read().strip()
             host = None
             for line in data.split('\n'):
@@ -388,16 +389,18 @@ class HiddenService(object):
                         ".hostname accessed on stealth-auth'd hidden-service "
                         "with multiple onion addresses."
                     )
-            self.__dict__[name] = h
+            self._hostname = h
+        return self._hostname
 
-        elif name == 'client_keys':
-            fname = os.path.join(self.dir, name)
+    @property
+    def client_keys(self):
+        if self._client_keys is None:
+            fname = os.path.join(self.dir, 'client_keys')
             keys = []
             if os.path.exists(fname):
                 with open(fname) as f:
-                    keys = parse_client_keys(f)
-            self.__dict__[name] = keys
-        return self.__dict__[name]
+                    self._client_keys = parse_client_keys(f)
+        return self._client_keys
 
     def config_attributes(self):
         """
