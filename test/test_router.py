@@ -148,6 +148,51 @@ class RouterTests(unittest.TestCase):
 
         self.assertEqual(router.location.countrycode, 'ZZ')
 
+    @defer.inlineCallbacks
+    def test_get_location_private(self):
+
+        class CountryCodeController(object):
+            def get_info_raw(self, i):
+                return defer.succeed(
+                    '250-ip-to-country/192.168.0.1=ZZ\r\n250 OK'
+                )
+        controller = CountryCodeController()
+        r = Router(controller)
+        r.update('routername', 'deadbeef', 'orhash', 'modified', '192.168.0.1', '', '')
+        loc0 = yield r.get_location()
+        loc1 = yield r.get_location()
+
+        self.assertEqual(loc0.countrycode, 'ZZ')
+        self.assertEqual(loc1.countrycode, 'ZZ')
+
+    @defer.inlineCallbacks
+    def test_get_location_something(self):
+
+        class CountryCodeController(object):
+            def get_info_raw(self, i):
+                return defer.succeed(
+                    '250-ip-to-country/8.8.8.8=US\r\n250 OK'
+                )
+        controller = CountryCodeController()
+        r = Router(controller)
+        r.update('routername', 'deadbeef', 'orhash', 'modified', '8.8.8.8', '', '')
+        loc = yield r.get_location()
+
+        self.assertNotEqual(loc.countrycode, None)
+
+    @defer.inlineCallbacks
+    def test_get_location_unknown(self):
+
+        class CountryCodeController(object):
+            def get_info_raw(self, i):
+                raise RuntimeError("shouldn't happen")
+        controller = CountryCodeController()
+
+        r = Router(controller)
+        loc = yield r.get_location()
+
+        self.assertEqual(loc.countrycode, None)
+
     def test_policy_error(self):
         router = Router(object())
         try:
