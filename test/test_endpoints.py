@@ -246,7 +246,7 @@ class EndpointTests(unittest.TestCase):
         return ep
 
     def test_progress_updates_global_tor(self, ftb):
-        with patch('txtorcon.endpoints.get_global_tor') as tor:
+        with patch('txtorcon.endpoints.get_global_tor_instance') as tor:
             ep = TCPHiddenServiceEndpoint.global_tor(self.reactor, 1234)
             tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
             return ep
