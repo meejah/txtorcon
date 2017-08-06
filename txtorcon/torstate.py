@@ -929,12 +929,10 @@ class TorState(object):
         "ICircuitListener API"
         txtorlog.msg("circuit_launched", circuit)
         self.circuits[circuit.id] = circuit
-        self._circuit_listeners.launched.notify(circuit)
 
     def circuit_extend(self, circuit, router):
         "ICircuitListener API"
         txtorlog.msg("circuit_extend:", circuit.id, router)
-        self._circuit_listeners.extend.notify(circuit, router)
 
     def circuit_built(self, circuit):
         "ICircuitListener API"
