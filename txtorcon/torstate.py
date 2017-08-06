@@ -184,6 +184,24 @@ def _extract_reason(kw):
     return reason
 
 
+def _extract_reason(kw):
+    """
+    Internal helper. Extracts a reason (possibly both reasons!) from
+    the kwargs for a circuit failed or closed event.
+    """
+    try:
+        # we "often" have a REASON
+        reason = kw['REASON']
+        try:
+            # ...and sometimes even have a REMOTE_REASON
+            reason = '{}, {}'.format(reason, kw['REMOTE_REASON'])
+        except KeyError:
+            pass  # should still be the 'REASON' error if we had it
+    except KeyError:
+        reason = "unknown"
+    return reason
+
+
 @implementer(ICircuitListener)
 @implementer(ICircuitContainer)
 @implementer(IRouterContainer)
@@ -411,7 +429,7 @@ class TorState(object):
         self.post_bootstrap.callback(self)
         self.post_boostrap = None
 
-    def undo_attacher(self):
+    def _undo_attacher(self):
         """
         Shouldn't Tor handle this by turning this back to 0 if the
         controller that twiddled it disconnects?
@@ -448,7 +466,7 @@ class TorState(object):
             self._attacher = None
 
         if self._attacher is None:
-            d = self.undo_attacher()
+            d = self._undo_attacher()
             if self._cleanup:
                 react.removeSystemEventTrigger(self._cleanup)
                 self._cleanup = None
@@ -457,7 +475,7 @@ class TorState(object):
             d = self.protocol.set_conf("__LeaveStreamsUnattached", "1")
             self._cleanup = react.addSystemEventTrigger(
                 'before', 'shutdown',
-                self.undo_attacher,
+                self._undo_attacher,
             )
         return d
 
@@ -531,13 +549,90 @@ class TorState(object):
             'CLOSECIRCUIT %s%s' % (circid, flags)
         )
 
+    # Playing with adding a second different "listen for circuit
+    # events" API here: existing one is to implement ICircuitListener
+    # or subclass ICircuitListenerMixIn, and the new one is to use
+    # on_circuit_*() to add individual listeners. Handy when you just
+    # want one?
+
+    # XXX "too magic" if we just make this so that you do
+    # "state.on_circuit.built(callback)" instead of
+    # "state.on_circuit_built" etc?
+    def on_circuit_new(self, callback):
+        """
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_new`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.new.add(callback)
+
+    def on_circuit_launched(self, callback):
+        """
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_launched`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.launched.add(callback)
+
+    def on_circuit_extend(self, callback):
+        """
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_extend`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.extend.add(callback)
+
+    def on_circuit_built(self, callback):
+        """
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_built`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.built.add(callback)
+
+    def on_circuit_closed(self, callback):
+        """
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_closed`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.closed.add(callback)
+
+    def on_circuit_failed(self, callback):
+        """
+        **experimental**
+
+        Callback should take same args as :meth:`txtorcon.interface.ICircuitListener.circuit_failed`
+
+        See also :meth:`txtorcon.TorState.add_circuit_listener`
+        """
+        self._circuit_listeners.failed.add(callback)
+
     def add_circuit_listener(self, icircuitlistener):
+        """
+        Adds a new instance of :class:`txtorcon.interface.ICircuitListener` which
+        will receive updates for all existing and new circuits.
+        """
         listen = ICircuitListener(icircuitlistener)
         for circ in self.circuits.values():
             circ.listen(listen)
         self.circuit_listeners.append(listen)
 
     def add_stream_listener(self, istreamlistener):
+        """
+        Adds a new instance of :class:`txtorcon.interface.IStreamListener` which
+        will receive updates for all existing and new streams.
+        """
         listen = IStreamListener(istreamlistener)
         for stream in self.streams.values():
             stream.listen(listen)
@@ -599,6 +694,7 @@ class TorState(object):
 
     DO_NOT_ATTACH = object()
 
+    #@defer.inlineCallbacks  (this method is async, be nice to mark it ...)
     def _maybe_attach(self, stream):
         """
         If we've got a custom stream-attachment instance (see
@@ -902,10 +998,12 @@ class TorState(object):
         "ICircuitListener API"
         txtorlog.msg("circuit_launched", circuit)
         self.circuits[circuit.id] = circuit
+        self._circuit_listeners.launched.notify(circuit)
 
     def circuit_extend(self, circuit, router):
         "ICircuitListener API"
         txtorlog.msg("circuit_extend:", circuit.id, router)
+        self._circuit_listeners.extend.notify(circuit, router)
 
     def circuit_built(self, circuit):
         "ICircuitListener API"

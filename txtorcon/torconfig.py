@@ -22,27 +22,8 @@ from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.interface import ITorControlProtocol
 from txtorcon.util import find_keywords
-
-
-class _Version(object):
-    """
-    Replacement for incremental.Version until
-    https://github.com/meejah/txtorcon/issues/233 and/or
-    https://github.com/hawkowl/incremental/issues/31 is fixed.
-    """
-    # as of latest incremental, it should only access .package and
-    # .short() via the getVersionString() method that Twisted's
-    # deprecated() uses...
-
-    def __init__(self, package, major, minor, patch):
-        self.package = package
-        self.major = major
-        self.minor = minor
-        self.patch = patch
-
-    def short(self):
-        return '{}.{}.{}'.format(self.major, self.minor, self.patch)
-
+from .onion import IOnionClient, FilesystemHiddenService, AuthenticatedHiddenService
+from .util import _Version
 
 @defer.inlineCallbacks
 @deprecated(_Version("txtorcon", 0, 18, 0))
@@ -878,6 +859,156 @@ class TorConfig(object):
             _endpoint_from_socksport_line(reactor, socks_config)
         )
 
+    def socks_endpoint(self, reactor, port=None):
+        """
+        Returns a TorSocksEndpoint configured to use an already-configured
+        SOCKSPort from the Tor we're connected to. By default, this
+        will be the very first SOCKSPort.
+
+        :param port: a str, the first part of the SOCKSPort line (that
+            is, a port like "9151" or a Unix socket config like
+            "unix:/path". You may also specify a port as an int.
+
+        If you need to use a particular port that may or may not
+        already be configured, see the async method
+        :meth:`txtorcon.TorConfig.create_socks_endpoint`
+        """
+
+        if len(self.SocksPort) == 0:
+            raise RuntimeError(
+                "No SOCKS ports configured"
+            )
+
+        socks_config = None
+        if port is None:
+            socks_config = self.SocksPort[0]
+        else:
+            port = str(port)  # in case e.g. an int passed in
+            if ' ' in port:
+                raise ValueError(
+                    "Can't specify options; use create_socks_endpoint instead"
+                )
+
+            for idx, port_config in enumerate(self.SocksPort):
+                # "SOCKSPort" is a gnarly beast that can have a bunch
+                # of options appended, so we have to split off the
+                # first thing which *should* be the port (or can be a
+                # string like 'unix:')
+                if port_config.split()[0] == port:
+                    socks_config = port_config
+                    break
+        if socks_config is None:
+            raise RuntimeError(
+                "No SOCKSPort configured for port {}".format(port)
+            )
+
+        return self._endpoint_from_socksport_line(reactor, socks_config)
+
+    def _endpoint_from_socksport_line(self, reactor, socks_config):
+        """
+        Internal helper. Returns an IStreamClientEndpoint for the give
+        config, which is of the same format expected by the SOCKSPort
+        option in Tor.
+        """
+        if socks_config.startswith('unix:'):
+            # XXX wait, can SOCKSPort lines with "unix:/path" still
+            # include options afterwards? What about if the path has a
+            # space in it?
+            return UNIXClientEndpoint(reactor, socks_config[5:])
+
+        # options like KeepAliveIsolateSOCKSAuth can be appended
+        # to a SocksPort line...
+        if ' ' in socks_config:
+            socks_config = socks_config.split()[0]
+        if ':' in socks_config:
+            host, port = socks_config.split(':', 1)
+            port = int(port)
+        else:
+            host = '127.0.0.1'
+            port = int(socks_config)
+        return TCP4ClientEndpoint(reactor, host, port)
+
+    @defer.inlineCallbacks
+    def create_socks_endpoint(self, reactor, socks_config):
+        """
+        Creates a new TorSocksEndpoint instance given a valid
+        configuration line for ``SocksPort``; if this configuration
+        isn't already in the underlying tor, we add it. Note that this
+        method may call :meth:`txtorcon.TorConfig.save()` on this instance.
+
+        Note that calling this with `socks_config=None` is equivalent
+        to calling `.socks_endpoint` (which is not async).
+
+        XXX socks_config should be .. i dunno, but there's fucking
+        options and craziness, e.g. default Tor Browser Bundle is:
+        ['9150 IPv6Traffic PreferIPv6 KeepAliveIsolateSOCKSAuth',
+        '9155']
+
+        XXX maybe we should say "socks_port" as the 3rd arg, insist
+        it's an int, and then allow/support all the other options
+        (e.g. via kwargs)
+
+        XXX we could avoid the "maybe call .save()" thing; worth it?
+        (actually, no we can't or the Tor won't have it config'd)
+        """
+
+        yield self.post_bootstrap
+
+        if socks_config is None:
+            if len(self.SocksPort) == 0:
+                raise RuntimeError(
+                    "socks_port is None and Tor has no SocksPorts configured"
+                )
+            socks_config = self.SocksPort[0]
+        else:
+            if not any([socks_config in port for port in self.SocksPort]):
+                # need to configure Tor
+                self.SocksPort.append(socks_config)
+                try:
+                    yield self.save()
+                except TorProtocolError as e:
+                    extra = ''
+                    if socks_config.startswith('unix:'):
+                        # XXX so why don't we check this for the
+                        # caller, earlier on?
+                        extra = '\nNote Tor has specific ownership/permissions ' +\
+                                'requirements for unix sockets and parent dir.'
+                    raise RuntimeError(
+                        "While configuring SOCKSPort to '{}', error from"
+                        " Tor: {}{}".format(
+                            socks_config, e, extra
+                        )
+                    )
+
+        defer.returnValue(
+            self._endpoint_from_socksport_line(reactor, socks_config)
+        )
+
+    def onion_create(self, ports, auth=None, directory=None, private_key=None):
+        """
+        Creates a new Onion service.
+
+        :param ports: list of strings like "80 127.0.0.1:80"
+
+        :param auth: None, or an IOnionAuthentication provider (in
+            practice, an instance of :class:`OnionAuthBasic` or
+            :class:`OnionAuthStealth`)
+
+        :param directory: None means an ephemeral hidden service (the
+            default). Otherwise, a "normal", persistent hidden-service
+            using data in the provided directory (if the directory is
+            empty, a new private key will be written there by Tor).
+
+        :param private_key: If creating an ephemeral service, this can
+            be provided. This will be something previously retrieved from
+            the ``.private_key`` attribute of a HiddenService instance.
+
+        :return: Deferred that fires with the HiddenService instance
+            once it is configured.
+        """
+        # ephemeral service if directory is None
+        # can't specify directory *and* private_key
+
     # FIXME should re-name this to "tor_protocol" to be consistent
     # with other things? Or rename the other things?
     """
@@ -987,8 +1118,9 @@ class TorConfig(object):
         code to determine what sort of thing a key is?
         """
 
+        # XXX FIXME uhm...how to do all the different types of hidden-services?
         if name.lower() == 'hiddenservices':
-            return HiddenService
+            return FilesystemHiddenService
         return type(self.parsers[name])
 
     def _conf_changed(self, arg):
@@ -1070,7 +1202,27 @@ class TorConfig(object):
         for (key, value) in self.unsaved.items():
             if key == 'HiddenServices':
                 self.config['HiddenServices'] = value
+                # using a list here because at least one unit-test
+                # cares about order -- and conceivably order *could*
+                # matter here, to Tor...
+                services = list()
+                # authenticated services get flattened into the HiddenServices list...
                 for hs in value:
+                    if IOnionClient.providedBy(hs):
+                        parent = IOnionClient(hs).parent
+                        if parent not in services:
+                            services.append(parent)
+                    elif isinstance(hs, EphemeralHiddenService):
+                        raise ValueError(
+                            "Only txtorcon.HiddenService instances may be added"
+                            " via TorConfig.hiddenservices; ephemeral services"
+                            " must be created with 'create_onion_service'."
+                        )
+                    else:
+                        if hs not in services:
+                            services.append(hs)
+
+                for hs in services:
                     for (k, v) in hs.config_attributes():
                         if k == 'HiddenServiceDir':
                             if v not in directories:
@@ -1224,19 +1376,69 @@ class TorConfig(object):
                     parsed = self.parsers[rn].parse(v)
                 self.config[rn] = parsed
 
-        # can't just return in @inlineCallbacks-decorated methods
+        # get any ephemeral services we own, or detached services.
+        # these are *not* _ListWrappers because we don't care if they
+        # change, nothing in Tor's config exists for these (probably
+        # begging the question: why are we putting them in here at all
+        # then...?)
+        try:
+            ephemeral = yield self.protocol.get_info('onions/current')
+            print("asdf")
+        except Exception as e:
+            print("asdfsdf {}".format(e))
+            self.config['EphemeralOnionServices'] = []
+        else:
+            onions = []
+            for line in ephemeral['onions/current'].split('\n'):
+                onion = line.strip()
+                if onion:
+                    onions.append(
+                        EphemeralHiddenService(
+                            self, None,  # no way to discover ports=
+                            hostname=onion,
+                            detach=False,
+                            discard_key=True,  # we don't know it...
+                        )
+                    )
+            self.config['EphemeralOnionServices'] = onions
+
+        try:
+            detached = yield self.protocol.get_info('onions/detached')
+        except Exception:
+            self.config['DetachedOnionServices'] = []
+        else:
+            onions = []
+            for line in detached['onions/detached'].split('\n'):
+                onion = line.strip()
+                if onion:
+                    onions.append(
+                        EphemeralHiddenService(
+                            self, None, hostname=onion, detach=True,
+                            discard_key=True,
+                        )
+                    )
+            self.config['DetachedOnionServices'] = onions
         defer.returnValue(self)
 
     def _setup_hidden_services(self, servicelines):
+
         def maybe_add_hidden_service():
             if directory is not None:
                 if directory not in directories:
                     directories.append(directory)
-                    hs.append(
-                        HiddenService(
+                    if not auth:
+                        service = FilesystemHiddenService(
                             self, directory, ports, auth, ver, group_read
                         )
-                    )
+                        hs.append(service)
+                    else:
+                        auth_type, clients = auth.split(' ', 1)
+                        clients = clients.split(',')
+                        parent_service = AuthenticatedHiddenService(
+                            self, directory, ports, auth_type, clients, ver, group_read
+                        )
+                        for client_name in parent_service.client_names():
+                            hs.append(parent_service.get_client(client_name))
                 else:
                     raise RuntimeError("Trying to add hidden service with same HiddenServiceDir: %s" % directory)
 
@@ -1266,7 +1468,7 @@ class TorConfig(object):
                     )
                 ports = []
                 ver = None
-                auth = []
+                auth = None
                 group_read = 0
 
             elif k == 'HiddenServicePort':
@@ -1276,7 +1478,11 @@ class TorConfig(object):
                 ver = int(v)
 
             elif k == 'HiddenServiceAuthorizeClient':
-                auth.append(v)
+                if auth is not None:
+                    # definitely error, or keep going?
+                    raise ValueError("Multiple HiddenServiceAuthorizeClient lines for one service")
+                print("AUTH '{}'".format(v))
+                auth = v
 
             elif k == 'HiddenServiceDirGroupReadable':
                 group_read = int(v)

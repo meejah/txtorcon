@@ -118,6 +118,26 @@ class Router(object):
         # assert type(idhash) is not bytes
         # assert type(orhash) is not bytes
 
+    def get_location(self):
+        """
+        Returns a Deferred that fires with a NetLocation object for this
+        router.
+        """
+        if self._location:
+            return defer.succeed(self._location)
+        if self.ip != 'unknown':
+            self._location = NetLocation(self.ip)
+        else:
+            self._location = NetLocation(None)
+        if not self._location.countrycode and self.ip != 'unknown':
+            # see if Tor is magic and knows more...
+            d = self.controller.get_info_raw('ip-to-country/' + self.ip)
+            d.addCallback(self._set_country)
+            d.addCallback(lambda _: self._location)
+            return d
+        return defer.succeed(self._location)
+
+    # XXX fixme, deprecate
     @property
     def location(self):
         """
