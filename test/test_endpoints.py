@@ -86,7 +86,6 @@ class EndpointTests(unittest.TestCase):
         self.patcher.start()
         self.config.bootstrap()
         d = defer.Deferred()
-        print("deee", self.config, d, self.config.post_bootstrap)
         self.config.post_bootstrap.addCallback(lambda _: d.callback(self.config))
         return d
 
@@ -284,7 +283,39 @@ class EndpointTests(unittest.TestCase):
         self.protocol.commands[0][1].callback(
             'ServiceID=blarglyfoo\nPrivateKey=bigbadkeyblob'
         )
-        if True:
+        self.protocol.events['HS_DESC'](
+            'UPLOAD blarglyfoo x x x x'
+        )
+        self.protocol.events['HS_DESC'](
+            'UPLOADED blarglyfoo x x x x'
+        )
+
+        def check(port):
+            self.assertEqual('blarglyfoo.onion', port.getHost().onion_uri)
+            self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
+            self.assertEqual(len(self.config.EphemeralOnionServices), 1)
+        d0.addCallback(check).addErrback(self.fail)
+        return d0
+
+    def test_multiple_disk(self, ftb):
+        tmp = self.mktemp()
+        os.mkdir(tmp)
+        with open(os.path.join(tmp, 'hostname'), 'w') as f:
+            f.write('blarglyfoo.onion')
+        with open(os.path.join(tmp, 'private_key'), 'w') as f:
+            f.write('some hex or something')
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, hidden_service_dir=tmp)
+        d0 = ep.listen(NoOpProtocolFactory())
+
+        @defer.inlineCallbacks
+        def more_listen(arg):
+            yield arg.stopListening()
+            d1 = ep.listen(NoOpProtocolFactory())
+
+            defer.returnValue(arg)
+            return
+        d0.addBoth(more_listen)
+        if False:
             self.protocol.events['HS_DESC'](
                 'UPLOAD blarglyfoo x x x x'
             )
@@ -294,8 +325,10 @@ class EndpointTests(unittest.TestCase):
 
         def check(port):
             self.assertEqual('blarglyfoo.onion', port.getHost().onion_uri)
+            self.assertEqual('some hex or something', port.getHost().onion_key)
             self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
-            self.assertEqual(len(self.config.EphemeralOnionServices), 1)
+            self.assertEqual(len(self.config.HiddenServices), 1)
+            self.assertIs(self.config.HiddenServices[0], port.onion_service)
         d0.addCallback(check).addErrback(self.fail)
         return d0
 
@@ -361,6 +394,13 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.local_port, 1234)
         self.assertEqual(ep.hidden_service_dir, '/foo/bar')
 
+    def test_parse_via_plugin_key_and_dir(self, ftb):
+        with self.assertRaises(ValueError) as ctx:
+            serverFromString(
+                self.reactor,
+                'onion:88:localPort=1234:hiddenServiceDir=/foo/bar:privateKey=blarg'
+            )
+
     def test_parse_user_path(self, ftb):
         # this makes sure we expand users and symlinks in
         # hiddenServiceDir args. see Issue #77
@@ -422,6 +462,66 @@ class EndpointTests(unittest.TestCase):
 
         finally:
             os.chdir(orig)
+
+    def test_illegal_arg_ephemeral_auth(self, ftb):
+        # XXX I think Tor does actually support this now?
+        reactor = Mock()
+        config = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            TCPHiddenServiceEndpoint(
+                reactor, config, 80,
+                stealth_auth=['alice', 'bob'],
+                ephemeral=True,
+            )
+        self.assertIn(
+            "onion services don't support stealth_auth",
+            str(ctx.exception),
+        )
+
+    def test_illegal_arg_ephemeral_hsdir(self, ftb):
+        reactor = Mock()
+        config = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            TCPHiddenServiceEndpoint(
+                reactor, config, 80,
+                ephemeral=True,
+                hidden_service_dir='/tmp/foo',
+            )
+        self.assertIn(
+            "Specifying 'hidden_service_dir' is incompatible",
+            str(ctx.exception),
+        )
+
+    def test_illegal_arg_disk_privkey(self, ftb):
+        reactor = Mock()
+        config = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            TCPHiddenServiceEndpoint(
+                reactor, config, 80,
+                ephemeral=False,
+                private_key=b'something',
+            )
+        self.assertIn(
+            "only understood for ephemeral services",
+            str(ctx.exception),
+        )
+
+    @defer.inlineCallbacks
+    def test_illegal_arg_torconfig(self, ftb):
+
+        class Foo(object):
+            pass
+        config = Foo()
+
+        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123)
+        factory = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            port = yield ep.listen(factory)
+
+        self.assertIn(
+            "Expected a TorConfig instance but",
+            str(ctx.exception)
+        )
 
     @defer.inlineCallbacks
     def test_stealth_auth(self, ftb):

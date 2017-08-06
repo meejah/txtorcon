@@ -83,7 +83,6 @@ class FakeControlProtocol(object):
         d.callback(answer)
 
     def get_info(self, info):
-        print("hi {} {}".format(info, self.answers))
         a = self.answers.pop()
         return defer.succeed(a)
 
