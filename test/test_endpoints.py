@@ -176,9 +176,7 @@ class EndpointTests(unittest.TestCase):
                 ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
                                                                client, 80)
                 port_d = ep.listen(NoOpProtocolFactory())
-                print(self.protocol.commands)
                 self.protocol.commands[0][1].callback("ServiceID=service\nPrivateKey=blob")
-                print(self.protocol.events)
                 self.protocol.events['HS_DESC']('UPLOAD service x x x x')
                 self.protocol.events['HS_DESC']('UPLOADED service x x x x')
                 port = yield port_d
@@ -194,7 +192,6 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_basic(self, ftb):
-        print("BASIC {}".format(ftb))
         self.protocol.answers = [
             'config/names=',
             {'onions/detached':''},
@@ -207,10 +204,8 @@ class EndpointTests(unittest.TestCase):
 
         ep = TCPHiddenServiceEndpoint(reactor, self.config, 123)
         self.config.bootstrap()
-        print("DINGA {}".format(self.config.post_bootstrap))
         assert self.config.post_bootstrap.called
         x = yield self.config.post_bootstrap
-        print("HOLA", x)
         self.assertTrue(IProgressProvider.providedBy(ep))
 
         try:
@@ -280,7 +275,6 @@ class EndpointTests(unittest.TestCase):
 
         @defer.inlineCallbacks
         def more_listen(arg):
-            print("MOAR LIST", arg)
             yield arg.stopListening()
             d1 = ep.listen(NoOpProtocolFactory())
 
@@ -290,9 +284,6 @@ class EndpointTests(unittest.TestCase):
         self.protocol.commands[0][1].callback(
             'ServiceID=blarglyfoo\nPrivateKey=bigbadkeyblob'
         )
-        print("d0", d0)
-        print(self.protocol.commands)
-        print(self.protocol.events)
         if True:
             self.protocol.events['HS_DESC'](
                 'UPLOAD blarglyfoo x x x x'
@@ -302,10 +293,8 @@ class EndpointTests(unittest.TestCase):
             )
 
         def check(port):
-            print("check", port)
             self.assertEqual('blarglyfoo.onion', port.getHost().onion_uri)
             self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
-            print([o.hostname for o in self.config.EphemeralOnionServices])
             self.assertEqual(len(self.config.EphemeralOnionServices), 1)
         d0.addCallback(check).addErrback(self.fail)
         return d0
@@ -335,7 +324,6 @@ class EndpointTests(unittest.TestCase):
 
             # make sure listen() correctly configures our hidden-serivce
             # with the explicit directory we passed in above
-            print("about to listen")
             yield ep.listen(NoOpProtocolFactory())
 
             self.assertEqual(1, len(self.config.HiddenServices))
@@ -450,11 +438,9 @@ class EndpointTests(unittest.TestCase):
         d = ep.listen(NoOpProtocolFactory())
 
         def foo(fail):
-            print("ERROR", fail)
             return fail
         d.addErrback(foo)
         yield d  # returns 'port'
-        print(self.config.EphemeralOnionServices)
         self.assertEqual(1, len(self.config.HiddenServices))
         self.assertEqual(self.config.HiddenServices[0].dir, '/dev/null')
         self.assertEqual(
