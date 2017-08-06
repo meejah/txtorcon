@@ -229,6 +229,21 @@ class EndpointTests(unittest.TestCase):
         ep._tor_progress_update(*args)
         self.assertTrue(ding.called_with(*args))
 
+    def test_progress_updates_error(self, ftb):
+        config = TorConfig()
+        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123)
+
+        self.assertTrue(IProgressProvider.providedBy(ep))
+        prog = IProgressProvider(ep)
+
+        def boom(*args, **kw):
+            raise RuntimeError("the bad stuff")
+        prog.add_progress_listener(boom)
+        args = (50, "blarg", "Doing that thing we talked about.")
+        # kind-of cheating, test-wise?
+        ep._tor_progress_update(*args)
+        # if we ignore the progress-listener error: success
+
     def test_progress_updates_private_tor(self, ftb):
         with patch('txtorcon.controller.launch') as tor:
             with patch('txtorcon.endpoints._global_tor_config'):
