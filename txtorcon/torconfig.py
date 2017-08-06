@@ -1383,9 +1383,7 @@ class TorConfig(object):
         # then...?)
         try:
             ephemeral = yield self.protocol.get_info('onions/current')
-            print("asdf")
         except Exception as e:
-            print("asdfsdf {}".format(e))
             self.config['EphemeralOnionServices'] = []
         else:
             onions = []
@@ -1481,7 +1479,6 @@ class TorConfig(object):
                 if auth is not None:
                     # definitely error, or keep going?
                     raise ValueError("Multiple HiddenServiceAuthorizeClient lines for one service")
-                print("AUTH '{}'".format(v))
                 auth = v
 
             elif k == 'HiddenServiceDirGroupReadable':
