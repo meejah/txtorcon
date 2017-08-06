@@ -47,16 +47,28 @@ _global_tor_lock = defer.DeferredLock()
 # "creating" the TorConfig instance
 
 
-# XXX in an ideal world, this would return a Tor instance and All
-# Would Be Well. However, this API is public and returns a TorConfig
-# .. but needs to return the very TorConfig from the Tor instance that
-# get_global_tor_instance() returns
+# in an ideal world, we'd have "get_global_tor()" and it would return
+# a Tor instance, and all would be well. HOWEVER, "get_global_tor" was
+# previously released to return a TorConfig instance. So it still
+# needs to do that, *and* it should be the very same TorConfig
+# instance attached to the "global Tor instance".
+# Anyway: get_global_tor_instance() is the newst API, and the one new
+# code should use (if at all -- ideally just use a .global_tor()
+# factory-function call instead)
 
 @defer.inlineCallbacks
 def get_global_tor_instance(reactor,
                             control_port=None,
                             progress_updates=None,
                             _tor_launcher=None):
+    """
+    Normal users shouldn't need to call this; use
+    TCPHiddenServiceEndpoint::system_tor instead.
+
+    :return Tor: a 'global to this Python process' instance of
+        Tor. There isn't one of these until the first time this method
+        is called. All calls to this method return the same instance.
+    """
     global _global_tor
     global _global_tor_lock
     yield _global_tor_lock.acquire()
@@ -255,7 +267,7 @@ class TCPHiddenServiceEndpoint(object):
         unless you have a specific need to.
 
         You can also access this global txtorcon instance via
-        :meth:`txtorcon.get_global_tor` (which is precisely what
+        :meth:`txtorcon.get_global_tor_instance` (which is precisely what
         this method uses to get it).
 
         All keyword options have defaults (e.g. random ports, or
@@ -268,7 +280,7 @@ class TCPHiddenServiceEndpoint(object):
 
         def progress(*args):
             progress.target(*args)
-        tor = get_global_tor(
+        tor = get_global_tor_instance(
             reactor,
             control_port=control_port,
             progress_updates=progress
@@ -276,7 +288,7 @@ class TCPHiddenServiceEndpoint(object):
         # tor is a Deferred here, but endpoint resolves it in the
         # listen() call. Also, we want it to resolve to a TorConfig,
         # not a Tor
-        tor.addCallback(lambda tor: tor.config)
+        tor.addCallback(lambda tor: tor.get_config())
         r = TCPHiddenServiceEndpoint(
             reactor, tor, public_port,
             hidden_service_dir=hidden_service_dir,
@@ -311,7 +323,7 @@ class TCPHiddenServiceEndpoint(object):
             progress_updates=progress,
             control_port=control_port,
         )
-        tor.addCallback(lambda t: t.config)
+        tor.addCallback(lambda t: t.get_config())
         r = TCPHiddenServiceEndpoint(
             reactor, tor, public_port,
             hidden_service_dir=hidden_service_dir,
@@ -435,12 +447,16 @@ class TCPHiddenServiceEndpoint(object):
         self.progress_listeners.append(listener)
 
     def _tor_progress_update(self, prog, tag, summary):
-        log.msg('%d%% %s' % (prog, summary))
         # we re-adjust the percentage-scale, using 105% and 110% for
         # the two parts of waiting for descriptor upload. That is, we
         # want: 110 * constant == 100.0
+        scaled_prog = prog * (100.0 / 110.0)
+        log.msg('%d%% %s' % (scaled_prog, summary))
         for p in self.progress_listeners:
-            p(prog * (100.0 / 110.0), tag, summary)
+            try:
+                p(scaled_prog, tag, summary)
+            except Exception:
+                pass
 
     @defer.inlineCallbacks
     def listen(self, protocolfactory):
