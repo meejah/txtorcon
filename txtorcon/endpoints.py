@@ -488,10 +488,8 @@ class TCPHiddenServiceEndpoint(object):
                 )
             )
         # just to be sure:
-        print("sure? {} {}".format(self._config, self._config.post_bootstrap))
 #        self._config.bootstrap()
         yield self._config.post_bootstrap
-        print("sure!")
 
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would
@@ -557,7 +555,6 @@ class TCPHiddenServiceEndpoint(object):
                 )
         else:
             if not self.ephemeral:
-                print("HI", self._config.HiddenServices)
                 for hs in self._config.HiddenServices:
                     if hs.dir == self.hidden_service_dir:
                         self.hiddenservice = hs
