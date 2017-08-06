@@ -25,6 +25,7 @@ from txtorcon.util import find_keywords
 from .onion import IOnionClient, FilesystemHiddenService, AuthenticatedHiddenService
 from .util import _Version
 
+
 @defer.inlineCallbacks
 @deprecated(_Version("txtorcon", 0, 18, 0))
 def launch_tor(config, reactor,
@@ -857,131 +858,6 @@ class TorConfig(object):
 
         defer.returnValue(
             _endpoint_from_socksport_line(reactor, socks_config)
-        )
-
-    def socks_endpoint(self, reactor, port=None):
-        """
-        Returns a TorSocksEndpoint configured to use an already-configured
-        SOCKSPort from the Tor we're connected to. By default, this
-        will be the very first SOCKSPort.
-
-        :param port: a str, the first part of the SOCKSPort line (that
-            is, a port like "9151" or a Unix socket config like
-            "unix:/path". You may also specify a port as an int.
-
-        If you need to use a particular port that may or may not
-        already be configured, see the async method
-        :meth:`txtorcon.TorConfig.create_socks_endpoint`
-        """
-
-        if len(self.SocksPort) == 0:
-            raise RuntimeError(
-                "No SOCKS ports configured"
-            )
-
-        socks_config = None
-        if port is None:
-            socks_config = self.SocksPort[0]
-        else:
-            port = str(port)  # in case e.g. an int passed in
-            if ' ' in port:
-                raise ValueError(
-                    "Can't specify options; use create_socks_endpoint instead"
-                )
-
-            for idx, port_config in enumerate(self.SocksPort):
-                # "SOCKSPort" is a gnarly beast that can have a bunch
-                # of options appended, so we have to split off the
-                # first thing which *should* be the port (or can be a
-                # string like 'unix:')
-                if port_config.split()[0] == port:
-                    socks_config = port_config
-                    break
-        if socks_config is None:
-            raise RuntimeError(
-                "No SOCKSPort configured for port {}".format(port)
-            )
-
-        return self._endpoint_from_socksport_line(reactor, socks_config)
-
-    def _endpoint_from_socksport_line(self, reactor, socks_config):
-        """
-        Internal helper. Returns an IStreamClientEndpoint for the give
-        config, which is of the same format expected by the SOCKSPort
-        option in Tor.
-        """
-        if socks_config.startswith('unix:'):
-            # XXX wait, can SOCKSPort lines with "unix:/path" still
-            # include options afterwards? What about if the path has a
-            # space in it?
-            return UNIXClientEndpoint(reactor, socks_config[5:])
-
-        # options like KeepAliveIsolateSOCKSAuth can be appended
-        # to a SocksPort line...
-        if ' ' in socks_config:
-            socks_config = socks_config.split()[0]
-        if ':' in socks_config:
-            host, port = socks_config.split(':', 1)
-            port = int(port)
-        else:
-            host = '127.0.0.1'
-            port = int(socks_config)
-        return TCP4ClientEndpoint(reactor, host, port)
-
-    @defer.inlineCallbacks
-    def create_socks_endpoint(self, reactor, socks_config):
-        """
-        Creates a new TorSocksEndpoint instance given a valid
-        configuration line for ``SocksPort``; if this configuration
-        isn't already in the underlying tor, we add it. Note that this
-        method may call :meth:`txtorcon.TorConfig.save()` on this instance.
-
-        Note that calling this with `socks_config=None` is equivalent
-        to calling `.socks_endpoint` (which is not async).
-
-        XXX socks_config should be .. i dunno, but there's fucking
-        options and craziness, e.g. default Tor Browser Bundle is:
-        ['9150 IPv6Traffic PreferIPv6 KeepAliveIsolateSOCKSAuth',
-        '9155']
-
-        XXX maybe we should say "socks_port" as the 3rd arg, insist
-        it's an int, and then allow/support all the other options
-        (e.g. via kwargs)
-
-        XXX we could avoid the "maybe call .save()" thing; worth it?
-        (actually, no we can't or the Tor won't have it config'd)
-        """
-
-        yield self.post_bootstrap
-
-        if socks_config is None:
-            if len(self.SocksPort) == 0:
-                raise RuntimeError(
-                    "socks_port is None and Tor has no SocksPorts configured"
-                )
-            socks_config = self.SocksPort[0]
-        else:
-            if not any([socks_config in port for port in self.SocksPort]):
-                # need to configure Tor
-                self.SocksPort.append(socks_config)
-                try:
-                    yield self.save()
-                except TorProtocolError as e:
-                    extra = ''
-                    if socks_config.startswith('unix:'):
-                        # XXX so why don't we check this for the
-                        # caller, earlier on?
-                        extra = '\nNote Tor has specific ownership/permissions ' +\
-                                'requirements for unix sockets and parent dir.'
-                    raise RuntimeError(
-                        "While configuring SOCKSPort to '{}', error from"
-                        " Tor: {}{}".format(
-                            socks_config, e, extra
-                        )
-                    )
-
-        defer.returnValue(
-            self._endpoint_from_socksport_line(reactor, socks_config)
         )
 
     def onion_create(self, ports, auth=None, directory=None, private_key=None):

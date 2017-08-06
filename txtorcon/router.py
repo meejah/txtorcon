@@ -12,7 +12,7 @@ import six
 from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue, succeed
 from twisted.web.client import readBody
 
 
@@ -124,7 +124,7 @@ class Router(object):
         router.
         """
         if self._location:
-            return defer.succeed(self._location)
+            return succeed(self._location)
         if self.ip != 'unknown':
             self._location = NetLocation(self.ip)
         else:
@@ -135,7 +135,7 @@ class Router(object):
             d.addCallback(self._set_country)
             d.addCallback(lambda _: self._location)
             return d
-        return defer.succeed(self._location)
+        return succeed(self._location)
 
     # XXX fixme, deprecate
     @property

@@ -61,8 +61,8 @@ class EndpointTests(unittest.TestCase):
         self.reactor = FakeReactorTcp(self)
         self.protocol = FakeControlProtocol([
             'config/names=',
-            {'onions/detached':''},
-            {'onions/current':''},
+            {'onions/detached': ''},
+            {'onions/current': ''},
         ])
         self.protocol.event_happened('INFO', 'something craaaaaaazy')
         self.protocol.event_happened(
@@ -166,7 +166,7 @@ class EndpointTests(unittest.TestCase):
                 self.config.bootstrap()
                 return defer.succeed(Tor(Mock(), self.protocol, _tor_config=self.config))
             return bam
-        with patch('txtorcon.endpoints.launch_tor') as launch_mock:
+        with patch('txtorcon.controller.launch') as launch_mock:
             with patch('txtorcon.controller.connect', new_callable=boom):
                 client = clientFromString(
                     self.reactor,
@@ -193,8 +193,8 @@ class EndpointTests(unittest.TestCase):
     def test_basic(self, ftb):
         self.protocol.answers = [
             'config/names=',
-            {'onions/detached':''},
-            {'onions/current':''},
+            {'onions/detached': ''},
+            {'onions/current': ''},
         ]
         listen = RuntimeError("listen")
         connect = RuntimeError("connect")
@@ -204,7 +204,7 @@ class EndpointTests(unittest.TestCase):
         ep = TCPHiddenServiceEndpoint(reactor, self.config, 123)
         self.config.bootstrap()
         assert self.config.post_bootstrap.called
-        x = yield self.config.post_bootstrap
+        yield self.config.post_bootstrap
         self.assertTrue(IProgressProvider.providedBy(ep))
 
         try:
@@ -275,7 +275,7 @@ class EndpointTests(unittest.TestCase):
         @defer.inlineCallbacks
         def more_listen(arg):
             yield arg.stopListening()
-            d1 = ep.listen(NoOpProtocolFactory())
+            ep.listen(NoOpProtocolFactory())
 
             defer.returnValue(arg)
             return
@@ -310,7 +310,7 @@ class EndpointTests(unittest.TestCase):
         @defer.inlineCallbacks
         def more_listen(arg):
             yield arg.stopListening()
-            d1 = ep.listen(NoOpProtocolFactory())
+            ep.listen(NoOpProtocolFactory())
 
             defer.returnValue(arg)
             return
@@ -395,7 +395,7 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.hidden_service_dir, '/foo/bar')
 
     def test_parse_via_plugin_key_and_dir(self, ftb):
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ValueError):
             serverFromString(
                 self.reactor,
                 'onion:88:localPort=1234:hiddenServiceDir=/foo/bar:privateKey=blarg'
@@ -516,7 +516,7 @@ class EndpointTests(unittest.TestCase):
         ep = TCPHiddenServiceEndpoint(self.reactor, config, 123)
         factory = Mock()
         with self.assertRaises(ValueError) as ctx:
-            port = yield ep.listen(factory)
+            yield ep.listen(factory)
 
         self.assertIn(
             "Expected a TorConfig instance but",

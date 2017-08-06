@@ -585,7 +585,6 @@ class AuthenticatedHiddenServiceClient(object):
         return self._parent.version
 
 
-
 @implementer(IAuthenticatedOnionClients)
 class AuthenticatedHiddenService(object):
     """

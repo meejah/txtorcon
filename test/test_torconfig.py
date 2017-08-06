@@ -545,7 +545,6 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append({'SomethingExciting': 'a,b'})
         conf = TorConfig(self.protocol)
 
-        from txtorcon.torconfig import HiddenService
         self.assertEqual(conf.get_type('SomethingExciting'), CommaList)
         self.assertEqual(conf.get_type('HiddenServices'), FilesystemOnionService)
 

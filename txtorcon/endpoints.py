@@ -33,7 +33,7 @@ from twisted.python.util import FancyEqMixin
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
-from .torconfig import TorConfig, launch_tor, HiddenService
+from .torconfig import TorConfig
 from .onion import FilesystemOnionService, EphemeralOnionService
 from .torconfig import _endpoint_from_socksport_line
 from .util import SingleObserver, _Version
@@ -496,7 +496,7 @@ class TCPHiddenServiceEndpoint(object):
         # self._config is always a Deferred; see __init__
         self._config = yield self._config
         if not isinstance(self._config, TorConfig):
-           raise ValueError(
+            raise ValueError(
                 'Expected a TorConfig instance but '
                 'got "{}.{}" instead.'.format(
                     self._config.__class__.__module__,

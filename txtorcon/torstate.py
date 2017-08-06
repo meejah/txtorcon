@@ -184,24 +184,6 @@ def _extract_reason(kw):
     return reason
 
 
-def _extract_reason(kw):
-    """
-    Internal helper. Extracts a reason (possibly both reasons!) from
-    the kwargs for a circuit failed or closed event.
-    """
-    try:
-        # we "often" have a REASON
-        reason = kw['REASON']
-        try:
-            # ...and sometimes even have a REMOTE_REASON
-            reason = '{}, {}'.format(reason, kw['REMOTE_REASON'])
-        except KeyError:
-            pass  # should still be the 'REASON' error if we had it
-    except KeyError:
-        reason = "unknown"
-    return reason
-
-
 @implementer(ICircuitListener)
 @implementer(ICircuitContainer)
 @implementer(IRouterContainer)
@@ -625,7 +607,7 @@ class TorState(object):
 
     DO_NOT_ATTACH = object()
 
-    #@defer.inlineCallbacks  (this method is async, be nice to mark it ...)
+    # @defer.inlineCallbacks  (this method is async, be nice to mark it ...)
     def _maybe_attach(self, stream):
         """
         If we've got a custom stream-attachment instance (see
