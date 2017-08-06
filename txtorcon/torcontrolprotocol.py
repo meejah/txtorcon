@@ -6,9 +6,7 @@ from __future__ import with_statement
 
 import os
 import re
-import sys
 import base64
-import traceback
 from binascii import b2a_hex, hexlify
 
 from twisted.python import log
@@ -27,9 +25,6 @@ from txtorcon.interface import ITorControlProtocol
 from .spaghetti import FSM, State, Transition
 from .util import maybe_coroutine
 
-import os
-import re
-import base64
 
 DEFAULT_VALUE = 'DEFAULT'
 
