@@ -6,6 +6,7 @@ import tempfile
 import functools
 from six import StringIO
 from mock import Mock, patch
+from os.path import join
 
 from zope.interface import implementer, directlyProvides
 from twisted.trial import unittest
@@ -27,10 +28,11 @@ from txtorcon import torconfig
 from txtorcon.torconfig import parse_client_keys
 from txtorcon.torconfig import CommaList
 from txtorcon.torconfig import launch_tor
+from txtorcon.onion import FilesystemOnionService
 
 
 @implementer(ITorControlProtocol)     # actually, just get_info_raw
-class FakeControlProtocol:
+class FakeControlProtocol(object):
     """
     This is a little weird, but in most tests the answer at the top of
     the list is sent back immediately in an already-called
@@ -79,6 +81,11 @@ class FakeControlProtocol:
         d = self.pending[0]
         self.pending = self.pending[1:]
         d.callback(answer)
+
+    def get_info(self, info):
+        print("hi {} {}".format(info, self.answers))
+        a = self.answers.pop()
+        return defer.succeed(a)
 
     def get_info_raw(self, info):
         if len(self.answers) == 0:
@@ -541,7 +548,7 @@ class ConfigTests(unittest.TestCase):
 
         from txtorcon.torconfig import HiddenService
         self.assertEqual(conf.get_type('SomethingExciting'), CommaList)
-        self.assertEqual(conf.get_type('HiddenServices'), HiddenService)
+        self.assertEqual(conf.get_type('HiddenServices'), FilesystemOnionService)
 
     def test_immediate_hiddenservice_append(self):
         '''issue #88. we check that a .append(hs) works on a blank TorConfig'''
@@ -1189,25 +1196,31 @@ HiddenServiceAuthorizeClient Dependant''')
         self.assertTrue(conf.needs_save())
 
     def test_multiple_startup_services(self):
+        fake0 = tempfile.mkdtemp()
+        fake1 = tempfile.mkdtemp()
+
+        with open(join(fake0, "hostname"), 'w') as f:
+            f.write('blarglyfoo.onion cookie # client: bob\n')
+
         conf = TorConfig(FakeControlProtocol(['config/names=']))
-        conf._setup_hidden_services('''HiddenServiceDir=/fake/path
+        conf._setup_hidden_services('''HiddenServiceDir={}
 HiddenServicePort=80 127.0.0.1:1234
 HiddenServiceVersion=2
-HiddenServiceAuthorizeClient=basic
-HiddenServiceDir=/some/other/fake/path
+HiddenServiceAuthorizeClient=basic bob
+HiddenServiceDir={}
 HiddenServicePort=80 127.0.0.1:1234
-HiddenServicePort=90 127.0.0.1:2345''')
+HiddenServicePort=90 127.0.0.1:2345'''.format(fake0, fake1))
 
         self.assertEqual(len(conf.hiddenservices), 2)
 
-        self.assertEqual(conf.hiddenservices[0].dir, '/fake/path')
-        self.assertEqual(conf.hiddenservices[0].version, 2)
-        self.assertEqual(len(conf.hiddenservices[0].authorize_client), 1)
-        self.assertEqual(conf.hiddenservices[0].authorize_client[0], 'basic')
-        self.assertEqual(len(conf.hiddenservices[0].ports), 1)
-        self.assertEqual(conf.hiddenservices[0].ports[0], '80 127.0.0.1:1234')
+        hs = conf.hiddenservices[0]
+        self.assertEqual(hs.hidden_service_directory, fake0)
+        self.assertEqual(hs.version, 2)
+        self.assertEqual(hs.authorize_client, 'bob cookie')
+        self.assertEqual(len(hs.ports), 1)
+        self.assertEqual(hs.ports[0], '80 127.0.0.1:1234')
 
-        self.assertEqual(conf.hiddenservices[1].dir, '/some/other/fake/path')
+        self.assertEqual(conf.hiddenservices[1].dir, fake1)
         self.assertEqual(len(conf.hiddenservices[1].ports), 2)
         self.assertEqual(conf.hiddenservices[1].ports[0], '80 127.0.0.1:1234')
         self.assertEqual(conf.hiddenservices[1].ports[1], '90 127.0.0.1:2345')
@@ -1253,7 +1266,7 @@ HiddenServiceDir=/fake/path'''
         self.assertTrue(self.protocol.post_bootstrap.called)
         self.assertTrue(conf.post_bootstrap is None or conf.post_bootstrap.called)
         self.assertEqual(len(conf.hiddenservices), 1)
-        self.assertTrue(conf.hiddenservices[0].conf)
+#        self.assertTrue(conf.hiddenservices[0].conf)
         conf.hiddenservices[0].version = 3
         self.assertTrue(conf.needs_save())
         conf.hiddenservices[0].version = 4
