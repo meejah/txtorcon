@@ -173,6 +173,8 @@ def find_keywords(args, key_filter=lambda x: not x.startswith("$")):
         a dict of key->value (both strings) of all name=value type
         keywords found in args.
     """
+    if type(args) is bytes:
+        args = args.decode('ascii')
     filtered = [x for x in args if '=' in x and key_filter(x.split('=')[0])]
     return dict(x.split('=', 1) for x in filtered)
 
@@ -494,3 +496,23 @@ class SingleObserver(object):
             d.callback(self._fired)
         self._observers = None
         return value  # so we're transparent if used as a callback
+
+
+class _Version(object):
+    """
+    Replacement for incremental.Version until
+    https://github.com/meejah/txtorcon/issues/233 and/or
+    https://github.com/hawkowl/incremental/issues/31 is fixed.
+    """
+    # as of latest incremental, it should only access .package and
+    # .short() via the getVersionString() method that Twisted's
+    # deprecated() uses...
+
+    def __init__(self, package, major, minor, patch):
+        self.package = package
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+
+    def short(self):
+        return '{}.{}.{}'.format(self.major, self.minor, self.patch)

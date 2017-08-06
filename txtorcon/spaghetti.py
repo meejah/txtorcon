@@ -9,13 +9,34 @@ import warnings
 
 class FSM(object):
     """
-    Override Matcher and Handler and pass instances to add_handler to
-    create transitions between states. If a transition handles
-    something, it returns the next state.
+    Pass callables for matcher and handler to add_handler to create
+    transitions between states. A "matcher" is a predicate, and if a
+    transition handles something, it returns the next state.
 
-    If you want something to track global state, but it in your data
-    instance passed to process so that transitions, states can access
-    it.
+    If you want something to track global state, put it in your data
+    instance passed to process so that transitions and states can
+    access it.
+
+    Example:
+    idle = State("IDLE")
+    stuff = State("STUFF")
+
+    def is_capital(letter):
+        return letter in string.uppercase
+
+    def is_small(letter):
+        return letter in string.lowercase
+
+    def do_something_with_capitals(letter):
+        print("Got capital:", letter)
+        return stuff
+
+    idle.add_transition(
+        Transition(stuff, is_capital, self.do_something_with_capitals)
+    )
+    stuff.add_transition(
+        Transition(idle, is_lower, None)
+    )
     """
 
     states = []
