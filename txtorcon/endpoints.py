@@ -480,7 +480,7 @@ class TCPHiddenServiceEndpoint(object):
         # self._config is always a Deferred; see __init__
         self._config = yield self._config
         if not isinstance(self._config, TorConfig):
-           raise RuntimeError(
+           raise ValueError(
                 'Expected a TorConfig instance but '
                 'got "{}.{}" instead.'.format(
                     self._config.__class__.__module__,
@@ -528,7 +528,7 @@ class TCPHiddenServiceEndpoint(object):
             already = self.hiddenservice is not None
         else:
             hs_dirs = [hs.dir for hs in self._config.HiddenServices if hasattr(hs, 'dir')]
-            already = self.hidden_service_dir in hs_dirs
+            already = os.path.abspath(self.hidden_service_dir) in hs_dirs
 
         if not already:
             authlines = []
@@ -556,7 +556,7 @@ class TCPHiddenServiceEndpoint(object):
         else:
             if not self.ephemeral:
                 for hs in self._config.HiddenServices:
-                    if hs.dir == self.hidden_service_dir:
+                    if hs.dir == os.path.abspath(self.hidden_service_dir):
                         self.hiddenservice = hs
 
         assert self.hiddenservice is not None, "internal error"
