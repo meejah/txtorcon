@@ -18,6 +18,8 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v17.0.0*
 
+ * doc fixes from `hotelzululima <https://twitter.com/hotelzululima>`_
+
 
 v0.19.3
 -------
