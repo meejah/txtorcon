@@ -31,7 +31,7 @@ directory over an onion service:
 
 .. code-block:: shell-session
 
-   $ sudo apt-get install python-txtorcon
+   $ sudo apt-get install --install-suggests python-txtorcon
    $ twistd web --port "onion:80" --path ~/public_html
 
 txtorcon strives to provide sane and **safe** defaults. txtorcon is `a

@@ -138,7 +138,7 @@ service):
 
 .. code-block:: shell-session
 
-    $ sudo apt-get install python-txtorcon
+    $ sudo apt-get install --install-suggests python-txtorcon
     $ twistd -n web --port "onion:80" --path ~/public_html
 
 
