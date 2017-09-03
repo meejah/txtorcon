@@ -764,7 +764,6 @@ class TorClientEndpoint(object):
         # socks_hostname/socks_port (in which case we do NOT want
         # guessing_enabled
         if self._socks_endpoint is None:
-            self._socks_port_iter = iter(self.socks_ports_to_try)
             self._socks_guessing_enabled = True
         else:
             self._socks_guessing_enabled = False
@@ -809,7 +808,7 @@ class TorClientEndpoint(object):
             proto = yield socks_ep.connect(protocolfactory)
             defer.returnValue(proto)
         else:
-            for socks_port in self._socks_port_iter:
+            for socks_port in self.socks_ports_to_try:
                 tor_ep = TCP4ClientEndpoint(
                     self._reactor,
                     "127.0.0.1",  # XXX socks_hostname, no?
