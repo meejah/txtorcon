@@ -7,21 +7,25 @@ txtorcon is an implementation of the `control-spec
 <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
 for `Tor <https://www.torproject.org/projects/projects.html.en>`_
 using the `Twisted <https://twistedmatrix.com/trac/>`_ networking
-library for `Python <http://python.org/>`_.
+library for `Python <http://python.org/>`_ (*supports Py2, PyPy and
+Py3*).
 
-With txtorcon you can launch tor; connect to already-running tor
-instances; use tor as a client (via SOCKS5); set up services over tor;
-change all aspects of configuration; track live state (active circuits
-and streams, etc); do DNS via Tor; and query other information from
-the tor daemon.
+**txtorcon gives you a live view of all Tor state and the ability to
+control most aspects of Tor's operation**. With txtorcon you can
+launch tor; connect to already-running tor instances; use tor as a
+client (via SOCKS5); set up (onion) services over tor; change all
+aspects of configuration; track live state (active circuits and
+streams, etc); do DNS via Tor; and query other information from the
+tor daemon.
 
-txtorcon would be of interest to anyone wishing to write event-based
+txtorcon is the library to use if you want to write event-based
 software in Python that uses the Tor network as a client or a service
-(or just wants to display information about a locally running
-tor). Twisted already provides many robust protocol implementations,
-deployment, logging and integration with GTK, Qt and other graphics
-frameworks -- so txtorcon can be used for command-line or GUI
-applications or integrate with long-lived daemons easily.
+(or **integrate Tor support for existing Twisted-using applications**,
+or display information about a locally running tor). Twisted already
+provides many robust protocol implementations, deployment, logging and
+integration with GTK, Qt and other graphics frameworks -- so txtorcon
+can be used for command-line or GUI applications or integrate with
+long-lived daemons easily.
 
 In fact, due to support for endpoints (adding the ``tor:`` and
 ``onion:`` plugins), many Twisted applications can now integrate with
@@ -38,7 +42,11 @@ directory over an onion service:
 <https://www.torproject.org/docs/debian.html.en>`_ first).
 
 txtorcon strives to provide sane and **safe** defaults. txtorcon is `a
-Tor project <https://www.torproject.org/projects/projects.html.en>`_.
+Tor project
+<https://www.torproject.org/projects/projects.html.en>`_. The
+applications `Tahoe-LAFS <https://tahoe-lafs.org>`_ and `Crossbar.io
+<https://crossbar.io>`_ have successfully integrated Tor support using
+txtorcon.
 
 
 .. _features:
