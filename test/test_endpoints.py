@@ -918,14 +918,19 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
 
         proto = object()
+        ports_attempted = []
 
         class FakeSocks5(object):
 
-            def __init__(self, *args, **kw):
-                pass
+            def __init__(self, tor_ep, *args, **kw):
+                self.tor_port = tor_ep._port
 
             def connect(self, *args, **kw):
-                return proto
+                ports_attempted.append(self.tor_port)
+                if self.tor_port != 9150:
+                    return Failure(error.ConnectError("foo"))
+                else:
+                    return proto
 
             def _get_address(self):
                 return defer.succeed(None)
@@ -934,6 +939,19 @@ class TestTorClientEndpoint(unittest.TestCase):
         endpoint = TorClientEndpoint('', 0)
         p2 = yield endpoint.connect(None)
         self.assertTrue(proto is p2)
+        self.assertEqual(
+            ports_attempted,
+            [9050, 9150]
+        )
+
+        # now, if we re-use the endpoint, we should again attempt the
+        # two ports
+        p3 = yield endpoint.connect(None)
+        self.assertTrue(proto is p3)
+        self.assertEqual(
+            ports_attempted,
+            [9050, 9150, 9050, 9150]
+        )
 
     @patch('txtorcon.endpoints.TorSocksEndpoint')
     @defer.inlineCallbacks
