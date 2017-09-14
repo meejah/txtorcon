@@ -957,7 +957,10 @@ class TorConfig(object):
         if '_accept_all_' in self.__dict__ and rn in self.unsaved:
             return self.unsaved[rn]
         self._maybe_create_listwrapper(rn)
-        return self.config[rn]
+        v = self.config[rn]
+        if v == DEFAULT_VALUE:
+            v = self.__dict__['_defaults'].get(rn, DEFAULT_VALUE)
+        return v
 
     def __contains__(self, item):
         if item in self.unsaved and '_accept_all_' in self.__dict__:
@@ -1123,7 +1126,28 @@ class TorConfig(object):
         return name
 
     @defer.inlineCallbacks
+    def _get_defaults(self):
+        try:
+            defaults_raw = yield self.protocol.get_info_raw("config/defaults")
+            defaults = {}
+            for line in defaults_raw.split('\n')[1:]:
+                k, v = line.split(' ', 1)
+                if k in defaults:
+                    if isinstance(defaults[k], list):
+                        defaults[k].append(v)
+                    else:
+                        defaults[k] = [defaults[k], v]
+                else:
+                    defaults[k] = v
+        except TorProtocolError:
+            # must be a version of Tor without config/defaults
+            defaults = dict()
+        defer.returnValue(defaults)
+
+    @defer.inlineCallbacks
     def _do_setup(self, data):
+        defaults = self.__dict__['_defaults'] = yield self._get_defaults()
+
         for line in data.split('\n'):
             if line == "config/names=":
                 continue
@@ -1138,6 +1162,27 @@ class TorConfig(object):
                     'HiddenServiceOptions')
                 self._setup_hidden_services(servicelines)
                 continue
+
+            # there's a whole bunch of FooPortLines (where "Foo" is
+            # "Socks", "Control", etc) and some have defaults, some
+            # don't but they all have FooPortLines, FooPort, and
+            # __FooPort definitions so we only "do stuff" for the
+            # "FooPortLines"
+            if name.endswith('PortLines'):
+                rn = self._find_real_name(name[:-5])
+                self.parsers[rn] = Port()
+                self.list_parsers.add(rn)
+                v = yield self.protocol.get_conf(name[:-5])
+                v = v[name[:-5]]
+
+                if v == DEFAULT_VALUE or v == 'auto':
+                    v = defaults.get(v, None)
+
+                initial = []
+                if v is not None:
+                    initial = [self.parsers[rn].parse(v)]
+                self.config[rn] = _ListWrapper(
+                    initial, functools.partial(self.mark_unsaved, rn))
 
             # XXX for Virtual check that it's one of the *Ports things
             # (because if not it should be an error)
@@ -1164,6 +1209,8 @@ class TorConfig(object):
             if is_list_config_type(inst.__class__):
                 self.list_parsers.add(rn)
                 parsed = self.parsers[rn].parse(v)
+                if parsed == [DEFAULT_VALUE]:
+                    parsed = defaults.get(rn, [])
                 self.config[rn] = _ListWrapper(
                     parsed, functools.partial(self.mark_unsaved, rn))
 
