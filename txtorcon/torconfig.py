@@ -1170,7 +1170,7 @@ class TorConfig(object):
             # "FooPortLines"
             if name.endswith('PortLines'):
                 rn = self._find_real_name(name[:-5])
-                self.parsers[rn] = Port()
+                self.parsers[rn] = String()  # not Port() because options etc
                 self.list_parsers.add(rn)
                 v = yield self.protocol.get_conf(name[:-5])
                 v = v[name[:-5]]
