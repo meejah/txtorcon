@@ -1090,6 +1090,26 @@ class TorAttributeTestsNoConfig(unittest.TestCase):
             self.assertEqual(gold, cfg)
 
 
+class DormantTests(unittest.TestCase):
+
+    def setUp(self):
+        reactor = Mock()
+        self.proto = Mock()
+        self.cfg = Mock()
+        self.tor = Tor(reactor, self.proto, _tor_config=self.cfg)
+
+    @defer.inlineCallbacks
+    def test_ready(self):
+        self.proto.get_info = Mock(return_value={
+            "dormant": "0",
+            "status/enough-dir-info": "1",
+            "status/circuit-established": "1",
+        })
+        ready = yield self.tor.is_ready()
+        self.assertTrue(ready, "should be ready")
+
+
+
 class TorStreamTests(unittest.TestCase):
 
     def setUp(self):
