@@ -22,6 +22,8 @@ unreleased
  * fix endpoints so `.connect` on them works properly more than once
    from `Brian Warner <https://github.com/warner`_
  * allow a `CertificateOptions` to be passed as `tls=`
+ * add method :func:`txtorcon.Tor.is_ready`
+ * add method :func:`txtorcon.Tor.become_ready`
 
 
 v0.19.3
