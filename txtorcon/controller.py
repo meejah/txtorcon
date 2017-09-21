@@ -643,6 +643,41 @@ class Tor(object):
         )
 
     @inlineCallbacks
+    def is_ready(self):
+        """
+        :return: a Deferred that fires with True if this Tor is
+            non-dormant and ready to go. This will return True if `GETINFO
+            dormant` is false or if `GETINFO status/enough-dir-info` is
+            true or if `GETINFO status/circuit-established` true.
+        """
+        info = yield self.protocol.get_info(
+            "dormant",
+            "status/enough-dir-info",
+            "status/circuit-established",
+        )
+        returnValue(
+            not(
+                int(info["dormant"])
+                or not int(info["status/enough-dir-info"])
+                or not int(info["status/circuit-established"])
+            )
+        )
+
+    @inlineCallbacks
+    def become_ready(self):
+        """
+        Make sure Tor is no longer dormant.
+
+        If Tor is currently dormant, it is woken up by doing a DNS
+        request for torproject.org
+        """
+        ready = yield self.is_ready()
+        if not ready:
+            yield self.dns_resolve(u'torproject.org')
+        return
+
+
+    @inlineCallbacks
     def _default_socks_endpoint(self):
         """
         Returns a Deferred that fires with our default SOCKS endpoint

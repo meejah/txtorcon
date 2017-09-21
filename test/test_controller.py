@@ -1090,6 +1090,48 @@ class TorAttributeTestsNoConfig(unittest.TestCase):
             self.assertEqual(gold, cfg)
 
 
+class DormantTests(unittest.TestCase):
+
+    def setUp(self):
+        reactor = Mock()
+        self.proto = Mock()
+        self.cfg = Mock()
+        self.tor = Tor(reactor, self.proto, _tor_config=self.cfg)
+        self.tor.dns_resolve = Mock()
+
+    @defer.inlineCallbacks
+    def test_ready(self):
+        self.proto.get_info = Mock(return_value={
+            "dormant": "0",
+            "status/enough-dir-info": "1",
+            "status/circuit-established": "1",
+        })
+        ready = yield self.tor.is_ready()
+        self.assertTrue(ready, "should be ready")
+
+    @defer.inlineCallbacks
+    def test_become_ready_already(self):
+        self.proto.get_info = Mock(return_value={
+            "dormant": "0",
+            "status/enough-dir-info": "1",
+            "status/circuit-established": "1",
+        })
+        ready = yield self.tor.become_ready()
+        self.assertTrue(
+            self.tor.dns_resolve.mock_calls == []
+        )
+
+    @defer.inlineCallbacks
+    def test_become_ready_asleep(self):
+        self.proto.get_info = Mock(return_value={
+            "dormant": "1",
+            "status/enough-dir-info": "1",
+            "status/circuit-established": "1",
+        })
+        ready = yield self.tor.become_ready()
+        self.assertEqual(1, len(self.tor.dns_resolve.mock_calls))
+
+
 class TorStreamTests(unittest.TestCase):
 
     def setUp(self):
