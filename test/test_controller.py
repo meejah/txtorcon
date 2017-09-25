@@ -1116,7 +1116,7 @@ class DormantTests(unittest.TestCase):
             "status/enough-dir-info": "1",
             "status/circuit-established": "1",
         })
-        ready = yield self.tor.become_ready()
+        yield self.tor.become_ready()
         self.assertTrue(
             self.tor.dns_resolve.mock_calls == []
         )
@@ -1128,7 +1128,7 @@ class DormantTests(unittest.TestCase):
             "status/enough-dir-info": "1",
             "status/circuit-established": "1",
         })
-        ready = yield self.tor.become_ready()
+        yield self.tor.become_ready()
         self.assertEqual(1, len(self.tor.dns_resolve.mock_calls))
 
 

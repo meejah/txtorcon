@@ -554,7 +554,6 @@ class SocksConnectTests(unittest.TestCase):
         proto = yield ep.connect(factory)
         self.assertEqual(proto, protocol)
 
-
     @defer.inlineCallbacks
     def test_connect_tls_context(self):
         socks_ep = Mock()
@@ -574,6 +573,7 @@ class SocksConnectTests(unittest.TestCase):
         factory.buildProtocol = Mock(return_value=protocol)
 
         from OpenSSL import SSL
+
         class CertificateOptions(object):
             def getContext(self, *args, **kw):
                 return SSL.Context(SSL.TLSv1_METHOD)

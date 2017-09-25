@@ -657,9 +657,9 @@ class Tor(object):
         )
         returnValue(
             not(
-                int(info["dormant"])
-                or not int(info["status/enough-dir-info"])
-                or not int(info["status/circuit-established"])
+                int(info["dormant"]) or
+                not int(info["status/enough-dir-info"]) or
+                not int(info["status/circuit-established"])
             )
         )
 
@@ -675,7 +675,6 @@ class Tor(object):
         if not ready:
             yield self.dns_resolve(u'torproject.org')
         return
-
 
     @inlineCallbacks
     def _default_socks_endpoint(self):
