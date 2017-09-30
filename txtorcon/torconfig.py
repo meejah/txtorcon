@@ -1176,11 +1176,13 @@ class TorConfig(object):
                 v = yield self.protocol.get_conf(name[:-5])
                 v = v[name[:-5]]
 
-                if v == DEFAULT_VALUE or v == 'auto':
-                    v = defaults.get(v, None)
-
                 initial = []
-                if v is not None:
+                if v == DEFAULT_VALUE or v == 'auto':
+                    try:
+                        initial = defaults[name[:-5]]
+                    except KeyError:
+                        initial = []
+                else:
                     initial = [self.parsers[rn].parse(v)]
                 self.config[rn] = _ListWrapper(
                     initial, functools.partial(self.mark_unsaved, rn))
@@ -1216,7 +1218,11 @@ class TorConfig(object):
                     parsed, functools.partial(self.mark_unsaved, rn))
 
             else:
-                self.config[rn] = self.parsers[rn].parse(v)
+                if v == '' or v == DEFAULT_VALUE:
+                    parsed = self.parsers[rn].parse(defaults.get(rn, DEFAULT_VALUE))
+                else:
+                    parsed = self.parsers[rn].parse(v)
+                self.config[rn] = parsed
 
         # can't just return in @inlineCallbacks-decorated methods
         defer.returnValue(self)

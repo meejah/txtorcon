@@ -12,6 +12,7 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer
 from twisted.internet.interfaces import IReactorCore
+from twisted.python.failure import Failure
 
 from txtorcon import TorProtocolError
 from txtorcon import ITorControlProtocol
@@ -131,6 +132,84 @@ class CheckAnswer:
 
     def __call__(self, x):
         self.test.assertEqual(x, self.answer)
+
+
+class DefaultsTests(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_default_port(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nfoo Boolean')
+        protocol.answers.append('config/defaults=\nfoo 1')
+        protocol.answers.append({'foo': ''})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(config.foo, True)
+
+
+class PortLineDefaultsTests(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_default_port(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=\nSocksPort 1234\nSocksPort 4321')
+        protocol.answers.append({'SocksPort': 'auto'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertTrue('1234' in config.SocksPort)
+        self.assertTrue('4321' in config.SocksPort)
+
+    @defer.inlineCallbacks
+    def test_default_port_but_not_default(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=\nSocksPort 1234\nSocksPort 4321')
+        protocol.answers.append({'SocksPort': '8888'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertTrue('8888' in config.SocksPort)
+        self.assertFalse('4321' in config.SocksPort)
+        self.assertFalse('1234' in config.SocksPort)
+
+    @defer.inlineCallbacks
+    def test_many_defaults(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=\nSocksPort 1234\nSocksPort 4321\nSocksPort 42')
+        protocol.answers.append({'SocksPort': 'auto'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertTrue('1234' in config.SocksPort)
+        self.assertTrue('4321' in config.SocksPort)
+        self.assertTrue('42' in config.SocksPort)
+        self.assertEqual(3, len(config.SocksPort))
+
+    @defer.inlineCallbacks
+    def test_no_default(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=')
+        protocol.answers.append({'SocksPort': 'auto'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(0, len(config.SocksPort))
+
+    @defer.inlineCallbacks
+    def test_no_defaults_support(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append(Failure(TorProtocolError(552, "foo")))
+        protocol.answers.append({'SocksPort': 'auto'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(0, len(config.SocksPort))
 
 
 class ConfigTests(unittest.TestCase):
