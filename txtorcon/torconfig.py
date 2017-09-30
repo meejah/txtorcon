@@ -762,6 +762,7 @@ class TorConfig(object):
         self._supports = dict(
             HiddenServiceDirGroupReadable=False
         )
+        self._defaults = dict()
 
         self.post_bootstrap = defer.Deferred()
         if self.protocol:

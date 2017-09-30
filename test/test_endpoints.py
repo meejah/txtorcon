@@ -70,6 +70,7 @@ class EndpointTests(unittest.TestCase):
         self.protocol.answers.append(
             'config/names=\nHiddenServiceOptions Virtual\nControlPort LineList'
         )
+        self.protocol.answers.append('')
         self.protocol.answers.append('HiddenServiceOptions')
         # why do i have to pass a dict for this V but not this ^
         self.protocol.answers.append({'ControlPort': '37337'})
