@@ -24,6 +24,7 @@ unreleased
  * allow a `CertificateOptions` to be passed as `tls=`
  * add method :func:`txtorcon.Tor.is_ready`
  * add method :func:`txtorcon.Tor.become_ready`
+ * fix handling of certain defaults (`*PortLines` and friends)
 
 
 v0.19.3
