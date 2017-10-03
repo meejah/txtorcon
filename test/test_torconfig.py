@@ -147,6 +147,17 @@ class DefaultsTests(unittest.TestCase):
 
         self.assertEqual(config.foo, True)
 
+    @defer.inlineCallbacks
+    def test_default_linelist(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSomeThing LineList')
+        protocol.answers.append('config/defaults=\nSomeThing value0\nSomeThing value1')
+        protocol.answers.append({'SomeThing': 'DEFAULT'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(list(config.SomeThing), ['value0', 'value1'])
+
 
 class PortLineDefaultsTests(unittest.TestCase):
 
