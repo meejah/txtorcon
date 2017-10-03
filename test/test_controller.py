@@ -146,6 +146,8 @@ class LaunchTorTests(unittest.TestCase):
             return defer.succeed('version=0.1.2.3')
         elif cmd == 'GETINFO events/names':
             return defer.succeed('events/names=STATUS_CLIENT')
+        elif cmd == 'GETINFO config/defaults':
+            return defer.succeed('config/defaults=')
         return defer.succeed(None)
 
     def _fake_event_listener(self, what, cb):
@@ -609,6 +611,8 @@ class LaunchTorTests(unittest.TestCase):
                     return defer.succeed('version=0.1.2.3')
                 elif cmd == 'GETINFO events/names':
                     return defer.succeed('events/names=STATUS_CLIENT')
+                elif cmd == 'GETINFO config/defaults':
+                    return defer.succeed('config/defaults=')
                 return defer.succeed(None)
             tpp.queue_command = fake_queue
             proto.makeConnection(Mock())
@@ -1116,7 +1120,7 @@ class DormantTests(unittest.TestCase):
             "status/enough-dir-info": "1",
             "status/circuit-established": "1",
         })
-        ready = yield self.tor.become_ready()
+        yield self.tor.become_ready()
         self.assertTrue(
             self.tor.dns_resolve.mock_calls == []
         )
@@ -1128,7 +1132,7 @@ class DormantTests(unittest.TestCase):
             "status/enough-dir-info": "1",
             "status/circuit-established": "1",
         })
-        ready = yield self.tor.become_ready()
+        yield self.tor.become_ready()
         self.assertEqual(1, len(self.tor.dns_resolve.mock_calls))
 
 

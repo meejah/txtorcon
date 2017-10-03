@@ -12,6 +12,7 @@ from twisted.trial import unittest
 from twisted.test import proto_helpers
 from twisted.internet import defer
 from twisted.internet.interfaces import IReactorCore
+from twisted.python.failure import Failure
 
 from txtorcon import TorProtocolError
 from txtorcon import ITorControlProtocol
@@ -133,6 +134,95 @@ class CheckAnswer:
         self.test.assertEqual(x, self.answer)
 
 
+class DefaultsTests(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_default_port(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nfoo Boolean')
+        protocol.answers.append('config/defaults=\nfoo 1')
+        protocol.answers.append({'foo': ''})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(config.foo, True)
+
+    @defer.inlineCallbacks
+    def test_default_linelist(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSomeThing LineList')
+        protocol.answers.append('config/defaults=\nSomeThing value0\nSomeThing value1')
+        protocol.answers.append({'SomeThing': 'DEFAULT'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(list(config.SomeThing), ['value0', 'value1'])
+
+
+class PortLineDefaultsTests(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_default_port(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=\nSocksPort 1234\nSocksPort 4321')
+        protocol.answers.append({'SocksPort': 'auto'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertTrue('1234' in config.SocksPort)
+        self.assertTrue('4321' in config.SocksPort)
+
+    @defer.inlineCallbacks
+    def test_default_port_but_not_default(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=\nSocksPort 1234\nSocksPort 4321')
+        protocol.answers.append({'SocksPort': '8888'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertTrue('8888' in config.SocksPort)
+        self.assertFalse('4321' in config.SocksPort)
+        self.assertFalse('1234' in config.SocksPort)
+
+    @defer.inlineCallbacks
+    def test_many_defaults(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=\nSocksPort 1234\nSocksPort 4321\nSocksPort 42')
+        protocol.answers.append({'SocksPort': 'auto'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertTrue('1234' in config.SocksPort)
+        self.assertTrue('4321' in config.SocksPort)
+        self.assertTrue('42' in config.SocksPort)
+        self.assertEqual(3, len(config.SocksPort))
+
+    @defer.inlineCallbacks
+    def test_no_default(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=')
+        protocol.answers.append({'SocksPort': 'auto'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(0, len(config.SocksPort))
+
+    @defer.inlineCallbacks
+    def test_no_defaults_support(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append(Failure(TorProtocolError(552, "foo")))
+        protocol.answers.append({'SocksPort': 'auto'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(0, len(config.SocksPort))
+
+
 class ConfigTests(unittest.TestCase):
 
     def setUp(self):
@@ -140,6 +230,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_boolean_parse_error(self):
         self.protocol.answers.append('config/names=\nfoo Boolean')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': 'bar'})
         cfg = TorConfig(self.protocol)
         return self.assertFailure(cfg.post_bootstrap, ValueError)
@@ -164,6 +255,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_boolean_parser(self):
         self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '0'})
         self.protocol.answers.append({'bar': '1'})
         # FIXME does a Tor controller only ever send "0" and "1" for
@@ -175,6 +267,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_save_boolean(self):
         self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '0'})
         self.protocol.answers.append({'bar': '1'})
 
@@ -189,6 +282,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_read_boolean_after_save(self):
         self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '0'})
         self.protocol.answers.append({'bar': '1'})
 
@@ -203,6 +297,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_save_boolean_with_strange_values(self):
         self.protocol.answers.append('config/names=\nfoo Boolean\nbar Boolean')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '0'})
         self.protocol.answers.append({'bar': '1'})
 
@@ -218,6 +313,7 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append(
             'config/names=\nfoo Boolean+Auto\nbar Boolean+Auto\nbaz Boolean+Auto'
         )
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '0'})
         self.protocol.answers.append({'bar': '1'})
         self.protocol.answers.append({'baz': 'auto'})
@@ -231,6 +327,7 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append(
             'config/names=\nfoo Boolean+Auto\nbar Boolean+Auto\nbaz Boolean+Auto\nqux Boolean+Auto'
         )
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '1'})
         self.protocol.answers.append({'bar': '1'})
         self.protocol.answers.append({'baz': '1'})
@@ -256,6 +353,7 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append(
             'config/names=\nfoo Boolean+Auto'
         )
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '1'})
 
         conf = TorConfig(self.protocol)
@@ -271,18 +369,21 @@ class ConfigTests(unittest.TestCase):
 
     def test_string_parser(self):
         self.protocol.answers.append('config/names=\nfoo String')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': 'bar'})
         conf = TorConfig(self.protocol)
         self.assertEqual(conf.foo, 'bar')
 
     def test_int_parser(self):
         self.protocol.answers.append('config/names=\nfoo Integer')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '123'})
         conf = TorConfig(self.protocol)
         self.assertEqual(conf.foo, 123)
 
     def test_int_validator(self):
         self.protocol.answers.append('config/names=\nfoo Integer')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '123'})
         conf = TorConfig(self.protocol)
 
@@ -316,24 +417,28 @@ class ConfigTests(unittest.TestCase):
 
     def test_int_parser_error(self):
         self.protocol.answers.append('config/names=\nfoo Integer')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '123foo'})
         cfg = TorConfig(self.protocol)
         self.assertFailure(cfg.post_bootstrap, ValueError)
 
     def test_int_parser_error_2(self):
         self.protocol.answers.append('config/names=\nfoo Integer')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '1.23'})
         cfg = TorConfig(self.protocol)
         return self.assertFailure(cfg.post_bootstrap, ValueError)
 
     def test_linelist_parser(self):
         self.protocol.answers.append('config/names=\nfoo LineList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': 'bar\nbaz'})
         conf = TorConfig(self.protocol)
         self.assertEqual(conf.foo, ['bar', 'baz'])
 
     def test_listlist_parser_with_list(self):
         self.protocol.answers.append('config/names=\nfoo LineList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': [1, 2, 3]})
 
         conf = TorConfig(self.protocol)
@@ -341,18 +446,21 @@ class ConfigTests(unittest.TestCase):
 
     def test_float_parser(self):
         self.protocol.answers.append('config/names=\nfoo Float')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '1.23'})
         conf = TorConfig(self.protocol)
         self.assertEqual(conf.foo, 1.23)
 
     def test_float_parser_error(self):
         self.protocol.answers.append('config/names=\nfoo Float')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '1.23fff'})
         cfg = TorConfig(self.protocol)
         return self.assertFailure(cfg.post_bootstrap, ValueError)
 
     def test_list(self):
         self.protocol.answers.append('config/names=\nbing CommaList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'bing': 'foo,bar,baz'})
         conf = TorConfig(self.protocol)
         self.assertEqual(conf.config['bing'], ['foo', 'bar', 'baz'])
@@ -360,6 +468,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_single_list(self):
         self.protocol.answers.append('config/names=\nbing CommaList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'bing': 'foo'})
         conf = TorConfig(self.protocol)
         self.assertTrue(conf.post_bootstrap.called)
@@ -367,12 +476,14 @@ class ConfigTests(unittest.TestCase):
 
     def test_multi_list_space(self):
         self.protocol.answers.append('config/names=\nbing CommaList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'bing': 'foo, bar , baz'})
         conf = TorConfig(self.protocol)
         self.assertEqual(conf.bing, ['foo', 'bar', 'baz'])
 
     def test_descriptor_access(self):
         self.protocol.answers.append('config/names=\nbing CommaList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'bing': 'foo,bar'})
 
         conf = TorConfig(self.protocol)
@@ -394,6 +505,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_unknown_descriptor(self):
         self.protocol.answers.append('config/names=\nbing CommaList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'bing': 'foo'})
 
         conf = TorConfig(self.protocol)
@@ -407,6 +519,7 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append(
             'config/names=\nSomethingExciting NonExistantParserType'
         )
+        self.protocol.answers.append('')  # defaults
         cfg = TorConfig(self.protocol)
         return self.assertFailure(cfg.post_bootstrap, RuntimeError)
 
@@ -422,6 +535,7 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append(
             'config/names=\nSomethingExciting CommaList\nHiddenServices Dependant'
         )
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'SomethingExciting': 'a,b'})
         conf = TorConfig(self.protocol)
 
@@ -443,6 +557,7 @@ class ConfigTests(unittest.TestCase):
     def test_slutty_postbootstrap(self):
         # test that doPostbootstrap still works in "slutty" mode
         self.protocol.answers.append('config/names=\nORPort Port')
+        self.protocol.answers.append('')  # defaults
         # we can't answer right away, or we do all the _do_setup
         # callbacks before _setup_ is set -- but we need to do an
         # answer callback after that to trigger this bug
@@ -454,6 +569,7 @@ class ConfigTests(unittest.TestCase):
     def test_immediate_bootstrap(self):
         self.protocol.post_bootstrap = None
         self.protocol.answers.append('config/names=\nfoo Boolean')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'foo': '0'})
         conf = TorConfig(self.protocol)
         self.assertTrue('foo' in conf.config)
@@ -461,6 +577,7 @@ class ConfigTests(unittest.TestCase):
     def test_multiple_orports(self):
         self.protocol.post_bootstrap = None
         self.protocol.answers.append('config/names=\nOrPort CommaList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'OrPort': '1234'})
         conf = TorConfig(self.protocol)
         conf.OrPort = ['1234', '4321']
@@ -470,6 +587,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_set_multiple(self):
         self.protocol.answers.append('config/names=\nAwesomeKey String')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'AwesomeKey': 'foo'})
 
         conf = TorConfig(self.protocol)
@@ -488,6 +606,7 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append(
             'config/names=\nLog LineList\nFoo String'''
         )
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append(
             {'Log': 'notice file /var/log/tor/notices.log'}
         )
@@ -507,6 +626,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_set_save_modify(self):
         self.protocol.answers.append('config/names=\nLog LineList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append(
             {'Log': 'notice file /var/log/tor/notices.log'}
         )
@@ -521,6 +641,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_proper_sets(self):
         self.protocol.answers.append('config/names=\nLog LineList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'Log': 'foo'})
 
         conf = TorConfig(self.protocol)
@@ -534,6 +655,7 @@ class ConfigTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_attach_protocol(self):
         self.protocol.answers.append('config/names=\nLog LineList')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append({'Log': 'foo'})
 
         conf = TorConfig()
@@ -570,6 +692,7 @@ class LogTests(unittest.TestCase):
     def setUp(self):
         self.protocol = FakeControlProtocol([])
         self.protocol.answers.append('config/names=\nLog LineList''')
+        self.protocol.answers.append('')  # defaults
         self.protocol.answers.append(
             {'Log': 'notice file /var/log/tor/notices.log'}
         )
@@ -733,6 +856,7 @@ class EventTests(unittest.TestCase):
         '''
         protocol = FakeControlProtocol([])
         protocol.answers.append('config/names=\nFoo Boolean\nBar Boolean')
+        protocol.answers.append('')  # defaults
         protocol.answers.append({'Foo': '0'})
         protocol.answers.append({'Bar': '1'})
 
@@ -749,6 +873,7 @@ class EventTests(unittest.TestCase):
     def test_conf_changed_invalid_values(self):
         protocol = FakeControlProtocol([])
         protocol.answers.append('config/names=\nFoo Integer\nBar Integer')
+        protocol.answers.append('')  # defaults
         protocol.answers.append({'Foo': '0'})
         protocol.answers.append({'Bar': '1'})
 
@@ -919,6 +1044,7 @@ HiddenServiceOptions Virtual
 HiddenServiceVersion Dependant
 HiddenServiceDirGroupReadable Dependant
 HiddenServiceAuthorizeClient Dependant''')
+        self.protocol.answers.append('')  # defaults
 
     @defer.inlineCallbacks
     def test_options_hidden(self):
