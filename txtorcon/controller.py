@@ -532,6 +532,15 @@ class Tor(object):
             self._config = yield TorConfig.from_protocol(self._protocol)
         returnValue(self._config)
 
+    @inlineCallbacks
+    def create_v3_onion_service(self, *args, **kw):
+        # FIXME if I keep anything like this, explicitly pass args probably
+        config = yield self.get_config()
+        from txtorcon import onion
+        kw['version'] = 3
+        hs = yield onion.FilesystemHiddenService.create(config, *args, **kw)
+        returnValue(hs)
+
     def web_agent(self, pool=None, socks_endpoint=None):
         """
         :param socks_endpoint: If ``None`` (the default), a suitable

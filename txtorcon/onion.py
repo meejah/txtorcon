@@ -138,8 +138,8 @@ class FilesystemOnionService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(config, hsdir, ports, group_readable=False, auth=None, progress=None):
-        fhs = FilesystemOnionService(config, hsdir, ports, group_readable=group_readable, auth=auth)
+    def create(config, hsdir, ports, version=2, group_readable=False, auth=None, progress=None):
+        fhs = FilesystemOnionService(config, hsdir, ports, ver=version, group_readable=group_readable, auth=auth)
         config.HiddenServices.append(fhs)
         # we .save() down below, after setting HS_DESC listener
 
@@ -147,6 +147,7 @@ class FilesystemOnionService(object):
         # different way if this Tor supports proper HS_DESC stuff? I
         # think part of the problem here is that "some" Tors have
         # HS_DESC event, but it's not .. sufficient?
+        uploaded = [None]
         if not version_at_least(config.tor_protocol.version, 0, 2, 7, 2):
             if progress:
                 progress(
@@ -169,12 +170,12 @@ class FilesystemOnionService(object):
                     106, "wait_desctiptor",
                     "So, we'll just declare it done right now..."
                 )
-                uploaded = defer.succeed(None)
+                uploaded[0] = defer.succeed(None)
         else:
-            uploaded = _await_descriptor_upload(config, fhs, progress)
+            uploaded[0] = _await_descriptor_upload(config, fhs, progress)
 
         yield config.save()
-        yield uploaded
+        yield uploaded[0]
         defer.returnValue(fhs)
 
     def __init__(self, config, thedir, ports,
@@ -212,9 +213,24 @@ class FilesystemOnionService(object):
 
     @property
     def private_key(self):
+        # XXX there's also a file called 'hs_ed25519_public_key' but I
+        # think we can just ignore that? .. or do we need a v3-only
+        # accessor for .public_key() as well?
         if self._private_key is None:
-            with open(os.path.join(self._dir, 'private_key'), 'r') as f:
-                self._private_key = f.read().strip()
+            if self.version == 2:
+                with open(os.path.join(self._dir, 'private_key'), 'r') as f:
+                    self._private_key = f.read().strip()
+            elif self.version == 3:
+                # XXX see tor bug #20699 -- would be Really Nice to
+                # not have to deal with binary data here (well, more
+                # for ADD_ONION, but still)
+                with open(os.path.join(self._dir, 'hs_ed25519_secret_key'), 'rb') as f:
+                    self._private_key = f.read().strip()
+            else:
+                raise RuntimeError(
+                    "Don't know how to load private_key for version={} "
+                    "Onion service".format(self.version)
+                )
         return self._private_key
 
     @property
