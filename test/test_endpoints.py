@@ -59,32 +59,29 @@ class EndpointTests(unittest.TestCase):
         del endpoints._global_tor_lock
         endpoints._global_tor_lock = defer.DeferredLock()
         self.reactor = FakeReactorTcp(self)
-        self.protocol = FakeControlProtocol([
-            'config/names=',
-            {'onions/detached': ''},
-            {'onions/current': ''},
-        ])
+        self.protocol = FakeControlProtocol([])
         self.protocol.event_happened('INFO', 'something craaaaaaazy')
         self.protocol.event_happened(
             'INFO',
             'connection_dir_client_reached_eof(): Uploaded rendezvous '
             'descriptor (status 200 ("Service descriptor (v2) stored"))'
         )
-        self.config = TorConfig(self.protocol)
         self.protocol.answers.append(
             'config/names=\nHiddenServiceOptions Virtual\nControlPort LineList\nSOCKSPort LineList'
         )
-        self.protocol.answers.append('')
+        self.protocol.answers.append('config/defaults=')
         self.protocol.answers.append('HiddenServiceOptions')
         # why do i have to pass a dict for this V but not this ^
         self.protocol.answers.append({'ControlPort': '37337'})
         self.protocol.answers.append({'SOCKSPort': '9050'})
+        self.protocol.answers.append({'onions/detached': ''})
+        self.protocol.answers.append({'onions/current': ''})
         self.patcher = patch(
             'txtorcon.controller.find_tor_binary',
             return_value='/not/tor'
         )
         self.patcher.start()
-        self.config.bootstrap()
+        self.config = TorConfig(self.protocol)
         d = defer.Deferred()
         self.config.post_bootstrap.addCallback(lambda _: d.callback(self.config))
         return d
@@ -191,18 +188,12 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_basic(self, ftb):
-        self.protocol.answers = [
-            'config/names=',
-            {'onions/detached': ''},
-            {'onions/current': ''},
-        ]
         listen = RuntimeError("listen")
         connect = RuntimeError("connect")
         reactor = proto_helpers.RaisingMemoryReactor(listen, connect)
         reactor.addSystemEventTrigger = Mock()
 
         ep = TCPHiddenServiceEndpoint(reactor, self.config, 123)
-        self.config.bootstrap()
         assert self.config.post_bootstrap.called
         yield self.config.post_bootstrap
         self.assertTrue(IProgressProvider.providedBy(ep))
