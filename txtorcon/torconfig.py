@@ -396,7 +396,7 @@ class HiddenService(object):
     def client_keys(self):
         if self._client_keys is None:
             fname = os.path.join(self.dir, 'client_keys')
-            keys = []
+            self._client_keys = []
             if os.path.exists(fname):
                 with open(fname) as f:
                     self._client_keys = parse_client_keys(f)
