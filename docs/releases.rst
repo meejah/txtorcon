@@ -21,7 +21,7 @@ unreleased
  * doc fixes from `hotelzululima <https://twitter.com/hotelzululima>`_
  * fix endpoints so `.connect` on them works properly more than once
    from `Brian Warner <https://github.com/warner>`_
- * allow a `CertificateOptions` to be passed as `tls=`
+ * allow a `CertificateOptions` to be passed as `tls=` to endpoints
  * add method :func:`txtorcon.Tor.is_ready`
  * add method :func:`txtorcon.Tor.become_ready`
  * fix handling of certain defaults (`*PortLines` and friends)
