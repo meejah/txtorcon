@@ -572,6 +572,10 @@ class AuthenticatedHiddenServiceClient(object):
         # XXX group_readable
 
     @property
+    def name(self):
+        return self._name
+
+    @property
     def parent(self):
         return self._parent
 
@@ -673,6 +677,18 @@ class AuthenticatedHiddenService(object):
             return self._clients[name]
         except KeyError:
             raise RuntimeError("No such client '{}'".format(name))
+
+    def add_client(self, name, hostname, ports, token):
+        if self._clients is None:
+            self._parse_hostname()
+        client = AuthenticatedHiddenServiceClient(
+            parent=self,
+            name=name,
+            hostname=hostname,
+            ports=ports, token=token,
+        )
+        self._clients[client.name] = client
+        self._config.HiddenServices.append(client)
 
     def _private_key(self, name):
         if self._client_keys is None:

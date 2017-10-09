@@ -1052,6 +1052,30 @@ HiddenServiceAuthorizeClient Dependant''')
         self.protocol.answers.append('')  # defaults
 
     @defer.inlineCallbacks
+    def test_config_client_auth_service(self):
+        self.protocol.answers.append('')  # no hiddenservices by default
+        conf = TorConfig(self.protocol)
+        yield conf.post_bootstrap
+        self.assertTrue(conf.post_bootstrap.called)
+        fakedir = self.mktemp()
+        os.mkdir(fakedir)
+        with open(join(fakedir, 'hostname'), 'w') as f:
+            for name in ['alice', 'bob']:
+                f.write('hostname_{name} cookie_{name} # client: {name}\n'.format(name=name))
+
+        # create a client-auth'd onion service, but only "add" one of
+        # its newly created clients
+        from txtorcon import onion
+        hs = onion.AuthenticatedHiddenService(conf, fakedir, ['1 127.0.0.1:12345'], clients=['alice', 'bob'])
+        client = hs.add_client(
+            name="carol",
+            hostname="hostname_carol",
+            ports=['1 127.0.0.1:12345'],
+            token="cookie_carol",
+        )
+        yield conf.save()
+
+    @defer.inlineCallbacks
     def test_options_hidden(self):
         self.protocol.answers.append(
             'HiddenServiceDir=/fake/path\nHiddenServicePort=80 '
