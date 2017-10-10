@@ -29,6 +29,8 @@ from txtorcon.torconfig import parse_client_keys
 from txtorcon.torconfig import CommaList
 from txtorcon.torconfig import launch_tor
 from txtorcon.onion import FilesystemOnionService
+from txtorcon.onion import EphemeralOnionService
+from txtorcon.onion import AuthenticatedHiddenService
 
 
 @implementer(ITorControlProtocol)     # actually, just get_info_raw
@@ -1052,6 +1054,42 @@ HiddenServiceAuthorizeClient Dependant''')
         self.protocol.answers.append('')  # defaults
 
     @defer.inlineCallbacks
+    def test_config_client_keys(self):
+        self.protocol.answers.append('')  # no hiddenservices by default
+        conf = TorConfig(self.protocol)
+        yield conf.post_bootstrap
+        self.assertTrue(conf.post_bootstrap.called)
+        fakedir = self.mktemp()
+        os.mkdir(fakedir)
+        with open(join(fakedir, 'hostname'), 'w') as f:
+            for name in ['alice', 'bob']:
+                f.write('hostname_{name} cookie_{name} # client: {name}\n'.format(name=name))
+        with open(join(fakedir, 'client_keys'), 'w') as f:
+            for name in ['alice', 'bob']:
+                f.write('''client-name {name}
+descriptor-cookie CVAQuIn8iSsYo4KXW2Ljvw==
+client-key
+-----BEGIN RSA PRIVATE KEY-----
+MIICXQIBAAKBgQDgE+4otmhhRInd2IyZemfPGYjFiYEGCCnaVWQ7JpZv25atvxuj
+RB+S1PnSST6V2brF83vwaRuR4QWtFHz8v8VmUPDXcVEGoGQ+oQUrnwgGLTseBYJE
+n9uY8snE7755mrsddbMorLjg2JhmoTFmGUqga1YsypqZ39H5K0qsfRw2kwIDAQAB
+AoGAFoSqOFksYCn9GNg8OOg+KmfMgN1yo+KKIjDWo8Ma9x7AI7HC20NrUNwqRuGp
+cnGw/VecqupFJQHSCjS24sd61L9D0OZ7NHOWsBhpUlQ5tlM3xxCz7PQmSsISro/h
+IFAsAzCdhA7ies6our9m0vO93WsZTPE32hEmHCS476SvyBECQQD0OitF1gRhJ550
+rAkLnZwIQlVzNH1iK10AesgivBbAw2ywkeolplUp5l0cPrckrtCZW7FDZi6wgHhw
+hq2q/jetAkEA6uEczfRTYJ762pZxk/VQ17GP4T/0LBITCm4PIDQ13etuqoPe+AI7
+aOcAayecbmWA9CgJdmHE77g5zDcddxrvPwJBAKG2vp6AZuf59uckXtztILsrSS9+
+ayOMuQkvQ8QULTC4dgi4pYUGjU+wNKkWMei9RGy3lTmeuH2wo49G7knSCQUCQQC+
+1iiRLfKQjptC/vlJPghxN9OvMEczh3vw/XtMrx8VMDS6VmrTFv0uPoIYjhaLm+0q
+c1080jMwkn5jbmSCYWABAkB28YVDOpAbxRqb/7u4kYFoohWb4YpY9uBkqA9FMwsg
+DnkEGTrOUFZ7CbDp+SM18BjmFXI2n0bFJEznXFhH+Awz
+-----END RSA PRIVATE KEY-----
+'''.format(name=name))
+
+        hs = AuthenticatedHiddenService(conf, fakedir, ['1 127.0.0.1:12345'])
+        hs._private_key('alice')
+
+    @defer.inlineCallbacks
     def test_config_client_auth_service(self):
         self.protocol.answers.append('')  # no hiddenservices by default
         conf = TorConfig(self.protocol)
@@ -1065,8 +1103,7 @@ HiddenServiceAuthorizeClient Dependant''')
 
         # create a client-auth'd onion service, but only "add" one of
         # its newly created clients
-        from txtorcon import onion
-        hs = onion.AuthenticatedHiddenService(conf, fakedir, ['1 127.0.0.1:12345'], clients=['alice', 'bob'])
+        hs = AuthenticatedHiddenService(conf, fakedir, ['1 127.0.0.1:12345'], clients=['alice', 'bob'])
         client = hs.add_client(
             name="carol",
             hostname="hostname_carol",
@@ -1456,6 +1493,37 @@ class HiddenServiceAuthTests(unittest.TestCase):
             RuntimeError,
             parse_client_keys, data
         )
+
+
+class OnionServiceTest(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_descriptor_all_uploads_fail(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        eph_d = EphemeralOnionService.create(config, ports=["80 127.0.0.1:80"])
+
+        cmd, d = protocol.commands[0]
+        self.assertEqual(u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80", cmd)
+        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+
+        # get the event-listener callback that torconfig code added
+        cb = protocol.events['HS_DESC']
+
+        for x in range(6):
+            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        for x in range(6):
+            cb('FAILED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        # now when we wait for our onion, it should already be failed
+        # because all 6 uploads failed.
+        with self.assertRaises(RuntimeError) as ctx:
+            yield eph_d
+
+        self.assertIn("Failed to upload", str(ctx.exception))
+        for x in range(6):
+            self.assertIn("hsdir_{}".format(x), str(ctx.exception))
 
 
 class EphemeralHiddenServiceTest(unittest.TestCase):

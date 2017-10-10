@@ -737,7 +737,7 @@ class TorConfig(object):
         self.parsers = {}
         '''Instances of the parser classes, subclasses of TorConfigType'''
 
-        self.list_parsers = set(['hiddenservices'])
+        self.list_parsers = set(['hiddenservices', 'ephemeralonionservices'])
         '''All the names (keys from .parsers) that are a List of something.'''
 
         # during bootstrapping we decide whether we support the
