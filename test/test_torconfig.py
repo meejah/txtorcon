@@ -37,7 +37,7 @@ class FakeControlProtocol:
     Deferred. However, if the answer list is empty at the time of the
     call, instead the returned Deferred is added to the pending list
     and answer_pending() may be called to have the next Deferred
-    fire. (see test_slutty_postbootstrap for an example).
+    fire. (see test_accept_all_postbootstrap for an example).
 
     It is done this way in case we need to have some other code run
     between the get_conf (or whatever) and the callback -- if the
@@ -554,8 +554,8 @@ class ConfigTests(unittest.TestCase):
     def foo(self, *args):
         print("FOOO", args)
 
-    def test_slutty_postbootstrap(self):
-        # test that doPostbootstrap still works in "slutty" mode
+    def test_accept_all_postbootstrap(self):
+        # test that doPostbootstrap still works in "accept_all" mode
         self.protocol.answers.append('config/names=\nORPort Port')
         self.protocol.answers.append('')  # defaults
         # we can't answer right away, or we do all the _do_setup
@@ -683,7 +683,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_attribute_access(self):
         conf = TorConfig(self.protocol)
-        self.assertNotIn('_slutty_', conf.__dict__)
+        self.assertNotIn('_accept_all_', conf.__dict__)
         self.assertNotIn('foo', conf)
 
 
