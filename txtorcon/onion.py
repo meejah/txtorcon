@@ -487,6 +487,8 @@ class EphemeralOnionService(object):
         """
         if not isinstance(ports, (list, tuple)):
             raise ValueError("'ports' must be a list of strings")
+        if any([not isinstance(x, str) for x in ports]):
+            raise ValueError("'ports' must be a list of strings")
 
         # XXX do we need version?
         self._config = config

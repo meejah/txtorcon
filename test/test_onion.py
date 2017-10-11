@@ -128,7 +128,7 @@ class OnionServiceTest(unittest.TestCase):
         d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
 
     @defer.inlineCallbacks
-    def test_ephemeral_wrong_ports(self):
+    def test_ephemeral_ports_not_a_list(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
         privkey = 'a' * 32
@@ -137,6 +137,23 @@ class OnionServiceTest(unittest.TestCase):
             yield EphemeralOnionService.create(
                 config,
                 ports="80 127.0.0.1:80",
+                private_key=privkey,
+            )
+        self.assertIn(
+            "'ports' must be a list of strings",
+            str(ctx.exception)
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_ports_not_strings(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        privkey = 'a' * 32
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralOnionService.create(
+                config,
+                ports=[(80, "127.0.0.1:80")],
                 private_key=privkey,
             )
         self.assertIn(
