@@ -353,7 +353,8 @@ def _await_descriptor_upload(config, onion, progress):
                     )
                 confirmed_uploads.add(args[3])
                 log.msg("Uploaded '{}' to '{}'".format(onion.hostname, args[3]))
-                uploaded.callback(onion)
+                if not uploaded.called:
+                    uploaded.callback(onion)
 
         elif subtype == 'FAILED':
             if args[1] == onion.hostname[:-6]:
@@ -838,7 +839,8 @@ def parse_client_keys(stream):
     return parser_state.keys
 
 
-class OnionAuthNone(object):
+# XXX also not used right?
+class __OnionAuthNone(object):
     def __init__(self, uri):
         self._uri = uri
 
@@ -851,7 +853,8 @@ class OnionAuthNone(object):
         return self._uri
 
 
-class OnionService(object):
+# XXX this isn't used, right?
+class __OnionService(object):
 
     def __init__(self, torconfig, ports, is_ephemeral=True, authentication=None, directory=None):
         self.ports = ports

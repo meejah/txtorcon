@@ -301,7 +301,7 @@ class OnionServiceTest(unittest.TestCase):
         for x in range(6):
             self.assertIn("hsdir_{}".format(x), str(ctx.exception))
 
-    def test_descriptor_one_uploads_works(self):
+    def test_ephemeral_bad_return_value(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
         progress_messages = []
@@ -325,6 +325,36 @@ class OnionServiceTest(unittest.TestCase):
             return None
         eph_d.addCallbacks(self.fail, check)
         return eph_d
+
+    @defer.inlineCallbacks
+    def test_ephemeral_remove(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        eph_d = EphemeralOnionService.create(
+            config,
+            ports=["80 127.0.0.1:80"],
+        )
+
+        cmd, d = protocol.commands[0]
+        self.assertEqual(u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80", cmd)
+
+        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+        cb = protocol.events['HS_DESC']
+
+        for x in range(6):
+            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        for x in range(6):
+            cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        hs = yield eph_d
+        print("HS {}".format(hs))
+        remove_d = hs.remove()
+        cmd, d = protocol.commands[-1]
+        self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
+        d.callback('OK')
+        yield remove_d
 
 
 class EphemeralHiddenServiceTest(unittest.TestCase):
