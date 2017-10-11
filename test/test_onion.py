@@ -75,6 +75,25 @@ class OnionServiceTest(unittest.TestCase):
         self.assertEqual(1, len(hs.ports))
 
     @defer.inlineCallbacks
+    def test_set_dir(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        hsdir0 = self.mktemp()
+        os.mkdir(hsdir0)
+        hsdir1 = self.mktemp()
+        os.mkdir(hsdir1)
+
+        hs = yield FilesystemOnionService.create(
+            config,
+            hsdir=hsdir0,
+            ports=["80 127.0.0.1:4321"],
+            version=3,
+        )
+
+        hs.dir = hsdir1
+        self.assertEqual(hs.dir, hsdir1)
+
+    @defer.inlineCallbacks
     def test_unknown_version(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
@@ -92,14 +111,39 @@ class OnionServiceTest(unittest.TestCase):
             hs.private_key
         self.assertIn("Don't know how to load", str(ctx.exception))
 
+    def test_ephemeral_given_key(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        privkey = 'a' * 32
+
+        hs_d = EphemeralOnionService.create(
+            config,
+            ports=["80 127.0.0.1:80"],
+            private_key=privkey,
+            detach=True,
+        )
+
+        cmd, d = protocol.commands[0]
+        self.assertEqual(u"ADD_ONION RSA1024:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Port=80,127.0.0.1:80 Flags=Detach", cmd)
+        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+
     @defer.inlineCallbacks
     def test_descriptor_all_uploads_fail(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
-        eph_d = EphemeralOnionService.create(config, ports=["80 127.0.0.1:80"])
+        progress_messages = []
+
+        def progress(*args):
+            progress_messages.append(args)
+        eph_d = EphemeralOnionService.create(
+            config,
+            ports=["80 127.0.0.1:80"],
+            progress=progress,
+            discard_key=True,
+        )
 
         cmd, d = protocol.commands[0]
-        self.assertEqual(u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80", cmd)
+        self.assertEqual(u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80 Flags=DiscardPK", cmd)
         d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
 
         # get the event-listener callback that torconfig code added
@@ -119,6 +163,31 @@ class OnionServiceTest(unittest.TestCase):
         self.assertIn("Failed to upload", str(ctx.exception))
         for x in range(6):
             self.assertIn("hsdir_{}".format(x), str(ctx.exception))
+
+    def test_descriptor_one_uploads_works(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        progress_messages = []
+
+        def progress(*args):
+            progress_messages.append(args)
+        eph_d = EphemeralOnionService.create(
+            config,
+            ports=["80 127.0.0.1:80"],
+            progress=progress,
+            discard_key=True,
+        )
+
+        cmd, d = protocol.commands[0]
+        self.assertEqual(u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80 Flags=DiscardPK", cmd)
+
+        d.callback("BadKey=nothing")
+
+        def check(f):
+            self.assertIn("Expected ADD_ONION to return ServiceID", str(f.value))
+            return None
+        eph_d.addCallbacks(self.fail, check)
+        return eph_d
 
 
 class EphemeralHiddenServiceTest(unittest.TestCase):
