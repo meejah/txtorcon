@@ -839,39 +839,8 @@ def parse_client_keys(stream):
     return parser_state.keys
 
 
-# XXX also not used right?
-class __OnionAuthNone(object):
-    def __init__(self, uri):
-        self._uri = uri
-
-    def uri(self, client):
-        if client is not None:
-            msg = "client= specified for non-authenticated service"
-            raise RuntimeError(msg)
-        if self._uri is None:
-            raise RuntimeError("No URI available yet")
-        return self._uri
-
-
-# XXX this isn't used, right?
-class __OnionService(object):
-
-    def __init__(self, torconfig, ports, is_ephemeral=True, authentication=None, directory=None):
-        self.ports = ports
-        self.ephemeral = is_ephemeral
-        # private state:
-        self._authentication = authentication
-        if self._authentication is None:
-            self._authentication = OnionAuthNone(None)
-        self._tor_config = torconfig
-
-    def uri(self, client=None):
-        """
-        Returns the onion URI for the given client. The client is only
-        relevant for authenticated services.
-        """
-        return self._authentication.uri(client)
-
+# XXX these are here for informational purpoes; should put the "real"
+# APIs in Tor and then call through to helpers (in here?)
 
 @defer.inlineCallbacks
 def create_authenticated_filesystem_onion_service(
