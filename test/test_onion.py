@@ -32,10 +32,65 @@ from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import AuthenticatedHiddenService
 
-from torconfig import FakeControlProtocol
+from test_torconfig import FakeControlProtocol
 
 
 class OnionServiceTest(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_prop224_private_key(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+        with open(join(hsdir, 'hs_ed25519_secret_key'), 'wb') as f:
+            f.write('\x01\x02\x03\x04')
+
+        hs = yield FilesystemOnionService.create(
+            config,
+            hsdir=hsdir,
+            ports=["80 127.0.0.1:4321"],
+            version=3,
+        )
+
+        self.assertEqual('\x01\x02\x03\x04', hs.private_key)
+
+    @defer.inlineCallbacks
+    def test_set_ports(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+        with open(join(hsdir, 'hs_ed25519_secret_key'), 'wb') as f:
+            f.write('\x01\x02\x03\x04')
+
+        hs = yield FilesystemOnionService.create(
+            config,
+            hsdir=hsdir,
+            ports=["80 127.0.0.1:4321"],
+            version=3,
+        )
+
+        hs.ports = ["443 127.0.0.1:443"]
+        self.assertEqual(1, len(hs.ports))
+
+    @defer.inlineCallbacks
+    def test_unknown_version(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+
+        hs = yield FilesystemOnionService.create(
+            config,
+            hsdir=hsdir,
+            ports=["80 127.0.0.1:4321"],
+            version=99,
+        )
+
+        with self.assertRaises(RuntimeError) as ctx:
+            hs.private_key
+        self.assertIn("Don't know how to load", str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_descriptor_all_uploads_fail(self):
