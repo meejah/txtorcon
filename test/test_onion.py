@@ -162,6 +162,74 @@ class OnionServiceTest(unittest.TestCase):
         )
 
     @defer.inlineCallbacks
+    def test_ephemeral_ports_no_spaces(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        privkey = 'a' * 32
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralOnionService.create(
+                config,
+                ports=["80:127.0.0.1:80"],
+                private_key=privkey,
+            )
+        self.assertIn(
+            "exactly one space",
+            str(ctx.exception)
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_ports_no_colon(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        privkey = 'a' * 32
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralOnionService.create(
+                config,
+                ports=["80 127.0.0.1;80"],
+                private_key=privkey,
+            )
+        self.assertIn(
+            "local address should be 'IP:port'",
+            str(ctx.exception)
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_ports_non_local(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        privkey = 'a' * 32
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralOnionService.create(
+                config,
+                ports=["80 8.8.8.8:80"],
+                private_key=privkey,
+            )
+        self.assertIn(
+            "should be a local address",
+            str(ctx.exception)
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_ports_not_an_int(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        privkey = 'a' * 32
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralOnionService.create(
+                config,
+                ports=["web 127.0.0.1:80"],
+                private_key=privkey,
+            )
+        self.assertIn(
+            "external port isn't an int",
+            str(ctx.exception)
+        )
+
+    @defer.inlineCallbacks
     def test_ephemeral_private_key_but_discard(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
