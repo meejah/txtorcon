@@ -485,6 +485,9 @@ class EphemeralOnionService(object):
         Users should create instances of this class by using the async
         method :meth:`txtorcon.EphemeralOnionService.create`
         """
+        if not isinstance(ports, (list, tuple)):
+            raise ValueError("'ports' must be a list of strings")
+
         # XXX do we need version?
         self._config = config
         self._ports = ports
