@@ -97,7 +97,7 @@ class Router(object):
         if self._modified is None:
             self._modified = datetime.strptime(
                 self._modified_unparsed,
-                '%Y-%m-%f %H:%M:%S'
+                '%Y-%m-%d %H:%M:%S'
             )
         return self._modified
 
