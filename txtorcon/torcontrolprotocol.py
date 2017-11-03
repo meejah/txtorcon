@@ -493,7 +493,7 @@ class TorControlProtocol(LineOnlyReceiver):
         if evt not in self.valid_events.values():
             try:
                 evt = self.valid_events[evt]
-            except:
+            except KeyError:
                 raise RuntimeError("Unknown event type: " + evt)
 
         if evt.name not in self.events:
@@ -514,7 +514,7 @@ class TorControlProtocol(LineOnlyReceiver):
             # this lets us pass a string or a real event-object
             try:
                 evt = self.valid_events[evt]
-            except:
+            except KeyError:
                 raise RuntimeError("Unknown event type: " + evt)
 
         evt.unlisten(cb)
@@ -832,7 +832,7 @@ class TorControlProtocol(LineOnlyReceiver):
         "for FSM"
         try:
             code = int(line[:3])
-        except:
+        except Exception:
             return False
 
         sl = len(line) > 3 and line[3] == ' '

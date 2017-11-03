@@ -828,7 +828,7 @@ platform Tor 0.2.5.0-alpha-dev on Linux
                 'SOMETHING_INVALID', lambda _: None
             )
             self.assertTrue(False)
-        except:
+        except Exception:
             pass
 
     def test_eventlistener(self):

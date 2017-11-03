@@ -144,7 +144,7 @@ def build_local_tor_connection(reactor, host='127.0.0.1', port=9051,
 
     try:
         return build_tor_connection((reactor, socket), *args, **kwargs)
-    except:
+    except Exception:
         return build_tor_connection((reactor, host, port), *args, **kwargs)
 
 
@@ -256,6 +256,7 @@ class TorState(object):
 
         #: keys by hexid (string) and by unique names
         self.routers = {}
+        self._old_routers = {}
 
         #: keys on name, value always list (many duplicate "Unnamed"
         #: routers, for example)
@@ -290,10 +291,11 @@ class TorState(object):
     def _create_router(self, **kw):
         id_hex = hexIdFromHash(kw['idhash'])
         try:
-            router = self.routers[id_hex]
+            router = self._old_routers[id_hex]
         except KeyError:
             router = Router(self.protocol)
-            self.routers[router.id_hex] = router
+
+        self.routers[id_hex] = router
         router.from_consensus = True
         router.update(
             kw['nickname'],
@@ -315,15 +317,11 @@ class TorState(object):
         if 'authority' in router.flags:
             self.authorities[router.name] = router
 
-        if router.id_hex in self.routers:
-            # FIXME should I do an update() on this one??
-            router = self.routers[router.id_hex]
-        else:
-            if router.name in self.routers:
-                self.routers[router.name] = None
+        if router.name in self.routers:
+            self.routers[router.name] = None
 
-            else:
-                self.routers[router.name] = router
+        else:
+            self.routers[router.name] = router
 
         if router.name in self.routers_by_name:
             self.routers_by_name[router.name].append(router)
@@ -405,7 +403,7 @@ class TorState(object):
             try:
                 pid = parse_keywords(pid)['process/pid']
                 self.tor_pid = int(pid)
-            except:
+            except Exception:  # fixme: ValueError and KeyError ..?
                 self.tor_pid = 0
         if not self.tor_pid and self.protocol.is_owned:
             self.tor_pid = self.protocol.is_owned
@@ -718,9 +716,13 @@ class TorState(object):
         from NEWCONSENSUS events.
         """
 
-        # XXX why are we getting this with 0 data?
+        # XXX why are we ever getting this with 0 data?
         if len(data):
+            self._old_routers = self.routers
+            self.routers = dict()
             self.all_routers = set()
+            self.routers_by_hash = dict()
+            self.routers_by_name = dict()
             for line in data.split('\n'):
                 self._network_status_parser.feed_line(line)
             self._network_status_parser.done()
@@ -732,7 +734,6 @@ class TorState(object):
             if v is None:
                 txtorlog.msg(len(self.routers_by_name[k]), "dups:", k)
                 remove_keys.add(k)
-
         for k in remove_keys:
             del self.routers[k]
 

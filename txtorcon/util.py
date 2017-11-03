@@ -265,7 +265,7 @@ class NetLocation(object):
         if city:
             try:
                 r = city.record_by_addr(self.ip)
-            except:
+            except Exception:
                 r = None
             if r is not None:
                 self.countrycode = r['country_code']
@@ -284,7 +284,7 @@ class NetLocation(object):
         if asn:
             try:
                 self.asn = asn.org_by_addr(self.ip)
-            except:
+            except Exception:
                 self.asn = None
 
 

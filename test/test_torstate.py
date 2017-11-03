@@ -1063,6 +1063,79 @@ p reject 1-65535
         self.assertTrue('Unnamed' in self.state.routers)
         self.assertTrue('$00126582E505CF596F412D23ABC9E14DD4625C49' in self.state.routers)
 
+    def test_newconsensus_remove_routers(self):
+        """
+        router removed from consensus is removed
+        """
+
+        # bootstrap the TorState so we can send it a "real" 650
+        # update
+
+        self.protocol._set_valid_events(' '.join(self.state.event_map.keys()))
+        self.state._bootstrap()
+
+        self.send(b"250+ns/all=")
+        self.send(b".")
+        self.send(b"250 OK")
+
+        self.send(b"250+circuit-status=")
+        self.send(b".")
+        self.send(b"250 OK")
+
+        self.send(b"250-stream-status=")
+        self.send(b"250 OK")
+
+        self.send(b"250-address-mappings/all=")
+        self.send(b'250 OK')
+
+        for ignored in self.state.event_map.items():
+            self.send(b"250 OK")
+
+        self.send(b"250-entry-guards=")
+        self.send(b"250 OK")
+
+        self.send(b"250 OK")
+
+        # state is now bootstrapped, we can send our NEWCONSENSUS update
+
+        self.protocol.dataReceived(b'\r\n'.join(b'''650+NEWCONSENSUS
+r Unnamed ABJlguUFz1lvQS0jq8nhTdRiXEk /zIVUg1tKMUeyUBoyimzorbQN9E 2012-05-23 01:10:22 219.94.255.254 9001 0
+s Fast Guard Running Stable Valid
+w Bandwidth=166
+p reject 1-65535
+r Foo ABJJJJUFz1lvQS0jq8nhTdRiXEk /zzzUg1tKMUeyUBoyimzorbQN9E 2012-05-23 01:10:22 219.94.255.254 9001 0
+s Fast Guard Running Stable Valid
+w Bandwidth=166
+p reject 1-65535
+.
+650 OK
+'''.split(b'\n')))
+
+        self.assertEqual(2, len(self.state.all_routers))
+        self.assertTrue('Unnamed' in self.state.routers)
+        self.assertTrue('Foo' in self.state.routers_by_name)
+        self.assertTrue('$00126582E505CF596F412D23ABC9E14DD4625C49' in self.state.routers)
+        self.assertTrue('$001249249505CF596F412D23ABC9E14DD4625C49' in self.state.routers)
+
+        # this is a different fingerprint, but same name
+        self.protocol.dataReceived(b'\r\n'.join(b'''650+NEWCONSENSUS
+r Unnamed ABBBguUFz1lvQS0jq8nhTdRiXEk /zIVUg1tKMUeyUBoyimzorbQN9E 2012-05-23 01:10:22 219.94.255.254 9001 0
+s Fast Guard Running Stable Valid
+w Bandwidth=166
+p reject 1-65535
+.
+650 OK
+'''.split(b'\n')))
+
+        self.assertEqual(1, len(self.state.all_routers))
+        self.assertIn('Unnamed', self.state.routers)
+        self.assertIn('$00104182E505CF596F412D23ABC9E14DD4625C49', self.state.routers)
+        self.assertNotIn('$00126582E505CF596F412D23ABC9E14DD4625C49', self.state.routers)
+        self.assertNotIn('$00126582E505CF596F412D23ABC9E14DD4625C49', self.state.routers_by_hash)
+        self.assertNotIn('$001249249505CF596F412D23ABC9E14DD4625C49', self.state.routers)
+        self.assertNotIn('$001249249505CF596F412D23ABC9E14DD4625C49', self.state.routers_by_hash)
+        self.assertNotIn('Foo', self.state.routers_by_name)
+
     def test_NEWCONSENSUS_ends_with_OK_on_w(self):
         """
         The arrival of a second NEWCONSENSUS event causes parsing
