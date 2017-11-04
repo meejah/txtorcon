@@ -349,6 +349,7 @@ class TorState(object):
             'ns/all',
             self._network_status_parser.feed_line,
         )
+        self._network_status_parser.done()
 
         # update list of existing circuits
         cs = yield self.protocol.get_info_raw('circuit-status')

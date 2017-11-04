@@ -25,6 +25,7 @@ unreleased
  * add method :func:`txtorcon.Tor.is_ready`
  * add method :func:`txtorcon.Tor.become_ready`
  * fix handling of certain defaults (`*PortLines` and friends)
+ * fix last router (usually) missing with (new) `MicroDescriptorParser`
 
 
 v0.19.3
