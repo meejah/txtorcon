@@ -180,7 +180,7 @@ class Router(object):
         :meth:`txtorcon.Circuit.web_agent`.
         """
 
-        #uri = 'https://onionoo.torproject.org/details?lookup={}'.format(self.id_hex[1:]).encode('ascii')
+        # clearnet: 'https://onionoo.torproject.org/details?lookup={}'
         uri = 'http://tgel7v4rpcllsrk2.onion/details?lookup={}'.format(self.id_hex[1:]).encode('ascii')
 
         resp = yield agent.request(b'GET', uri)
