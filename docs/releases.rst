@@ -26,6 +26,8 @@ unreleased
  * add method :func:`txtorcon.Tor.become_ready`
  * fix handling of certain defaults (`*PortLines` and friends)
  * fix last router (usually) missing with (new) `MicroDescriptorParser`
+ * use OnionOO via Onion service `tgel7v4rpcllsrk2.onion` for :func:`txtorcon.Router.get_onionoo_details`
+ * fix parsing of Router started-times
 
 
 v0.19.3

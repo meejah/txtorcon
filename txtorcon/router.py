@@ -97,7 +97,7 @@ class Router(object):
         if self._modified is None:
             self._modified = datetime.strptime(
                 self._modified_unparsed,
-                '%Y-%m-%f %H:%M:%S'
+                '%Y-%m-%d %H:%M:%S'
             )
         return self._modified
 
@@ -180,7 +180,8 @@ class Router(object):
         :meth:`txtorcon.Circuit.web_agent`.
         """
 
-        uri = 'https://onionoo.torproject.org/details?lookup={}'.format(self.id_hex[1:]).encode('ascii')
+        # clearnet: 'https://onionoo.torproject.org/details?lookup={}'
+        uri = 'http://tgel7v4rpcllsrk2.onion/details?lookup={}'.format(self.id_hex[1:]).encode('ascii')
 
         resp = yield agent.request(b'GET', uri)
         if resp.code != 200:
