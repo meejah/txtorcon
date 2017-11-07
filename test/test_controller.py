@@ -1205,3 +1205,51 @@ class FactoryFunctionTests(unittest.TestCase):
         tor = Tor(Mock(), Mock())
         str(tor)
         # just testing the __str__ method doesn't explode
+
+
+class OnionFactoryTests(unittest.TestCase):
+    """
+    the onion-service factory functions verify their args
+    """
+
+    def setUp(self):
+        reactor = Mock()
+        proto = Mock()
+        directlyProvides(proto, ITorControlProtocol)
+        self.cfg = Mock()
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
+
+    @defer.inlineCallbacks
+    def test_ports_not_sequence(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service("not a sequence")
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service(['not an int'])
+        self.assertIn("contain a single int", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([('not', 'an int')])
+        self.assertIn("non-integer", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_version_invalid(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([80], version=1)
+        self.assertIn("The only valid Onion service versions", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_version_invalid_for_now(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([80], version=3)
+        self.assertIn("not supported by Tor", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_happy_path(self):
+        self.cfg.EphemeralOnionServices = []
+        with patch('txtorcon.controller.available_tcp_port', return_value=1234):
+            yield self.tor.create_onion_service([80])

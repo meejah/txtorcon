@@ -299,6 +299,13 @@ class FilesystemOnionService(object):
         pass  # XXX FIXME
 
 
+@defer.inlineCallbacks
+def _await_descriptor_upload_v3(config, onion, progress):
+    # have to use the "INFO" hack, which sucks -- we don't know which
+    # hidden-service is being uploaded, nor to where.
+    yield
+    
+
 # XXX: probably better/nicer to make "EphemeralOnionService" object
 # "just" a data-container; it needs to list-wrapping voodoo etc like
 # the others.

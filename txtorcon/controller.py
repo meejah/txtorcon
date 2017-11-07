@@ -14,6 +14,7 @@ import ipaddress
 from io import StringIO
 from collections import Sequence
 from os.path import dirname, exists
+from types import StringType
 
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -33,6 +34,8 @@ from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TorClientEndpoint, _create_socks_endpoint
+from txtorcon.onion import EphemeralOnionService, FilesystemOnionService
+
 from . import socks
 from .interface import ITor
 
@@ -532,6 +535,124 @@ class Tor(object):
             self._config = yield TorConfig.from_protocol(self._protocol)
         returnValue(self._config)
 
+    # XXX we *could* have just one "create_onion_service" method and
+    # trigger off "onion_service_dir" or something? But I think better
+    # to have different ones.
+    @inlineCallbacks
+    def create_onion_service(self, ports, private_key=None, version=2, progress=None):
+        """Create a new Onion service
+
+        This method will create a new Onion service, returning (via
+        Deferred) an instance that implements IOnionService. (To
+        create authenticated onion services, see XXX). This method
+        awaits at least one upload of the Onion service's 'descriptor'
+        to the Tor network -- this can take from 30s to a couple
+        minutes.
+
+        :param private_key: None, ``THROW_AWAY`` or a key-blob
+            retained from a prior run
+
+            Passing ``None`` means a new one will be created. It can be
+            retrieved from the ``.private_key`` property of the returned
+            object. You **must** retain this key yourself (and pass it in
+            to this method in the future) if you wish to keep the same
+            ``.onion`` domain when re-starting your program.
+
+            Passing ``THROW_AWAY`` means txtorcon will never learn the
+            private key from Tor and so there will be no way to re-create
+            an Onion Service on the same address after Tor exits.
+
+        :param version: which kind of Onion Service to create. Once
+            Proposition 224 (version 3) Onions are supported by the
+            ``ADD_ONION`` command, they will become the default. Currently
+            the only valid value for this is ``2``.
+
+        :param progress: if provided, a function that takes 3
+            arguments: ``(percent_done, tag, description)`` which may
+            be called any number of times to indicate some progress has
+            been made.
+
+        """
+        if version not in (2, 3):
+            raise ValueError(
+                "The only valid Onion service versions are 2 or 3"
+            )
+        if version == 3:
+            raise ValueError(
+                "Ephemeral version=3 Onion services are not supported by Tor"
+            )
+        if not isinstance(ports, Sequence) or isinstance(ports, StringType):
+            raise ValueError("'ports' must be a sequence (list, tuple, ..)")
+                
+        processed_ports = yield _validate_ports(self._reactor, ports)
+        print("XXX {}".format(processed_ports))
+        config = yield self.get_config()
+        service = yield EphemeralOnionService.create(
+            config=config,
+            ports=processed_ports,
+            # version=version,  XXX add now? or wait until v3 ships ADD_ONION
+            progress=progress,
+        )
+        returnValue(service)
+
+    @inlineCallbacks
+    def create_filesystem_onion_service(self, ports, onion_service_dir,
+                                        version=3,
+                                        group_readable=False,
+                                        progress=None):
+        """Create a new Onion service stored on disk
+
+        This method will create a new Onion service, returning (via
+        Deferred) an instance that implements IOnionService. (To
+        create authenticated onion services, see XXX). This method
+        awaits at least one upload of the Onion service's 'descriptor'
+        to the Tor network -- this can take from 30s to a couple
+        minutes.
+
+        :param ports: a collection of ports to advertise; these are
+            forwarded locally on a random port. Each entry may instead be
+            a 2-tuple, which chooses an explicit local port.
+
+        :param onion_service_dir: a path to an Onion Service
+            directory.
+
+            Tor will write a ``hostname`` file in this directory along
+            with the private keys for the service (if they do not already
+            exist). You do not need to retain the private key yourself.
+
+        :param version: which kind of Onion Service to create. The
+            default is ``3`` which are the Proposition 224
+            services. Version ``2`` are the previous services. There are
+            no other valid versions currently.
+
+        :param group_readable: if True, Tor creates the directory with
+           group read permissions. The default is False.
+
+        :param progress: if provided, a function that takes 3
+            arguments: ``(percent_done, tag, description)`` which may
+            be called any number of times to indicate some progress has
+            been made.
+
+        """
+        if not isinstance(ports, Sequence) or isinstance(ports, StringType):
+            raise ValueError("'ports' must be a sequence (list, tuple, ..)")
+        processed_ports = yield _validate_ports(self._reactor, ports)
+
+        if version not in (2, 3):
+            raise ValueError(
+                "The only valid Onion service versions are 2 or 3"
+            )
+        config = yield self.get_config()
+        service = yield FilesystemOnionService.create(
+            config=config,
+            hsdir=onion_service_dir,
+            ports=processed_ports,
+            version=version,
+            group_readable=group_readable,
+            progress=progress,
+        )
+        returnValue(service)
+
     @inlineCallbacks
     def create_v3_onion_service(self, *args, **kw):
         # FIXME if I keep anything like this, explicitly pass args probably
@@ -695,6 +816,47 @@ class Tor(object):
         if self._socks_endpoint is None:
             self._socks_endpoint = yield _create_socks_endpoint(self._reactor, self._protocol)
         returnValue(self._socks_endpoint)
+
+
+@inlineCallbacks
+def _validate_ports(reactor, ports):
+    """
+    Internal helper for Onion services. Validates an incoming list of
+    port mappings and returns a list of strings suitable for passing
+    to other onion-services functions.
+    """
+    processed_ports = []
+    for port in ports:
+        if isinstance(port, Sequence):
+            if len(port) != 2:
+                raise ValueError(
+                    "'ports' must contain a single int or a 2-tuple of ints"
+                )
+            remote, local = port
+            try:
+                remote = int(remote)
+                local = int(local)
+            except ValueError:
+                raise ValueError(
+                    "'ports' has a tuple with a non-integer "
+                    "component: {}".format(port)
+                )
+            processed_ports.append(
+                "{} 127.0.0.1:{}".format(remote, local)
+            )
+        else:
+            try:
+                remote = int(port)
+                print("RE {}".format(remote))
+            except ValueError:
+                raise ValueError(
+                    "'ports' has a non-integer entry: {}".format(port)
+                )
+            local = yield available_tcp_port(reactor)
+            processed_ports.append(
+                "{} 127.0.0.1:{}".format(remote, local)
+            )
+    returnValue(processed_ports)
 
 
 # XXX from magic-wormhole
