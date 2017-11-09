@@ -583,9 +583,8 @@ class Tor(object):
             )
         if not isinstance(ports, Sequence) or isinstance(ports, StringType):
             raise ValueError("'ports' must be a sequence (list, tuple, ..)")
-                
+
         processed_ports = yield _validate_ports(self._reactor, ports)
-        print("XXX {}".format(processed_ports))
         config = yield self.get_config()
         service = yield EphemeralOnionService.create(
             config=config,
@@ -847,7 +846,6 @@ def _validate_ports(reactor, ports):
         else:
             try:
                 remote = int(port)
-                print("RE {}".format(remote))
             except ValueError:
                 raise ValueError(
                     "'ports' has a non-integer entry: {}".format(port)

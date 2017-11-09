@@ -1252,4 +1252,13 @@ class OnionFactoryTests(unittest.TestCase):
     def test_happy_path(self):
         self.cfg.EphemeralOnionServices = []
         with patch('txtorcon.controller.available_tcp_port', return_value=1234):
-            yield self.tor.create_onion_service([80])
+            with patch.object(self.cfg, 'tor_protocol') as proto:
+                proto.queue_command = Mock(return_value="ServiceID=deadbeef\nPrivateKey=BlobbyMcBlobberson")
+                d = self.tor.create_onion_service([80])
+                f = proto.add_event_listener.mock_calls[0][1][1]
+                f("UPLOAD deadbeef x dirauth0")
+                f("UPLOADED x x dirauth0")
+                service = yield d
+        self.assertEqual("deadbeef.onion", service.hostname)
+        self.assertEqual("BlobbyMcBlobberson", service.private_key)
+        self.assertEqual(set(['80 127.0.0.1:1234']), service.ports)
