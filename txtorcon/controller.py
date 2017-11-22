@@ -34,6 +34,7 @@ from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TorClientEndpoint, _create_socks_endpoint
+from txtorcon.endpoints import TCPHiddenServiceEndpoint
 from txtorcon.onion import EphemeralOnionService, FilesystemOnionService
 
 from . import socks
@@ -752,8 +753,52 @@ class Tor(object):
             reactor=self._reactor,
         )
 
-    # XXX note to self: insert onion endpoint-creation functions when
-    # merging onion.py
+    # XXX One Onion Method To Rule Them All, or
+    # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
+    # or ...?
+    def create_onion_endpoint(self, port, private_key=None):
+        """
+        WARNING: API subject to change
+
+        Returns an object that implements IStreamServerEndpoint, which
+        will create an "ephemeral" Onion service when ``.listen()`` is
+        called. This uses the ``ADD_ONION`` tor control-protocol command.
+
+        :param private_key: if not None (the default), this should be
+            the same blob of key material that you received from a
+            previous call to this method. "Retrieved" here means by
+            accessing the ``.onion_private_key`` attribute of the
+            object returned from ``.listen()`` (see
+            :class:`txtorcon.IHiddenService` and
+            :meth:`txtorcon.TCPHiddenServiceEndpoint.listen`) which
+            will be a :class:`txtorcon.TorOnionListeningPort` -- and
+            therefore implments :class:`txtorcon.IOnionService` (XXX
+            FIXME it implements IHiddenService).
+        """
+        # note, we're just depending on this being The Ultimate
+        # Everything endpoint. Which seems fine, because "normal"
+        # users should use this or another factory-method to
+        # instantiate them...
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.get_config(), port,
+            hidden_service_dir=None,
+            local_port=None,
+            ephemeral=True,
+            private_key=private_key,
+        )
+
+    def create_onion_disk_endpoint(self, port, hs_dir=None, group_readable=False):
+        """
+        WARNING: API subject to change
+        """
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.get_config(), port,
+            hidden_service_dir=hs_dir,
+            local_port=None,
+            ephemeral=False,
+            private_key=None,
+            group_readable=int(group_readable),
+        )
 
     # XXX or get_state()? and make there be always 0 or 1 states; cf. convo w/ Warner
     @inlineCallbacks
