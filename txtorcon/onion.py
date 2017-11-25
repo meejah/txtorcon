@@ -23,7 +23,7 @@ from txtorcon.util import find_keywords, version_at_least
 # specific" factory-functions, like "create_ephemeral_onion"
 # "create_detached_onion" "create_permanent_onion??" etc...?
 # --> yes.
-# --> also: direct people to Tor() thing (doesn't exist in this branch tho)
+# --> also: direct people to Tor() thing
 
 
 ## TODO

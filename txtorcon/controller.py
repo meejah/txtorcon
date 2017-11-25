@@ -14,7 +14,6 @@ import ipaddress
 from io import StringIO
 from collections import Sequence
 from os.path import dirname, exists
-from types import StringType
 
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -582,7 +581,7 @@ class Tor(object):
             raise ValueError(
                 "Ephemeral version=3 Onion services are not supported by Tor"
             )
-        if not isinstance(ports, Sequence) or isinstance(ports, StringType):
+        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
             raise ValueError("'ports' must be a sequence (list, tuple, ..)")
 
         processed_ports = yield _validate_ports(self._reactor, ports)
@@ -634,7 +633,7 @@ class Tor(object):
             been made.
 
         """
-        if not isinstance(ports, Sequence) or isinstance(ports, StringType):
+        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
             raise ValueError("'ports' must be a sequence (list, tuple, ..)")
         processed_ports = yield _validate_ports(self._reactor, ports)
 
