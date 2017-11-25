@@ -32,7 +32,7 @@ from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import AuthenticatedHiddenService
 
-from test_torconfig import FakeControlProtocol
+from txtorcon.testutil import FakeControlProtocol
 
 
 class OnionServiceTest(unittest.TestCase):
@@ -44,7 +44,7 @@ class OnionServiceTest(unittest.TestCase):
         hsdir = self.mktemp()
         os.mkdir(hsdir)
         with open(join(hsdir, 'hs_ed25519_secret_key'), 'wb') as f:
-            f.write('\x01\x02\x03\x04')
+            f.write(b'\x01\x02\x03\x04')
 
         hs = yield FilesystemOnionService.create(
             config,
@@ -53,7 +53,7 @@ class OnionServiceTest(unittest.TestCase):
             version=3,
         )
 
-        self.assertEqual('\x01\x02\x03\x04', hs.private_key)
+        self.assertEqual(b'\x01\x02\x03\x04', hs.private_key)
 
     @defer.inlineCallbacks
     def test_set_ports(self):
@@ -62,7 +62,7 @@ class OnionServiceTest(unittest.TestCase):
         hsdir = self.mktemp()
         os.mkdir(hsdir)
         with open(join(hsdir, 'hs_ed25519_secret_key'), 'wb') as f:
-            f.write('\x01\x02\x03\x04')
+            f.write(b'\x01\x02\x03\x04')
 
         hs = yield FilesystemOnionService.create(
             config,
