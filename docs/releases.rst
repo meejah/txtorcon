@@ -28,6 +28,7 @@ unreleased
  * fix last router (usually) missing with (new) `MicroDescriptorParser`
  * use OnionOO via Onion service `tgel7v4rpcllsrk2.onion` for :func:`txtorcon.Router.get_onionoo_details`
  * fix parsing of Router started-times
+ * `Issue 255 <https://github.com/meejah/txtorcon/issues/255>`_ removed routers now deleted following NEWCONSENSUS
 
 
 v0.19.3
