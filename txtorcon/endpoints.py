@@ -220,7 +220,8 @@ class TCPHiddenServiceEndpoint(object):
                    hidden_service_dir=None,
                    local_port=None,
                    ephemeral=None,
-                   private_key=None):
+                   private_key=None,
+                   version=None):
         """
         This returns a TCPHiddenServiceEndpoint connected to the
         endpoint you specify in `control_endpoint`. After connecting, a
@@ -244,6 +245,7 @@ class TCPHiddenServiceEndpoint(object):
             local_port=local_port,
             ephemeral=ephemeral,
             private_key=private_key,
+            version=version,
         )
 
     @classmethod
@@ -253,7 +255,8 @@ class TCPHiddenServiceEndpoint(object):
                    control_port=None,
                    stealth_auth=None,
                    ephemeral=None,
-                   private_key=None):
+                   private_key=None,
+                   version=None):
         """
         This returns a TCPHiddenServiceEndpoint connected to a
         txtorcon global Tor instance. The first time you call this, a
@@ -296,6 +299,7 @@ class TCPHiddenServiceEndpoint(object):
             stealth_auth=stealth_auth,
             ephemeral=ephemeral,
             private_key=private_key,
+            version=version,
         )
         progress.target = r._tor_progress_update
         return r
@@ -306,7 +310,8 @@ class TCPHiddenServiceEndpoint(object):
                     local_port=None,
                     control_port=None,
                     ephemeral=None,
-                    private_key=None):
+                    private_key=None,
+                    version=None):
         """
         This returns a TCPHiddenServiceEndpoint that's always
         connected to its own freshly-launched Tor instance. All
@@ -330,6 +335,7 @@ class TCPHiddenServiceEndpoint(object):
             local_port=local_port,
             ephemeral=ephemeral,
             private_key=private_key,
+            version=version,
         )
         progress.target = r._tor_progress_update
         return r
@@ -340,7 +346,8 @@ class TCPHiddenServiceEndpoint(object):
                  stealth_auth=None,
                  ephemeral=None,  # will be set to True, unless hsdir spec'd
                  private_key=None,
-                 group_readable=False):
+                 group_readable=False,
+                 version=None):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
@@ -369,6 +376,14 @@ class TCPHiddenServiceEndpoint(object):
         :param endpoint_generator:
             A callable that generates a new instance of something that
             implements IServerEndpoint (by default TCP4ServerEndpoint)
+
+        :param group_readable:
+            Only for filesystem services. Causes the directory to be
+            group-readable when Tor creates it.
+
+        :param version:
+            Either None, 2 or 3 to specify a version 2 service or
+            Proposition 224 (version 3) service.
         """
 
         # this supports API backwards-compatibility -- if you didn't
@@ -411,7 +426,13 @@ class TCPHiddenServiceEndpoint(object):
         self.tcp_listening_port = None
         self.hiddenservice = None
         self.group_readable = group_readable
+        self.version = version
         self.retries = 0
+
+        if version == 3 and ephemeral:
+            raise ValueError(
+                "Tor doesn't yet support version=3 ephemeral services"
+            )
 
         '''for IProgressProvider to add_progress_listener'''
         self.progress_listeners = []
@@ -559,6 +580,7 @@ class TCPHiddenServiceEndpoint(object):
                     detach=False,
                     discard_key=False,
                     progress=self._tor_progress_update,
+                    version=self.version,
                 )
             else:
                 self.hiddenservice = yield FilesystemHiddenService.create(
@@ -568,6 +590,7 @@ class TCPHiddenServiceEndpoint(object):
                     auth=authlines,
                     progress=self._tor_progress_update,
                     group_readable=self.group_readable,
+                    version=self.version,
                 )
         else:
             if not self.ephemeral:
@@ -769,7 +792,7 @@ class TCPHiddenServiceEndpointParser(object):
     # XXX need to be able to pass privateKey too (mutually exclusive with hiddenServiceDir)
     def parseStreamServer(self, reactor, public_port, localPort=None,
                           controlPort=None, hiddenServiceDir=None,
-                          privateKey=None):
+                          privateKey=None, version=None):
         """
         :api:`twisted.internet.interfaces.IStreamServerEndpointStringParser`
         """
@@ -778,6 +801,22 @@ class TCPHiddenServiceEndpointParser(object):
             raise ValueError(
                 "Only one of hiddenServiceDir and privateKey accepted"
             )
+
+        if version is not None:
+            try:
+                version = int(version)
+            except ValueError:
+                raise ValueError(
+                    "version must be an integer"
+                )
+        if version not in (None, 2, 3):
+            raise ValueError(
+                "Invalid version '{}'".format(version)
+            )
+
+        ephemeral = None
+        if version == 3:
+            ephemeral = False
 
         public_port = int(public_port)
 
@@ -798,15 +837,22 @@ class TCPHiddenServiceEndpointParser(object):
                     reactor, "tcp:host=127.0.0.1:port=%d" % int(controlPort))
             except ValueError:
                 ep = clientFromString(reactor, "unix:path=%s" % controlPort)
-            return TCPHiddenServiceEndpoint.system_tor(reactor, ep,
-                                                       public_port,
-                                                       hidden_service_dir=hsd,
-                                                       local_port=localPort)
+            return TCPHiddenServiceEndpoint.system_tor(
+                reactor, ep, public_port,
+                hidden_service_dir=hsd,
+                local_port=localPort,
+                ephemeral=ephemeral,
+                version=version,
+            )
 
-        return TCPHiddenServiceEndpoint.global_tor(reactor, public_port,
-                                                   hidden_service_dir=hsd,
-                                                   local_port=localPort,
-                                                   control_port=controlPort)
+        return TCPHiddenServiceEndpoint.global_tor(
+            reactor, public_port,
+            hidden_service_dir=hsd,
+            local_port=localPort,
+            control_port=controlPort,
+            ephemeral=ephemeral,
+            version=version,
+        )
 
 
 @defer.inlineCallbacks

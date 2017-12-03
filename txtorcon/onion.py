@@ -172,7 +172,13 @@ class FilesystemOnionService(object):
                 )
                 uploaded[0] = defer.succeed(None)
         else:
-            uploaded[0] = _await_descriptor_upload(config, fhs, progress)
+            if version == 3:
+                progress(
+                    106, "wait_descriptor",
+                    "Version 3 onion services don't tell us when descriptors are uploaded",
+                )
+            else:
+                uploaded[0] = _await_descriptor_upload(config, fhs, progress)
 
         yield config.save()
         yield uploaded[0]
@@ -385,7 +391,7 @@ def _await_descriptor_upload(config, onion, progress):
 
 
 @defer.inlineCallbacks
-def _add_ephemeral_service(config, onion, progress):
+def _add_ephemeral_service(config, onion, progress, version):
     """
     Internal Helper.
 
@@ -407,7 +413,9 @@ def _add_ephemeral_service(config, onion, progress):
 
     # we have to keep this as a Deferred for now so that HS_DESC
     # listener gets added before we issue ADD_ONION
-    uploaded = _await_descriptor_upload(config, onion, progress)
+    assert version in (2, 3)
+    if version == 2:
+        uploaded_d = _await_descriptor_upload(config, onion, progress)
 
     # we allow a key to be passed that *doestn'* start with
     # "RSA1024:" because having to escape the ":" for endpoint
@@ -423,6 +431,11 @@ def _add_ephemeral_service(config, onion, progress):
     cmd = 'ADD_ONION {}'.format(onion.private_key or 'NEW:BEST')
     for port in onion._ports:
         cmd += ' Port={},{}'.format(*port.split(' ', 1))
+    if version != 2:
+        raise RuntimeError(
+            "Can't make version=3 ephemeral services"
+        )
+        cmd += ' Version={}'.format(version)
     flags = []
     if onion._detach:
         flags.append('Detach')
@@ -448,8 +461,11 @@ def _add_ephemeral_service(config, onion, progress):
             "Got: {}".format(res)
         )
 
-    log.msg("{}: waiting for descriptor uploads.".format(onion.hostname))
-    yield uploaded
+    if version == 2:
+        log.msg("{}: waiting for descriptor uploads.".format(onion.hostname))
+        yield uploaded_d
+    else:
+        log.msg("version {} service; can't determine upload status".format(version))
 
 
 ## okay, square this with FilesystemHiddenService -- There Can Be Only
@@ -463,6 +479,7 @@ class EphemeralOnionService(object):
                ## XXX from below, make "private_key=THROW_AWAY" the way to do this?
                discard_key=False,
                private_key=None,
+               version=None,
                progress=None):
         """
         returns a new EphemeralOnionService after adding it to the
@@ -475,34 +492,49 @@ class EphemeralOnionService(object):
         if private_key and discard_key:
             raise ValueError("Don't pass a 'private_key' and ask to 'discard_key'")
 
+        version = 2 if version is None else version
+        assert version in (2, 3)
+
         onion = EphemeralOnionService(
             config, ports,
             hostname=None,
             private_key=private_key,
             detach=detach,
             discard_key=discard_key,
+            version=version,
         )
 
-        yield _add_ephemeral_service(config, onion, progress)
+        yield _add_ephemeral_service(config, onion, progress, version)
 
         defer.returnValue(onion)
 
-    def __init__(self, config, ports, hostname=None, private_key=None, auth=[], ver=2,
-                 detach=False, discard_key=False):
+    def __init__(self, config, ports, hostname=None, private_key=None, auth=[], version=2,
+                 detach=False, discard_key=False, **kwarg):
         """
         Users should create instances of this class by using the async
         method :meth:`txtorcon.EphemeralOnionService.create`
         """
+
+        # prior to 17.0.0, this took an argument called "ver" instead
+        # of "version". So, we will silently upgrade that.
+        if "ver" in kwarg:
+            version = int(kwarg.pop("ver"))
+        # any other kwargs are illegal
+        if len(kwarg):
+            raise ValueError(
+                "Unknown kwargs: {}".format(", ".join(kwarg.keys()))
+            )
+
         if not isinstance(ports, (list, tuple)):
             raise ValueError("'ports' must be a list of strings")
         if any([not isinstance(x, str) for x in ports]):
             raise ValueError("'ports' must be a list of strings")
 
-        # XXX do we need version?
         self._config = config
         self._ports = ports
         self._hostname = hostname
         self._private_key = private_key
+        self._version = version
         self._detach = detach
         self._discard_key = discard_key
         if auth != []:
@@ -510,7 +542,6 @@ class EphemeralOnionService(object):
                 "Tor doesn't yet support authentication on ephemeral onion "
                 "services."
             )
-        self._version = ver
 
         # validation of options; should move to method?
         for port in ports:
