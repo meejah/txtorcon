@@ -350,7 +350,6 @@ class OnionServiceTest(unittest.TestCase):
             cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
 
         hs = yield eph_d
-        print("HS {}".format(hs))
         remove_d = hs.remove()
         cmd, d = protocol.commands[-1]
         self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
