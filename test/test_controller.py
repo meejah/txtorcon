@@ -1207,7 +1207,7 @@ class FactoryFunctionTests(unittest.TestCase):
         # just testing the __str__ method doesn't explode
 
 
-class OnionFactoryTests(unittest.TestCase):
+class EphemeralOnionFactoryTests(unittest.TestCase):
     """
     the onion-service factory functions verify their args
     """
@@ -1258,6 +1258,57 @@ class OnionFactoryTests(unittest.TestCase):
                 f = proto.add_event_listener.mock_calls[0][1][1]
                 f("UPLOAD deadbeef x dirauth0")
                 f("UPLOADED x x dirauth0")
+                service = yield d
+        self.assertEqual("deadbeef.onion", service.hostname)
+        self.assertEqual("BlobbyMcBlobberson", service.private_key)
+        self.assertEqual(set(['80 127.0.0.1:1234']), service.ports)
+
+
+class FilesystemOnionFactoryTests(unittest.TestCase):
+    """
+    the onion-service factory functions verify their args
+    """
+
+    def setUp(self):
+        reactor = Mock()
+        proto = Mock()
+        directlyProvides(proto, ITorControlProtocol)
+        self.cfg = Mock()
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
+        self.hsdir = self.mktemp()
+        os.mkdir(self.hsdir)
+
+    @defer.inlineCallbacks
+    def test_ports_not_sequence(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_filesystem_onion_service("not a sequence", self.hsdir)
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_filesystem_onion_service(['not an int'], self.hsdir)
+        self.assertIn("contain a single int", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_filesystem_onion_service([('not', 'an int')], self.hsdir)
+        self.assertIn("non-integer", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_version_invalid(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_filesystem_onion_service([80], self.hsdir, version=1)
+        self.assertIn("The only valid Onion service versions", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_happy_path(self):
+        self.cfg.OnionServices = []
+        with patch('txtorcon.controller.available_tcp_port', return_value=1234):
+            with patch.object(self.cfg, 'tor_protocol') as proto:
+                #proto.queue_command = Mock(return_value="ServiceID=deadbeef\nPrivateKey=BlobbyMcBlobberson")
+                proto.queue_command = Mock(return_value="OK")
+                d = self.tor.create_filesystem_onion_service([80], self.hsdir)
                 service = yield d
         self.assertEqual("deadbeef.onion", service.hostname)
         self.assertEqual("BlobbyMcBlobberson", service.private_key)
