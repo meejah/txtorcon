@@ -368,6 +368,11 @@ class TestVersions(unittest.TestCase):
             version_at_least("2.1.1.1", 2, 0, 0, 0)
         )
 
+    def test_version_big(self):
+        self.assertTrue(
+            version_at_least("0.3.3.0-alpha-dev", 0, 2, 7, 9)
+        )
+
 
 class TestHeaders(unittest.TestCase):
 

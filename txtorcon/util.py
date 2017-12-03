@@ -65,6 +65,8 @@ def version_at_least(version_string, major, minor, micro, patch):
     for ver, gold in zip(parts.group(1, 2, 3, 4), (major, minor, micro, patch)):
         if int(ver) < int(gold):
             return False
+        elif int(ver) > int(gold):
+            return True
     return True
 
 
