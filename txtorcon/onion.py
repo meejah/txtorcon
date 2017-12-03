@@ -173,10 +173,11 @@ class FilesystemOnionService(object):
                 uploaded[0] = defer.succeed(None)
         else:
             if version == 3:
-                progress(
-                    106, "wait_descriptor",
-                    "Version 3 onion services don't tell us when descriptors are uploaded",
-                )
+                if progress:
+                    progress(
+                        106, "wait_descriptor",
+                        "Version 3 onion services don't tell us when descriptors are uploaded",
+                    )
             else:
                 uploaded[0] = _await_descriptor_upload(config, fhs, progress)
 

@@ -429,7 +429,10 @@ class TCPHiddenServiceEndpoint(object):
         self.version = version
         self.retries = 0
 
-        if version == 3 and ephemeral:
+        if self.version is None:
+            self.version = 2
+
+        if self.version == 3 and ephemeral:
             raise ValueError(
                 "Tor doesn't yet support version=3 ephemeral services"
             )
@@ -437,13 +440,12 @@ class TCPHiddenServiceEndpoint(object):
         '''for IProgressProvider to add_progress_listener'''
         self.progress_listeners = []
 
-        # XXX hmm?! we shouldn't be creating a dir if we're an
-        # ephemeral service, right? (but: we do create one)
-        if self.hidden_service_dir is None:
-            self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
-            log.msg('Will delete "%s" at shutdown.' % self.hidden_service_dir)
-            delete = functools.partial(shutil.rmtree, self.hidden_service_dir)
-            self._reactor.addSystemEventTrigger('before', 'shutdown', delete)
+        if not self.ephemeral:
+            if self.hidden_service_dir is None:
+                self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
+                log.msg('Will delete "%s" at shutdown.' % self.hidden_service_dir)
+                delete = functools.partial(shutil.rmtree, self.hidden_service_dir)
+                self._reactor.addSystemEventTrigger('before', 'shutdown', delete)
 
     @property
     def onion_uri(self):
@@ -546,11 +548,12 @@ class TCPHiddenServiceEndpoint(object):
 
         # specifically NOT creating the hidden-service dir; letting
         # Tor do it will more-likely result in a usable situation...
-        if not os.path.exists(self.hidden_service_dir):
-            log.msg(
-                'Noting that "%s" does not exist; letting Tor create it.' %
-                self.hidden_service_dir
-            )
+        if not self.ephemeral:
+            if not os.path.exists(self.hidden_service_dir):
+                log.msg(
+                    'Noting that "%s" does not exist; letting Tor create it.' %
+                    self.hidden_service_dir
+                )
 
         # see note in _tor_progress_update; we extend the percent
         # range to 110% for the descriptor upload

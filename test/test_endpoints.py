@@ -321,7 +321,7 @@ class EndpointTests(unittest.TestCase):
             defer.returnValue(arg)
             return
         d0.addBoth(more_listen)
-        if False:
+        if True:
             self.protocol.events['HS_DESC'](
                 'UPLOAD blarglyfoo x x x x'
             )
@@ -357,17 +357,24 @@ class EndpointTests(unittest.TestCase):
         with util.TempDir() as tmp:
             d = str(tmp)
             with open(os.path.join(d, 'hostname'), 'w') as f:
-                f.write('public')
+                f.write('public.onion')
 
             ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, d)
 
             # make sure listen() correctly configures our hidden-serivce
             # with the explicit directory we passed in above
-            yield ep.listen(NoOpProtocolFactory())
+            listen_d = ep.listen(NoOpProtocolFactory())
+            self.protocol.events['HS_DESC'](
+                "UPLOAD public basic somedirauth REASON=testing"
+            )
+            self.protocol.events['HS_DESC'](
+                "UPLOADED public basic somedirauth REASON=testing"
+            )
+            yield listen_d
 
             self.assertEqual(1, len(self.config.HiddenServices))
             self.assertEqual(self.config.HiddenServices[0].dir, d)
-            self.assertEqual(self.config.HiddenServices[0].hostname, 'public')
+            self.assertEqual(self.config.HiddenServices[0].hostname, 'public.onion')
 
     def test_failure(self, ftb):
         self.reactor.failures = 1
@@ -535,9 +542,15 @@ class EndpointTests(unittest.TestCase):
         make sure we produce a HiddenService instance with stealth-auth
         lines if we had authentication specified in the first place.
         '''
+        tmp = self.mktemp()
+        os.mkdir(tmp)
+        with open(os.path.join(tmp, 'hostname'), 'w') as f:
+            f.write('public.onion\n')
 
-        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, '/dev/null',
-                                      stealth_auth=['alice', 'bob'])
+        ep = TCPHiddenServiceEndpoint(
+            self.reactor, self.config, 123, tmp,
+            stealth_auth=['alice', 'bob'],
+        )
 
         # make sure listen() correctly configures our hidden-serivce
         # with the explicit directory we passed in above
@@ -546,14 +559,22 @@ class EndpointTests(unittest.TestCase):
         def foo(fail):
             return fail
         d.addErrback(foo)
+
+        self.protocol.events['HS_DESC'](
+            "UPLOAD public basic somedirauth REASON=testing"
+        )
+        self.protocol.events['HS_DESC'](
+            "UPLOADED public basic somedirauth REASON=testing"
+        )
+
         yield d  # returns 'port'
         self.assertEqual(1, len(self.config.HiddenServices))
-        self.assertEqual(self.config.HiddenServices[0].dir, '/dev/null')
+        self.assertEqual(self.config.HiddenServices[0].dir, os.path.abspath(tmp))
         self.assertEqual(
             self.config.HiddenServices[0].authorize_client[0],
             'stealth alice,bob'
         )
-        self.assertEqual(None, ep.onion_uri)
+        self.assertEqual('public.onion', ep.onion_uri)
 
     @defer.inlineCallbacks
     def test_factory(self, ftb):

@@ -96,6 +96,7 @@ class OnionServiceTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_unknown_version(self):
         protocol = FakeControlProtocol([])
+        protocol.version = "0.1.1.1"
         config = TorConfig(protocol)
         hsdir = self.mktemp()
         os.mkdir(hsdir)
