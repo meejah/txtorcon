@@ -187,6 +187,48 @@ class EndpointTests(unittest.TestCase):
                 self.assertFalse(launch_mock.called)
 
     @defer.inlineCallbacks
+    def test_system_tor_explit_dir_not_exist(self, ftb):
+        # same as above, but we pass an explicit (but non-existent)
+        # hsdir and then simulate Tor creating it...
+
+        def boom():
+            # why does the new_callable thing need a callable that
+            # returns a callable? Feels like I must be doing something
+            # wrong somewhere...
+            def bam(*args, **kw):
+                self.config.bootstrap()
+                return defer.succeed(Tor(Mock(), self.protocol, _tor_config=self.config))
+            return bam
+        hsdir = self.mktemp()  # not creating it
+        with patch('txtorcon.controller.launch') as launch_mock:
+            with patch('txtorcon.controller.connect', new_callable=boom):
+                client = clientFromString(
+                    self.reactor,
+                    "tcp:host=localhost:port=9050"
+                )
+                ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
+                                                               client, 80, hidden_service_dir=hsdir)
+                port_d = ep.listen(NoOpProtocolFactory())
+
+                # Tor would create the hsdir "approximately now"
+                os.mkdir(hsdir)
+                with open(os.path.join(hsdir, "hostname"), "w") as f:
+                    f.write("service.onion\n")
+
+                self.protocol.events['HS_DESC']('UPLOAD service x x x x')
+                self.protocol.events['HS_DESC']('UPLOADED service x x x x')
+                port = yield port_d
+                toa = port.getHost()
+                self.assertTrue(hasattr(toa, 'onion_uri'))
+                self.assertTrue(hasattr(toa, 'onion_port'))
+                port.startListening()
+                str(port)
+                port.tor_config
+                # system_tor should be connecting to a running one,
+                # *not* launching a new one.
+                self.assertFalse(launch_mock.called)
+
+    @defer.inlineCallbacks
     def test_basic(self, ftb):
         listen = RuntimeError("listen")
         connect = RuntimeError("connect")
@@ -414,6 +456,35 @@ class EndpointTests(unittest.TestCase):
                 'onion:88:localPort=1234:hiddenServiceDir=/foo/bar:privateKey=blarg'
             )
 
+    def test_parse_illegal_version_foo(self, ftb):
+        with self.assertRaises(ValueError) as ctx:
+            serverFromString(
+                self.reactor,
+                'onion:88:version=foo:localPort=1234:hiddenServiceDir=~/blam/blarg'
+            )
+        self.assertIn(
+            "version must be an int",
+            str(ctx.exception),
+        )
+
+    def test_parse_illegal_version_1(self, ftb):
+        with self.assertRaises(ValueError) as ctx:
+            serverFromString(
+                self.reactor,
+                'onion:88:version=1:localPort=1234:hiddenServiceDir=~/blam/blarg'
+            )
+        self.assertIn(
+            "Invalid version '1'",
+            str(ctx.exception),
+        )
+
+    def test_parse_version_3(self, ftb):
+        ep = serverFromString(
+            self.reactor,
+            'onion:88:version=3:localPort=1234:hiddenServiceDir=~/blam/blarg'
+        )
+        self.assertFalse(ep.ephemeral)
+
     def test_parse_user_path(self, ftb):
         # this makes sure we expand users and symlinks in
         # hiddenServiceDir args. see Issue #77
@@ -516,6 +587,22 @@ class EndpointTests(unittest.TestCase):
             )
         self.assertIn(
             "only understood for ephemeral services",
+            str(ctx.exception),
+        )
+
+    def test_no_version_3_ephemeral(self, ftb):
+        # Tor should support this at some point soon though!
+        reactor = Mock()
+        config = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            TCPHiddenServiceEndpoint(
+                reactor, config, 80,
+                ephemeral=True,
+                version=3,
+                private_key=b'something',
+            )
+        self.assertIn(
+            "Tor doesn't yet support version=3 ephemeral services",
             str(ctx.exception),
         )
 
