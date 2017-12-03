@@ -1228,13 +1228,41 @@ class EphemeralOnionFactoryTests(unittest.TestCase):
     def test_ports_contain_non_ints(self):
         with self.assertRaises(ValueError) as ctx:
             yield self.tor.create_onion_service(['not an int'])
+        self.assertIn("non-integer entry", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints2(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([set([1, 2, 3])])
         self.assertIn("contain a single int", str(ctx.exception))
 
     @defer.inlineCallbacks
-    def test_ports_contain_non_ints(self):
+    def test_ports_contain_non_ints3(self):
         with self.assertRaises(ValueError) as ctx:
             yield self.tor.create_onion_service([('not', 'an int')])
         self.assertIn("non-integer", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints4(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([('1234', 'bad')])
+        self.assertIn("non-integer", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints5(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service(['asdf'])
+        self.assertIn("non-integer entry", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints6(self):
+        from txtorcon.controller import _validate_ports
+        yield _validate_ports(Mock(), [80])
+
+    @defer.inlineCallbacks
+    def test_ports_contain_2_tuple(self):
+        from txtorcon.controller import _validate_ports
+        yield _validate_ports(Mock(), [(80, 54321)])
 
     @defer.inlineCallbacks
     def test_version_invalid(self):
@@ -1306,10 +1334,35 @@ class FilesystemOnionFactoryTests(unittest.TestCase):
         self.cfg.OnionServices = []
         with patch('txtorcon.controller.available_tcp_port', return_value=1234):
             with patch.object(self.cfg, 'tor_protocol') as proto:
-                #proto.queue_command = Mock(return_value="ServiceID=deadbeef\nPrivateKey=BlobbyMcBlobberson")
+                with open(join(self.hsdir, "hostname"), "w") as f:
+                    f.write("deadbeef.onion\n")
+                with open(join(self.hsdir, "hs_ed25519_secret_key"), "w") as f:
+                    f.write("BlobbyMcBlobberson")
+                proto.version = "0.3.2.1"
                 proto.queue_command = Mock(return_value="OK")
                 d = self.tor.create_filesystem_onion_service([80], self.hsdir)
                 service = yield d
         self.assertEqual("deadbeef.onion", service.hostname)
         self.assertEqual("BlobbyMcBlobberson", service.private_key)
-        self.assertEqual(set(['80 127.0.0.1:1234']), service.ports)
+        self.assertEqual(set(['80 127.0.0.1:1234']), set(service.ports))
+
+
+class FilesystemOnionEndpointFactoryTests(unittest.TestCase):
+
+    def setUp(self):
+        reactor = Mock()
+        proto = Mock()
+        directlyProvides(proto, ITorControlProtocol)
+        self.cfg = Mock()
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
+        self.hsdir = self.mktemp()
+        os.mkdir(self.hsdir)
+
+    @defer.inlineCallbacks
+    def test_filesystem_endpoint(self):
+        yield self.tor.create_filesystem_onion_endpoint(80)
+
+    @defer.inlineCallbacks
+    def test_ephemeral_endpoint(self):
+        yield self.tor.create_onion_endpoint(80)
+

@@ -746,13 +746,16 @@ class Tor(object):
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
     # or ...?
-    def create_onion_endpoint(self, port, private_key=None):
+    def create_onion_endpoint(self, port, private_key=None, version=None):
         """
         WARNING: API subject to change
 
         Returns an object that implements IStreamServerEndpoint, which
         will create an "ephemeral" Onion service when ``.listen()`` is
         called. This uses the ``ADD_ONION`` tor control-protocol command.
+
+        :param port: the port to listen publically on the Tor network
+           on (e.g. 80 for a Web server)
 
         :param private_key: if not None (the default), this should be
             the same blob of key material that you received from a
@@ -764,6 +767,10 @@ class Tor(object):
             will be a :class:`txtorcon.TorOnionListeningPort` -- and
             therefore implments :class:`txtorcon.IOnionService` (XXX
             FIXME it implements IHiddenService).
+
+        :param version: if not None, a specific version of service to
+            use; version=3 is Proposition 224 and version=2 is the
+            1024-bit key based implementation.
         """
         # note, we're just depending on this being The Ultimate
         # Everything endpoint. Which seems fine, because "normal"
@@ -775,9 +782,10 @@ class Tor(object):
             local_port=None,
             ephemeral=True,
             private_key=private_key,
+            version=version,
         )
 
-    def create_onion_disk_endpoint(self, port, hs_dir=None, group_readable=False):
+    def create_filesystem_onion_endpoint(self, port, hs_dir=None, group_readable=False, version=None):
         """
         WARNING: API subject to change
         """
@@ -788,6 +796,7 @@ class Tor(object):
             ephemeral=False,
             private_key=None,
             group_readable=int(group_readable),
+            version=version,
         )
 
     # XXX or get_state()? and make there be always 0 or 1 states; cf. convo w/ Warner
@@ -861,7 +870,7 @@ def _validate_ports(reactor, ports):
     """
     processed_ports = []
     for port in ports:
-        if isinstance(port, Sequence):
+        if isinstance(port, (set, list, tuple)):
             if len(port) != 2:
                 raise ValueError(
                     "'ports' must contain a single int or a 2-tuple of ints"
