@@ -558,7 +558,7 @@ class EndpointTests(unittest.TestCase):
                 ephemeral=True,
             )
         self.assertIn(
-            "onion services don't support stealth_auth",
+            "onion services don't support 'stealth' auth",
             str(ctx.exception),
         )
 
@@ -657,10 +657,11 @@ class EndpointTests(unittest.TestCase):
         yield d  # returns 'port'
         self.assertEqual(1, len(self.config.HiddenServices))
         self.assertEqual(self.config.HiddenServices[0].dir, os.path.abspath(tmp))
-        self.assertEqual(
-            self.config.HiddenServices[0].authorize_client[0],
-            'stealth alice,bob'
-        )
+        auth = self.config.HiddenServices[0].authorize_client[0]
+        self.assertTrue(auth.startswith('stealth '))
+        names = auth.split()[-1].split(',')
+        self.assertTrue("alice" in names)
+        self.assertTrue("bob" in names)
         self.assertEqual('public.onion', ep.onion_uri)
 
     @defer.inlineCallbacks

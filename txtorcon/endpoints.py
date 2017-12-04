@@ -35,6 +35,8 @@ from zope.interface import Interface, Attribute
 
 from .torconfig import TorConfig
 from .onion import FilesystemOnionService, EphemeralOnionService
+from .onion import EphemeralAuthenticatedOnionService
+from .onion import AuthStealth, AuthBasic
 from .torconfig import _endpoint_from_socksport_line
 from .util import SingleObserver, _Version
 FilesystemHiddenService = FilesystemOnionService  # XXX
@@ -220,6 +222,7 @@ class TCPHiddenServiceEndpoint(object):
                    hidden_service_dir=None,
                    local_port=None,
                    ephemeral=None,
+                   auth=None,
                    private_key=None,
                    version=None):
         """
@@ -245,6 +248,7 @@ class TCPHiddenServiceEndpoint(object):
             local_port=local_port,
             ephemeral=ephemeral,
             private_key=private_key,
+            auth=auth,
             version=version,
         )
 
@@ -253,7 +257,8 @@ class TCPHiddenServiceEndpoint(object):
                    hidden_service_dir=None,
                    local_port=None,
                    control_port=None,
-                   stealth_auth=None,
+                   stealth_auth=None,  # backwards-compat; don't use
+                   auth=None,
                    ephemeral=None,
                    private_key=None,
                    version=None):
@@ -276,10 +281,22 @@ class TCPHiddenServiceEndpoint(object):
         All keyword options have defaults (e.g. random ports, or
         tempdirs).
 
-        :param stealth_auth:
+        :param stealth_auth: **Deprecated**
             None, or a list of strings -- one for each stealth
-            authenticator you require.
+            authenticator you require. Use `auth=` now.
+
+        :param auth: None or an :class:`txtorcon.AuthBasic` or
+            :class:`txtorcon.AuthStealth` instance
         """
+
+        if stealth_auth is not None:
+            log.msg("'stealth_auth' is deprecated; use auth= instead")
+            if auth is not None:
+                raise ValueError(
+                    "Both stealth_auth= and auth= passed; use auth= only for new code"
+                )
+            auth = AuthStealth(stealth_auth)
+            stealth_auth = None
 
         def progress(*args):
             progress.target(*args)
@@ -296,7 +313,7 @@ class TCPHiddenServiceEndpoint(object):
             reactor, tor, public_port,
             hidden_service_dir=hidden_service_dir,
             local_port=local_port,
-            stealth_auth=stealth_auth,
+            auth=auth,
             ephemeral=ephemeral,
             private_key=private_key,
             version=version,
@@ -311,6 +328,7 @@ class TCPHiddenServiceEndpoint(object):
                     control_port=None,
                     ephemeral=None,
                     private_key=None,
+                    auth=None,
                     version=None):
         """
         This returns a TCPHiddenServiceEndpoint that's always
@@ -335,6 +353,7 @@ class TCPHiddenServiceEndpoint(object):
             local_port=local_port,
             ephemeral=ephemeral,
             private_key=private_key,
+            auth=auth,
             version=version,
         )
         progress.target = r._tor_progress_update
@@ -343,7 +362,8 @@ class TCPHiddenServiceEndpoint(object):
     def __init__(self, reactor, config, public_port,
                  hidden_service_dir=None,
                  local_port=None,
-                 stealth_auth=None,
+                 auth=None,  # new way to pass authentication information
+                 stealth_auth=None,  # deprecated; use auth=
                  ephemeral=None,  # will be set to True, unless hsdir spec'd
                  private_key=None,
                  group_readable=False,
@@ -369,9 +389,11 @@ class TCPHiddenServiceEndpoint(object):
             not provided, one is created with temp.mkdtemp() AND
             DELETED when the reactor shuts down.
 
+        :param auth:
+            An AuthBasic or AuthStealth instance (or None)
+
         :param stealth_auth:
-            A list of strings, one name for each stealth authenticator
-            you want. Like: ``['alice', 'bob']``
+            **Deprecated; use ``auth=``**. This is for backwards-comapatibility only.
 
         :param endpoint_generator:
             A callable that generates a new instance of something that
@@ -395,11 +417,19 @@ class TCPHiddenServiceEndpoint(object):
                 # XXX emit warning?
                 ephemeral = False
 
-        if stealth_auth and ephemeral:
-            # this is a Tor limitation (at some point, this should be
-            # supported)
+        # backwards-compatibility for stealth_auth= kwarg
+        if stealth_auth is not None:
+            log.msg("'stealth_auth' is deprecated; use auth= instead")
+            if auth is not None:
+                raise ValueError(
+                    "Both stealth_auth= and auth= passed; use auth= only for new code"
+                )
+            auth = AuthStealth(stealth_auth)
+            stealth_auth = None
+
+        if ephemeral and isinstance(auth, AuthStealth):
             raise ValueError(
-                "'ephemeral=True' onion services don't support stealth_auth"
+                "'ephemeral=True' onion services don't support 'stealth' auth"
             )
 
         if ephemeral and hidden_service_dir is not None:
@@ -417,7 +447,7 @@ class TCPHiddenServiceEndpoint(object):
         self._config = defer.maybeDeferred(lambda: config)
         self.public_port = public_port
         self.local_port = local_port
-        self.stealth_auth = stealth_auth
+        self.auth = auth
 
         self.ephemeral = ephemeral
         self.private_key = private_key
@@ -571,26 +601,36 @@ class TCPHiddenServiceEndpoint(object):
             already = os.path.abspath(self.hidden_service_dir) in hs_dirs
 
         if not already:
-            authlines = []
-            if self.stealth_auth:
-                # like "stealth name0,name1"
-                authlines = ['stealth ' + ','.join(self.stealth_auth)]
             if self.ephemeral:
-                self.hiddenservice = yield EphemeralHiddenService.create(
-                    self._config,
-                    ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
-                    private_key=self.private_key,
-                    detach=False,
-                    discard_key=False,
-                    progress=self._tor_progress_update,
-                    version=self.version,
-                )
+                if self.auth is not None:
+                    self.hiddenservice = yield EphemeralAuthenticatedOnionService.create(
+                        self._config,
+                        ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+                        private_key=self.private_key,
+                        detach=False,
+                        discard_key=False,
+                        progress=self._tor_progress_update,
+                        version=self.version,
+                        auth=self.auth,
+                    )
+
+                else:
+                    self.hiddenservice = yield EphemeralHiddenService.create(
+                        self._config,
+                        ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+                        private_key=self.private_key,
+                        detach=False,
+                        discard_key=False,
+                        progress=self._tor_progress_update,
+                        version=self.version,
+                    )
             else:
+                # XXX FIXME we want a similar auth vs. no-auth this as above, right?
                 self.hiddenservice = yield FilesystemHiddenService.create(
                     self._config,
                     self.hidden_service_dir,
                     ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
-                    auth=authlines,
+                    auth=self.auth,
                     progress=self._tor_progress_update,
                     group_readable=self.group_readable,
                     version=self.version,

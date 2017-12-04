@@ -128,6 +128,7 @@ class IOnionClient(IOnionService):
     auth_token = Attribute('Some secret bytes')
     name = Attribute('str')  # XXX required? probably.
     parent = Attribute('the IAuthenticatedOnionClients instance who owns me')
+    # want "hostname" here too, right? because stealth-auth clients have their own host!
 
 
 @implementer(IOnionService)
@@ -197,8 +198,6 @@ class FilesystemOnionService(object):
             functools.partial(config.mark_unsaved, 'HiddenServices'),
         )
         self._auth = auth
-        if self._auth is None:
-            self._auth = []
         self._version = ver
         self._group_readable = group_readable
         self._hostname = None
@@ -280,7 +279,14 @@ class FilesystemOnionService(object):
 
     @property
     def authorize_client(self):
-        return self._auth
+        if self._auth is None:
+            return []
+        return [
+            "{} {}".format(
+                self._auth.auth_type,
+                ','.join(self._auth.client_names()),
+            )
+        ]
 
     # etcetc, basically the old "HiddenService" object
 
@@ -392,7 +398,7 @@ def _await_descriptor_upload(config, onion, progress):
 
 
 @defer.inlineCallbacks
-def _add_ephemeral_service(config, onion, progress, version):
+def _add_ephemeral_service(config, onion, progress, version, auth=None):
     """
     Internal Helper.
 
@@ -408,6 +414,12 @@ def _add_ephemeral_service(config, onion, progress, version):
     :param progress: a callable taking 3 arguments (percent, tag,
         description) that is called some number of times to tell you of
         progress.
+
+    :param version: 2 or 3, which kind of service to create
+
+    :param auth: if not None, create an authenticated service ("basic"
+        is the only kind supported currently so a AuthBasic instance
+        should be passed)
     """
     if onion not in config.EphemeralOnionServices:
         config.EphemeralOnionServices.append(onion)
@@ -443,11 +455,31 @@ def _add_ephemeral_service(config, onion, progress, version):
     # XXX from below, make "private_key=THROW_AWAY" the way to do this?
     if onion._discard_key:
         flags.append('DiscardPK')
+    if auth is not None:
+        if isinstance(auth, AuthBasic):
+            flags.append('BasicAuth')
+        elif isinstance(auth, AuthStealth):
+            raise ValueError(
+                "Tor doesn't support 'stealth' auth for ephemeral services yet"
+            )
+        else:
+            raise ValueError(
+                "Unknown auth type '{}'".format(type(auth))
+            )
     if flags:
         cmd += ' Flags={}'.format(','.join(flags))
 
-    res = yield config.tor_protocol.queue_command(cmd)
-    res = find_keywords(res.split('\n'))
+    if auth is not None:
+        for client_name in auth.client_names():
+            keyblob = auth.keyblob_for(client_name)
+            if keyblob is None:
+                cmd += ' ClientAuth={}'.format(client_name)
+            else:
+                cmd += ' ClientAuth={}:{}'.format(client_name, keyblob)
+                onion._add_client(client_name, keyblob)
+
+    raw_res = yield config.tor_protocol.queue_command(cmd)
+    res = find_keywords(raw_res.split('\n'))
     try:
         onion._hostname = res['ServiceID'] + '.onion'
         if onion._discard_key:
@@ -462,6 +494,13 @@ def _add_ephemeral_service(config, onion, progress, version):
             "Got: {}".format(res)
         )
 
+    if auth is not None:
+        for line in raw_res.split('\n'):
+            if line.startswith("ClientAuth="):
+                name, blob = line[11:].split(':', 1)
+                print("ADD {} {}".format(name, blob))
+                onion._add_client(name, blob)
+
     if version == 2:
         log.msg("{}: waiting for descriptor uploads.".format(onion.hostname))
         yield uploaded_d
@@ -469,8 +508,165 @@ def _add_ephemeral_service(config, onion, progress, version):
         log.msg("version {} service; can't determine upload status".format(version))
 
 
-## okay, square this with FilesystemHiddenService -- There Can Be Only
-## One. (but the other should stay as an alias ...)
+class _AuthCommon(object):
+
+    def __init__(self, clients):
+        self._clients = dict()
+        for client in clients:
+            if isinstance(client, tuple):
+                client_name, keyblob = client
+                self._clients[client_name] = keyblob
+            else:
+                self._clients[client] = None
+
+    def client_names(self):
+        return self._clients.keys()
+
+    def keyblob_for(self, client_name):
+        return self._clients[client_name]
+
+
+class AuthNone(object):
+    pass
+
+
+class AuthBasic(_AuthCommon):
+    auth_type = 'basic'
+
+
+class AuthStealth(_AuthCommon):
+    auth_type = 'stealth'
+
+
+@implementer(IAuthenticatedOnionClients)
+class EphemeralAuthenticatedOnionService(object):
+
+    # XXX as per discussion below w/ kurt looks like I decided on
+    # something like "auth=NoAuth()", "auth=AuthBasic(["alice",
+    # "bob"])" or "auth=StealthAuth(["alice", "bob"])" or similar.
+    @classmethod
+    @defer.inlineCallbacks
+    def create(cls, config, ports,
+               detach=False,
+               ## XXX from below, make "private_key=THROW_AWAY" the way to do this? (YES)
+               discard_key=False,
+               private_key=None,
+               version=None,
+               progress=None,
+               auth=None):  # AuthBasic, or AuthStealth instance
+
+        """
+        """
+        if private_key and discard_key:
+            raise ValueError("Don't pass a 'private_key' and ask to 'discard_key'")
+
+        if not isinstance(auth, (AuthBasic, AuthStealth)):
+            raise ValueError(
+                "'auth' should be an AuthBasic or AuthStealth instance"
+            )
+
+        if isinstance(auth, AuthStealth):
+            raise ValueError(
+                "Tor does not yet support ephemeral stealth-auth"
+            )
+
+        version = 2 if version is None else version
+        assert version in (2, 3)
+
+        onion = EphemeralAuthenticatedOnionService(
+            config, ports,
+            private_key=private_key,
+            detach=detach,
+            discard_key=discard_key,
+            version=version,
+        )
+        yield _add_ephemeral_service(config, onion, progress, version, auth)
+
+        defer.returnValue(onion)
+
+    def __init__(self, config, ports, hostname=None, private_key=None, auth=[], version=2,
+                 detach=False, discard_key=False, **kwarg):
+        """
+        Users should create instances of this class by using the async
+        method :meth:`txtorcon.EphemeralOnionService.create`
+        """
+
+        # prior to 17.0.0, this took an argument called "ver" instead
+        # of "version". So, we will silently upgrade that.
+        if "ver" in kwarg:
+            version = int(kwarg.pop("ver"))
+        # any other kwargs are illegal
+        if len(kwarg):
+            raise ValueError(
+                "Unknown kwargs: {}".format(", ".join(kwarg.keys()))
+            )
+
+        if not isinstance(ports, (list, tuple)):
+            raise ValueError("'ports' must be a list of strings")
+        if any([not isinstance(x, str) for x in ports]):
+            raise ValueError("'ports' must be a list of strings")
+
+        self._config = config
+        self._ports = ports
+        self._hostname = hostname
+        self._private_key = private_key
+        self._version = version
+        self._detach = detach
+        self._discard_key = discard_key
+        self._clients = dict()
+
+        # validation of options; should move to method?
+        for port in ports:
+            if ' ' not in port or len(port.split(' ')) != 2:
+                raise ValueError(
+                    "Port '{}' should have exactly one space in it".format(port)
+                )
+            (external, internal) = port.split(' ')
+            try:
+                external = int(external)
+            except ValueError:
+                raise ValueError(
+                    "Port '{}' external port isn't an int".format(port)
+                )
+            if ':' not in internal:
+                raise ValueError(
+                    "Port '{}' local address should be 'IP:port'".format(port)
+                )
+            ip, localport = internal.split(':')
+            from .controller import _is_non_public_numeric_address
+            if ip != 'localhost' and not _is_non_public_numeric_address(ip):
+                raise ValueError(
+                    "Port '{}' internal IP '{}' should be a local "
+                    "address".format(port, ip)
+                )
+
+    def client_names(self):
+        return self._clients.keys()
+
+    def get_client(self, name):
+        return self._clients[name]
+
+    def _add_client(self, name, auth_token):
+        self._clients[name] = EphemeralAuthenticatedOnionServiceClient(
+            parent=self,
+            name=name,
+            token=auth_token,
+        )
+
+    @property
+    def hostname(self):
+        return self._hostname
+
+    # do we need this one??
+    @property
+    def ports(self):
+        return set(self._ports)
+
+    @property
+    def private_key(self):
+        return self._private_key
+
+
 @implementer(IOnionService)
 class EphemeralOnionService(object):
     @classmethod
@@ -509,7 +705,7 @@ class EphemeralOnionService(object):
 
         defer.returnValue(onion)
 
-    def __init__(self, config, ports, hostname=None, private_key=None, auth=[], version=2,
+    def __init__(self, config, ports, hostname=None, private_key=None, version=2,
                  detach=False, discard_key=False, **kwarg):
         """
         Users should create instances of this class by using the async
@@ -538,11 +734,6 @@ class EphemeralOnionService(object):
         self._version = version
         self._detach = detach
         self._discard_key = discard_key
-        if auth != []:
-            raise ValueError(
-                "Tor doesn't yet support authentication on ephemeral onion "
-                "services."
-            )
 
         # validation of options; should move to method?
         for port in ports:
@@ -594,7 +785,42 @@ class EphemeralOnionService(object):
     def private_key(self):
         return self._private_key
 
-    # Note: auth not yet supported by Tor, for ADD_ONION
+
+@implementer(IOnionClient)
+class EphemeralAuthenticatedOnionServiceClient(object):
+    """
+    A single client of an EphemeralAuthenticatedOnionService
+
+    These are only created by and returned from the .clients property
+    of an AuthenticatedOnionService instance.
+
+    # needs 'auth_token', 'name', 'parent' for IOnionClient
+    """
+
+    def __init__(self, parent, name, token):
+        self._parent = parent
+        self._name = name
+        self._auth_token = token
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def hostname(self):
+        return self._parent.hostname
+
+    @property
+    def auth_token(self):
+        return self._auth_token
+
+    @property
+    def parent(self):
+        return self._parent
+
+    @property
+    def version(self):
+        return self._parent.version
 
 
 @implementer(IOnionClient)
@@ -884,7 +1110,7 @@ def parse_client_keys(stream):
 @defer.inlineCallbacks
 def create_authenticated_filesystem_onion_service(
         reactor, torconfig, ports, directory,
-        auth):  # StealthAuth(['bob', 'alice']) or BasicAuth(['bob', 'alice'])
+        auth):  # AuthStealth(['bob', 'alice']) or AuthBasic(['bob', 'alice'])
     pass
 
 

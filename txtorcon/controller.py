@@ -746,7 +746,7 @@ class Tor(object):
     # XXX One Onion Method To Rule Them All, or
     # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
     # or ...?
-    def create_onion_endpoint(self, port, private_key=None, version=None):
+    def create_onion_endpoint(self, port, private_key=None, version=None, auth=None):
         """
         WARNING: API subject to change
 
@@ -771,6 +771,8 @@ class Tor(object):
         :param version: if not None, a specific version of service to
             use; version=3 is Proposition 224 and version=2 is the
             1024-bit key based implementation.
+
+        :param auth: a AuthBasic or AuthStealth instance
         """
         # note, we're just depending on this being The Ultimate
         # Everything endpoint. Which seems fine, because "normal"
@@ -783,9 +785,10 @@ class Tor(object):
             ephemeral=True,
             private_key=private_key,
             version=version,
+            auth=auth,
         )
 
-    def create_filesystem_onion_endpoint(self, port, hs_dir=None, group_readable=False, version=None):
+    def create_filesystem_onion_endpoint(self, port, hs_dir=None, group_readable=False, version=None, auth=None):
         """
         WARNING: API subject to change
         """
@@ -797,6 +800,7 @@ class Tor(object):
             private_key=None,
             group_readable=int(group_readable),
             version=version,
+            auth=auth,
         )
 
     # XXX or get_state()? and make there be always 0 or 1 states; cf. convo w/ Warner
