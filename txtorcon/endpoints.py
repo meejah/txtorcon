@@ -285,15 +285,6 @@ class TCPHiddenServiceEndpoint(object):
             :class:`txtorcon.AuthStealth` instance
         """
 
-        if stealth_auth is not None:
-            log.msg("'stealth_auth' is deprecated; use auth= instead")
-            if auth is not None:
-                raise ValueError(
-                    "Both stealth_auth= and auth= passed; use auth= only for new code"
-                )
-            auth = AuthStealth(stealth_auth)
-            stealth_auth = None
-
         def progress(*args):
             progress.target(*args)
         tor = get_global_tor_instance(
@@ -604,7 +595,6 @@ class TCPHiddenServiceEndpoint(object):
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                         private_key=self.private_key,
                         detach=False,
-                        discard_key=False,
                         progress=self._tor_progress_update,
                         version=self.version,
                         auth=self.auth,
@@ -616,7 +606,6 @@ class TCPHiddenServiceEndpoint(object):
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                         private_key=self.private_key,
                         detach=False,
-                        discard_key=False,
                         progress=self._tor_progress_update,
                         version=self.version,
                     )

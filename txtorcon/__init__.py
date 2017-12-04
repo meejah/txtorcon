@@ -38,6 +38,9 @@ from txtorcon.endpoints import TCPHiddenServiceEndpointParser
 from txtorcon.endpoints import TorClientEndpoint
 from txtorcon.endpoints import TorClientEndpointStringParser
 from txtorcon.endpoints import IHiddenService, IProgressProvider
+from txtorcon.onion import AuthStealth
+from txtorcon.onion import AuthBasic
+from txtorcon.onion import DISCARD
 
 from txtorcon.endpoints import get_global_tor
 from . import util
@@ -66,6 +69,7 @@ __all__ = [
     "TorClientEndpoint", "TorClientEndpointStringParser",
     "IHiddenService", "IProgressProvider",
     "TorOnionAddress", "TorOnionListeningPort",
+    "AuthStealth", "AuthBasic", "DISCARD",
     "get_global_tor",
     "build_timeout_circuit",
     "CircuitBuildTimedOutError",

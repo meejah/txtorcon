@@ -436,12 +436,17 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     # XXX rethink ^^? what do we do when the type is upgraded?
     # maybe just a magic-character that's different from ":", or
     # force people to escape them?
-    if onion.private_key and not onion.private_key.startswith("RSA1024:"):
-        onion._private_key = "RSA1024:" + onion.private_key
+    if onion.private_key:
+        if onion.private_key is not DISCARD:
+            if not onion.private_key.startswith("RSA1024:"):
+                onion._private_key = "RSA1024:" + onion.private_key
 
     # okay, we're set up to listen, and now we issue the ADD_ONION
     # command. this will set ._hostname and ._private_key properly
-    cmd = 'ADD_ONION {}'.format(onion.private_key or 'NEW:BEST')
+    keystring = 'NEW:BEST'
+    if onion.private_key not in (None, DISCARD):
+        keystring = onion.private_key
+    cmd = 'ADD_ONION {}'.format(keystring)
     for port in onion._ports:
         cmd += ' Port={},{}'.format(*port.split(' ', 1))
     if version != 2:
@@ -453,7 +458,7 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     if onion._detach:
         flags.append('Detach')
     # XXX from below, make "private_key=THROW_AWAY" the way to do this?
-    if onion._discard_key:
+    if onion.private_key is DISCARD:
         flags.append('DiscardPK')
     if auth is not None:
         if isinstance(auth, AuthBasic):
@@ -482,7 +487,7 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     res = find_keywords(raw_res.split('\n'))
     try:
         onion._hostname = res['ServiceID'] + '.onion'
-        if onion._discard_key:
+        if onion.private_key is DISCARD:
             onion._private_key = None
         else:
             # if we specified a private key, it's not echoed back
@@ -538,6 +543,9 @@ class AuthStealth(_AuthCommon):
     auth_type = 'stealth'
 
 
+DISCARD = object()
+
+
 @implementer(IAuthenticatedOnionClients)
 class EphemeralAuthenticatedOnionService(object):
 
@@ -548,18 +556,13 @@ class EphemeralAuthenticatedOnionService(object):
     @defer.inlineCallbacks
     def create(cls, config, ports,
                detach=False,
-               ## XXX from below, make "private_key=THROW_AWAY" the way to do this? (YES)
-               discard_key=False,
-               private_key=None,
+               private_key=None,  # or DISCARD or a key
                version=None,
                progress=None,
                auth=None):  # AuthBasic, or AuthStealth instance
 
         """
         """
-        if private_key and discard_key:
-            raise ValueError("Don't pass a 'private_key' and ask to 'discard_key'")
-
         if not isinstance(auth, (AuthBasic, AuthStealth)):
             raise ValueError(
                 "'auth' should be an AuthBasic or AuthStealth instance"
@@ -577,7 +580,6 @@ class EphemeralAuthenticatedOnionService(object):
             config, ports,
             private_key=private_key,
             detach=detach,
-            discard_key=discard_key,
             version=version,
         )
         yield _add_ephemeral_service(config, onion, progress, version, auth)
@@ -585,7 +587,7 @@ class EphemeralAuthenticatedOnionService(object):
         defer.returnValue(onion)
 
     def __init__(self, config, ports, hostname=None, private_key=None, auth=[], version=2,
-                 detach=False, discard_key=False, **kwarg):
+                 detach=False, **kwarg):
         """
         Users should create instances of this class by using the async
         method :meth:`txtorcon.EphemeralOnionService.create`
@@ -612,7 +614,6 @@ class EphemeralAuthenticatedOnionService(object):
         self._private_key = private_key
         self._version = version
         self._detach = detach
-        self._discard_key = discard_key
         self._clients = dict()
 
         # validation of options; should move to method?
@@ -673,9 +674,7 @@ class EphemeralOnionService(object):
     @defer.inlineCallbacks
     def create(cls, config, ports,
                detach=False,
-               ## XXX from below, make "private_key=THROW_AWAY" the way to do this?
-               discard_key=False,
-               private_key=None,
+               private_key=None,  # or DISCARD
                version=None,
                progress=None):
         """
@@ -686,9 +685,6 @@ class EphemeralOnionService(object):
         See also :meth:`txtorcon.create_onion_service` (which
         ultimately calls this).
         """
-        if private_key and discard_key:
-            raise ValueError("Don't pass a 'private_key' and ask to 'discard_key'")
-
         version = 2 if version is None else version
         assert version in (2, 3)
 
@@ -697,7 +693,6 @@ class EphemeralOnionService(object):
             hostname=None,
             private_key=private_key,
             detach=detach,
-            discard_key=discard_key,
             version=version,
         )
 
@@ -706,7 +701,7 @@ class EphemeralOnionService(object):
         defer.returnValue(onion)
 
     def __init__(self, config, ports, hostname=None, private_key=None, version=2,
-                 detach=False, discard_key=False, **kwarg):
+                 detach=False, **kwarg):
         """
         Users should create instances of this class by using the async
         method :meth:`txtorcon.EphemeralOnionService.create`
@@ -733,7 +728,6 @@ class EphemeralOnionService(object):
         self._private_key = private_key
         self._version = version
         self._detach = detach
-        self._discard_key = discard_key
 
         # validation of options; should move to method?
         for port in ports:

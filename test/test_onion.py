@@ -31,6 +31,7 @@ from txtorcon.torconfig import launch_tor
 from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import AuthenticatedHiddenService
+from txtorcon.onion import DISCARD
 
 from txtorcon.testutil import FakeControlProtocol
 
@@ -231,24 +232,6 @@ class OnionServiceTest(unittest.TestCase):
         )
 
     @defer.inlineCallbacks
-    def test_ephemeral_private_key_but_discard(self):
-        protocol = FakeControlProtocol([])
-        config = TorConfig(protocol)
-        privkey = 'a' * 32
-
-        with self.assertRaises(ValueError) as ctx:
-            yield EphemeralOnionService.create(
-                config,
-                ports=["80 127.0.0.1:80"],
-                private_key=privkey,
-                discard_key=True,
-            )
-        self.assertIn(
-            "Don't pass a 'private_key' and ask to 'discard_key'",
-            str(ctx.exception)
-        )
-
-    @defer.inlineCallbacks
     def test_filesystem_wrong_ports(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
@@ -277,7 +260,7 @@ class OnionServiceTest(unittest.TestCase):
             config,
             ports=["80 127.0.0.1:80"],
             progress=progress,
-            discard_key=True,
+            private_key=DISCARD,
         )
 
         cmd, d = protocol.commands[0]
@@ -313,7 +296,7 @@ class OnionServiceTest(unittest.TestCase):
             config,
             ports=["80 127.0.0.1:80"],
             progress=progress,
-            discard_key=True,
+            private_key=DISCARD,
         )
 
         cmd, d = protocol.commands[0]
