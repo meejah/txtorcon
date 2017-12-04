@@ -88,17 +88,13 @@ def get_global_tor_instance(reactor,
 
         else:
             config = yield _global_tor.get_config()
-            try:
-                already_port = config.ControlPort
-                if control_port is not None and control_port != already_port:
-                    raise RuntimeError(
-                        "ControlPort is already '{}', but you wanted '{}'",
-                        already_port,
-                        control_port,
-                    )
-            except KeyError:
-                # XXX i think just from tests?
-                log.msg("No ControlPort in config -- weird, but we'll ignore")
+            already_port = config.ControlPort
+            if control_port is not None and control_port != already_port:
+                raise RuntimeError(
+                    "ControlPort is already '{}', but you wanted '{}'",
+                    already_port,
+                    control_port,
+                )
 
         defer.returnValue(_global_tor)
     finally:
