@@ -29,6 +29,7 @@ from txtorcon import TorClientEndpoint
 # from txtorcon import TorClientEndpointStringParser
 from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
+from txtorcon import AuthStealth
 from txtorcon.util import NoOpProtocolFactory
 from txtorcon.util import SingleObserver
 from txtorcon.endpoints import get_global_tor                       # FIXME
@@ -663,6 +664,27 @@ class EndpointTests(unittest.TestCase):
         self.assertTrue("alice" in names)
         self.assertTrue("bob" in names)
         self.assertEqual('public.onion', ep.onion_uri)
+
+    def test_stealth_auth_deprecated(self, ftb):
+        '''
+        make sure we produce a HiddenService instance with stealth-auth
+        lines if we had authentication specified in the first place.
+        '''
+        tmp = self.mktemp()
+        os.mkdir(tmp)
+        with open(os.path.join(tmp, 'hostname'), 'w') as f:
+            f.write('public.onion\n')
+
+        with self.assertRaises(ValueError) as ctx:
+            ep = TCPHiddenServiceEndpoint(
+                self.reactor, self.config, 123, tmp,
+                stealth_auth=['alice', 'bob'],
+                auth=AuthStealth(['alice', 'bob']),
+            )
+        self.assertIn(
+            "use auth= only for new code",
+            str(ctx.exception),
+        )
 
     @defer.inlineCallbacks
     def test_factory(self, ftb):
