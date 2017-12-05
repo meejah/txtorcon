@@ -23,6 +23,8 @@ from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.interface import ITorControlProtocol
 from txtorcon.util import find_keywords
 from .onion import IOnionClient, FilesystemHiddenService, AuthenticatedHiddenService
+from .onion import EphemeralOnionService
+from .onion import _await_descriptor_upload
 from .util import _Version
 
 
@@ -420,6 +422,16 @@ class HiddenService(object):
         return rtn
 
 
+def _is_valid_keyblob(key_blob_or_type):
+    try:
+        key_blob_or_type = nativeString(key_blob_or_type)
+    except (UnicodeError, TypeError):
+        return False
+    else:
+        return re.match(r'[^ :]+:[^ :]+$', key_blob_or_type)
+
+
+@deprecated(_Version("txtorcon", 17, 0, 0))
 class EphemeralHiddenService(object):
     '''
     This uses the ephemeral hidden-service APIs (in comparison to
@@ -429,41 +441,19 @@ class EphemeralHiddenService(object):
     https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1295
     '''
 
-    @classmethod
-    def _is_valid_keyblob(cls, key_blob_or_type):
-        try:
-            key_blob_or_type = nativeString(key_blob_or_type)
-        except (UnicodeError, TypeError):
-            return False
-        else:
-            return re.match(r'[^ :]+:[^ :]+$', key_blob_or_type)
-
-    # XXX the "ports" stuff is still kind of an awkward API, especialy
-    # making the actual list public (since it'll have
-    # "80,127.0.0.1:80" instead of with a space
-
-    # XXX descriptor upload stuff needs more features from Tor (the
-    # actual uploaded key; the event always says UNKNOWN)
-
-    # XXX "auth" is unused (also, no Tor support I don't think?)
-
     def __init__(self, ports, key_blob_or_type='NEW:BEST', auth=[], ver=2):
-        if not isinstance(ports, list):
-            ports = [ports]
-        # for "normal" HSes the port-config bit looks like "80
-        # 127.0.0.1:1234" whereas this one wants a comma, so we leave
-        # the public API the same and fix up the space. Or of course
-        # you can just use the "real" comma-syntax if you wanted.
-        self._ports = [x.replace(' ', ',') for x in ports]
-        if EphemeralHiddenService._is_valid_keyblob(key_blob_or_type):
+        # deprecated; use Tor.create_onion_service
+        if _is_valid_keyblob(key_blob_or_type):
             self._key_blob = nativeString(key_blob_or_type)
         else:
             raise ValueError(
                 'key_blob_or_type must be a string in the formats '
                 '"NEW:<ALGORITHM>" or "<ALGORITHM>:<KEY>"')
+        self._ports = [x.replace(' ', ',') for x in ports]
+        self._keyblob = key_blob_or_type
         self.auth = auth  # FIXME ununsed
         # FIXME nicer than assert, plz
-        assert isinstance(ports, list)
+        self.version = ver
 
     @defer.inlineCallbacks
     def add_to_tor(self, protocol):
@@ -472,6 +462,14 @@ class EphemeralHiddenService(object):
         descriptor has been uploaded. Errback if no descriptor upload
         succeeds.
         '''
+
+        upload_d = _await_descriptor_upload(protocol, self, progress=None)
+
+        # _add_ephemeral_service takes a TorConfig but we don't have
+        # that here ..  and also we're just keeping this for
+        # backwards-compatability anyway so instead of trying to
+        # re-use that helper I'm leaving this original code here. So
+        # this is what it supports and that's that:
         ports = ' '.join(map(lambda x: 'Port=' + x.strip(), self._ports))
         cmd = 'ADD_ONION %s %s' % (self._key_blob, ports)
         ans = yield protocol.queue_command(cmd)
@@ -484,56 +482,8 @@ class EphemeralHiddenService(object):
 
         log.msg('Created hidden-service at', self.hostname)
 
-        # Now we want to wait for the descriptor uploads. This doesn't
-        # quite work, as the UPLOADED events always say "UNKNOWN" for
-        # the HSAddress so we can't correlate it to *this* onion for
-        # sure :/ "yet", though. Yawning says on IRC this is coming.
-
-        # XXX Hmm, still UPLOADED always says UNKNOWN, but the UPLOAD
-        # events do say the address -- so we save all those, and
-        # correlate to the target nodes. Not sure if this will really
-        # even work, but better than nothing.
-
-        uploaded = defer.Deferred()
-        attempted_uploads = set()
-        confirmed_uploads = set()
-        failed_uploads = set()
-
-        def hs_desc(evt):
-            """
-            From control-spec:
-            "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
-            [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
-            """
-
-            args = evt.split()
-            subtype = args[0]
-            if subtype == 'UPLOAD':
-                if args[1] == self.hostname[:-6]:
-                    attempted_uploads.add(args[3])
-
-            elif subtype == 'UPLOADED':
-                # we only need ONE successful upload to happen for the
-                # HS to be reachable. (addr is args[1])
-                if args[3] in attempted_uploads:
-                    confirmed_uploads.add(args[3])
-                    log.msg("Uploaded '{}' to '{}'".format(self.hostname, args[3]))
-                    uploaded.callback(self)
-
-            elif subtype == 'FAILED':
-                if args[1] == self.hostname[:-6]:
-                    failed_uploads.add(args[3])
-                    if failed_uploads == attempted_uploads:
-                        msg = "Failed to upload '{}' to: {}".format(
-                            self.hostname,
-                            ', '.join(failed_uploads),
-                        )
-                        uploaded.errback(RuntimeError(msg))
-
         log.msg("Created '{}', waiting for descriptor uploads.".format(self.hostname))
-        yield protocol.add_event_listener('HS_DESC', hs_desc)
-        yield uploaded
-        yield protocol.remove_event_listener('HS_DESC', hs_desc)
+        yield upload_d
 
     @defer.inlineCallbacks
     def remove_from_tor(self, protocol):
@@ -1091,7 +1041,7 @@ class TorConfig(object):
                         parent = IOnionClient(hs).parent
                         if parent not in services:
                             services.append(parent)
-                    elif isinstance(hs, EphemeralHiddenService):
+                    elif isinstance(hs, EphemeralOnionService): #EphemeralHiddenService):
                         raise ValueError(
                             "Only txtorcon.HiddenService instances may be added"
                             " via TorConfig.hiddenservices; ephemeral services"
@@ -1270,11 +1220,13 @@ class TorConfig(object):
                 onion = line.strip()
                 if onion:
                     onions.append(
-                        EphemeralHiddenService(
-                            self, None,  # no way to discover ports=
+                        EphemeralOnionService(
+                            self,
+                            ports=None,  # no way to discover ports=
                             hostname=onion,
+                            private_key=DISCARD,  # we don't know it, anyway
+                            version=2,
                             detach=False,
-                            discard_key=True,  # we don't know it...
                         )
                     )
             self.config['EphemeralOnionServices'] = onions
@@ -1289,9 +1241,12 @@ class TorConfig(object):
                 onion = line.strip()
                 if onion:
                     onions.append(
-                        EphemeralHiddenService(
-                            self, None, hostname=onion, detach=True,
-                            discard_key=True,
+                        EphemeralOnionService(
+                            self,
+                            ports=None,
+                            hostname=onion,
+                            detach=True,
+                            private_key=DISCARD,
                         )
                     )
             self.config['DetachedOnionServices'] = onions

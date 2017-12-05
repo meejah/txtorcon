@@ -676,7 +676,7 @@ class TorOnionAddress(FancyEqMixin, object):
         self.onion_port = port
         try:
             self.onion_uri = hs.hostname
-        except IOError:
+        except IOError:  # when can/does this actually happen?
             self.onion_uri = None
         self._hiddenservice = hs
 

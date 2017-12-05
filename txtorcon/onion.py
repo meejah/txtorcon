@@ -63,7 +63,7 @@ class IOnionService(Interface):
     If this object happens to represent an authenticated service, it
     shall implement IAuthenticatedOnionClients ONLY (not this
     interface too; IAuthenticatedOnionClients returns *lists* of
-    IAuthenticatedOnionClient instances which are a subclass of
+    IOnionClient instances which are a subclass of
     IOnionService; see :class:`txtorcon.IAuthenticatedOnionClients`).
 
     For non-authenticated services, there will be one of these per
@@ -182,7 +182,7 @@ class FilesystemOnionService(object):
                         "Version 3 onion services don't tell us when descriptors are uploaded",
                     )
             else:
-                uploaded[0] = _await_descriptor_upload(config, fhs, progress)
+                uploaded[0] = _await_descriptor_upload(config.tor_protocol, fhs, progress)
 
         yield config.save()
         yield uploaded[0]
@@ -318,7 +318,7 @@ class FilesystemOnionService(object):
 #       "create_detached_onion" "create_permanent_onion??" etc...?
 
 @defer.inlineCallbacks
-def _await_descriptor_upload(config, onion, progress):
+def _await_descriptor_upload(tor_protocol, onion, progress):
     pct = 101.0
     attempted_uploads = set()
     confirmed_uploads = set()
@@ -380,9 +380,9 @@ def _await_descriptor_upload(config, onion, progress):
                     )
                     uploaded.errback(RuntimeError(msg))
 
-    yield config.tor_protocol.add_event_listener('HS_DESC', hs_desc)
+    yield tor_protocol.add_event_listener('HS_DESC', hs_desc)
     yield uploaded
-    yield config.tor_protocol.remove_event_listener('HS_DESC', hs_desc)
+    yield tor_protocol.remove_event_listener('HS_DESC', hs_desc)
 
 
 @defer.inlineCallbacks
@@ -416,7 +416,7 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     # listener gets added before we issue ADD_ONION
     assert version in (2, 3)
     if version == 2:
-        uploaded_d = _await_descriptor_upload(config, onion, progress)
+        uploaded_d = _await_descriptor_upload(config.tor_protocol, onion, progress)
 
     # we allow a key to be passed that *doestn'* start with
     # "RSA1024:" because having to escape the ":" for endpoint
@@ -503,6 +503,8 @@ class _AuthCommon(object):
                 self._clients[client_name] = keyblob
             else:
                 self._clients[client] = None
+        if any(' ' in client for client in self._clients.keys()):
+            raise ValueError("Client names can't have spaces")
 
     def client_names(self):
         return self._clients.keys()
@@ -731,6 +733,10 @@ class EphemeralAuthenticatedOnionServiceClient(object):
     @property
     def name(self):
         return self._name
+
+    @property
+    def ports(self):
+        return set(self._parent.ports)
 
     @property
     def hostname(self):
