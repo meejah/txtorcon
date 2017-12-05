@@ -707,6 +707,36 @@ class Tor(object):
         ans = yield socks.resolve_ptr(socks_ep, ip)
         returnValue(ans)
 
+    @inlineCallbacks
+    def add_onion_authentication(self, onion_host, token):
+        """
+        Add a client-side authentication token for a particular Onion
+        service.
+        """
+        # if we add the same onion twice, Tor rejects us. We throw an
+        # error if we already have that .onion but the incoming token
+        # doesn't match
+        config = yield self.get_config()
+        tokens = {
+            servauth.split()[0]: servauth.split()[1]
+            for servauth in config.HidServAuth
+        }
+        try:
+            maybe_token = tokens[onion_host]
+            if maybe_token != token:
+                raise ValueError(
+                    "Token conflict for host '{}'".format(onion_host)
+                )
+            return
+        except KeyError:
+            pass
+
+        # add our onion + token combo
+        config.HidServAuth.append(
+            u"{} {}".format(onion_host, token)
+        )
+        yield config.save()
+
     def stream_via(self, host, port, tls=False, socks_endpoint=None):
         """
         This returns an IStreamClientEndpoint_ instance that will use this
