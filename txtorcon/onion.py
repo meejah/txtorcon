@@ -81,7 +81,6 @@ class IOnionService(Interface):
     ports = Attribute("list of str; the ports lines like 'public_port host:local_port'")
 
 
-# class IFilesystemOnionService(Interface):
 class IFilesystemOnionService(IOnionService):
     # XXX do we want to expose the directory in the API? probably...
     hidden_service_directory = Attribute('The directory where private data is kept')
@@ -128,7 +127,10 @@ class IOnionClient(IOnionService):
     auth_token = Attribute('Some secret bytes')
     name = Attribute('str')  # XXX required? probably.
     parent = Attribute('the IAuthenticatedOnionClients instance who owns me')
-    # want "hostname" here too, right? because stealth-auth clients have their own host!
+    # from the IOnionService base interface, inherits:
+    #    hostname
+    #    private_key
+    #    ports
 
 
 @implementer(IOnionService)
@@ -202,13 +204,6 @@ class FilesystemOnionService(object):
         self._group_readable = group_readable
         self._hostname = None
         self._private_key = None
-
-    @property
-    def auth_token(self):
-        raise ValueError("FIXME")
-    # can we reconcile this with the current API!? will NOT work for
-    # stealth auth unless we fuxor around and make HiddenService
-    # implement both interfaces :/
 
     @property
     def hostname(self):
@@ -311,13 +306,6 @@ class FilesystemOnionService(object):
     def config_commands(self):
         pass  # XXX FIXME
 
-
-@defer.inlineCallbacks
-def _await_descriptor_upload_v3(config, onion, progress):
-    # have to use the "INFO" hack, which sucks -- we don't know which
-    # hidden-service is being uploaded, nor to where.
-    yield
-    
 
 # XXX: probably better/nicer to make "EphemeralOnionService" object
 # "just" a data-container; it needs to list-wrapping voodoo etc like
@@ -496,7 +484,6 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
         for line in raw_res.split('\n'):
             if line.startswith("ClientAuth="):
                 name, blob = line[11:].split(':', 1)
-                print("ADD {} {}".format(name, blob))
                 onion._add_client(name, blob)
 
     if version == 2:
@@ -613,7 +600,6 @@ class EphemeralAuthenticatedOnionService(object):
     def hostname(self):
         return self._hostname
 
-    # do we need this one??
     @property
     def ports(self):
         return set(self._ports)

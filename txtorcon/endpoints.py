@@ -711,28 +711,6 @@ class IHiddenServiceClient(Interface):
     private_key = Attribute('Blob of bytes representing the private key for this service')
 
 
-# XXX this stuff moves to torconfig?
-# @implementer(IHiddenServiceClient)
-# class HiddenServiceClient(object):
-#     name = 'default'
-
-#     def __init__(self, hidden_service_dir):
-#         self.hidden_service_dir = hidden_service_dir
-#         with open(join(self.hidden_service_dir, 'hostname'), 'r') as f:
-#             self.onion_uri = f.read().strip()
-#         with open(join(self.hidden_service_dir, 'private_key'), 'r') as f:
-#             self.private_key = f.read().strip()
-
-
-@implementer(IHiddenServiceClient)
-class EphemeralHiddenServiceClient(object):
-    name = 'default'
-
-    def __init__(self, onion_uri, private_key):
-        self.hostname = onion_uri
-        self.private_key = private_key
-
-
 # XXX should implement IOnionService?
 # ...so what shall implement IOnionClients etc? need multiple TorOnionListeningPort impls?
 # --> no, you'll have to get at .service (or .onion_serivce?) from this ...
