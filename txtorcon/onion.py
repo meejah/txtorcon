@@ -450,10 +450,10 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     for port in onion._ports:
         cmd += ' Port={},{}'.format(*port.split(' ', 1))
     if version != 2:
-        raise RuntimeError(
+        # cmd += ' Version={}'.format(version)
+        raise ValueError(
             "Can't make version=3 ephemeral services"
         )
-        cmd += ' Version={}'.format(version)
     flags = []
     if onion._detach:
         flags.append('Detach')
@@ -461,16 +461,9 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     if onion.private_key is DISCARD:
         flags.append('DiscardPK')
     if auth is not None:
+        assert isinstance(auth, AuthBasic)  # don't support AuthStealth yet
         if isinstance(auth, AuthBasic):
             flags.append('BasicAuth')
-        elif isinstance(auth, AuthStealth):
-            raise ValueError(
-                "Tor doesn't support 'stealth' auth for ephemeral services yet"
-            )
-        else:
-            raise ValueError(
-                "Unknown auth type '{}'".format(type(auth))
-            )
     if flags:
         cmd += ' Flags={}'.format(','.join(flags))
 
@@ -509,8 +502,8 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     if version == 2:
         log.msg("{}: waiting for descriptor uploads.".format(onion.hostname))
         yield uploaded_d
-    else:
-        log.msg("version {} service; can't determine upload status".format(version))
+#    else:
+#        log.msg("version {} service; can't determine upload status".format(version))
 
 
 class _AuthCommon(object):
@@ -587,26 +580,13 @@ class EphemeralAuthenticatedOnionService(object):
         defer.returnValue(onion)
 
     def __init__(self, config, ports, hostname=None, private_key=None, auth=[], version=2,
-                 detach=False, **kwarg):
+                 detach=False):
         """
         Users should create instances of this class by using the async
-        method :meth:`txtorcon.EphemeralOnionService.create`
+        method :meth:`txtorcon.EphemeralAuthenticatedOnionService.create`
         """
 
-        # prior to 17.0.0, this took an argument called "ver" instead
-        # of "version". So, we will silently upgrade that.
-        if "ver" in kwarg:
-            version = int(kwarg.pop("ver"))
-        # any other kwargs are illegal
-        if len(kwarg):
-            raise ValueError(
-                "Unknown kwargs: {}".format(", ".join(kwarg.keys()))
-            )
-
-        if not isinstance(ports, (list, tuple)):
-            raise ValueError("'ports' must be a list of strings")
-        if any([not isinstance(x, str) for x in ports]):
-            raise ValueError("'ports' must be a list of strings")
+        _validate_ports(ports)
 
         self._config = config
         self._ports = ports
@@ -615,31 +595,6 @@ class EphemeralAuthenticatedOnionService(object):
         self._version = version
         self._detach = detach
         self._clients = dict()
-
-        # validation of options; should move to method?
-        for port in ports:
-            if ' ' not in port or len(port.split(' ')) != 2:
-                raise ValueError(
-                    "Port '{}' should have exactly one space in it".format(port)
-                )
-            (external, internal) = port.split(' ')
-            try:
-                external = int(external)
-            except ValueError:
-                raise ValueError(
-                    "Port '{}' external port isn't an int".format(port)
-                )
-            if ':' not in internal:
-                raise ValueError(
-                    "Port '{}' local address should be 'IP:port'".format(port)
-                )
-            ip, localport = internal.split(':')
-            from .controller import _is_non_public_numeric_address
-            if ip != 'localhost' and not _is_non_public_numeric_address(ip):
-                raise ValueError(
-                    "Port '{}' internal IP '{}' should be a local "
-                    "address".format(port, ip)
-                )
 
     def client_names(self):
         return self._clients.keys()
@@ -664,8 +619,22 @@ class EphemeralAuthenticatedOnionService(object):
         return set(self._ports)
 
     @property
+    def version(self):
+        return self._version
+
+    @property
     def private_key(self):
         return self._private_key
+
+    @defer.inlineCallbacks
+    def remove(self):
+        """
+        Issues a DEL_ONION call to our tor, removing this service.
+        """
+        cmd = 'DEL_ONION {}'.format(self._hostname[:-len('.onion')])
+        res = yield self._config.tor_protocol.queue_command(cmd)
+        if res.strip() != "OK":
+            raise RuntimeError("Failed to remove service")
 
 
 @implementer(IOnionService)
@@ -717,10 +686,7 @@ class EphemeralOnionService(object):
                 "Unknown kwargs: {}".format(", ".join(kwarg.keys()))
             )
 
-        if not isinstance(ports, (list, tuple)):
-            raise ValueError("'ports' must be a list of strings")
-        if any([not isinstance(x, str) for x in ports]):
-            raise ValueError("'ports' must be a list of strings")
+        _validate_ports(ports)
 
         self._config = config
         self._ports = ports
@@ -729,33 +695,9 @@ class EphemeralOnionService(object):
         self._version = version
         self._detach = detach
 
-        # validation of options; should move to method?
-        for port in ports:
-            if ' ' not in port or len(port.split(' ')) != 2:
-                raise ValueError(
-                    "Port '{}' should have exactly one space in it".format(port)
-                )
-            (external, internal) = port.split(' ')
-            try:
-                external = int(external)
-            except ValueError:
-                raise ValueError(
-                    "Port '{}' external port isn't an int".format(port)
-                )
-            if ':' not in internal:
-                raise ValueError(
-                    "Port '{}' local address should be 'IP:port'".format(port)
-                )
-            ip, localport = internal.split(':')
-            from .controller import _is_non_public_numeric_address
-            if ip != 'localhost' and not _is_non_public_numeric_address(ip):
-                raise ValueError(
-                    "Port '{}' internal IP '{}' should be a local "
-                    "address".format(port, ip)
-                )
-
     # XXX for backwards-compat we could put .add_to_tor back in :/
     # ...and then deprecate it.
+    # (yes, that should go back in ...)
 
     @defer.inlineCallbacks
     def remove(self):
@@ -770,6 +712,10 @@ class EphemeralOnionService(object):
     @property
     def ports(self):
         return set(self._ports)
+
+    @property
+    def version(self):
+        return self._version
 
     @property
     def hostname(self):
@@ -887,6 +833,7 @@ class AuthenticatedHiddenService(object):
       HiddenServicePort 80 127.0.0.1:99
       HiddenServiceAuthorizeClient basic foo,bar,baz
     """
+    # XXX should take "auth={AuthBasic, AuthStealth}" like the other thing...
     def __init__(self, config, thedir, ports, auth_type='basic', clients=None, ver=2, group_readable=0):
         # XXX do we need version here? probably...
         self._config = config
@@ -1010,6 +957,43 @@ class AuthenticatedHiddenService(object):
         return rtn
 
 
+def _validate_ports(ports):
+    """
+    Internal helper.
+
+    Validates the 'ports' argument to EphemeralOnionService or
+    EphemeralAuthenticatedOnionService returning None on success or
+    raising ValueError otherwise.
+    """
+    if not isinstance(ports, (list, tuple)):
+        raise ValueError("'ports' must be a list of strings")
+    if any([not isinstance(x, str) for x in ports]):
+        raise ValueError("'ports' must be a list of strings")
+    for port in ports:
+        if ' ' not in port or len(port.split(' ')) != 2:
+            raise ValueError(
+                "Port '{}' should have exactly one space in it".format(port)
+            )
+        (external, internal) = port.split(' ')
+        try:
+            external = int(external)
+        except ValueError:
+            raise ValueError(
+                "Port '{}' external port isn't an int".format(port)
+            )
+        if ':' not in internal:
+            raise ValueError(
+                "Port '{}' local address should be 'IP:port'".format(port)
+            )
+        ip, localport = internal.split(':')
+        from .controller import _is_non_public_numeric_address
+        if ip != 'localhost' and not _is_non_public_numeric_address(ip):
+            raise ValueError(
+                "Port '{}' internal IP '{}' should be a local "
+                "address".format(port, ip)
+            )
+
+
 def parse_rsa_blob(lines):
     return 'RSA1024:' + ''.join(lines[1:-1])
 
@@ -1096,95 +1080,6 @@ def parse_client_keys(stream):
 
     parser_state.create_key()  # make sure we get the "last" one
     return parser_state.keys
-
-
-# XXX these are here for informational purpoes; should put the "real"
-# APIs in Tor and then call through to helpers (in here?)
-
-@defer.inlineCallbacks
-def create_authenticated_filesystem_onion_service(
-        reactor, torconfig, ports, directory,
-        auth):  # AuthStealth(['bob', 'alice']) or AuthBasic(['bob', 'alice'])
-    pass
-
-
-@defer.inlineCallbacks
-def create_filesystem_onion_service(
-        reactor, torconfig, ports, directory):
-        #        auth=NoAuth(),#_type='none',
-        # or:        auth=StealthAuth(['bob', 'alice']),
-        # or:        auth=BasicAuth(['bob', 'alice']),
-        # XXX really? await_upload=True):
-    pass
-
-
-# XXX
-# kurt: so the "auth" is either NoAuth(), StealthAuth(), BasicAuth()
-# -> can we do the same thing for ephemeral/not
-
-# kurt: private_key + discard_key --> can combine?
-# or: can we "unify" the private_key to enum: "don't have key", "don't want key", "here's key"
-#     -> sounds like tears. does it want "some kind of object" to encode these desires?
-# or: pass **kwargs OR dict, and if 'private_key' in it, you want it
-# back; and if it's already a keyblob, you're a winner
-# kurt doesn't like magic **kwargs, tho.
-
-_THROW_AWAY = object()
-
-
-@defer.inlineCallbacks
-# not supported by tor, but might be ...
-def create_authenticated_ephemeral_onion_service():
-    pass
-
-
-# XXX i don't think i've ever used this?
-@defer.inlineCallbacks
-def create_ephemeral_onion_service(
-        reactor, torconfig, ports,
-        private_key=_THROW_AWAY,  # if None, means "create, but don't send back".
-        detach=None,  # XXX probably False by default
-        await_upload=True):
-    """
-    This yields a new IOnionService if ``auth_type`` is "none" (the
-    defalt) otherwise yields an IAuthenticatdOnionService (if
-    ``auth_type`` is "basic" or "stealth"). In either case, the
-    Deferred returned only fires once Tor has been configured *and* at
-    least one descriptor has been successfully uploaded.
-
-    :param ports: a list of "ports" lines (str), which look like: ``80
-        127.0.0.1:1234`` or more generally ``public_port
-        host:local_port`` (XXX what about unix sockets?)
-    :type ports: list of str
-
-    :param directory: the directory to use that contains `hostname`
-        and ``private_key`` files. If one is not suppied, it will be created
-        (honoring ``$TMPDIR``, if set)
-    :type directory: str
-
-    :param auth_type: 'basic' (the default) or 'stealth'
-    :type auth_type: str
-
-    :param await_upload: if True (the default) wait for at least one
-        descriptor upload to succeed before the callback fires. The hidden
-        service will not be reachable by any clients until 1 or more
-        descriptors are uploaded.
-    :type await_upload: bool
-    """
-
-    # XXX this is untested and un-called -- can we just make use of
-    # whatever other APIs there are? and/or make this one call those?
-
-    # validate args
-    detach = bool(detach)  # False by default
-    discard_key = private_key is _THROW_AWAY
-
-    d = EphemeralOnionService.create(
-        torconfig, ports,
-        detach=detach,
-        discard_key=discard_key,
-    )
-    return d
 
 
 ## aliases, that we should deprecate

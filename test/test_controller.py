@@ -1343,7 +1343,7 @@ class FilesystemOnionFactoryTests(unittest.TestCase):
                 d = self.tor.create_filesystem_onion_service([80], self.hsdir)
                 service = yield d
         self.assertEqual("deadbeef.onion", service.hostname)
-        self.assertEqual("BlobbyMcBlobberson", service.private_key)
+        self.assertEqual(b"BlobbyMcBlobberson", service.private_key)
         self.assertEqual(set(['80 127.0.0.1:1234']), set(service.ports))
 
 

@@ -30,8 +30,9 @@ from txtorcon.torconfig import CommaList
 from txtorcon.torconfig import launch_tor
 from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
+from txtorcon.onion import EphemeralAuthenticatedOnionService
 from txtorcon.onion import AuthenticatedHiddenService
-from txtorcon.onion import DISCARD
+from txtorcon.onion import AuthStealth, AuthBasic, DISCARD
 
 from txtorcon.testutil import FakeControlProtocol
 
@@ -338,6 +339,180 @@ class OnionServiceTest(unittest.TestCase):
         self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
         d.callback('OK')
         yield remove_d
+
+    def test_ephemeral_ver_option(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        hs = EphemeralOnionService(
+            config,
+            ports=["80 127.0.0.1:80"],
+            ver=2,
+        )
+        self.assertEqual(2, hs.version)
+
+    def test_ephemeral_extra_kwargs(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        with self.assertRaises(ValueError) as ctx:
+            EphemeralOnionService(
+                config,
+                ports=["80 127.0.0.1:80"],
+                ver=2,
+                something_funny="foo",
+            )
+        self.assertIn(
+            "Unknown kwarg",
+            str(ctx.exception),
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_auth_stealth(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralAuthenticatedOnionService.create(
+                config,
+                ports=["80 127.0.0.1:80"],
+                auth=AuthStealth(["steve", "carol"]),
+            )
+        self.assertIn(
+            "Tor does not yet support",
+            str(ctx.exception),
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_auth_basic(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        eph_d = EphemeralAuthenticatedOnionService.create(
+            config,
+            ports=["80 127.0.0.1:80"],
+            auth=AuthBasic([
+                "steve",
+                ("carol", "c4r0ls33kr1t"),
+            ]),
+        )
+        cmd, d = protocol.commands[0]
+        self.assertTrue(
+            cmd.startswith(
+                u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80 Flags=BasicAuth "
+            )
+        )
+        self.assertIn(u"ClientAuth=steve", cmd)
+        self.assertIn(u"ClientAuth=carol:c4r0ls33kr1t", cmd)
+
+        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname\nClientAuth=steve:aseekritofsomekind")
+        cb = protocol.events['HS_DESC']
+
+        for x in range(6):
+            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        for x in range(6):
+            cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        hs = yield eph_d
+
+        self.assertEqual(
+            set(["steve", "carol"]),
+            set(hs.client_names()),
+        )
+        steve = hs.get_client("steve")
+        self.assertEqual(
+            "aseekritofsomekind",
+            steve.auth_token,
+        )
+        self.assertEqual(
+            "onionfakehostname.onion",
+            steve.hostname,
+        )
+        self.assertTrue(steve.parent is hs)
+        self.assertEqual("steve", steve.name)
+        self.assertEqual(2, steve.version)
+
+        carol = hs.get_client("carol")
+        self.assertEqual(
+            "c4r0ls33kr1t",
+            carol.auth_token,
+        )
+        self.assertEqual(
+            "onionfakehostname.onion",
+            carol.hostname,
+        )
+
+        remove_d = hs.remove()
+        cmd, d = protocol.commands[-1]
+        self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
+        d.callback('OK')
+        yield remove_d
+
+    @defer.inlineCallbacks
+    def test_ephemeral_auth_unknown(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralAuthenticatedOnionService.create(
+                config,
+                ports=["80 127.0.0.1:80"],
+                auth=["carol", "steve"],
+            )
+        self.assertIn(
+            "'auth' should be an AuthBasic or AuthStealth instance",
+            str(ctx.exception),
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_ports_bad0(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralAuthenticatedOnionService.create(
+                config,
+                ports="80 127.0.0.1:80",
+                auth=AuthBasic(["xavier"]),
+            )
+        self.assertIn(
+            "'ports' must be a list of strings",
+            str(ctx.exception),
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_ports_bad1(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralAuthenticatedOnionService.create(
+                config,
+                ports=[80],
+                auth=AuthBasic(["xavier"]),
+            )
+        self.assertIn(
+            "'ports' must be a list of strings",
+            str(ctx.exception),
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_version_3(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralAuthenticatedOnionService.create(
+                config,
+                ports=["80 127.0.0.1:80"],
+                auth=AuthBasic(["carol"]),
+                version=3,
+            )
+        self.assertIn(
+            "Can't make version=3",
+            str(ctx.exception),
+        )
 
 
 class EphemeralHiddenServiceTest(unittest.TestCase):
