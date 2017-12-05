@@ -743,36 +743,76 @@ class Tor(object):
             reactor=self._reactor,
         )
 
-    # XXX One Onion Method To Rule Them All, or
-    # create_disk_onion_endpoint vs. create_ephemeral_onion_endpoint,
-    # or ...?
-    def create_onion_endpoint(self, port, private_key=None, version=None, auth=None):
+    # XXX justification for create_authenticated_onion_endpoint versus
+    # create_onion_endpoint is the latter returns IOnionService
+    # instance whereas the authenticated one returns
+    # IAuthenticatedOnionClients instead.
+    def create_authenticated_onion_endpoint(self, port, auth, private_key=None, version=None):
         """
         WARNING: API subject to change
 
-        Returns an object that implements IStreamServerEndpoint, which
-        will create an "ephemeral" Onion service when ``.listen()`` is
-        called. This uses the ``ADD_ONION`` tor control-protocol command.
+        When creating an authenticated Onion service a token is
+        created for each user. For 'stealth' authentication, the
+        hostname is also different for each user. The difference between
+        this method and :meth:`txtorcon.Tor.create_onion_endpoint` is
+        in this case the "onion_service" instance implements
+        :class:`txtorcon.IAuthenticatedOnionClients`.
+
+        :returns: an object that implements IStreamServerEndpoint,
+            which will create an "ephemeral" Onion service when
+            ``.listen()`` is called. This uses the ``ADD_ONION`` Tor
+            control-protocol command. The object returned from
+            ``.listen()`` will be a :class:TorOnionListeningPort``;
+            its ``.onion_service`` attribute will be a
+            :class:`txtorcon.IAuthenticatedOnionClients` instance.
 
         :param port: the port to listen publically on the Tor network
            on (e.g. 80 for a Web server)
 
         :param private_key: if not None (the default), this should be
-            the same blob of key material that you received from a
-            previous call to this method. "Retrieved" here means by
-            accessing the ``.onion_private_key`` attribute of the
-            object returned from ``.listen()`` (see
-            :class:`txtorcon.IHiddenService` and
-            :meth:`txtorcon.TCPHiddenServiceEndpoint.listen`) which
-            will be a :class:`txtorcon.TorOnionListeningPort` -- and
-            therefore implments :class:`txtorcon.IOnionService` (XXX
-            FIXME it implements IHiddenService).
+            the same blob of key material that you received from the
+            :class:`txtorcon.IOnionService` object during a previous
+            run (i.e. from the ``.provate_key`` attribute).
 
         :param version: if not None, a specific version of service to
             use; version=3 is Proposition 224 and version=2 is the
-            1024-bit key based implementation.
+            older 1024-bit key based implementation.
 
         :param auth: a AuthBasic or AuthStealth instance
+        """
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.get_config(), port,
+            hidden_service_dir=None,
+            local_port=None,
+            ephemeral=True,
+            private_key=private_key,
+            version=version,
+            auth=auth,
+        )
+
+    def create_onion_endpoint(self, port, private_key=None, version=None):
+        """
+        WARNING: API subject to change
+
+        :returns: an object that implements IStreamServerEndpoint,
+            which will create an "ephemeral" Onion service when
+            ``.listen()`` is called. This uses the ``ADD_ONION`` tor
+            control-protocol command. The object returned from
+            ``.listen()`` will be a :class:TorOnionListeningPort``;
+            its ``.onion_service`` attribute will be a
+            :class:`txtorcon.IOnionService` instance.
+
+        :param port: the port to listen publically on the Tor network
+           on (e.g. 80 for a Web server)
+
+        :param private_key: if not None (the default), this should be
+            the same blob of key material that you received from the
+            :class:`txtorcon.IOnionService` object during a previous
+            run (i.e. from the ``.private_key`` attribute).
+
+        :param version: if not None, a specific version of service to
+            use; version=3 is Proposition 224 and version=2 is the
+            older 1024-bit key based implementation.
         """
         # note, we're just depending on this being The Ultimate
         # Everything endpoint. Which seems fine, because "normal"
@@ -785,10 +825,27 @@ class Tor(object):
             ephemeral=True,
             private_key=private_key,
             version=version,
-            auth=auth,
+            auth=None,
         )
 
-    def create_filesystem_onion_endpoint(self, port, hs_dir=None, group_readable=False, version=None, auth=None):
+    # XXX probably mirror above and split auth'd versus plain services
+    def create_filesystem_onion_endpoint(self, port, hs_dir, group_readable=False, version=None):
+        """
+        WARNING: API subject to change
+        """
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.get_config(), port,
+            hidden_service_dir=hs_dir,
+            local_port=None,
+            ephemeral=False,
+            private_key=None,
+            group_readable=int(group_readable),
+            version=version,
+            auth=None,
+        )
+
+    # XXX probably mirror above and split auth'd versus plain services
+    def create_authenticated_filesystem_onion_endpoint(self, port, hs_dir, auth, group_readable=False, version=None):
         """
         WARNING: API subject to change
         """

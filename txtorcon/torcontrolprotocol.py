@@ -413,6 +413,30 @@ class TorControlProtocol(LineOnlyReceiver):
         d.addCallback(parse_keywords).addErrback(log.err)
         return d
 
+    def get_conf_one(self, key):
+        """
+        Uses GETCONF to obtain configuration values from Tor.
+
+        :param key: a key whose CONF value to retrieve. To
+            get all valid configuraiton names, you can call:
+            ``get_info('config/names')``
+
+        :return: a Deferred which callbacks with the configuration value.
+
+        Note that Tor differentiates between an empty value and a
+        default value; in the raw protocol one looks like '250
+        MyFamily' versus '250 MyFamily=' where the latter is set to
+        the empty string and the former is a default value. We
+        differentiate these by returning DEFAULT_VALUE for the default
+        value case, or an empty string otherwise.
+        """
+
+        d = self.queue_command('GETCONF {}'.format(key))
+        d.addCallback(parse_keywords).addErrback(log.err)
+        d.addCallback(lambda kw: kw[key])  # extract key we asked for initially
+        return d
+
+
     def get_conf_raw(self, *args):
         """
         Same as get_conf, except that the results are not parsed into a dict
