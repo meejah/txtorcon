@@ -117,6 +117,7 @@ class PortLineDefaultsTests(unittest.TestCase):
         protocol.answers.append('config/names=\nSocksPortLines Dependant')
         protocol.answers.append('config/defaults=')
         protocol.answers.append({'SocksPort': 'auto'})
+        protocol.answers.append('')
         config = TorConfig(protocol)
         yield config.post_bootstrap
 
@@ -128,6 +129,7 @@ class PortLineDefaultsTests(unittest.TestCase):
         protocol.answers.append('config/names=\nSocksPortLines Dependant')
         protocol.answers.append(Failure(TorProtocolError(552, "foo")))
         protocol.answers.append({'SocksPort': 'auto'})
+        protocol.answers.append('')
         config = TorConfig(protocol)
         yield config.post_bootstrap
 

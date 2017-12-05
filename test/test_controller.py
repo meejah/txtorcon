@@ -1360,7 +1360,7 @@ class FilesystemOnionEndpointFactoryTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_filesystem_endpoint(self):
-        yield self.tor.create_filesystem_onion_endpoint(80)
+        yield self.tor.create_filesystem_onion_endpoint(80, '/dev/null')
 
     @defer.inlineCallbacks
     def test_ephemeral_endpoint(self):
