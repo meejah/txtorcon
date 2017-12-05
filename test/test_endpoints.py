@@ -29,7 +29,9 @@ from txtorcon import TorClientEndpoint
 # from txtorcon import TorClientEndpointStringParser
 from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
+from txtorcon.onion import IAuthenticatedOnionClients
 from txtorcon import AuthStealth
+from txtorcon import AuthBasic
 from txtorcon.util import NoOpProtocolFactory
 from txtorcon.util import SingleObserver
 from txtorcon.endpoints import get_global_tor                       # FIXME
@@ -218,6 +220,106 @@ class EndpointTests(unittest.TestCase):
 
                 self.protocol.events['HS_DESC']('UPLOAD service x x x x')
                 self.protocol.events['HS_DESC']('UPLOADED service x x x x')
+                port = yield port_d
+                toa = port.getHost()
+                self.assertTrue(hasattr(toa, 'onion_uri'))
+                self.assertTrue(hasattr(toa, 'onion_port'))
+                port.startListening()
+                str(port)
+                port.tor_config
+                # system_tor should be connecting to a running one,
+                # *not* launching a new one.
+                self.assertFalse(launch_mock.called)
+
+    @defer.inlineCallbacks
+    def test_system_tor_explit_dir_not_readable(self, ftb):
+        # same as above, but we pass an explicit (but non-existent)
+        # hsdir and then simulate Tor creating it...
+
+        def boom():
+            # why does the new_callable thing need a callable that
+            # returns a callable? Feels like I must be doing something
+            # wrong somewhere...
+            def bam(*args, **kw):
+                self.config.bootstrap()
+                return defer.succeed(Tor(Mock(), self.protocol, _tor_config=self.config))
+            return bam
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+
+        with patch('txtorcon.controller.launch') as launch_mock:
+            with patch('txtorcon.controller.connect', new_callable=boom):
+                client = clientFromString(
+                    self.reactor,
+                    "tcp:host=localhost:port=9050"
+                )
+                ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
+                                                               client, 80, hidden_service_dir=hsdir)
+                port_d = ep.listen(NoOpProtocolFactory())
+
+                fname = os.path.join(hsdir, "hostname")
+                with open(fname, 'w') as f:
+                    f.write("service.onion")
+
+                self.protocol.events['HS_DESC']('UPLOAD service x x x x')
+                self.protocol.events['HS_DESC']('UPLOADED service x x x x')
+
+                port = yield port_d
+                toa = port.getHost()
+                self.assertTrue(hasattr(toa, 'onion_uri'))
+                self.assertTrue(hasattr(toa, 'onion_port'))
+                port.startListening()
+                str(port)
+                port.tor_config
+                # system_tor should be connecting to a running one,
+                # *not* launching a new one.
+                self.assertFalse(launch_mock.called)
+
+                # make it re-read the hostname information
+                ep.hiddenservice._hostname = None
+                # make an IOError happen when we try to read the hostname
+                os.chmod(fname, 0x0)
+                # ...but this eats it and returns None
+                self.assertIs(None, ep.onion_uri)
+
+    @defer.inlineCallbacks
+    def test_system_tor_explit_dir_not_readable2(self, ftb):
+        # same as above, but we pass an explicit (but non-existent)
+        # hsdir and then simulate Tor creating it...
+
+        def boom():
+            # why does the new_callable thing need a callable that
+            # returns a callable? Feels like I must be doing something
+            # wrong somewhere...
+            def bam(*args, **kw):
+                self.config.bootstrap()
+                return defer.succeed(Tor(Mock(), self.protocol, _tor_config=self.config))
+            return bam
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+
+        with patch('txtorcon.controller.launch') as launch_mock:
+            with patch('txtorcon.controller.connect', new_callable=boom):
+                client = clientFromString(
+                    self.reactor,
+                    "tcp:host=localhost:port=9050"
+                )
+                ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
+                                                               client, 80, hidden_service_dir=hsdir)
+                port_d = ep.listen(NoOpProtocolFactory())
+
+                fname = os.path.join(hsdir, "hostname")
+                with open(fname, 'w') as f:
+                    f.write("service.onion")
+
+                self.protocol.events['HS_DESC']('UPLOAD service x x x x')
+                self.protocol.events['HS_DESC']('UPLOADED service x x x x')
+
+                # make it re-read the hostname information
+                ep.hiddenservice._hostname = None
+                # make an IOError happen when we try to read the hostname
+                os.chmod(fname, 0x0)
+
                 port = yield port_d
                 toa = port.getHost()
                 self.assertTrue(hasattr(toa, 'onion_uri'))
@@ -622,6 +724,56 @@ class EndpointTests(unittest.TestCase):
         self.assertIn(
             "Expected a TorConfig instance but",
             str(ctx.exception)
+        )
+
+    @defer.inlineCallbacks
+    def test_basic_auth_ephemeral(self, ftb):
+        '''
+        '''
+        ep = TCPHiddenServiceEndpoint(
+            self.reactor, self.config, 123,
+            ephemeral=True,
+            auth=AuthBasic(['alice', 'bob']),
+            private_key='f' * 32,
+        )
+
+        # make sure listen() correctly configures our hidden-serivce
+        # with the explicit directory we passed in above
+        d = ep.listen(NoOpProtocolFactory())
+
+        def foo(fail):
+            return fail
+        d.addErrback(foo)
+
+        self.assertEqual(1, len(self.protocol.commands))
+        cmd, cmd_d = self.protocol.commands[0]
+        self.assertTrue(
+            cmd.startswith(u"ADD_ONION RSA1024:ffffffffffffffffffffffffffffffff ")
+        )
+        cmd_d.callback("ServiceID=service\nPrivateKey=deadbeef\nClientAuth=bob:asdf\nClientAuth=alice:fdsa\n")
+
+        self.protocol.events['HS_DESC'](
+            "UPLOAD service basic somedirauth REASON=testing"
+        )
+        self.protocol.events['HS_DESC'](
+            "UPLOADED service basic somedirauth REASON=testing"
+        )
+
+        yield d  # returns 'port'
+        self.assertEqual(1, len(self.config.EphemeralOnionServices))
+        service = self.config.EphemeralOnionServices[0]
+        self.assertTrue(IAuthenticatedOnionClients.providedBy(service))
+        self.assertEqual(
+            set(["alice", "bob"]),
+            set(service.client_names()),
+        )
+        self.assertEqual(
+            "asdf",
+            service.get_client("bob").auth_token,
+        )
+        self.assertEqual(
+            "fdsa",
+            service.get_client("alice").auth_token,
         )
 
     @defer.inlineCallbacks

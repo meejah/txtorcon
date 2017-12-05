@@ -384,6 +384,44 @@ class OnionServiceTest(unittest.TestCase):
         )
 
     @defer.inlineCallbacks
+    def test_old_tor_version(self):
+        protocol = FakeControlProtocol([])
+        protocol.version = "0.1.2.3"
+        config = TorConfig(protocol)
+        hsdir = self.mktemp()
+
+        def my_progress(a, b, c):
+            pass
+
+        eph_d = FilesystemOnionService.create(
+            config,
+            hsdir,
+            ports=["80 127.0.0.1:80"],
+            progress=my_progress,
+        )
+
+        hs = yield eph_d
+
+    @defer.inlineCallbacks
+    def test_tor_version_v3_progress(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        hsdir = self.mktemp()
+
+        def my_progress(a, b, c):
+            pass
+
+        eph_d = FilesystemOnionService.create(
+            config,
+            hsdir,
+            ports=["80 127.0.0.1:80"],
+            progress=my_progress,
+            version=3,
+        )
+
+        hs = yield eph_d
+
+    @defer.inlineCallbacks
     def test_ephemeral_auth_basic(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
@@ -429,6 +467,10 @@ class OnionServiceTest(unittest.TestCase):
             "onionfakehostname.onion",
             steve.hostname,
         )
+        self.assertEqual(
+            set(["80 127.0.0.1:80"]),
+            steve.ports,
+        )
         self.assertTrue(steve.parent is hs)
         self.assertEqual("steve", steve.name)
         self.assertEqual(2, steve.version)
@@ -448,6 +490,14 @@ class OnionServiceTest(unittest.TestCase):
         self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
         d.callback('OK')
         yield remove_d
+
+    def test_ephemeral_auth_basic_bad_name(self):
+        with self.assertRaises(ValueError) as ctx:
+            AuthBasic(["bad name"])
+        self.assertIn(
+            "Client names can't have spaces",
+            str(ctx.exception),
+        )
 
     @defer.inlineCallbacks
     def test_ephemeral_auth_unknown(self):
@@ -517,20 +567,20 @@ class OnionServiceTest(unittest.TestCase):
 
 class EphemeralHiddenServiceTest(unittest.TestCase):
     def test_defaults(self):
-        eph = torconfig.EphemeralHiddenService("80 localhost:80")
+        eph = torconfig.EphemeralHiddenService(["80 localhost:80"])
         self.assertEqual(eph._ports, ["80,localhost:80"])
 
     def test_wrong_blob(self):
         wrong_blobs = ["", " ", "foo", ":", " : ", "foo:", ":foo", 0]
         for b in wrong_blobs:
             try:
-                torconfig.EphemeralHiddenService("80 localhost:80", b)
+                torconfig.EphemeralHiddenService(["80 localhost:80"], b)
                 self.fail("should get exception")
             except ValueError:
                 pass
 
     def test_add(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralHiddenService(["80 127.0.0.1:80"])
         proto = Mock()
         proto.queue_command = Mock(return_value="PrivateKey=blam\nServiceID=ohai")
         eph.add_to_tor(proto)
@@ -539,7 +589,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("ohai.onion", eph.hostname)
 
     def test_add_keyblob(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80", "alg:blam")
+        eph = torconfig.EphemeralHiddenService(["80 127.0.0.1:80"], "alg:blam")
         proto = Mock()
         proto.queue_command = Mock(return_value="ServiceID=ohai")
         eph.add_to_tor(proto)
@@ -548,16 +598,16 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("ohai.onion", eph.hostname)
 
     def test_descriptor_wait(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralHiddenService(["80 127.0.0.1:80"])
         proto = Mock()
         proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=blam\nServiceID=ohai\n"))
 
         eph.add_to_tor(proto)
 
         # get the event-listener callback that torconfig code added;
-        # the last call [-1] was to add_event_listener; we want the
+        # the first call [0] was to add_event_listener; we want the
         # [1] arg of that
-        cb = proto.method_calls[-1][1][1]
+        cb = proto.method_calls[0][1][1]
 
         # Tor doesn't actually provide the .onion, but we can test it anyway
         cb('UPLOADED ohai UNKNOWN somehsdir')
@@ -567,7 +617,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("ohai.onion", eph.hostname)
 
     def test_remove(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralHiddenService(["80 127.0.0.1:80"])
         eph.hostname = 'foo.onion'
         proto = Mock()
         proto.queue_command = Mock(return_value="OK")
@@ -576,7 +626,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_remove_error(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralHiddenService(["80 127.0.0.1:80"])
         eph.hostname = 'foo.onion'
         proto = Mock()
         proto.queue_command = Mock(return_value="it's not ok")
@@ -588,16 +638,16 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
             pass
 
     def test_failed_upload(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralHiddenService(["80 127.0.0.1:80"])
         proto = Mock()
         proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=seekrit\nServiceID=42\n"))
 
         d = eph.add_to_tor(proto)
 
         # get the event-listener callback that torconfig code added;
-        # the last call [-1] was to add_event_listener; we want the
+        # the first call [0] was to add_event_listener; we want the
         # [1] arg of that
-        cb = proto.method_calls[-1][1][1]
+        cb = proto.method_calls[0][1][1]
 
         # Tor leads with UPLOAD events for each attempt; we queue 2 of
         # these...
@@ -614,16 +664,16 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         d.addErrback(lambda e: self.assertTrue('Failed to upload' in str(e)))
 
     def test_single_failed_upload(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = torconfig.EphemeralHiddenService(["80 127.0.0.1:80"])
         proto = Mock()
         proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=seekrit\nServiceID=42\n"))
 
         d = eph.add_to_tor(proto)
 
         # get the event-listener callback that torconfig code added;
-        # the last call [-1] was to add_event_listener; we want the
+        # the first call [0] was to add_event_listener; we want the
         # [1] arg of that
-        cb = proto.method_calls[-1][1][1]
+        cb = proto.method_calls[0][1][1]
 
         # Tor leads with UPLOAD events for each attempt; we queue 2 of
         # these...
