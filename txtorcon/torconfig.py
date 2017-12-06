@@ -1164,7 +1164,10 @@ class TorConfig(object):
                     except KeyError:
                         default_key = '__{}'.format(name[:-5])
                         default = yield self.protocol.get_conf_one(default_key)
-                        initial = [default]
+                        if not default:
+                            initial = []
+                        else:
+                            initial = [default]
                 else:
                     initial = [self.parsers[rn].parse(v)]
                 self.config[rn] = _ListWrapper(
