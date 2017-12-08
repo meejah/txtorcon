@@ -23,13 +23,11 @@ from txtorcon import DEFAULT_VALUE
 from txtorcon import HiddenService
 from txtorcon import launch
 from txtorcon import TorNotFound
-from txtorcon import torconfig
 
 from txtorcon.torconfig import parse_client_keys
 from txtorcon.torconfig import CommaList
 from txtorcon.torconfig import launch_tor
 from txtorcon.onion import FilesystemOnionService
-from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import AuthenticatedHiddenService
 
 from txtorcon.testutil import FakeControlProtocol
@@ -1009,7 +1007,7 @@ DnkEGTrOUFZ7CbDp+SM18BjmFXI2n0bFJEznXFhH+Awz
         # create a client-auth'd onion service, but only "add" one of
         # its newly created clients
         hs = AuthenticatedHiddenService(conf, fakedir, ['1 127.0.0.1:12345'], clients=['alice', 'bob'])
-        client = hs.add_client(
+        hs.add_client(
             name="carol",
             hostname="hostname_carol",
             ports=['1 127.0.0.1:12345'],

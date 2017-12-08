@@ -25,6 +25,7 @@ from txtorcon.util import find_keywords
 from .onion import IOnionClient, FilesystemHiddenService, AuthenticatedHiddenService
 from .onion import EphemeralOnionService
 from .onion import _await_descriptor_upload
+from .onion import DISCARD
 from .util import _Version
 
 
@@ -1041,7 +1042,7 @@ class TorConfig(object):
                         parent = IOnionClient(hs).parent
                         if parent not in services:
                             services.append(parent)
-                    elif isinstance(hs, EphemeralOnionService): #EphemeralHiddenService):
+                    elif isinstance(hs, EphemeralOnionService):  # EphemeralHiddenService):
                         raise ValueError(
                             "Only txtorcon.HiddenService instances may be added"
                             " via TorConfig.hiddenservices; ephemeral services"

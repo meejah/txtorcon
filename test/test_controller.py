@@ -1221,7 +1221,7 @@ class EphemeralOnionFactoryTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_ports_not_sequence(self):
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ValueError):
             yield self.tor.create_onion_service("not a sequence")
 
     @defer.inlineCallbacks
@@ -1308,19 +1308,19 @@ class FilesystemOnionFactoryTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_ports_not_sequence(self):
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaises(ValueError):
             yield self.tor.create_filesystem_onion_service("not a sequence", self.hsdir)
 
     @defer.inlineCallbacks
-    def test_ports_contain_non_ints(self):
-        with self.assertRaises(ValueError) as ctx:
-            yield self.tor.create_filesystem_onion_service(['not an int'], self.hsdir)
-        self.assertIn("contain a single int", str(ctx.exception))
-
-    @defer.inlineCallbacks
-    def test_ports_contain_non_ints(self):
+    def test_ports_contain_non_ints0(self):
         with self.assertRaises(ValueError) as ctx:
             yield self.tor.create_filesystem_onion_service([('not', 'an int')], self.hsdir)
+        self.assertIn("a tuple with a non-integer", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints1(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_filesystem_onion_service(['not an int'], self.hsdir)
         self.assertIn("non-integer", str(ctx.exception))
 
     @defer.inlineCallbacks
@@ -1365,4 +1365,3 @@ class FilesystemOnionEndpointFactoryTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_ephemeral_endpoint(self):
         yield self.tor.create_onion_endpoint(80)
-

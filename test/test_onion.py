@@ -1,37 +1,18 @@
 from __future__ import print_function
 
 import os
-import shutil
-import tempfile
-import functools
-from six import StringIO
-from mock import Mock, patch
+from mock import Mock
 from os.path import join
 
-from zope.interface import implementer, directlyProvides
 from twisted.trial import unittest
-from twisted.test import proto_helpers
 from twisted.internet import defer
-from twisted.internet.interfaces import IReactorCore
-from twisted.python.failure import Failure
 
-from txtorcon import TorProtocolError
-from txtorcon import ITorControlProtocol
-from txtorcon import TorProcessProtocol
 from txtorcon import TorConfig
-from txtorcon import DEFAULT_VALUE
-from txtorcon import HiddenService
-from txtorcon import launch
-from txtorcon import TorNotFound
 from txtorcon import torconfig
 
-from txtorcon.torconfig import parse_client_keys
-from txtorcon.torconfig import CommaList
-from txtorcon.torconfig import launch_tor
 from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import EphemeralAuthenticatedOnionService
-from txtorcon.onion import AuthenticatedHiddenService
 from txtorcon.onion import AuthStealth, AuthBasic, DISCARD
 
 from txtorcon.testutil import FakeControlProtocol
@@ -119,7 +100,8 @@ class OnionServiceTest(unittest.TestCase):
         config = TorConfig(protocol)
         privkey = 'a' * 32
 
-        hs_d = EphemeralOnionService.create(
+        # returns a Deferred we're ignoring
+        EphemeralOnionService.create(
             config,
             ports=["80 127.0.0.1:80"],
             private_key=privkey,
@@ -236,7 +218,6 @@ class OnionServiceTest(unittest.TestCase):
     def test_filesystem_wrong_ports(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
-        privkey = 'a' * 32
 
         with self.assertRaises(ValueError) as ctx:
             yield FilesystemOnionService.create(
@@ -399,8 +380,7 @@ class OnionServiceTest(unittest.TestCase):
             ports=["80 127.0.0.1:80"],
             progress=my_progress,
         )
-
-        hs = yield eph_d
+        yield eph_d
 
     @defer.inlineCallbacks
     def test_tor_version_v3_progress(self):
@@ -418,8 +398,7 @@ class OnionServiceTest(unittest.TestCase):
             progress=my_progress,
             version=3,
         )
-
-        hs = yield eph_d
+        yield eph_d
 
     @defer.inlineCallbacks
     def test_ephemeral_auth_basic(self):

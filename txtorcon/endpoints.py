@@ -36,7 +36,7 @@ from zope.interface import Interface, Attribute
 from .torconfig import TorConfig
 from .onion import FilesystemOnionService, EphemeralOnionService
 from .onion import EphemeralAuthenticatedOnionService
-from .onion import AuthStealth, AuthBasic
+from .onion import AuthStealth  # , AuthBasic
 from .torconfig import _endpoint_from_socksport_line
 from .util import SingleObserver, _Version
 FilesystemHiddenService = FilesystemOnionService  # XXX

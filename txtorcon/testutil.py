@@ -1,6 +1,6 @@
 from twisted.internet import defer
 
-from zope.interface import implementer, directlyProvides
+from zope.interface import implementer
 
 from txtorcon.interface import ITorControlProtocol
 

@@ -828,7 +828,7 @@ class EndpointTests(unittest.TestCase):
             f.write('public.onion\n')
 
         with self.assertRaises(ValueError) as ctx:
-            ep = TCPHiddenServiceEndpoint(
+            TCPHiddenServiceEndpoint(
                 self.reactor, self.config, 123, tmp,
                 stealth_auth=['alice', 'bob'],
                 auth=AuthStealth(['alice', 'bob']),

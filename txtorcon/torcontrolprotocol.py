@@ -436,7 +436,6 @@ class TorControlProtocol(LineOnlyReceiver):
         d.addCallback(lambda kw: kw[key])  # extract key we asked for initially
         return d
 
-
     def get_conf_raw(self, *args):
         """
         Same as get_conf, except that the results are not parsed into a dict
