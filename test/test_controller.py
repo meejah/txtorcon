@@ -1,4 +1,5 @@
 import os
+import six
 import functools
 from os.path import join
 from mock import Mock, patch
@@ -18,11 +19,16 @@ from txtorcon import TorControlProtocol
 from txtorcon import TorProcessProtocol
 from txtorcon import launch
 from txtorcon import connect
+from txtorcon import AuthBasic
 from txtorcon.controller import _is_non_public_numeric_address, Tor
 from txtorcon.interface import ITorControlProtocol
 from .util import TempDir
 
 from zope.interface import implementer, directlyProvides
+
+
+if not six.PY2:
+    from .py3_test_controller import ClientOnionServiceAuthenticationTests3
 
 
 class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
@@ -1276,6 +1282,12 @@ class EphemeralOnionFactoryTests(unittest.TestCase):
             yield self.tor.create_onion_service([80], version=3)
         self.assertIn("not supported by Tor", str(ctx.exception))
 
+    def test_auth(self):
+        self.tor.create_authenticated_onion_endpoint(80, AuthBasic(['alice']))
+
+    def test_auth_fs(self):
+        self.tor.create_authenticated_filesystem_onion_endpoint(80, '/dev/null', AuthBasic(['alice']))
+
     @defer.inlineCallbacks
     def test_happy_path(self):
         self.cfg.EphemeralOnionServices = []
@@ -1355,8 +1367,6 @@ class FilesystemOnionEndpointFactoryTests(unittest.TestCase):
         directlyProvides(proto, ITorControlProtocol)
         self.cfg = Mock()
         self.tor = Tor(reactor, proto, _tor_config=self.cfg)
-        self.hsdir = self.mktemp()
-        os.mkdir(self.hsdir)
 
     @defer.inlineCallbacks
     def test_filesystem_endpoint(self):
@@ -1365,3 +1375,78 @@ class FilesystemOnionEndpointFactoryTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_ephemeral_endpoint(self):
         yield self.tor.create_onion_endpoint(80)
+
+
+class ClientOnionServiceAuthenticationTests(unittest.TestCase):
+
+    def setUp(self):
+        reactor = Mock()
+        proto = Mock()
+        directlyProvides(proto, ITorControlProtocol)
+        self.cfg = TorConfig()
+        self.cfg.HidServAuth = ["existing.onion some_token"]
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
+
+    @defer.inlineCallbacks
+    def test_add(self):
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+
+    @defer.inlineCallbacks
+    def test_add_twice(self):
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+        # a second add of the same token should be fine
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+
+    @defer.inlineCallbacks
+    def test_add_twice_different_token(self):
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+        # a second token with a different value: error
+        with self.assertRaises(ValueError):
+            yield self.tor.add_onion_authentication("foo.onion", "a_different_token")
+
+    @defer.inlineCallbacks
+    def test_remove(self):
+        yield self.tor.remove_onion_authentication("existing.onion")
+        self.assertEqual(0, len(self.cfg.HidServAuth))
+
+    @defer.inlineCallbacks
+    def test_remove_unfound(self):
+        yield self.tor.remove_onion_authentication("existing.onion")
+        self.assertEqual(0, len(self.cfg.HidServAuth))
+        yield self.tor.remove_onion_authentication("non_existing.onion")
+        self.assertEqual(0, len(self.cfg.HidServAuth))
+
+    def test_context_manager_py2(self):
+        if not six.PY2:
+            return
+        with self.assertRaises(RuntimeError):
+            self.tor.onion_authentication("foo.onion", "token")
+
+    @defer.inlineCallbacks
+    def test_add_and_remove(self):
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+        yield self.tor.remove_onion_authentication("foo.onion")
+        self.assertNotIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )

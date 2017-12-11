@@ -910,7 +910,6 @@ class Tor(object):
             auth=None,
         )
 
-    # XXX probably mirror above and split auth'd versus plain services
     def create_filesystem_onion_endpoint(self, port, hs_dir, group_readable=False, version=None):
         """
         WARNING: API subject to change
@@ -926,7 +925,6 @@ class Tor(object):
             auth=None,
         )
 
-    # XXX probably mirror above and split auth'd versus plain services
     def create_authenticated_filesystem_onion_endpoint(self, port, hs_dir, auth, group_readable=False, version=None):
         """
         WARNING: API subject to change

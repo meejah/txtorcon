@@ -11,6 +11,7 @@ import functools
 import warnings
 from io import StringIO
 from collections import OrderedDict
+from warnings import warn
 
 from twisted.python import log
 from twisted.python.compat import nativeString
@@ -432,7 +433,10 @@ def _is_valid_keyblob(key_blob_or_type):
         return re.match(r'[^ :]+:[^ :]+$', key_blob_or_type)
 
 
-@deprecated(_Version("txtorcon", 17, 0, 0))
+# we can't use @deprecated here because then you can't use the
+# resulting class in isinstance() things and the like, because Twisted
+# makes it into a function instead :(
+# @deprecated(_Version("txtorcon", 17, 0, 0))
 class EphemeralHiddenService(object):
     '''
     This uses the ephemeral hidden-service APIs (in comparison to
@@ -444,6 +448,10 @@ class EphemeralHiddenService(object):
 
     def __init__(self, ports, key_blob_or_type='NEW:BEST', auth=[], ver=2):
         # deprecated; use Tor.create_onion_service
+        warn(
+            'EphemeralHiddenService is deprecated; use EphemeralOnionService instead',
+            DeprecationWarning,
+        )
         if _is_valid_keyblob(key_blob_or_type):
             self._key_blob = nativeString(key_blob_or_type)
         else:
@@ -1042,7 +1050,7 @@ class TorConfig(object):
                         parent = IOnionClient(hs).parent
                         if parent not in services:
                             services.append(parent)
-                    elif isinstance(hs, EphemeralOnionService):  # EphemeralHiddenService):
+                    elif isinstance(hs, (EphemeralOnionService, EphemeralHiddenService)):
                         raise ValueError(
                             "Only txtorcon.HiddenService instances may be added"
                             " via TorConfig.hiddenservices; ephemeral services"

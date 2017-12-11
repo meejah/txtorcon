@@ -11,4 +11,3 @@ class _AsyncOnionContext(object):
 
     async def __aexit__(self, exc_type, exc, tb):
         await self._tor.remove_onion_authentication(self._host)
-
