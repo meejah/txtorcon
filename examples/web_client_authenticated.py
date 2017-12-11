@@ -35,14 +35,19 @@ def main(reactor):
     if b'FIXME' in onion_uri:
         print("Please edit to the correct .onion URI")
         return
+
     yield tor.add_onion_authentication(onion_uri, token)
+    try:
+        # do the Web request as with any other
+        agent = tor.web_agent()
+        uri = b'http://{}/'.format(onion_uri)
+        print("Downloading {}".format(uri))
+        resp = yield agent.request(b'GET', uri)
 
-    # do the Web request as with any other
-    agent = tor.web_agent()
-    uri = b'http://{}/'.format(onion_uri)
-    print("Downloading {}".format(uri))
-    resp = yield agent.request(b'GET', uri)
-
-    print("Response has {} bytes".format(resp.length))
-    body = yield readBody(resp)
-    print(body)
+        print("Response has {} bytes".format(resp.length))
+        body = yield readBody(resp)
+        print(body)
+    finally:
+        # if you're using python3, see the example that uses async
+        # context-managers to do this more cleanly.
+        yield tor.remove_onion_authentication(onion_uri)
