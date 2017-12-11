@@ -321,6 +321,36 @@ class OnionServiceTest(unittest.TestCase):
         d.callback('OK')
         yield remove_d
 
+    @defer.inlineCallbacks
+    def test_ephemeral_remove_not_ok(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        eph_d = EphemeralOnionService.create(
+            config,
+            ports=["80 127.0.0.1:80"],
+        )
+
+        cmd, d = protocol.commands[0]
+        self.assertEqual(u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80", cmd)
+
+        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+        cb = protocol.events['HS_DESC']
+
+        for x in range(6):
+            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        for x in range(6):
+            cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        hs = yield eph_d
+        remove_d = hs.remove()
+        cmd, d = protocol.commands[-1]
+        self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
+        d.callback('bad stuff')
+        with self.assertRaises(RuntimeError):
+            yield remove_d
+
     def test_ephemeral_ver_option(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
@@ -469,6 +499,78 @@ class OnionServiceTest(unittest.TestCase):
         self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
         d.callback('OK')
         yield remove_d
+
+
+    @defer.inlineCallbacks
+    def test_ephemeral_auth_basic_remove_fails(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        eph_d = EphemeralAuthenticatedOnionService.create(
+            config,
+            ports=["80 127.0.0.1:80"],
+            auth=AuthBasic([
+                "steve",
+                ("carol", "c4r0ls33kr1t"),
+            ]),
+        )
+        cmd, d = protocol.commands[0]
+        self.assertTrue(
+            cmd.startswith(
+                u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80 Flags=BasicAuth "
+            )
+        )
+        self.assertIn(u"ClientAuth=steve", cmd)
+        self.assertIn(u"ClientAuth=carol:c4r0ls33kr1t", cmd)
+
+        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname\nClientAuth=steve:aseekritofsomekind")
+        cb = protocol.events['HS_DESC']
+
+        for x in range(6):
+            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        for x in range(6):
+            cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+
+        hs = yield eph_d
+
+        self.assertEqual(
+            set(["steve", "carol"]),
+            set(hs.client_names()),
+        )
+        steve = hs.get_client("steve")
+        self.assertEqual(
+            "aseekritofsomekind",
+            steve.auth_token,
+        )
+        self.assertEqual(
+            "onionfakehostname.onion",
+            steve.hostname,
+        )
+        self.assertEqual(
+            set(["80 127.0.0.1:80"]),
+            steve.ports,
+        )
+        self.assertTrue(steve.parent is hs)
+        self.assertEqual("steve", steve.name)
+        self.assertEqual(2, steve.version)
+
+        carol = hs.get_client("carol")
+        self.assertEqual(
+            "c4r0ls33kr1t",
+            carol.auth_token,
+        )
+        self.assertEqual(
+            "onionfakehostname.onion",
+            carol.hostname,
+        )
+
+        remove_d = hs.remove()
+        cmd, d = protocol.commands[-1]
+        self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
+        d.callback('not okay')
+        with self.assertRaises(RuntimeError):
+            yield remove_d
 
     def test_ephemeral_auth_basic_bad_name(self):
         with self.assertRaises(ValueError) as ctx:

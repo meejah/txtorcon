@@ -352,6 +352,27 @@ class EndpointTests(unittest.TestCase):
 
         repr(self.config.HiddenServices)
 
+    @defer.inlineCallbacks
+    def test_not_ephemeral_no_hsdir(self, ftb):
+        listen = RuntimeError("listen")
+        connect = RuntimeError("connect")
+        reactor = proto_helpers.RaisingMemoryReactor(listen, connect)
+        reactor.addSystemEventTrigger = Mock()
+
+        ep = TCPHiddenServiceEndpoint(reactor, self.config, 123, ephemeral=False)
+        assert self.config.post_bootstrap.called
+        yield self.config.post_bootstrap
+        self.assertTrue(IProgressProvider.providedBy(ep))
+
+        try:
+            yield ep.listen(NoOpProtocolFactory())
+            self.fail("Should have been an exception")
+        except RuntimeError as e:
+            # make sure we called listenTCP not connectTCP
+            self.assertEqual(e, listen)
+
+        repr(self.config.HiddenServices)
+
     def test_progress_updates(self, ftb):
         config = TorConfig()
         ep = TCPHiddenServiceEndpoint(self.reactor, config, 123)
