@@ -38,6 +38,8 @@ from txtorcon.onion import EphemeralOnionService, FilesystemOnionService
 
 from . import socks
 from .interface import ITor
+if not six.PY2:
+    from .controller_py3 import _AsyncOnionContext
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
@@ -716,6 +718,9 @@ class Tor(object):
         # if we add the same onion twice, Tor rejects us. We throw an
         # error if we already have that .onion but the incoming token
         # doesn't match
+        if isinstance(onion_host, bytes):
+            onion_host = onion_host.decode('ascii')
+
         config = yield self.get_config()
         tokens = {
             servauth.split()[0]: servauth.split()[1]
@@ -736,6 +741,53 @@ class Tor(object):
             u"{} {}".format(onion_host, token)
         )
         yield config.save()
+
+    @inlineCallbacks
+    def remove_onion_authentication(self, onion_host):
+        """
+        Remove a token for an onion host
+
+        :returns: True if successful, False if there wasn't a token
+            for that host.
+        """
+        if isinstance(onion_host, bytes):
+            onion_host = onion_host.decode('ascii')
+
+        config = yield self.get_config()
+        to_remove = None
+        for auth in config.HidServAuth:
+            host, token = auth.split()
+            if host == onion_host:
+                to_remove = auth
+
+        if to_remove is not None:
+            config.HidServAuth.remove(to_remove)
+            yield config.save()
+            returnValue(True)
+        returnValue(False)
+
+    def onion_authentication(self, onion_host, token):
+        """
+        (Python3 only!) This returns an async context-manager that will
+        add and remove onion authentication. For example::
+
+            async with tor.onion_authentication("timaq4ygg2iegci7.onion", "seekrit token"):
+                agent = tor.web_agent()
+                resp = yield agent.request(b'GET', "http://timaq4ygg2iegci7.onion/")
+                body = yield readBody(resp)
+            # after the "async with" the token will be removed from Tor's configuration
+
+        Under the hood, this just uses the add_onion_authentication
+        and remove_onion_authentication methods so on Python2 you can
+        use those together with try/finally to get the same effect.
+        """
+        if six.PY2:
+            raise RuntimeError(
+                "async context-managers not supported in Python2"
+            )
+        return _AsyncOnionContext(
+            self, onion_host, token
+        )
 
     def stream_via(self, host, port, tls=False, socks_endpoint=None):
         """
