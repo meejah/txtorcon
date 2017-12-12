@@ -435,7 +435,7 @@ class EndpointTests(unittest.TestCase):
         class Blam(object):
             @property
             def private_key(self):
-                raise IOError("blam")
+                return None
         ep.hiddenservice = Blam()
         self.assertEqual(ep.onion_private_key, None)
         return ep

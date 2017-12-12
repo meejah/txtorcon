@@ -468,19 +468,13 @@ class TCPHiddenServiceEndpoint(object):
     def onion_uri(self):
         if self.hiddenservice is None:
             return None
-        try:
-            return self.hiddenservice.hostname
-        except IOError:
-            return None
+        return self.hiddenservice.hostname
 
     @property
     def onion_private_key(self):
         if self.hiddenservice is None:
             return None
-        try:
-            return self.hiddenservice.private_key
-        except IOError:
-            return None
+        return self.hiddenservice.private_key
 
     def add_progress_listener(self, listener):
         """IProgressProvider API"""
@@ -674,10 +668,7 @@ class TorOnionAddress(FancyEqMixin, object):
 
     def __init__(self, port, hs):
         self.onion_port = port
-        try:
-            self.onion_uri = hs.hostname
-        except IOError:  # when can/does this actually happen?
-            self.onion_uri = None
+        self.onion_uri = hs.hostname
         self._hiddenservice = hs
 
     @property

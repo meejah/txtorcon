@@ -208,8 +208,14 @@ class FilesystemOnionService(object):
     @property
     def hostname(self):
         if self._hostname is None:
-            with open(os.path.join(self._dir, 'hostname'), 'r') as f:
-                self._hostname = f.read().strip()
+            try:
+                with open(os.path.join(self._dir, 'hostname'), 'r') as f:
+                    self._hostname = f.read().strip()
+            except IOError:
+                # not clear under what circumstances this happens
+                # (i.e. we can create a new onion, but somehow not
+                # read the hostname file) but ... safety?
+                self._hostname = None
         return self._hostname
 
     @property
@@ -219,14 +225,26 @@ class FilesystemOnionService(object):
         # accessor for .public_key() as well?
         if self._private_key is None:
             if self.version == 2:
-                with open(os.path.join(self._dir, 'private_key'), 'r') as f:
-                    self._private_key = f.read().strip()
+                try:
+                    with open(os.path.join(self._dir, 'private_key'), 'r') as f:
+                        self._private_key = f.read().strip()
+                except IOError:
+                    # not clear under what circumstances this happens
+                    # (i.e. we can create a new onion, but somehow not
+                    # read the private_key file) but ... safety?
+                    self._private_key = None
             elif self.version == 3:
                 # XXX see tor bug #20699 -- would be Really Nice to
                 # not have to deal with binary data here (well, more
                 # for ADD_ONION, but still)
-                with open(os.path.join(self._dir, 'hs_ed25519_secret_key'), 'rb') as f:
-                    self._private_key = f.read().strip()
+                try:
+                    with open(os.path.join(self._dir, 'hs_ed25519_secret_key'), 'rb') as f:
+                        self._private_key = f.read().strip()
+                except IOError:
+                    # not clear under what circumstances this happens
+                    # (i.e. we can create a new onion, but somehow not
+                    # read the private key file) but ... safety?
+                    self._private_key = None
             else:
                 raise RuntimeError(
                     "Don't know how to load private_key for version={} "
@@ -900,8 +918,11 @@ class AuthenticatedHiddenService(object):
         return self._client_keys[name]
 
     def _parse_client_keys(self):
-        with open(os.path.join(self._dir, 'client_keys'), 'r') as f:
-            keys = parse_client_keys(f)
+        try:
+            with open(os.path.join(self._dir, 'client_keys'), 'r') as f:
+                keys = parse_client_keys(f)
+        except IOError:
+            keys = []
         self._client_keys = {}
         for auth in keys:
             self._client_keys[auth.name] = auth
