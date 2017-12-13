@@ -4,6 +4,9 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
+import os
+import re
+import base64
 from binascii import b2a_hex, hexlify
 
 from twisted.python import log
@@ -22,9 +25,6 @@ from txtorcon.interface import ITorControlProtocol
 from .spaghetti import FSM, State, Transition
 from .util import maybe_coroutine
 
-import os
-import re
-import base64
 
 DEFAULT_VALUE = 'DEFAULT'
 
@@ -460,6 +460,7 @@ class TorControlProtocol(LineOnlyReceiver):
             raise RuntimeError("Invalid signal " + nm)
         return self.queue_command('SIGNAL %s' % nm)
 
+    # XXX FIXME this should have been async all along :/
     def add_event_listener(self, evt, callback):
         """
         Add a listener to an Event object. This may be called multiple
@@ -498,9 +499,11 @@ class TorControlProtocol(LineOnlyReceiver):
 
         if evt.name not in self.events:
             self.events[evt.name] = evt
-            self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+            d = self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+        else:
+            d = defer.succeed(None)
         evt.listen(callback)
-        return None
+        return d
 
     def remove_event_listener(self, evt, cb):
         """
@@ -589,6 +592,7 @@ class TorControlProtocol(LineOnlyReceiver):
     def connectionMade(self):
         "Protocol API"
         txtorlog.msg('got connection, authenticating')
+        # XXX this Deferred is just being dropped on the floor
         d = self.protocolinfo()
         d.addCallback(self._do_authenticate)
         d.addErrback(self._auth_failed)
@@ -644,7 +648,11 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Errback if authentication fails.
         """
-
+        # XXX FIXME if post_bootstrap is already callback()'d, this
+        # goes into the aether; should be logged in that case...
+        # print("authentication failed", fail)
+        if self.post_bootstrap.called:
+            return fail
         self.post_bootstrap.errback(fail)
         return None
 
@@ -746,7 +754,7 @@ class TorControlProtocol(LineOnlyReceiver):
                 d.addCallback(self._safecookie_authchallenge)
                 d.addCallback(self._bootstrap)
                 d.addErrback(self._auth_failed)
-                return
+                return d
 
             elif 'COOKIE' in methods:
                 txtorlog.msg("Using COOKIE authentication",
@@ -864,6 +872,7 @@ class TorControlProtocol(LineOnlyReceiver):
     def _is_multi_line(self, line):
         "for FSM"
         code = int(line[:3])
+        # print("isMultiLine",code,line,line[3])
         if self.code and self.code != code:
             raise RuntimeError("Unexpected code %d, wanted %d" % (code,
                                                                   self.code))

@@ -20,7 +20,7 @@ class FakeReactor:
     def addSystemEventTrigger(self, *args):
         self.test.assertEqual(args[0], 'before')
         self.test.assertEqual(args[1], 'shutdown')
-        self.test.assertEqual(args[2], self.test.state.undo_attacher)
+        self.test.assertEqual(args[2], self.test.state._undo_attacher)
         return 1
 
     def removeSystemEventTrigger(self, id):

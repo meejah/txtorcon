@@ -59,7 +59,11 @@ class EndpointTests(unittest.TestCase):
         del endpoints._global_tor_lock
         endpoints._global_tor_lock = defer.DeferredLock()
         self.reactor = FakeReactorTcp(self)
-        self.protocol = FakeControlProtocol([])
+        self.protocol = FakeControlProtocol([
+            'config/names=',
+            {'onions/detached': ''},
+            {'onions/current': ''},
+        ])
         self.protocol.event_happened('INFO', 'something craaaaaaazy')
         self.protocol.event_happened(
             'INFO',
@@ -68,17 +72,22 @@ class EndpointTests(unittest.TestCase):
         )
         self.config = TorConfig(self.protocol)
         self.protocol.answers.append(
-            'config/names=\nHiddenServiceOptions Virtual\nControlPort LineList'
+            'config/names=\nHiddenServiceOptions Virtual\nControlPort LineList\nSOCKSPort LineList'
         )
         self.protocol.answers.append('')
         self.protocol.answers.append('HiddenServiceOptions')
         # why do i have to pass a dict for this V but not this ^
         self.protocol.answers.append({'ControlPort': '37337'})
+        self.protocol.answers.append({'SOCKSPort': '9050'})
         self.patcher = patch(
             'txtorcon.controller.find_tor_binary',
             return_value='/not/tor'
         )
         self.patcher.start()
+        self.config.bootstrap()
+        d = defer.Deferred()
+        self.config.post_bootstrap.addCallback(lambda _: d.callback(self.config))
+        return d
 
     def tearDown(self):
         from txtorcon import endpoints
@@ -89,25 +98,28 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_global_tor(self, ftb):
+        fake_tor = Mock()
+        fake_tor.get_config = Mock(return_value=self.config)
         config = yield get_global_tor(
             Mock(),
-            _tor_launcher=lambda x, y, z: True
+            _tor_launcher=lambda x, progress_updates=None: fake_tor
         )
-        self.assertEqual(0, config.SOCKSPort)
+        # XXX this was asserting SOCKSPort == 0 before; why?
+        self.assertEqual(['9050'], config.SOCKSPort)
 
     @defer.inlineCallbacks
     def test_global_tor_error(self, ftb):
         yield get_global_tor(
-            reactor=Mock(),
-            _tor_launcher=lambda x, y, z: True
+            reactor=FakeReactorTcp(self),
+            _tor_launcher=lambda x, y, progress_updates=None: True
         )
         # now if we specify a control_port it should be an error since
         # the above should have launched one.
         try:
             yield get_global_tor(
-                reactor=Mock(),
+                reactor=FakeReactorTcp(self),
                 control_port=111,
-                _tor_launcher=lambda x, y, z: True
+                _tor_launcher=lambda x, y, progress_updates=None: True
             )
             self.fail()
         except RuntimeError:
@@ -125,22 +137,23 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_private_tor(self, ftb):
-        m = Mock()
-        from txtorcon import endpoints
-        endpoints.launch_tor = m
-        yield TCPHiddenServiceEndpoint.private_tor(
-            Mock(), 80,
-            control_port=1234,
-        )
-        self.assertTrue(m.called)
+        with patch('txtorcon.endpoints._global_tor_config'):
+            with patch('txtorcon.controller.launch') as launch:
+                m = Mock()
+                directlyProvides(m, IReactorCore)
+                yield TCPHiddenServiceEndpoint.private_tor(
+                    reactor=m,
+                    public_port=80,
+                    control_port=1234,
+                )
+                self.assertTrue(launch.called)
 
     @defer.inlineCallbacks
     def test_private_tor_no_control_port(self, ftb):
-        m = Mock()
-        from txtorcon import endpoints
-        endpoints.launch_tor = m
-        yield TCPHiddenServiceEndpoint.private_tor(Mock(), 80)
-        self.assertTrue(m.called)
+        with patch('txtorcon.endpoints._global_tor_config'):
+            with patch('txtorcon.controller.launch') as launch:
+                yield TCPHiddenServiceEndpoint.private_tor(self.reactor, 80)
+                self.assertTrue(len(launch.mock_calls) > 1)
 
     @defer.inlineCallbacks
     def test_system_tor(self, ftb):
@@ -153,7 +166,7 @@ class EndpointTests(unittest.TestCase):
                 self.config.bootstrap()
                 return defer.succeed(Tor(Mock(), self.protocol, _tor_config=self.config))
             return bam
-        with patch('txtorcon.endpoints.launch_tor') as launch_mock:
+        with patch('txtorcon.controller.launch') as launch_mock:
             with patch('txtorcon.controller.connect', new_callable=boom):
                 client = clientFromString(
                     self.reactor,
@@ -161,7 +174,11 @@ class EndpointTests(unittest.TestCase):
                 )
                 ep = yield TCPHiddenServiceEndpoint.system_tor(self.reactor,
                                                                client, 80)
-                port = yield ep.listen(NoOpProtocolFactory())
+                port_d = ep.listen(NoOpProtocolFactory())
+                self.protocol.commands[0][1].callback("ServiceID=service\nPrivateKey=blob")
+                self.protocol.events['HS_DESC']('UPLOAD service x x x x')
+                self.protocol.events['HS_DESC']('UPLOADED service x x x x')
+                port = yield port_d
                 toa = port.getHost()
                 self.assertTrue(hasattr(toa, 'onion_uri'))
                 self.assertTrue(hasattr(toa, 'onion_port'))
@@ -174,6 +191,11 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_basic(self, ftb):
+        self.protocol.answers = [
+            'config/names=',
+            {'onions/detached': ''},
+            {'onions/current': ''},
+        ]
         listen = RuntimeError("listen")
         connect = RuntimeError("connect")
         reactor = proto_helpers.RaisingMemoryReactor(listen, connect)
@@ -181,6 +203,7 @@ class EndpointTests(unittest.TestCase):
 
         ep = TCPHiddenServiceEndpoint(reactor, self.config, 123)
         self.config.bootstrap()
+        assert self.config.post_bootstrap.called
         yield self.config.post_bootstrap
         self.assertTrue(IProgressProvider.providedBy(ep))
 
@@ -206,12 +229,28 @@ class EndpointTests(unittest.TestCase):
         ep._tor_progress_update(*args)
         self.assertTrue(ding.called_with(*args))
 
+    def test_progress_updates_error(self, ftb):
+        config = TorConfig()
+        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123)
+
+        self.assertTrue(IProgressProvider.providedBy(ep))
+        prog = IProgressProvider(ep)
+
+        def boom(*args, **kw):
+            raise RuntimeError("the bad stuff")
+        prog.add_progress_listener(boom)
+        args = (50, "blarg", "Doing that thing we talked about.")
+        # kind-of cheating, test-wise?
+        ep._tor_progress_update(*args)
+        # if we ignore the progress-listener error: success
+
     def test_progress_updates_private_tor(self, ftb):
-        with patch('txtorcon.endpoints.launch_tor') as tor:
-            ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
-            self.assertEqual(len(tor.mock_calls), 1)
-            tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
-            return ep
+        with patch('txtorcon.controller.launch') as tor:
+            with patch('txtorcon.endpoints._global_tor_config'):
+                ep = TCPHiddenServiceEndpoint.private_tor(self.reactor, 1234)
+                self.assertTrue(len(tor.mock_calls) > 1)
+                tor.mock_calls[0][2]['progress_updates'](40, 'FOO', 'foo to the bar')
+                return ep
 
     def test_progress_updates_system_tor(self, ftb):
         control_ep = Mock()
@@ -222,7 +261,7 @@ class EndpointTests(unittest.TestCase):
         return ep
 
     def test_progress_updates_global_tor(self, ftb):
-        with patch('txtorcon.endpoints.get_global_tor') as tor:
+        with patch('txtorcon.endpoints.get_global_tor_instance') as tor:
             ep = TCPHiddenServiceEndpoint.global_tor(self.reactor, 1234)
             tor.call_args[1]['progress_updates'](40, 'FOO', 'foo to the bar')
             return ep
@@ -251,26 +290,75 @@ class EndpointTests(unittest.TestCase):
         @defer.inlineCallbacks
         def more_listen(arg):
             yield arg.stopListening()
-            d1 = ep.listen(NoOpProtocolFactory())
+            ep.listen(NoOpProtocolFactory())
 
-            def foo(arg):
-                return arg
-            d1.addBoth(foo)
             defer.returnValue(arg)
             return
         d0.addBoth(more_listen)
-        self.config.bootstrap()
+        self.protocol.commands[0][1].callback(
+            'ServiceID=blarglyfoo\nPrivateKey=bigbadkeyblob'
+        )
+        self.protocol.events['HS_DESC'](
+            'UPLOAD blarglyfoo x x x x'
+        )
+        self.protocol.events['HS_DESC'](
+            'UPLOADED blarglyfoo x x x x'
+        )
 
-        def check(arg):
+        def check(port):
+            self.assertEqual('blarglyfoo.onion', port.getHost().onion_uri)
             self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
-            self.assertEqual(len(self.config.HiddenServices), 1)
+            self.assertEqual(len(self.config.EphemeralOnionServices), 1)
         d0.addCallback(check).addErrback(self.fail)
         return d0
 
-    def test_already_bootstrapped(self, ftb):
+    def test_multiple_disk(self, ftb):
+        tmp = self.mktemp()
+        os.mkdir(tmp)
+        with open(os.path.join(tmp, 'hostname'), 'w') as f:
+            f.write('blarglyfoo.onion')
+        with open(os.path.join(tmp, 'private_key'), 'w') as f:
+            f.write('some hex or something')
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, hidden_service_dir=tmp)
+        d0 = ep.listen(NoOpProtocolFactory())
+
+        @defer.inlineCallbacks
+        def more_listen(arg):
+            yield arg.stopListening()
+            ep.listen(NoOpProtocolFactory())
+
+            defer.returnValue(arg)
+            return
+        d0.addBoth(more_listen)
+        if False:
+            self.protocol.events['HS_DESC'](
+                'UPLOAD blarglyfoo x x x x'
+            )
+            self.protocol.events['HS_DESC'](
+                'UPLOADED blarglyfoo x x x x'
+            )
+
+        def check(port):
+            self.assertEqual('blarglyfoo.onion', port.getHost().onion_uri)
+            self.assertEqual('some hex or something', port.getHost().onion_key)
+            self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
+            self.assertEqual(len(self.config.HiddenServices), 1)
+            self.assertIs(self.config.HiddenServices[0], port.onion_service)
+        d0.addCallback(check).addErrback(self.fail)
+        return d0
+
+    # XXX what is this even supposed to test?
+    def _test_already_bootstrapped(self, ftb):
         self.config.bootstrap()
         ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123)
         d = ep.listen(NoOpProtocolFactory())
+        self.protocol.commands[0][1].callback("ServiceID=gobbledegook\nPrivateKey=seekrit")
+        self.protocol.events['HS_DESC'](
+            "UPLOAD gobbledegook basic somedirauth REASON=testing"
+        )
+        self.protocol.events['HS_DESC'](
+            "UPLOADED gobbledegook basic somedirauth REASON=testing"
+        )
         return d
 
     @defer.inlineCallbacks
@@ -280,16 +368,15 @@ class EndpointTests(unittest.TestCase):
             with open(os.path.join(d, 'hostname'), 'w') as f:
                 f.write('public')
 
-            config = TorConfig(self.protocol)
-            ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, d)
+            ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, d)
 
             # make sure listen() correctly configures our hidden-serivce
             # with the explicit directory we passed in above
             yield ep.listen(NoOpProtocolFactory())
 
-            self.assertEqual(1, len(config.HiddenServices))
-            self.assertEqual(config.HiddenServices[0].dir, d)
-            self.assertEqual(config.HiddenServices[0].hostname, 'public')
+            self.assertEqual(1, len(self.config.HiddenServices))
+            self.assertEqual(self.config.HiddenServices[0].dir, d)
+            self.assertEqual(self.config.HiddenServices[0].hostname, 'public')
 
     def test_failure(self, ftb):
         self.reactor.failures = 1
@@ -312,7 +399,7 @@ class EndpointTests(unittest.TestCase):
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, prog: defer.succeed(config)
+            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
         )
         ep = serverFromString(
             self.reactor,
@@ -321,6 +408,13 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(ep.public_port, 88)
         self.assertEqual(ep.local_port, 1234)
         self.assertEqual(ep.hidden_service_dir, '/foo/bar')
+
+    def test_parse_via_plugin_key_and_dir(self, ftb):
+        with self.assertRaises(ValueError):
+            serverFromString(
+                self.reactor,
+                'onion:88:localPort=1234:hiddenServiceDir=/foo/bar:privateKey=blarg'
+            )
 
     def test_parse_user_path(self, ftb):
         # this makes sure we expand users and symlinks in
@@ -334,7 +428,7 @@ class EndpointTests(unittest.TestCase):
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, prog: defer.succeed(config)
+            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
         )
         ep = serverFromString(
             self.reactor,
@@ -360,7 +454,7 @@ class EndpointTests(unittest.TestCase):
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, prog: defer.succeed(config)
+            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
         )
 
         orig = os.path.realpath('.')
@@ -384,6 +478,66 @@ class EndpointTests(unittest.TestCase):
         finally:
             os.chdir(orig)
 
+    def test_illegal_arg_ephemeral_auth(self, ftb):
+        # XXX I think Tor does actually support this now?
+        reactor = Mock()
+        config = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            TCPHiddenServiceEndpoint(
+                reactor, config, 80,
+                stealth_auth=['alice', 'bob'],
+                ephemeral=True,
+            )
+        self.assertIn(
+            "onion services don't support stealth_auth",
+            str(ctx.exception),
+        )
+
+    def test_illegal_arg_ephemeral_hsdir(self, ftb):
+        reactor = Mock()
+        config = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            TCPHiddenServiceEndpoint(
+                reactor, config, 80,
+                ephemeral=True,
+                hidden_service_dir='/tmp/foo',
+            )
+        self.assertIn(
+            "Specifying 'hidden_service_dir' is incompatible",
+            str(ctx.exception),
+        )
+
+    def test_illegal_arg_disk_privkey(self, ftb):
+        reactor = Mock()
+        config = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            TCPHiddenServiceEndpoint(
+                reactor, config, 80,
+                ephemeral=False,
+                private_key=b'something',
+            )
+        self.assertIn(
+            "only understood for ephemeral services",
+            str(ctx.exception),
+        )
+
+    @defer.inlineCallbacks
+    def test_illegal_arg_torconfig(self, ftb):
+
+        class Foo(object):
+            pass
+        config = Foo()
+
+        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123)
+        factory = Mock()
+        with self.assertRaises(ValueError) as ctx:
+            yield ep.listen(factory)
+
+        self.assertIn(
+            "Expected a TorConfig instance but",
+            str(ctx.exception)
+        )
+
     @defer.inlineCallbacks
     def test_stealth_auth(self, ftb):
         '''
@@ -391,8 +545,7 @@ class EndpointTests(unittest.TestCase):
         lines if we had authentication specified in the first place.
         '''
 
-        config = TorConfig(self.protocol)
-        ep = TCPHiddenServiceEndpoint(self.reactor, config, 123, '/dev/null',
+        ep = TCPHiddenServiceEndpoint(self.reactor, self.config, 123, '/dev/null',
                                       stealth_auth=['alice', 'bob'])
 
         # make sure listen() correctly configures our hidden-serivce
@@ -400,19 +553,16 @@ class EndpointTests(unittest.TestCase):
         d = ep.listen(NoOpProtocolFactory())
 
         def foo(fail):
-            print("ERROR", fail)
+            return fail
         d.addErrback(foo)
         yield d  # returns 'port'
-        self.assertEqual(1, len(config.HiddenServices))
-        self.assertEqual(config.HiddenServices[0].dir, '/dev/null')
+        self.assertEqual(1, len(self.config.HiddenServices))
+        self.assertEqual(self.config.HiddenServices[0].dir, '/dev/null')
         self.assertEqual(
-            config.HiddenServices[0].authorize_client[0],
+            self.config.HiddenServices[0].authorize_client[0],
             'stealth alice,bob'
         )
         self.assertEqual(None, ep.onion_uri)
-        # XXX cheating; private API
-        config.HiddenServices[0].hostname = 'oh my'
-        self.assertEqual('oh my', ep.onion_uri)
 
     @defer.inlineCallbacks
     def test_factory(self, ftb):
@@ -435,7 +585,9 @@ class EndpointLaunchTests(unittest.TestCase):
         self.protocol = FakeControlProtocol([])
 
     def test_onion_address(self):
-        addr = TorOnionAddress("foo.onion", 80)
+        hs = Mock()
+        hs.hostname = "foo.onion"
+        addr = TorOnionAddress(80, hs)
         # just want to run these and assure they don't throw
         # exceptions.
         repr(addr)
@@ -1011,6 +1163,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         """
 
         reactor = Mock()
+        directlyProvides(reactor, IReactorCore)
         endpoint = TorClientEndpoint(
             'torproject.org', 0,
             socks_hostname='localhost',
@@ -1034,7 +1187,7 @@ class TestTorClientEndpoint(unittest.TestCase):
         Test the old API of passing socks_host, socks_port
         """
 
-        reactor = Mock()
+        reactor = FakeReactorTcp(self)
         endpoint = TorClientEndpoint(
             'torproject.org', 0,
             socks_endpoint=clientFromString(Mock(), "tcp:localhost:9050"),

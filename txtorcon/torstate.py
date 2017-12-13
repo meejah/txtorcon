@@ -411,7 +411,7 @@ class TorState(object):
         self.post_bootstrap.callback(self)
         self.post_boostrap = None
 
-    def undo_attacher(self):
+    def _undo_attacher(self):
         """
         Shouldn't Tor handle this by turning this back to 0 if the
         controller that twiddled it disconnects?
@@ -448,7 +448,7 @@ class TorState(object):
             self._attacher = None
 
         if self._attacher is None:
-            d = self.undo_attacher()
+            d = self._undo_attacher()
             if self._cleanup:
                 react.removeSystemEventTrigger(self._cleanup)
                 self._cleanup = None
@@ -457,7 +457,7 @@ class TorState(object):
             d = self.protocol.set_conf("__LeaveStreamsUnattached", "1")
             self._cleanup = react.addSystemEventTrigger(
                 'before', 'shutdown',
-                self.undo_attacher,
+                self._undo_attacher,
             )
         return d
 
@@ -532,12 +532,20 @@ class TorState(object):
         )
 
     def add_circuit_listener(self, icircuitlistener):
+        """
+        Adds a new instance of :class:`txtorcon.interface.ICircuitListener` which
+        will receive updates for all existing and new circuits.
+        """
         listen = ICircuitListener(icircuitlistener)
         for circ in self.circuits.values():
             circ.listen(listen)
         self.circuit_listeners.append(listen)
 
     def add_stream_listener(self, istreamlistener):
+        """
+        Adds a new instance of :class:`txtorcon.interface.IStreamListener` which
+        will receive updates for all existing and new streams.
+        """
         listen = IStreamListener(istreamlistener)
         for stream in self.streams.values():
             stream.listen(listen)
@@ -599,6 +607,7 @@ class TorState(object):
 
     DO_NOT_ATTACH = object()
 
+    # @defer.inlineCallbacks  (this method is async, be nice to mark it ...)
     def _maybe_attach(self, stream):
         """
         If we've got a custom stream-attachment instance (see
