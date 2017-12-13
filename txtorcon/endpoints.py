@@ -449,11 +449,6 @@ class TCPHiddenServiceEndpoint(object):
         if self.version is None:
             self.version = 2
 
-        if self.version == 3 and ephemeral:
-            raise ValueError(
-                "Tor doesn't yet support version=3 ephemeral services"
-            )
-
         '''for IProgressProvider to add_progress_listener'''
         self.progress_listeners = []
 

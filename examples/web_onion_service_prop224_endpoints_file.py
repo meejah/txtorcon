@@ -26,7 +26,7 @@ class Simple(resource.Resource):
     isLeaf = True
 
     def render_GET(self, request):
-        return "<html>Hello, world! I'm a prop224 Onion Service!</html>"
+        return b"<html>Hello, world! I'm a prop224 Onion Service!</html>"
 
 
 @defer.inlineCallbacks

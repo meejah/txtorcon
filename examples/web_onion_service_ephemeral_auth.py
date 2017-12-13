@@ -27,7 +27,7 @@ class Simple(resource.Resource):
     isLeaf = True
 
     def render_GET(self, request):
-        return "<html>Hello, world! I'm an authenticated hidden service!</html>"
+        return b"<html>Hello, world! I'm an authenticated hidden service!</html>"
 
 
 @defer.inlineCallbacks

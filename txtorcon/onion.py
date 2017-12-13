@@ -433,8 +433,7 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     # we have to keep this as a Deferred for now so that HS_DESC
     # listener gets added before we issue ADD_ONION
     assert version in (2, 3)
-    if version == 2:
-        uploaded_d = _await_descriptor_upload(config.tor_protocol, onion, progress)
+    uploaded_d = _await_descriptor_upload(config.tor_protocol, onion, progress)
 
     # we allow a key to be passed that *doestn'* start with
     # "RSA1024:" because having to escape the ":" for endpoint
@@ -444,22 +443,29 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     # force people to escape them?
     if onion.private_key:
         if onion.private_key is not DISCARD:
-            if not onion.private_key.startswith("RSA1024:"):
-                onion._private_key = "RSA1024:" + onion.private_key
+            if version == 2:
+                if not onion.private_key.startswith("RSA1024:"):
+                    onion._private_key = "RSA1024:" + onion.private_key
+            elif version == 3:
+                if not onion.private_key.startswith("ED25519-V3:"):
+                    onion._private_key = "ED25519-V3:" + onion.private_key
 
     # okay, we're set up to listen, and now we issue the ADD_ONION
     # command. this will set ._hostname and ._private_key properly
     keystring = 'NEW:BEST'
     if onion.private_key not in (None, DISCARD):
         keystring = onion.private_key
+    elif version == 3:
+        keystring = 'NEW:ED25519-V3'
+    if version == 3:
+        if 'V3' not in keystring:
+            raise ValueError(
+                "version=3 but private key isn't 'ED25519-V3'"
+            )
+
     cmd = 'ADD_ONION {}'.format(keystring)
     for port in onion._ports:
         cmd += ' Port={},{}'.format(*port.split(' ', 1))
-    if version != 2:
-        # cmd += ' Version={}'.format(version)
-        raise ValueError(
-            "Can't make version=3 ephemeral services"
-        )
     flags = []
     if onion._detach:
         flags.append('Detach')
@@ -504,11 +510,8 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
                 name, blob = line[11:].split(':', 1)
                 onion._add_client(name, blob)
 
-    if version == 2:
-        log.msg("{}: waiting for descriptor uploads.".format(onion.hostname))
-        yield uploaded_d
-#    else:
-#        log.msg("version {} service; can't determine upload status".format(version))
+    log.msg("{}: waiting for descriptor uploads.".format(onion.hostname))
+    yield uploaded_d
 
 
 class _AuthCommon(object):
@@ -898,7 +901,7 @@ class AuthenticatedHiddenService(object):
         try:
             return self._clients[name]
         except KeyError:
-            raise RuntimeError("No such client '{}'".format(name))
+            raise KeyError("No such client '{}'".format(name))
 
     def add_client(self, name, hostname, ports, token):
         if self._clients is None:
