@@ -30,6 +30,7 @@ from txtorcon import TorClientEndpoint
 from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
 from txtorcon.onion import IAuthenticatedOnionClients
+from txtorcon.onion import IOnionService
 from txtorcon import AuthStealth
 from txtorcon import AuthBasic
 from txtorcon.util import NoOpProtocolFactory
@@ -714,22 +715,6 @@ class EndpointTests(unittest.TestCase):
             str(ctx.exception),
         )
 
-    def test_no_version_3_ephemeral(self, ftb):
-        # Tor should support this at some point soon though!
-        reactor = Mock()
-        config = Mock()
-        with self.assertRaises(ValueError) as ctx:
-            TCPHiddenServiceEndpoint(
-                reactor, config, 80,
-                ephemeral=True,
-                version=3,
-                private_key=b'something',
-            )
-        self.assertIn(
-            "Tor doesn't yet support version=3 ephemeral services",
-            str(ctx.exception),
-        )
-
     @defer.inlineCallbacks
     def test_illegal_arg_torconfig(self, ftb):
 
@@ -762,10 +747,6 @@ class EndpointTests(unittest.TestCase):
         # with the explicit directory we passed in above
         d = ep.listen(NoOpProtocolFactory())
 
-        def foo(fail):
-            return fail
-        d.addErrback(foo)
-
         self.assertEqual(1, len(self.protocol.commands))
         cmd, cmd_d = self.protocol.commands[0]
         self.assertTrue(
@@ -796,6 +777,41 @@ class EndpointTests(unittest.TestCase):
             "fdsa",
             service.get_client("alice").auth_token,
         )
+
+    @defer.inlineCallbacks
+    def test_basic_ephemeral_v3(self, ftb):
+        '''
+        '''
+        ep = TCPHiddenServiceEndpoint(
+            self.reactor, self.config, 123,
+            ephemeral=True,
+            version=3,
+            private_key='f' * 32,
+        )
+
+        # make sure listen() correctly configures our hidden-serivce
+        # with the explicit directory we passed in above
+        d = ep.listen(NoOpProtocolFactory())
+
+        self.assertEqual(1, len(self.protocol.commands))
+        cmd, cmd_d = self.protocol.commands[0]
+        print(cmd)
+        self.assertTrue(
+            cmd.startswith(u"ADD_ONION ED25519-V3:ffffffffffffffffffffffffffffffff ")
+        )
+        cmd_d.callback("ServiceID=service\nPrivateKey=deadbeef")
+
+        self.protocol.events['HS_DESC'](
+            "UPLOAD service basic somedirauth REASON=testing"
+        )
+        self.protocol.events['HS_DESC'](
+            "UPLOADED service basic somedirauth REASON=testing"
+        )
+
+        yield d  # returns 'port'
+        self.assertEqual(1, len(self.config.EphemeralOnionServices))
+        service = self.config.EphemeralOnionServices[0]
+        self.assertTrue(IOnionService.providedBy(service))
 
     @defer.inlineCallbacks
     def test_stealth_auth(self, ftb):

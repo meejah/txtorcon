@@ -628,23 +628,6 @@ class OnionServiceTest(unittest.TestCase):
             str(ctx.exception),
         )
 
-    @defer.inlineCallbacks
-    def test_ephemeral_version_3(self):
-        protocol = FakeControlProtocol([])
-        config = TorConfig(protocol)
-
-        with self.assertRaises(ValueError) as ctx:
-            yield EphemeralAuthenticatedOnionService.create(
-                config,
-                ports=["80 127.0.0.1:80"],
-                auth=AuthBasic(["carol"]),
-                version=3,
-            )
-        self.assertIn(
-            "Can't make version=3",
-            str(ctx.exception),
-        )
-
 
 class EphemeralHiddenServiceTest(unittest.TestCase):
     def test_defaults(self):
