@@ -106,6 +106,55 @@ class OnionServiceTest(unittest.TestCase):
         self.assertEqual(hs.dir, hsdir1)
 
     @defer.inlineCallbacks
+    def test_dir_ioerror(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+        with open(join(hsdir, "hostname"), "w") as f:
+            f.write("onionfakehostname.onion")
+
+        hs_d = FilesystemOnionService.create(
+            config,
+            hsdir=hsdir,
+            ports=["80 127.0.0.1:4321"],
+        )
+
+        # arrange HS_DESC callbacks so we get the hs instance back
+        cb = protocol.events['HS_DESC']
+        cb('UPLOAD onionfakehostname UNKNOWN hsdir0')
+        cb('UPLOADED onionfakehostname UNKNOWN hsdir0')
+
+        hs = yield hs_d
+        print(hs)
+        self.assertIs(None, hs.private_key)
+
+    @defer.inlineCallbacks
+    def test_dir_ioerror_v3(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+        with open(join(hsdir, "hostname"), "w") as f:
+            f.write("onionfakehostname.onion")
+
+        hs_d = FilesystemOnionService.create(
+            config,
+            hsdir=hsdir,
+            ports=["80 127.0.0.1:4321"],
+            version=3,
+        )
+
+        # arrange HS_DESC callbacks so we get the hs instance back
+        cb = protocol.events['HS_DESC']
+        cb('UPLOAD onionfakehostname UNKNOWN hsdir0')
+        cb('UPLOADED onionfakehostname UNKNOWN hsdir0')
+
+        hs = yield hs_d
+        print(hs)
+        self.assertIs(None, hs.private_key)
+
+    @defer.inlineCallbacks
     def test_unknown_version(self):
         protocol = FakeControlProtocol([])
         protocol.version = "0.1.1.1"

@@ -350,7 +350,7 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
         args = evt.split()
         subtype = args[0]
         if subtype == 'UPLOAD':
-            if args[1] == onion.hostname[:-6]:
+            if onion.hostname and args[1] == onion.hostname[:-6]:
                 attempted_uploads.add(args[3])
                 if progress:
                     progress(
@@ -380,7 +380,7 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
                     uploaded.callback(onion)
 
         elif subtype == 'FAILED':
-            if args[1] == onion.hostname[:-6]:
+            if onion.hostname and args[1] == onion.hostname[:-6]:
                 failed_uploads.add(args[3])
                 if progress:
                     progress(
