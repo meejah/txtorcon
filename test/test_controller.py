@@ -320,6 +320,22 @@ class LaunchTorTests(unittest.TestCase):
 
     @patch('txtorcon.controller.socks')
     @defer.inlineCallbacks
+    def test_dns_resolve_default_socksport(self, fake_socks):
+        answer = object()
+        cfg = Mock()
+        from txtorcon.testutil import FakeControlProtocol
+        proto = FakeControlProtocol([
+            {"SocksPort": "DEFAULT"},
+            "9050",
+        ])
+        proto.answers
+        tor = Tor(Mock(), proto, _tor_config=cfg)
+        fake_socks.resolve = Mock(return_value=defer.succeed(answer))
+        ans = yield tor.dns_resolve("meejah.ca")
+        self.assertEqual(ans, answer)
+
+    @patch('txtorcon.controller.socks')
+    @defer.inlineCallbacks
     def test_dns_resolve_existing_socks(self, fake_socks):
         answer = object()
         proto = Mock()
