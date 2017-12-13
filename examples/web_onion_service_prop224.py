@@ -36,9 +36,10 @@ def main(reactor):
         endpoints.TCP4ClientEndpoint(reactor, "localhost", 9251),
     )
     print("{}".format(tor))
-    hs = yield tor.create_v3_onion_service(
-        "./prop224_hs8",
-        ["80 localhost:8787"],
+    hs = yield tor.create_filesystem_onion_service(
+        [(80, 8787)],
+        "./prop224_hs",
+        version=3,
     )
     print("{}".format(hs))
     print(dir(hs))

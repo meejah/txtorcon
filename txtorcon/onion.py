@@ -175,14 +175,11 @@ class FilesystemOnionService(object):
                 )
                 uploaded[0] = defer.succeed(None)
         else:
-            if version == 3:
-                if progress:
-                    progress(
-                        106, "wait_descriptor",
-                        "Version 3 onion services don't tell us when descriptors are uploaded",
-                    )
-            else:
-                uploaded[0] = _await_descriptor_upload(config.tor_protocol, fhs, progress)
+            # XXX actually, there's some versions of Tor when v3
+            # filesystem services could be added but they didn't send
+            # HS_DESC updates -- did any of these actually get
+            # released?!
+            uploaded[0] = _await_descriptor_upload(config.tor_protocol, fhs, progress)
 
         yield config.save()
         yield uploaded[0]
