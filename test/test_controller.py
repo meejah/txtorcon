@@ -1369,6 +1369,9 @@ class FilesystemOnionFactoryTests(unittest.TestCase):
                 proto.version = "0.3.2.1"
                 proto.queue_command = Mock(return_value="OK")
                 d = self.tor.create_filesystem_onion_service([80], self.hsdir)
+                f = proto.add_event_listener.mock_calls[0][1][1]
+                f("UPLOAD deadbeef x dirauth0")
+                f("UPLOADED x x dirauth0")
                 service = yield d
         self.assertEqual("deadbeef.onion", service.hostname)
         self.assertEqual(b"BlobbyMcBlobberson", service.private_key)
