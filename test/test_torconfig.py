@@ -1006,7 +1006,7 @@ DnkEGTrOUFZ7CbDp+SM18BjmFXI2n0bFJEznXFhH+Awz
 
         # create a client-auth'd onion service, but only "add" one of
         # its newly created clients
-        hs = AuthenticatedHiddenService(conf, fakedir, ['1 127.0.0.1:12345'], clients=['alice', 'bob'])
+        hs = AuthenticatedHiddenService(conf, fakedir, ['1 127.0.0.1:12345'], clients=['alice', 'bob'], group_readable=True)
         hs.add_client(
             name="carol",
             hostname="hostname_carol",

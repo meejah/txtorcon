@@ -923,6 +923,7 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
         client = self.hs.get_client("foo")
         with self.assertRaises(KeyError) as ctx:
             client.private_key
+        client.group_readable
 
     def test_get_client_private_key_error(self):
         with open(join(self.thedir, "hostname"), "w") as f:
