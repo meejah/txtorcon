@@ -795,7 +795,6 @@ class EndpointTests(unittest.TestCase):
 
         self.assertEqual(1, len(self.protocol.commands))
         cmd, cmd_d = self.protocol.commands[0]
-        print(cmd)
         self.assertTrue(
             cmd.startswith(u"ADD_ONION ED25519-V3:ffffffffffffffffffffffffffffffff ")
         )

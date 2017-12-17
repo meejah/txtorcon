@@ -607,11 +607,8 @@ class StateTests(unittest.TestCase):
         addr.host = '10.0.0.1'
         addr.port = 1011
         ep._target_endpoint._get_address = Mock(return_value=defer.succeed(addr))
-        print("EP", ep)
         attacher = yield _get_circuit_attacher(reactor, self.state)
-        print("attacher", attacher)
         d = ep.connect('foo')
-        print("doin' it")
         stream = Mock()
         import ipaddress
         stream.source_addr = ipaddress.IPv4Address(u'10.0.0.1')

@@ -126,7 +126,6 @@ class OnionServiceTest(unittest.TestCase):
         cb('UPLOADED onionfakehostname UNKNOWN hsdir0')
 
         hs = yield hs_d
-        print(hs)
         self.assertIs(None, hs.private_key)
 
     @defer.inlineCallbacks
@@ -151,7 +150,6 @@ class OnionServiceTest(unittest.TestCase):
         cb('UPLOADED onionfakehostname UNKNOWN hsdir0')
 
         hs = yield hs_d
-        print(hs)
         self.assertIs(None, hs.private_key)
 
     @defer.inlineCallbacks
