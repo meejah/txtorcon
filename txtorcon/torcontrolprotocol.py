@@ -433,7 +433,11 @@ class TorControlProtocol(LineOnlyReceiver):
 
         d = self.queue_command('GETCONF {}'.format(key))
         d.addCallback(parse_keywords).addErrback(log.err)
-        d.addCallback(lambda kw: kw[key])  # extract key we asked for initially
+        # d.addCallback(lambda kw: kw[key])  # extract key we asked for initially
+        # ...but, the key can have a different string-name because Tor
+        # will return *it's* representation (e.g. can ask for
+        # SOCKSPORT but it will tell you SocksPort=9050)
+        d.addCallback(lambda kw: list(kw.values())[0])
         return d
 
     def get_conf_raw(self, *args):

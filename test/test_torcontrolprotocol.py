@@ -615,6 +615,12 @@ OK'''.format(unexisting_file))
         self.send(b"250 ORPort=0")
         return d
 
+    def test_getconf_one(self):
+        d = self.protocol.get_conf_one("SOCKSPORT")
+        d.addCallback(CallbackChecker('9050'))
+        self.send(b"250 SocksPort=9050")
+        return d
+
     def response_ok(self, v):
         self.assertEqual(v, '')
 
