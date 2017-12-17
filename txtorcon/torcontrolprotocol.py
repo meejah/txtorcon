@@ -675,11 +675,9 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Errback if authentication fails.
         """
-        # XXX FIXME if post_bootstrap is already callback()'d, this
-        # goes into the aether; should be logged in that case...
-        # print("authentication failed", fail)
-        if self.post_bootstrap.called:
-            return fail
+        # it should be impossible for post_bootstrap to be
+        # already-called/failed at this point; _auth_failed only stems
+        # from _do_authentication failing
         self.post_bootstrap.errback(fail)
         return None
 
@@ -780,7 +778,7 @@ class TorControlProtocol(LineOnlyReceiver):
                 d = self.queue_command(cmd)
                 d.addCallback(self._safecookie_authchallenge)
                 d.addCallback(self._bootstrap)
-                d.addErrback(self._auth_failed)
+                #d.addErrback(self._auth_failed)
                 return d
 
             elif 'COOKIE' in methods:
@@ -788,26 +786,28 @@ class TorControlProtocol(LineOnlyReceiver):
                              cookiefile, len(self._cookie_data), "bytes")
                 d = self.authenticate(self._cookie_data)
                 d.addCallback(self._bootstrap)
-                d.addErrback(self._auth_failed)
-                return
+                #d.addErrback(self._auth_failed)
+                return d
 
         if self.password_function and 'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
             d.addCallback(maybe_coroutine)
             d.addCallback(self._do_password_authentication)
-            d.addErrback(self._auth_failed)
-            return
+            #d.addErrback(self._auth_failed)
+            return d
 
         if 'NULL' in methods:
             d = self.queue_command('AUTHENTICATE')
             d.addCallback(self._bootstrap)
-            d.addErrback(self._auth_failed)
-            return
+            #d.addErrback(self._auth_failed)
+            return d
 
-        raise RuntimeError(
-            "The Tor I connected to doesn't support SAFECOOKIE nor COOKIE"
-            " authentication (or we can't read the cookie files) and I have"
-            " no password_function specified."
+        return defer.fail(
+            RuntimeError(
+                "The Tor I connected to doesn't support SAFECOOKIE nor COOKIE"
+                " authentication (or we can't read the cookie files) and I have"
+                " no password_function specified."
+            )
         )
 
     def _do_password_authentication(self, passwd):
