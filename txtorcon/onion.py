@@ -438,7 +438,7 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     # maybe just a magic-character that's different from ":", or
     # force people to escape them?
     if onion.private_key:
-        if onion.private_key is not DISCARD:
+        if onion.private_key is not DISCARD and not ':' in onion.private_key:
             if version == 2:
                 if not onion.private_key.startswith("RSA1024:"):
                     onion._private_key = "RSA1024:" + onion.private_key

@@ -190,6 +190,41 @@ class OnionServiceTest(unittest.TestCase):
         self.assertEqual(u"ADD_ONION RSA1024:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Port=80,127.0.0.1:80 Flags=Detach", cmd)
         d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
 
+    def test_ephemeral_v3_no_key(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        # returns a Deferred we're ignoring
+        EphemeralOnionService.create(
+            config,
+            ports=["80 127.0.0.1:80"],
+            detach=True,
+            version=3,
+        )
+
+        cmd, d = protocol.commands[0]
+        self.assertEqual(u"ADD_ONION NEW:ED25519-V3 Port=80,127.0.0.1:80 Flags=Detach", cmd)
+        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+
+    @defer.inlineCallbacks
+    def test_ephemeral_v3_wrong_key_type(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        privkey = 'RSA1024:{}'.format('a' * 32)
+
+        with self.assertRaises(ValueError) as ctx:
+            yield EphemeralOnionService.create(
+                config,
+                ports=["80 127.0.0.1:80"],
+                detach=True,
+                version=3,
+                private_key=privkey,
+            )
+        self.assertIn(
+            "but private key isn't",
+            str(ctx.exception),
+        )
+
     @defer.inlineCallbacks
     def test_ephemeral_ports_not_a_list(self):
         protocol = FakeControlProtocol([])
