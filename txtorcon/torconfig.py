@@ -439,6 +439,8 @@ def _is_valid_keyblob(key_blob_or_type):
 # @deprecated(_Version("txtorcon", 17, 0, 0))
 class EphemeralHiddenService(object):
     '''
+    Deprecated as of 17.0.0. Please instead use :class:`txtorcon.EphemeralOnionService`
+
     This uses the ephemeral hidden-service APIs (in comparison to
     torrc or SETCONF). This means your hidden-service private-key is
     never in a file. It also means that when the process exits, that

@@ -656,7 +656,14 @@ class EphemeralOnionService(object):
         provided config and ensuring at least one of its descriptors
         is uploaded.
 
-        See also :meth:`txtorcon.create_onion_service` (which
+        :param config: a :class:`txtorcon.TorConfig` instance
+
+        :param ports: a list of ports to make available; any of these
+            can be 2-tuples of (remote, local) if you want to expose a
+            particular port locally (otherwise, an available one is
+            chosen)
+
+        See also :meth:`txtorcon.Tor.create_onion_service` (which
         ultimately calls this).
         """
         version = 2 if version is None else version
@@ -700,9 +707,8 @@ class EphemeralOnionService(object):
         self._version = version
         self._detach = detach
 
-    # XXX for backwards-compat we could put .add_to_tor back in :/
-    # ...and then deprecate it.
-    # (yes, that should go back in ...)
+    # not putting an "add_to_tor" method here; that class is now
+    # deprecated and you add one of these by using .create()
 
     @defer.inlineCallbacks
     def remove(self):
