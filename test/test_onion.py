@@ -11,6 +11,7 @@ from txtorcon import TorConfig
 from txtorcon import torconfig
 
 from txtorcon.onion import FilesystemOnionService
+from txtorcon.onion import AuthenticatedHiddenService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import EphemeralAuthenticatedOnionService
 from txtorcon.onion import AuthStealth, AuthBasic, DISCARD
@@ -872,3 +873,88 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("seekrit", eph.private_key)
         self.assertEqual("42.onion", eph.hostname)
         self.assertTrue(d.called)
+
+
+class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
+
+    def setUp(self):
+        self.thedir = self.mktemp()
+        os.mkdir(self.thedir)
+        protocol = FakeControlProtocol([])
+        self.config = TorConfig(protocol)
+        self.hs = AuthenticatedHiddenService(self.config, self.thedir, ["80 127.0.0.1:1234"])
+
+    def test_unknown_auth_type(self):
+        with self.assertRaises(ValueError) as ctx:
+            AuthenticatedHiddenService(self.config, self.thedir, ["80 127.0.0.1:1234"], auth_type='bogus')
+        self.assertIn(
+            "Unknown auth_type",
+            str(ctx.exception),
+        )
+
+    def test_bad_client_name(self):
+        with self.assertRaises(ValueError) as ctx:
+            AuthenticatedHiddenService(self.config, self.thedir, ["80 127.0.0.1:1234"], clients=["bob can't have spaces"])
+        self.assertIn(
+            "can't have spaces",
+            str(ctx.exception),
+        )
+
+    def test_get_client_missing(self):
+        with open(join(self.thedir, "hostname"), "w") as f:
+            f.write(
+                "foo.onion fooauthtoken # client: foo\n"
+                "bar.onion barauthtoken # client: bar\n"
+            )
+        with self.assertRaises(KeyError) as ctx:
+            self.hs.get_client("quux")
+        self.assertIn(
+            "No such client",
+            str(ctx.exception),
+        )
+
+    def test_get_client(self):
+        with open(join(self.thedir, "hostname"), "w") as f:
+            f.write(
+                "foo.onion fooauthtoken # client: foo\n"
+                "bar.onion barauthtoken # client: bar\n"
+            )
+
+        client = self.hs.get_client("foo")
+        with self.assertRaises(KeyError) as ctx:
+            client.private_key
+
+    def test_get_client_private_key_error(self):
+        with open(join(self.thedir, "hostname"), "w") as f:
+            f.write(
+                "foo.onion fooauthtoken # client: foo\n"
+                "bar.onion barauthtoken # client: bar\n"
+            )
+        with open(join(self.thedir, "client_keys"), "w") as f:
+            f.write("foo blargly baz baz\n")
+
+        client = self.hs.get_client("foo")
+        with self.assertRaises(RuntimeError) as ctx:
+            client.private_key
+        self.assertIn(
+            "Parse error at",
+            str(ctx.exception),
+        )
+
+    def test_get_client_expected_not_found(self):
+        self.hs = AuthenticatedHiddenService(
+            self.config, self.thedir, ["80 127.0.0.1:1234"],
+            clients=["foo", "bar", "baz"],
+        )
+        with open(join(self.thedir, "hostname"), "w") as f:
+            f.write(
+                "foo.onion fooauthtoken # client: foo\n"
+                "bar.onion barauthtoken # client: bar\n"
+            )
+
+        with self.assertRaises(RuntimeError) as ctx:
+            client = self.hs.get_client("baz")
+        self.assertIn(
+            "Didn't find expected client",
+            str(ctx.exception),
+        )
