@@ -301,10 +301,6 @@ class FilesystemOnionService(object):
     # etcetc, basically the old "HiddenService" object
 
     def config_attributes(self):
-        # XXX probably have to switch to "get_config_commands" or similar?
-        # -> how to do ADD_ONION stuff, anyway?
-        # -> hmm, could do helper methods, NOT member func (yes! <-- this one)
-
         rtn = [('HiddenServiceDir', str(self._dir))]
         if self._config._supports['HiddenServiceDirGroupReadable'] \
            and self.group_readable:
@@ -318,22 +314,22 @@ class FilesystemOnionService(object):
             # rtn.append(('HiddenServiceAuthorizeClient', str(self.authorize_client)))
         return rtn
 
-    def config_commands(self):
-        pass  # XXX FIXME
-
-
-# XXX: probably better/nicer to make "EphemeralOnionService" object
-# "just" a data-container; it needs to list-wrapping voodoo etc like
-# the others.
-#   --> so only way to "add" it to a Tor is via a factory-method (like
-#       from_ports() below, but with a better name)
-#   --> so possibly only from create_onion_service()
-#   --> ...which itself shold probably be "just" a dispatcher to "more
-#       specific" factory-functions, like "create_ephemeral_onion"
-#       "create_detached_onion" "create_permanent_onion??" etc...?
 
 @defer.inlineCallbacks
 def _await_descriptor_upload(tor_protocol, onion, progress):
+    """
+    Internal helper.
+
+    :param tor_protocol: ITorControlProtocol instance
+
+    :param onion: IOnionService instance
+
+    :param progress: a progess callback, or None
+
+    :returns: a Deferred that fires once we've detected at least one
+        descriptor upload for the service (as detected by listening for
+        HS_DESC events)
+    """
     pct = 101.0
     attempted_uploads = set()
     confirmed_uploads = set()
@@ -395,6 +391,9 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
                     )
                     uploaded.errback(RuntimeError(msg))
 
+    # the first 'yield' should be the add_event_listener so that a
+    # caller can do "d = _await_descriptor_upload()", then add the
+    # service.
     yield tor_protocol.add_event_listener('HS_DESC', hs_desc)
     yield uploaded
     yield tor_protocol.remove_event_listener('HS_DESC', hs_desc)
