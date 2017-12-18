@@ -23,6 +23,7 @@ from txtorcon.util import version_at_least
 from txtorcon.util import default_control_port
 from txtorcon.util import _Listener, _ListenerCollection
 from txtorcon.util import create_tbb_web_headers
+from txtorcon.testutil import FakeControlProtocol
 
 
 class FakeState:
@@ -465,3 +466,36 @@ class TestListeners(unittest.TestCase):
         self.assertEqual(1, len(calls))
         self.assertEqual(calls[0][0], ('foo', 'bar'))
         self.assertEqual(calls[0][1], dict(quux='zing'))
+
+
+class TestFakeControlProtocol(unittest.TestCase):
+
+    def test_happens(self):
+        proto = FakeControlProtocol([])
+        events = []
+
+        def event_cb(*args, **kw):
+            events.append((args, kw))
+        proto.add_event_listener("something", event_cb)
+
+        proto.event_happened("something", "arg")
+
+        self.assertEqual(
+            [(("arg",), {})],
+            events
+        )
+
+    def test_happened_already(self):
+        proto = FakeControlProtocol([])
+        events = []
+
+        def event_cb(*args, **kw):
+            events.append((args, kw))
+
+        proto.event_happened("something", "arg")
+        proto.add_event_listener("something", event_cb)
+
+        self.assertEqual(
+            [(("arg",), {})],
+            events
+        )
