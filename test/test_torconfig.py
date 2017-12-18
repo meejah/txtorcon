@@ -1184,6 +1184,25 @@ DnkEGTrOUFZ7CbDp+SM18BjmFXI2n0bFJEznXFhH+Awz
         self.assertEqual(h2, conf.hiddenservices[2])
         self.assertTrue(conf.needs_save())
 
+    def test_hiddenservice_multiple_auth_lines(self):
+        fake0 = tempfile.mkdtemp()
+
+        with open(join(fake0, "hostname"), 'w') as f:
+            f.write('blarglyfoo.onion cookie # client: bob\n')
+
+        conf = TorConfig(FakeControlProtocol(['config/names=']))
+        with self.assertRaises(ValueError) as ctx:
+            conf._setup_hidden_services('''HiddenServiceDir={}
+HiddenServicePort=80 127.0.0.1:1234
+HiddenServiceVersion=2
+HiddenServiceAuthorizeClient=basic bob
+HiddenServiceAuthorizeClient=stealth alice,jane
+'''.format(fake0))
+        self.assertIn(
+            "Multiple HiddenServiceAuthorizeClient lines",
+            str(ctx.exception),
+        )
+
     def test_multiple_startup_services(self):
         fake0 = tempfile.mkdtemp()
         fake1 = tempfile.mkdtemp()
