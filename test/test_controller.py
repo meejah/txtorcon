@@ -28,7 +28,7 @@ from zope.interface import implementer, directlyProvides
 
 
 if not six.PY2:
-    from .py3_test_controller import ClientOnionServiceAuthenticationTests3
+    from .py3_test_controller import ClientOnionServiceAuthenticationTests3  # noqa: F401
 
 
 class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):

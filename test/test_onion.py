@@ -621,7 +621,6 @@ class OnionServiceTest(unittest.TestCase):
         d.callback('OK')
         yield remove_d
 
-
     @defer.inlineCallbacks
     def test_ephemeral_auth_basic_remove_fails(self):
         protocol = FakeControlProtocol([])
@@ -921,7 +920,7 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
             )
 
         client = self.hs.get_client("foo")
-        with self.assertRaises(KeyError) as ctx:
+        with self.assertRaises(KeyError):
             client.private_key
         client.group_readable
 
@@ -954,7 +953,7 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
             )
 
         with self.assertRaises(RuntimeError) as ctx:
-            client = self.hs.get_client("baz")
+            self.hs.get_client("baz")
         self.assertIn(
             "Didn't find expected client",
             str(ctx.exception),

@@ -778,7 +778,6 @@ class TorControlProtocol(LineOnlyReceiver):
                 d = self.queue_command(cmd)
                 d.addCallback(self._safecookie_authchallenge)
                 d.addCallback(self._bootstrap)
-                #d.addErrback(self._auth_failed)
                 return d
 
             elif 'COOKIE' in methods:
@@ -786,20 +785,17 @@ class TorControlProtocol(LineOnlyReceiver):
                              cookiefile, len(self._cookie_data), "bytes")
                 d = self.authenticate(self._cookie_data)
                 d.addCallback(self._bootstrap)
-                #d.addErrback(self._auth_failed)
                 return d
 
         if self.password_function and 'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
             d.addCallback(maybe_coroutine)
             d.addCallback(self._do_password_authentication)
-            #d.addErrback(self._auth_failed)
             return d
 
         if 'NULL' in methods:
             d = self.queue_command('AUTHENTICATE')
             d.addCallback(self._bootstrap)
-            #d.addErrback(self._auth_failed)
             return d
 
         return defer.fail(
