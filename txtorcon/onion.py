@@ -1,5 +1,6 @@
 import os
 import re
+import six
 import functools
 
 from zope.interface import Interface, Attribute, implementer
@@ -8,6 +9,8 @@ from twisted.internet import defer
 from twisted.python import log
 
 from txtorcon.util import find_keywords, version_at_least
+from txtorcon.util import _is_non_public_numeric_address
+from txtorcon.util import available_tcp_port
 
 # XXX
 # think: port vs ports: and how do we represent that? i.e. if we
@@ -592,7 +595,7 @@ class EphemeralAuthenticatedOnionService(object):
         method :meth:`txtorcon.EphemeralAuthenticatedOnionService.create`
         """
 
-        _validate_ports(ports)
+        _validate_ports_low_level(ports)
 
         self._config = config
         self._ports = ports
@@ -698,7 +701,7 @@ class EphemeralOnionService(object):
                 "Unknown kwargs: {}".format(", ".join(kwarg.keys()))
             )
 
-        _validate_ports(ports)
+        _validate_ports_low_level(ports)
 
         self._config = config
         self._ports = ports
@@ -974,42 +977,123 @@ class AuthenticatedHiddenService(object):
         ))
         return rtn
 
+## XXX FIXME
 
-def _validate_ports(ports):
+# this is the wrong validate; this should be put in torconfig.py and
+# called _legacy_validate_ports or something; these are the
+# port-strings we accept(ed) for EphemeralHiddenService (and
+# FilesystemHiddenService?)
+
+# maybe we should accept these in all the other spots, too though?
+# as in you can send either:
+# list of ports
+# list of 2-tuples mapping (public, local) ports
+# list of strings (these legacy strings)
+# (and/or mix-and-match)
+
+
+
+
+@defer.inlineCallbacks
+def _validate_ports(reactor, ports):
+    """
+    Internal helper for Onion services. Validates an incoming list of
+    port mappings and returns a list of strings suitable for passing
+    to other onion-services functions.
+
+    Accepts 3 different ways of specifying ports:
+
+      - list of ints: each int is the public port, local port random
+      - list of 2-tuples of ints: (pubic, local) ports.
+      - list of strings like "80 127.0.0.1:1234"
+
+    This is async in case it needs to ask for a random, unallocated
+    local port.
+    """
+    processed_ports = []
+    for port in ports:
+        if isinstance(port, (set, list, tuple)):
+            if len(port) != 2:
+                raise ValueError(
+                    "'ports' must contain a single int or a 2-tuple of ints"
+                )
+            remote, local = port
+            try:
+                remote = int(remote)
+                local = int(local)
+            except ValueError:
+                raise ValueError(
+                    "'ports' has a tuple with a non-integer "
+                    "component: {}".format(port)
+                )
+            processed_ports.append(
+                "{} 127.0.0.1:{}".format(remote, local)
+            )
+
+        elif isinstance(port, (six.text_type, str)):
+            _validate_single_port_string(port)
+            processed_ports.append(port)
+
+        else:
+            try:
+                remote = int(port)
+            except (ValueError, TypeError):
+                raise ValueError(
+                    "'ports' has a non-integer entry: {}".format(port)
+                )
+            local = yield available_tcp_port(reactor)
+            processed_ports.append(
+                "{} 127.0.0.1:{}".format(remote, local)
+            )
+    defer.returnValue(processed_ports)
+
+
+def _validate_ports_low_level(ports):
     """
     Internal helper.
 
     Validates the 'ports' argument to EphemeralOnionService or
     EphemeralAuthenticatedOnionService returning None on success or
     raising ValueError otherwise.
+
+    This only accepts the "list of strings" variants; some
+    higher-level APIs also allow lists of ints or lists of 2-tuples,
+    but those must be converted to strings before they get here.
     """
     if not isinstance(ports, (list, tuple)):
         raise ValueError("'ports' must be a list of strings")
     if any([not isinstance(x, str) for x in ports]):
         raise ValueError("'ports' must be a list of strings")
     for port in ports:
-        if ' ' not in port or len(port.split(' ')) != 2:
-            raise ValueError(
-                "Port '{}' should have exactly one space in it".format(port)
-            )
-        (external, internal) = port.split(' ')
-        try:
-            external = int(external)
-        except ValueError:
-            raise ValueError(
-                "Port '{}' external port isn't an int".format(port)
-            )
-        if ':' not in internal:
-            raise ValueError(
-                "Port '{}' local address should be 'IP:port'".format(port)
-            )
-        ip, localport = internal.split(':')
-        from .controller import _is_non_public_numeric_address
-        if ip != 'localhost' and not _is_non_public_numeric_address(ip):
-            raise ValueError(
-                "Port '{}' internal IP '{}' should be a local "
-                "address".format(port, ip)
-            )
+        _validate_single_port_string(port)
+
+
+def _validate_single_port_string(port):
+    """
+    Validate a single string specifying ports for Onion
+    services. These look like: "80 127.0.0.1:4321"
+    """
+    if ' ' not in port or len(port.split(' ')) != 2:
+        raise ValueError(
+            "Port '{}' should have exactly one space in it".format(port)
+        )
+    (external, internal) = port.split(' ')
+    try:
+        external = int(external)
+    except ValueError:
+        raise ValueError(
+            "Port '{}' external port isn't an int".format(port)
+        )
+    if ':' not in internal:
+        raise ValueError(
+            "Port '{}' local address should be 'IP:port'".format(port)
+        )
+    ip, localport = internal.split(':')
+    if ip != 'localhost' and not _is_non_public_numeric_address(ip):
+        raise ValueError(
+            "Port '{}' internal IP '{}' should be a local "
+            "address".format(port, ip)
+        )
 
 
 def parse_rsa_blob(lines):

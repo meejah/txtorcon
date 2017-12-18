@@ -516,3 +516,20 @@ class _Version(object):
 
     def short(self):
         return '{}.{}.{}'.format(self.major, self.minor, self.patch)
+
+
+# XXX from magic-wormhole
+def _is_non_public_numeric_address(host):
+    """
+    returns True if 'host' is not public
+    """
+    # for numeric hostnames, skip RFC1918 addresses, since no Tor exit
+    # node will be able to reach those. Likewise ignore IPv6 addresses.
+    try:
+        a = ipaddress.ip_address(six.text_type(host))
+    except ValueError:
+        return False        # non-numeric, let Tor try it
+    if a.is_loopback or a.is_multicast or a.is_private or a.is_reserved \
+       or a.is_unspecified:
+        return True         # too weird, don't connect
+    return False

@@ -34,7 +34,8 @@ from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TorClientEndpoint, _create_socks_endpoint
 from txtorcon.endpoints import TCPHiddenServiceEndpoint
-from txtorcon.onion import EphemeralOnionService, FilesystemOnionService
+from txtorcon.onion import EphemeralOnionService, FilesystemOnionService, _validate_ports
+from txtorcon.util import _is_non_public_numeric_address
 
 from . import socks
 from .interface import ITor
@@ -1000,60 +1001,6 @@ class Tor(object):
         if self._socks_endpoint is None:
             self._socks_endpoint = yield _create_socks_endpoint(self._reactor, self._protocol)
         returnValue(self._socks_endpoint)
-
-
-@inlineCallbacks
-def _validate_ports(reactor, ports):
-    """
-    Internal helper for Onion services. Validates an incoming list of
-    port mappings and returns a list of strings suitable for passing
-    to other onion-services functions.
-    """
-    processed_ports = []
-    for port in ports:
-        if isinstance(port, (set, list, tuple)):
-            if len(port) != 2:
-                raise ValueError(
-                    "'ports' must contain a single int or a 2-tuple of ints"
-                )
-            remote, local = port
-            try:
-                remote = int(remote)
-                local = int(local)
-            except ValueError:
-                raise ValueError(
-                    "'ports' has a tuple with a non-integer "
-                    "component: {}".format(port)
-                )
-            processed_ports.append(
-                "{} 127.0.0.1:{}".format(remote, local)
-            )
-        else:
-            try:
-                remote = int(port)
-            except ValueError:
-                raise ValueError(
-                    "'ports' has a non-integer entry: {}".format(port)
-                )
-            local = yield available_tcp_port(reactor)
-            processed_ports.append(
-                "{} 127.0.0.1:{}".format(remote, local)
-            )
-    returnValue(processed_ports)
-
-
-# XXX from magic-wormhole
-def _is_non_public_numeric_address(host):
-    # for numeric hostnames, skip RFC1918 addresses, since no Tor exit
-    # node will be able to reach those. Likewise ignore IPv6 addresses.
-    try:
-        a = ipaddress.ip_address(six.text_type(host))
-    except ValueError:
-        return False        # non-numeric, let Tor try it
-    if a.is_loopback or a.is_multicast or a.is_private or a.is_reserved \
-       or a.is_unspecified:
-        return True         # too weird, don't connect
-    return False
 
 
 class TorNotFound(RuntimeError):
