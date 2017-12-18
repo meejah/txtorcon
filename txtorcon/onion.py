@@ -977,22 +977,6 @@ class AuthenticatedHiddenService(object):
         ))
         return rtn
 
-## XXX FIXME
-
-# this is the wrong validate; this should be put in torconfig.py and
-# called _legacy_validate_ports or something; these are the
-# port-strings we accept(ed) for EphemeralHiddenService (and
-# FilesystemHiddenService?)
-
-# maybe we should accept these in all the other spots, too though?
-# as in you can send either:
-# list of ports
-# list of 2-tuples mapping (public, local) ports
-# list of strings (these legacy strings)
-# (and/or mix-and-match)
-
-
-
 
 @defer.inlineCallbacks
 def _validate_ports(reactor, ports):

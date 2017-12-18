@@ -10,7 +10,6 @@ import six
 import shlex
 import tempfile
 import functools
-import ipaddress
 from io import StringIO
 from collections import Sequence
 from os.path import dirname, exists
