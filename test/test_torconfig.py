@@ -28,6 +28,7 @@ from txtorcon.torconfig import parse_client_keys
 from txtorcon.torconfig import CommaList
 from txtorcon.torconfig import launch_tor
 from txtorcon.onion import FilesystemOnionService
+from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import AuthenticatedHiddenService
 
 from txtorcon.testutil import FakeControlProtocol
@@ -120,6 +121,22 @@ class PortLineDefaultsTests(unittest.TestCase):
         yield config.post_bootstrap
 
         self.assertEqual(0, len(config.SocksPort))
+
+    @defer.inlineCallbacks
+    def test_default_portlines(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=')
+        protocol.answers.append({'SocksPort': 'auto'})
+        protocol.answers.append('9123')
+        protocol.answers.append({'onions/current': ''})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(
+            ['9123'],
+            list(config.SocksPort),
+        )
 
     @defer.inlineCallbacks
     def test_no_defaults_support(self):
@@ -1059,6 +1076,16 @@ DnkEGTrOUFZ7CbDp+SM18BjmFXI2n0bFJEznXFhH+Awz
         conf.HiddenServices.append(HiddenService(conf, '/fake/path/two', ['1234 127.0.0.1:1234']))
         conf.save()
         self.assertEqual(2, len(conf.HiddenServices))
+
+    def test_hs_ephemeral_wrong_list(self):
+        conf = TorConfig()
+        conf.HiddenServices.append(EphemeralOnionService(conf, []))
+        with self.assertRaises(ValueError) as ctx:
+            conf.save()
+        self.assertIn(
+            "ephemeral services must be created with",
+            str(ctx.exception)
+        )
 
     def test_onion_keys(self):
         # FIXME test without crapping on filesystem
