@@ -139,6 +139,26 @@ class PortLineDefaultsTests(unittest.TestCase):
         )
 
     @defer.inlineCallbacks
+    def test_onions_current(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=')
+        protocol.answers.append({'SocksPort': 'auto'})
+        protocol.answers.append('9123')
+        # hmmmm? why aren't these the other way around?
+        protocol.answers.append({'onions/detached': 'asdfasdf.onion'})
+        protocol.answers.append({'onions/current': 'something.onion'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(
+            ['9123'],
+            list(config.SocksPort),
+        )
+        self.assertEqual(1, len(config.EphemeralOnionServices))
+        self.assertEqual(1, len(config.DetachedOnionServices))
+
+    @defer.inlineCallbacks
     def test_no_defaults_support(self):
         protocol = FakeControlProtocol([])
         protocol.answers.append('config/names=\nSocksPortLines Dependant')

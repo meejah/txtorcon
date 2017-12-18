@@ -1238,7 +1238,7 @@ class TorConfig(object):
                     onions.append(
                         EphemeralOnionService(
                             self,
-                            ports=None,  # no way to discover ports=
+                            ports=[],  # no way to discover ports=
                             hostname=onion,
                             private_key=DISCARD,  # we don't know it, anyway
                             version=2,
@@ -1259,7 +1259,7 @@ class TorConfig(object):
                     onions.append(
                         EphemeralOnionService(
                             self,
-                            ports=None,
+                            ports=[],  # no way to discover original ports=
                             hostname=onion,
                             detach=True,
                             private_key=DISCARD,
