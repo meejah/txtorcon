@@ -11,7 +11,7 @@ from txtorcon import TorConfig
 from txtorcon import torconfig
 
 from txtorcon.onion import FilesystemOnionService
-from txtorcon.onion import AuthenticatedHiddenService
+from txtorcon.onion import AuthenticatedFilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import EphemeralAuthenticatedOnionService
 from txtorcon.onion import AuthStealth, AuthBasic, DISCARD
@@ -881,11 +881,11 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
         os.mkdir(self.thedir)
         protocol = FakeControlProtocol([])
         self.config = TorConfig(protocol)
-        self.hs = AuthenticatedHiddenService(self.config, self.thedir, ["80 127.0.0.1:1234"])
+        self.hs = AuthenticatedFilesystemOnionService(self.config, self.thedir, ["80 127.0.0.1:1234"])
 
     def test_unknown_auth_type(self):
         with self.assertRaises(ValueError) as ctx:
-            AuthenticatedHiddenService(self.config, self.thedir, ["80 127.0.0.1:1234"], auth_type='bogus')
+            AuthenticatedFilesystemOnionService(self.config, self.thedir, ["80 127.0.0.1:1234"], auth_type='bogus')
         self.assertIn(
             "Unknown auth_type",
             str(ctx.exception),
@@ -893,7 +893,7 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
 
     def test_bad_client_name(self):
         with self.assertRaises(ValueError) as ctx:
-            AuthenticatedHiddenService(self.config, self.thedir, ["80 127.0.0.1:1234"], clients=["bob can't have spaces"])
+            AuthenticatedFilesystemOnionService(self.config, self.thedir, ["80 127.0.0.1:1234"], clients=["bob can't have spaces"])
         self.assertIn(
             "can't have spaces",
             str(ctx.exception),
@@ -942,7 +942,7 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
         )
 
     def test_get_client_expected_not_found(self):
-        self.hs = AuthenticatedHiddenService(
+        self.hs = AuthenticatedFilesystemOnionService(
             self.config, self.thedir, ["80 127.0.0.1:1234"],
             clients=["foo", "bar", "baz"],
         )

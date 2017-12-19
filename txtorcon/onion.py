@@ -778,12 +778,12 @@ class EphemeralAuthenticatedOnionServiceClient(object):
 
 
 @implementer(IOnionClient)
-class AuthenticatedHiddenServiceClient(object):
+class AuthenticatedFilesystemOnionServiceClient(object):
     """
-    A single client of an AuthenticatedHiddenService
+    A single client of an AuthenticatedFilesystemOnionService
 
     These are only created by and returned from the .clients property
-    of an AuthenticatedHiddenService instance.
+    of an AuthenticatedFilesystemOnionService instance.
     """
 
     def __init__(self, parent, name, hostname, ports, token):
@@ -831,7 +831,7 @@ class AuthenticatedHiddenServiceClient(object):
 
 
 @implementer(IAuthenticatedOnionClients)
-class AuthenticatedHiddenService(object):
+class AuthenticatedFilesystemOnionService(object):
     """
     Corresponds to::
 
@@ -907,7 +907,7 @@ class AuthenticatedHiddenService(object):
     def add_client(self, name, hostname, ports, token):
         if self._clients is None:
             self._parse_hostname()
-        client = AuthenticatedHiddenServiceClient(
+        client = AuthenticatedFilesystemOnionServiceClient(
             parent=self,
             name=name,
             hostname=hostname,
@@ -941,7 +941,7 @@ class AuthenticatedHiddenService(object):
                 # -> for auth'd services we end up with multiple
                 # -> HiddenService instances now (because different
                 # -> hostnames)
-                clients[name] = AuthenticatedHiddenServiceClient(
+                clients[name] = AuthenticatedFilesystemOnionServiceClient(
                     self, name, hostname,
                     ports=self._ports,
                     token=cookie,

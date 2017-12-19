@@ -23,7 +23,7 @@ from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.interface import ITorControlProtocol
 from txtorcon.util import find_keywords
-from .onion import IOnionClient, FilesystemHiddenService, AuthenticatedHiddenService
+from .onion import IOnionClient, FilesystemHiddenService, AuthenticatedFilesystemOnionService
 from .onion import EphemeralOnionService
 from .onion import _await_descriptor_upload
 from .onion import DISCARD
@@ -1282,7 +1282,7 @@ class TorConfig(object):
                     else:
                         auth_type, clients = auth.split(' ', 1)
                         clients = clients.split(',')
-                        parent_service = AuthenticatedHiddenService(
+                        parent_service = AuthenticatedFilesystemOnionService(
                             self, directory, ports, auth_type, clients, ver, group_read
                         )
                         for client_name in parent_service.client_names():
