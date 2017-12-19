@@ -38,6 +38,15 @@ from txtorcon.endpoints import TCPHiddenServiceEndpointParser
 from txtorcon.endpoints import TorClientEndpoint
 from txtorcon.endpoints import TorClientEndpointStringParser
 from txtorcon.endpoints import IHiddenService, IProgressProvider
+from txtorcon.onion import IOnionService
+from txtorcon.onion import IFilesystemOnionService
+from txtorcon.onion import IAuthenticatedOnionClients
+from txtorcon.onion import IOnionClient
+# could consider exporting the concrete classes .. but not for now
+# from txtorcon.onion import FilesystemOnionService
+# from txtorcon.onion import FilesystemAuthenticatedOnionService
+# from txtorcon.onion import EphemeralOnionService
+# from txtorcon.onion import EphemeralAuthenticatedOnionService
 from txtorcon.onion import AuthStealth
 from txtorcon.onion import AuthBasic
 from txtorcon.onion import DISCARD
@@ -69,7 +78,12 @@ __all__ = [
     "TorClientEndpoint", "TorClientEndpointStringParser",
     "IHiddenService", "IProgressProvider",
     "TorOnionAddress", "TorOnionListeningPort",
+
+    # newest Onion API classes
+    "IOnionService", "IFilesystemOnionService",
+    "IAuthenticatedOnionClients", "IOnionClient",
     "AuthStealth", "AuthBasic", "DISCARD",
+
     "get_global_tor",
     "build_timeout_circuit",
     "CircuitBuildTimedOutError",

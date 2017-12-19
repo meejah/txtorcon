@@ -533,10 +533,6 @@ class _AuthCommon(object):
         return self._clients[client_name]
 
 
-class AuthNone(object):
-    pass
-
-
 class AuthBasic(_AuthCommon):
     auth_type = 'basic'
 
