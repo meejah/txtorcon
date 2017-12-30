@@ -821,7 +821,8 @@ class EndpointTests(unittest.TestCase):
         tmp = self.mktemp()
         os.mkdir(tmp)
         with open(os.path.join(tmp, 'hostname'), 'w') as f:
-            f.write('public.onion\n')
+            f.write('public0.onion token0 # client: alice\n')
+            f.write('public1.onion token1 # client: bob\n')
 
         ep = TCPHiddenServiceEndpoint(
             self.reactor, self.config, 123, tmp,
@@ -837,21 +838,30 @@ class EndpointTests(unittest.TestCase):
         d.addErrback(foo)
 
         self.protocol.events['HS_DESC'](
-            "UPLOAD public basic somedirauth REASON=testing"
+            "UPLOAD public0 basic somedirauth REASON=testing"
         )
         self.protocol.events['HS_DESC'](
-            "UPLOADED public basic somedirauth REASON=testing"
+            "UPLOADED public0 basic somedirauth REASON=testing"
         )
 
-        yield d  # returns 'port'
+        port = yield d  # returns 'port'
         self.assertEqual(1, len(self.config.HiddenServices))
-        self.assertEqual(self.config.HiddenServices[0].dir, os.path.abspath(tmp))
-        auth = self.config.HiddenServices[0].authorize_client[0]
-        self.assertTrue(auth.startswith('stealth '))
-        names = auth.split()[-1].split(',')
-        self.assertTrue("alice" in names)
-        self.assertTrue("bob" in names)
-        self.assertEqual('public.onion', ep.onion_uri)
+
+        hs = self.config.HiddenServices[0]
+        # hs will be IAuthenticatedOnionService
+        self.assertEqual(2, len(hs.client_names()))
+        self.assertIn("alice", hs.client_names())
+        self.assertIn("bob", hs.client_names())
+
+        alice = hs.get_client("alice")
+        self.assertEqual(alice.hidden_service_directory, os.path.abspath(tmp))
+        self.assertEqual("token0", alice.auth_token)
+
+        with self.assertRaises(ValueError):
+            ep.onion_uri
+        hs = port.onion_service
+        self.assertEqual('public0.onion', hs.get_client("alice").hostname)
+        self.assertEqual('public1.onion', hs.get_client("bob").hostname)
 
     def test_stealth_auth_deprecated(self, ftb):
         '''

@@ -881,19 +881,30 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
         os.mkdir(self.thedir)
         protocol = FakeControlProtocol([])
         self.config = TorConfig(protocol)
-        self.hs = AuthenticatedFilesystemOnionService(self.config, self.thedir, ["80 127.0.0.1:1234"])
+        self.hs = AuthenticatedFilesystemOnionService(
+            config=self.config,
+            thedir=self.thedir,
+            ports=["80 127.0.0.1:1234"],
+            auth=AuthBasic(['foo', 'bar'])
+        )
 
     def test_unknown_auth_type(self):
         with self.assertRaises(ValueError) as ctx:
-            AuthenticatedFilesystemOnionService(self.config, self.thedir, ["80 127.0.0.1:1234"], auth_type='bogus')
+            AuthenticatedFilesystemOnionService(
+                self.config, self.thedir, ["80 127.0.0.1:1234"],
+                auth=object(),
+            )
         self.assertIn(
-            "Unknown auth_type",
+            "must be one of AuthBasic or AuthStealth",
             str(ctx.exception),
         )
 
     def test_bad_client_name(self):
         with self.assertRaises(ValueError) as ctx:
-            AuthenticatedFilesystemOnionService(self.config, self.thedir, ["80 127.0.0.1:1234"], clients=["bob can't have spaces"])
+            AuthenticatedFilesystemOnionService(
+                self.config, self.thedir, ["80 127.0.0.1:1234"],
+                auth=AuthBasic(["bob can't have spaces"]),
+            )
         self.assertIn(
             "can't have spaces",
             str(ctx.exception),
@@ -944,7 +955,7 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
     def test_get_client_expected_not_found(self):
         self.hs = AuthenticatedFilesystemOnionService(
             self.config, self.thedir, ["80 127.0.0.1:1234"],
-            clients=["foo", "bar", "baz"],
+            auth=AuthBasic(["foo", "bar", "baz"]),
         )
         with open(join(self.thedir, "hostname"), "w") as f:
             f.write(
