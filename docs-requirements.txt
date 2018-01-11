@@ -12,4 +12,4 @@ wheel
 twine
 pyflakes
 pep8
-automat
+automat==0.6.0
