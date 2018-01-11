@@ -10,6 +10,6 @@ wheel
 twine
 pyflakes
 pep8
-mock
+mock==2.0.0
 ipaddress>=1.0.16
 geoip
