@@ -1,6 +1,6 @@
 tox
 coverage
-cuvner
+cuvner==17.4.0
 setuptools>=0.8.0
 Sphinx
 repoze.sphinx.autointerface>=0.4
