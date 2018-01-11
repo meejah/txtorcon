@@ -8,7 +8,7 @@ coveralls
 codecov
 wheel
 twine
-pyflakes
+pyflakes==1.6.0
 pep8
 mock
 ipaddress>=1.0.16
