@@ -3,8 +3,7 @@ python:
  - "2.7"
  - "3.6"
  - "pypy"
-sudo: false
-# dist: precise
+sudo: required
 
 install:
  - pip install tox-travis
