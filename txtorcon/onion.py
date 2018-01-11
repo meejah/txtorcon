@@ -653,6 +653,7 @@ class EphemeralAuthenticatedOnionService(object):
         IAuthenticatedOnionClients API
         """
         print("keydata:\n{}".format(self._private_key))
+        assert '\n' not in self._private_key
         # why are we sometimes putting e.g. "RSA1024:xxxx" and
         # sometimes not? Should be one or the other
         if ':' in self._private_key:
