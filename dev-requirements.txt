@@ -2,7 +2,7 @@ tox
 coverage
 cuvner
 setuptools>=0.8.0
-Sphinx
+Sphinx==1.6.6
 repoze.sphinx.autointerface>=0.4
 coveralls
 codecov
