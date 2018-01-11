@@ -9,7 +9,7 @@ Sphinx
 repoze.sphinx.autointerface>=0.4
 coveralls
 wheel
-twine
+twine==1.9.1
 pyflakes
 pep8
 automat
