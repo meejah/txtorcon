@@ -1,4 +1,4 @@
-tox
+tox==2.9.1
 coverage
 cuvner
 setuptools>=0.8.0
