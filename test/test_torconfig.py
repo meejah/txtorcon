@@ -31,6 +31,7 @@ from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import AuthenticatedFilesystemOnionService
 from txtorcon.onion import AuthBasic
+from txtorcon.onion import AuthStealth
 
 from txtorcon.testutil import FakeControlProtocol
 
@@ -1137,6 +1138,57 @@ DnkEGTrOUFZ7CbDp+SM18BjmFXI2n0bFJEznXFhH+Awz
             self.assertEqual(hs.client_keys[0].name, 'hungry')
             self.assertEqual(hs.client_keys[0].cookie, 'omnomnom')
             self.assertEqual(hs.client_keys[0].key, None)
+
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_onion_keys_stealth(self):
+        self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServiceAuthorizeClient=stealth alice,bob,carol\n')
+        d = tempfile.mkdtemp()
+
+        try:
+            with open(os.path.join(d, 'hostname'), 'w') as f:
+                f.write('public')
+            with open(os.path.join(d, 'private_key'), 'w') as f:
+                f.write('private')
+            with open(os.path.join(d, 'client_keys'), 'w') as f:
+                f.write('client-name hungry\ndescriptor-cookie omnomnom\n')
+
+            conf = TorConfig(self.protocol)
+            hs = HiddenService(conf, d, [])
+
+            self.assertEqual(hs.hostname, 'public')
+            self.assertEqual(hs.private_key, 'private')
+            self.assertEqual(len(hs.client_keys), 1)
+            self.assertEqual(hs.client_keys[0].name, 'hungry')
+            self.assertEqual(hs.client_keys[0].cookie, 'omnomnom')
+            self.assertEqual(hs.client_keys[0].key, None)
+
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+        print(hs.config_attributes())
+
+    @defer.inlineCallbacks
+    def test_onion_keys_unknown_auth(self):
+        self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServiceAuthorizeClient=bogus_auth_method alice,bob,carol\n')
+        d = tempfile.mkdtemp()
+
+        try:
+            with open(os.path.join(d, 'hostname'), 'w') as f:
+                f.write('public')
+            with open(os.path.join(d, 'private_key'), 'w') as f:
+                f.write('private')
+            with open(os.path.join(d, 'client_keys'), 'w') as f:
+                f.write('client-name hungry\ndescriptor-cookie omnomnom\n')
+
+            with self.assertRaises(ValueError) as ctx:
+                conf = TorConfig(self.protocol)
+                yield conf.post_bootstrap
+            self.assertIn(
+                "Unknown auth type",
+                str(ctx.exception)
+            )
 
         finally:
             shutil.rmtree(d, ignore_errors=True)

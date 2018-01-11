@@ -46,6 +46,9 @@ from txtorcon.controller import Tor
 from txtorcon.socks import _TorSocksFactory
 
 from . import util
+from .test_onion import _test_private_key       # put in testutil?
+from .test_onion import _test_private_key_blob  # put in testutil?
+from .test_onion import _test_onion_id          # put in testutil?
 from txtorcon.testutil import FakeControlProtocol
 
 
@@ -560,6 +563,7 @@ class EndpointTests(unittest.TestCase):
             self.assertEqual('127.0.0.1', ep.tcp_endpoint._interface)
             self.assertEqual(len(self.config.HiddenServices), 1)
             self.assertIs(self.config.HiddenServices[0], port.onion_service)
+            self.assertTrue(IOnionService.providedBy(port.getHost().onion_service))
         d0.addCallback(check).addErrback(self.fail)
         return d0
 
@@ -798,7 +802,7 @@ class EndpointTests(unittest.TestCase):
             self.reactor, self.config, 123,
             ephemeral=True,
             auth=AuthBasic(['alice', 'bob']),
-            private_key='f' * 32,
+            private_key=_test_private_key_blob,
         )
 
         # make sure listen() correctly configures our hidden-serivce
@@ -808,15 +812,15 @@ class EndpointTests(unittest.TestCase):
         self.assertEqual(1, len(self.protocol.commands))
         cmd, cmd_d = self.protocol.commands[0]
         self.assertTrue(
-            cmd.startswith(u"ADD_ONION RSA1024:ffffffffffffffffffffffffffffffff ")
+            cmd.startswith(u"ADD_ONION RSA1024:{} ".format(_test_private_key_blob))
         )
-        cmd_d.callback("ServiceID=service\nPrivateKey=deadbeef\nClientAuth=bob:asdf\nClientAuth=alice:fdsa\n")
+        cmd_d.callback("ServiceID={}\nPrivateKey={}\nClientAuth=bob:asdf\nClientAuth=alice:fdsa\n".format(_test_onion_id, _test_private_key_blob))
 
         self.protocol.events['HS_DESC'](
-            "UPLOAD service basic somedirauth REASON=testing"
+            "UPLOAD {} basic somedirauth REASON=testing".format(_test_onion_id)
         )
         self.protocol.events['HS_DESC'](
-            "UPLOADED service basic somedirauth REASON=testing"
+            "UPLOADED {} basic somedirauth REASON=testing".format(_test_onion_id)
         )
 
         yield d  # returns 'port'
@@ -881,6 +885,8 @@ class EndpointTests(unittest.TestCase):
         with open(os.path.join(tmp, 'hostname'), 'w') as f:
             f.write('public0.onion token0 # client: alice\n')
             f.write('public1.onion token1 # client: bob\n')
+        with open(os.path.join(tmp, 'private_key'), 'w') as f:
+            f.write(_test_private_key)
 
         ep = TCPHiddenServiceEndpoint(
             self.reactor, self.config, 123, tmp,
@@ -896,10 +902,10 @@ class EndpointTests(unittest.TestCase):
         d.addErrback(foo)
 
         self.protocol.events['HS_DESC'](
-            "UPLOAD public0 basic somedirauth REASON=testing"
+            "UPLOAD {} basic somedirauth REASON=testing".format(_test_onion_id)
         )
         self.protocol.events['HS_DESC'](
-            "UPLOADED public0 basic somedirauth REASON=testing"
+            "UPLOADED {} basic somedirauth REASON=testing".format(_test_onion_id)
         )
 
         port = yield d  # returns 'port'

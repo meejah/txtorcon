@@ -915,6 +915,19 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
             auth=AuthBasic(['foo', 'bar'])
         )
 
+    def test_create_progress_old_tor(self):
+        hsdir = "/dev/null"
+        ports = ["80 127.0.0.1:1234"]
+
+        def progress(pct, tag, msg):
+            print(pct, tag, msg)
+        self.config.tor_protocol.version = "0.2.0.0"
+        d = AuthenticatedFilesystemOnionService.create(
+            self.config, hsdir, ports,
+            auth=AuthBasic(['alice']),
+            progress=progress,
+        )
+
     def test_unknown_auth_type(self):
         with self.assertRaises(ValueError) as ctx:
             AuthenticatedFilesystemOnionService(

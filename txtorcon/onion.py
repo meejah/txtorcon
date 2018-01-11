@@ -246,7 +246,6 @@ class FilesystemOnionService(object):
             ports,
             functools.partial(config.mark_unsaved, 'HiddenServices'),
         )
-#        self._auth = auth
         self._version = version
         self._group_readable = group_readable
         self._hostname = None
@@ -337,17 +336,6 @@ class FilesystemOnionService(object):
         self._version = v
         self._config.mark_unsaved('HiddenServices')
 
-    @property
-    def authorize_client(self):
-        if self._auth is None:
-            return []
-        return [
-            "{} {}".format(
-                self._auth.auth_type,
-                ','.join(self._auth.client_names()),
-            )
-        ]
-
     # etcetc, basically the old "HiddenService" object
 
     def config_attributes(self):
@@ -359,9 +347,6 @@ class FilesystemOnionService(object):
             rtn.append(('HiddenServicePort', str(x)))
         if self.version:
             rtn.append(('HiddenServiceVersion', str(self.version)))
-        for authline in self.authorize_client:
-            rtn.append(('HiddenServiceAuthorizeClient', str(authline)))
-            # rtn.append(('HiddenServiceAuthorizeClient', str(self.authorize_client)))
         return rtn
 
 
@@ -387,9 +372,7 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
     uploaded = defer.Deferred()
 
     def hostname_matches(hostname):
-        print("hostname ? {}".format(hostname[:-6]))
         if IAuthenticatedOnionClients.providedBy(onion):
-            print(" {} {} {}".format(hostname[:-6], onion.get_permanent_id(), hostname[:-6] == onion.get_permanent_id()))
             return hostname[:-6] == onion.get_permanent_id()
         else:
             # provides IOnionService
@@ -670,8 +653,13 @@ class EphemeralAuthenticatedOnionService(object):
         IAuthenticatedOnionClients API
         """
         print("keydata:\n{}".format(self._private_key))
-        keydata = b'-----BEGIN RSA PRIVATE KEY-----\n' + self._private_key.encode('ascii') + b'\n-----END RSA PRIVATE KEY-----\n'
-        print(keydata)
+        # why are we sometimes putting e.g. "RSA1024:xxxx" and
+        # sometimes not? Should be one or the other
+        if ':' in self._private_key:
+            blob = self._private_key.split(':')[1].encode('ascii')
+        else:
+            blob = self._private_key.encode('ascii')
+        keydata = b'-----BEGIN RSA PRIVATE KEY-----\n' + blob + b'\n-----END RSA PRIVATE KEY-----\n'
         private_key = serialization.load_pem_private_key(
             keydata,
             password=None,
@@ -908,28 +896,6 @@ class AuthenticatedFilesystemOnionServiceClient(object):
         return self._parent.version
 
 
-def _compute_descriptor_id(client_key):
-    h1 = hashlib.new('SHA1')
-    h1.update(client_key)
-    permanent_id = h1.digest()[:10]
-    print("perm {}".format(base64.b32encode(permanent_id).lower()))
-    print("perm %r" % permanent_id[0])
-    permanent_id_byte = struct.unpack('B', permanent_id[0:1])[0]
-    print('0x%x' % permanent_id_byte)
-
-    # should use reactor.seconds() instead of time.time()
-    current_time = int(time.time())
-    time_period = int((current_time + permanent_id_byte * 86400 / 256) / 86400)
-    #print('%s' % time_period)
-    h0 = hashlib.new('SHA1')
-    h0.update(struct.pack('>Hb', time_period, 0))
-    #print(h0.hexdigest())
-
-    h2 = hashlib.new('SHA1')
-    h2.update(permanent_id + h0.digest())
-    return base64.b32encode(h2.digest()[:10]).lower()
-
-
 def _compute_permanent_id(private_key):
     """
     Internal helper. Return an authenticated service's permanent ID
@@ -1017,9 +983,7 @@ class AuthenticatedFilesystemOnionService(object):
             # released?!
             uploaded[0] = _await_descriptor_upload(config.tor_protocol, fhs, progress)
 
-        print("saving")
         yield config.save()
-        print("saved, now {}".format(uploaded[0]))
         yield uploaded[0]
         defer.returnValue(fhs)
 
@@ -1028,8 +992,7 @@ class AuthenticatedFilesystemOnionService(object):
         self._config = config
         self._dir = thedir
         self._ports = ports
-        if auth is None:
-            raise ValueError("Must provide an auth= instance")
+        assert auth is not None, "Must provide an auth= instance"
         if not isinstance(auth, (AuthBasic, AuthStealth)):
             raise ValueError("auth= must be one of AuthBasic or AuthStealth")
         self._auth = auth
@@ -1169,7 +1132,6 @@ class AuthenticatedFilesystemOnionService(object):
                 'HiddenServiceAuthorizeClient',
                 "{} {}".format(self._auth.auth_type, ','.join(self._expected_clients))
             ))
-        print("ATTR {}".format(rtn))
         return rtn
 
 

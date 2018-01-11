@@ -230,6 +230,28 @@ class DisconnectionTests(unittest.TestCase):
         self.protocol.connectionLost(f)
         self.assertTrue(it_was_called.yes)
 
+    def test_disconnect_outstanding_commands(self):
+        """
+        outstanding commands should errback on disconnect
+        """
+
+        def it_was_called(f):
+            str(f)
+            it_was_called.count += 1
+            return None
+        it_was_called.count = 0
+
+        # we want to make sure outstanding commands get errbacks
+        d0 = self.protocol.queue_command("some command0")
+        d1 = self.protocol.queue_command("some command1")
+        d0.addErrback(it_was_called)
+        d1.addErrback(it_was_called)
+        self.protocol.on_disconnect.addErrback(lambda _: None)
+
+        f = failure.Failure(RuntimeError("The thing didn't do the stuff."))
+        self.protocol.connectionLost(f)
+        self.assertEqual(it_was_called.count, 2)
+
 
 class ProtocolTests(unittest.TestCase):
 
