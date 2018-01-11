@@ -3,10 +3,13 @@ python:
  - "2.7"
  - "3.6"
  - "pypy"
-sudo: required
-dist: precise
+sudo: false
+# dist: precise
 
-install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install -r requirements.txt && pip install -r dev-requirements.txt"
+install:
+ - pip install tox-travis
+
+# install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install -r requirements.txt && pip install -r dev-requirements.txt"
 
 # NOTE disabling anything less than twisted-14 because
 # "assertRaises()" can't be used as a context-manager before then, and
