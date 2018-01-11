@@ -11,5 +11,5 @@ coveralls
 wheel
 twine
 pyflakes
-pep8
+pep8==1.7.1
 automat
