@@ -4,7 +4,7 @@ cuvner
 setuptools>=0.8.0
 Sphinx
 repoze.sphinx.autointerface>=0.4
-coveralls
+coveralls==1.2.0
 codecov
 wheel
 twine
