@@ -5,7 +5,7 @@ setuptools>=0.8.0
 Sphinx
 repoze.sphinx.autointerface>=0.4
 coveralls
-codecov
+codecov==2.0.13
 wheel
 twine
 pyflakes
