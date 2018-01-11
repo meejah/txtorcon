@@ -661,6 +661,7 @@ class EphemeralAuthenticatedOnionService(object):
         else:
             blob = self._private_key.encode('ascii')
         keydata = b'-----BEGIN RSA PRIVATE KEY-----\n' + blob + b'\n-----END RSA PRIVATE KEY-----\n'
+        keydata = b'-----BEGIN PRIVATE KEY-----\n' + blob + b'\n-----END PRIVATE KEY-----\n'
         private_key = serialization.load_pem_private_key(
             keydata,
             password=None,
