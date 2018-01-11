@@ -537,7 +537,7 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
         else:
             # if we specified a private key, it's not echoed back
             if not onion.private_key:
-                onion._private_key = res['PrivateKey']
+                onion._private_key = res['PrivateKey'].strip()
     except KeyError:
         raise RuntimeError(
             "Expected ADD_ONION to return ServiceID= and PrivateKey= args."
