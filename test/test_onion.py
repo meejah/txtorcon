@@ -34,7 +34,7 @@ _test_private_key = (
     u'E7aOkuAq819z+Arr1hbTnBrNTD9Tiwu+UwQhWzCD0VHoQw6dmenIiAg5dOo74YlS\n'
     u'fsLPvi5fintPIwbVn+ECQCh6PEvaTP+fsPTyaRPOftCPqgLZbfzGnmt3ZJh1EB60\n'
     u'6X5Sz7FXRbQ8G5kmBy7opEoT4vsLMWGI+uq5WCXiuqY=\n'
-    u'-----END RSA PRIVATE KEY-----\n'
+    u'-----END RSA PRIVATE KEY-----'
 )
 _test_onion_id = u'n7vc7sxqwqrm3vwo'  # corresponds to above key
 # same as above private key, but without the markers + newlines
