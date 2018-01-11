@@ -6,7 +6,7 @@ Sphinx
 repoze.sphinx.autointerface>=0.4
 coveralls
 codecov
-wheel
+wheel==0.30.0
 twine
 pyflakes
 pep8
