@@ -19,6 +19,29 @@ from txtorcon.onion import AuthStealth, AuthBasic, DISCARD
 from txtorcon.testutil import FakeControlProtocol
 
 
+_test_private_key = (
+    u'-----BEGIN RSA PRIVATE KEY-----\n'
+    u'MIICXAIBAAKBgQC+bxV7+iEjJCmvQW/2SOYFQBsF06VuAdVKr3xTNMHgqI5mks6O\n'
+    u'D8cizQ1nr0bL/bqtLPA2whUSvaJmDZjkmpC62v90YU1p99tGOv+ILZTzoIIjcWWn\n'
+    u'3muDzA7p+zlN50x55ABuxEwQ3TfRA6nM1JF4HamYuHNae5nzbdwuxXpQ4wIDAQAB\n'
+    u'AoGBAJLjbkf11M+dWkXjjLAE5OAR5YYmDYmAAnycRaKMpCtc+JIoFQlBJFI0pm1e\n'
+    u'ppY8fVyMuDEUnVqaSYS8Yj2a95zD84hr0SzNFf5wSbffEcLIsmw7I18Mxq/YMrmy\n'
+    u'oGwizMnhV/IVPKh40xctPl2cIpg9AdBLYgnc/sO8oBr5k+uRAkEA8B4jeVq4IYv/\n'
+    u'b/kPzWiav/9weFMqKZdDh0O7ashbRe4b6CaHI2+XxX4uop9bFCTXsq73yCL7gqpU\n'
+    u'AkzCPGWvmwJBAMsHqQQjKn7KlPezZsYL4FY2IkqKuq2x6vFWhMPfXl6y66Ya6/uO\n'
+    u'of5kJUlolVcbvAEq4kLAk7nWi9RzWux/DFkCQHk1HX8StkPo4YZqWPm9RfCJRwLW\n'
+    u'KEBaZPIQ1LhwbvJ74YZsfGb828YLjgr1GgqvFlrSS62xSviIdmO6z4mhYuUCQAK9\n'
+    u'E7aOkuAq819z+Arr1hbTnBrNTD9Tiwu+UwQhWzCD0VHoQw6dmenIiAg5dOo74YlS\n'
+    u'fsLPvi5fintPIwbVn+ECQCh6PEvaTP+fsPTyaRPOftCPqgLZbfzGnmt3ZJh1EB60\n'
+    u'6X5Sz7FXRbQ8G5kmBy7opEoT4vsLMWGI+uq5WCXiuqY=\n'
+    u'-----END RSA PRIVATE KEY-----\n'
+)
+_test_onion_id = u'n7vc7sxqwqrm3vwo'  # corresponds to above key
+# same as above private key, but without the markers + newlines
+# (e.g. for ADD_ONION etc)
+_test_private_key_blob = u''.join(_test_private_key.split(u'\n')[1:-1])
+
+
 class OnionServiceTest(unittest.TestCase):
 
     @defer.inlineCallbacks
@@ -30,7 +53,7 @@ class OnionServiceTest(unittest.TestCase):
         with open(join(hsdir, 'hs_ed25519_secret_key'), 'wb') as f:
             f.write(b'\x01\x02\x03\x04')
         with open(join(hsdir, 'hostname'), 'w') as f:
-            f.write(u'onionfakehostname.onion')
+            f.write(u'{}.onion'.format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
             config,
@@ -42,9 +65,9 @@ class OnionServiceTest(unittest.TestCase):
         # arrange HS_DESC callbacks so we get the hs instance back
         cb = protocol.events['HS_DESC']
         for x in range(6):
-            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOAD {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
         for x in range(6):
-            cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOADED {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         hs = yield hs_d
 
@@ -59,7 +82,7 @@ class OnionServiceTest(unittest.TestCase):
         with open(join(hsdir, 'hs_ed25519_secret_key'), 'wb') as f:
             f.write(b'\x01\x02\x03\x04')
         with open(join(hsdir, 'hostname'), 'w') as f:
-            f.write('onionfakehostname.onion')
+            f.write('{}.onion'.format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
             config,
@@ -70,8 +93,8 @@ class OnionServiceTest(unittest.TestCase):
 
         # arrange HS_DESC callbacks so we get the hs instance back
         cb = protocol.events['HS_DESC']
-        cb('UPLOAD onionfakehostname UNKNOWN hsdir0')
-        cb('UPLOADED onionfakehostname UNKNOWN hsdir0')
+        cb('UPLOAD {} UNKNOWN hsdir0'.format(_test_onion_id))
+        cb('UPLOADED {} UNKNOWN hsdir0'.format(_test_onion_id))
 
         hs = yield hs_d
         hs.ports = ["443 127.0.0.1:443"]
@@ -87,7 +110,7 @@ class OnionServiceTest(unittest.TestCase):
         os.mkdir(hsdir1)
 
         with open(join(hsdir0, "hostname"), "w") as f:
-            f.write('onionfakehostname.onion')
+            f.write('{}.onion'.format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
             config,
@@ -98,8 +121,8 @@ class OnionServiceTest(unittest.TestCase):
 
         # arrange HS_DESC callbacks so we get the hs instance back
         cb = protocol.events['HS_DESC']
-        cb('UPLOAD onionfakehostname UNKNOWN hsdir0')
-        cb('UPLOADED onionfakehostname UNKNOWN hsdir0')
+        cb('UPLOAD {} UNKNOWN hsdir0'.format(_test_onion_id))
+        cb('UPLOADED {} UNKNOWN hsdir0'.format(_test_onion_id))
 
         hs = yield hs_d
 
@@ -113,7 +136,7 @@ class OnionServiceTest(unittest.TestCase):
         hsdir = self.mktemp()
         os.mkdir(hsdir)
         with open(join(hsdir, "hostname"), "w") as f:
-            f.write("onionfakehostname.onion")
+            f.write("{}.onion".format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
             config,
@@ -123,8 +146,8 @@ class OnionServiceTest(unittest.TestCase):
 
         # arrange HS_DESC callbacks so we get the hs instance back
         cb = protocol.events['HS_DESC']
-        cb('UPLOAD onionfakehostname UNKNOWN hsdir0')
-        cb('UPLOADED onionfakehostname UNKNOWN hsdir0')
+        cb('UPLOAD {} UNKNOWN hsdir0'.format(_test_onion_id))
+        cb('UPLOADED {} UNKNOWN hsdir0'.format(_test_onion_id))
 
         hs = yield hs_d
         self.assertIs(None, hs.private_key)
@@ -136,7 +159,7 @@ class OnionServiceTest(unittest.TestCase):
         hsdir = self.mktemp()
         os.mkdir(hsdir)
         with open(join(hsdir, "hostname"), "w") as f:
-            f.write("onionfakehostname.onion")
+            f.write('{}.onion'.format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
             config,
@@ -147,8 +170,8 @@ class OnionServiceTest(unittest.TestCase):
 
         # arrange HS_DESC callbacks so we get the hs instance back
         cb = protocol.events['HS_DESC']
-        cb('UPLOAD onionfakehostname UNKNOWN hsdir0')
-        cb('UPLOADED onionfakehostname UNKNOWN hsdir0')
+        cb('UPLOAD {} UNKNOWN hsdir0'.format(_test_onion_id))
+        cb('UPLOADED {} UNKNOWN hsdir0'.format(_test_onion_id))
 
         hs = yield hs_d
         self.assertIs(None, hs.private_key)
@@ -175,19 +198,18 @@ class OnionServiceTest(unittest.TestCase):
     def test_ephemeral_given_key(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
-        privkey = 'a' * 32
 
         # returns a Deferred we're ignoring
         EphemeralOnionService.create(
             config,
             ports=["80 127.0.0.1:80"],
-            private_key=privkey,
+            private_key=_test_private_key_blob,
             detach=True,
         )
 
         cmd, d = protocol.commands[0]
-        self.assertEqual(u"ADD_ONION RSA1024:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Port=80,127.0.0.1:80 Flags=Detach", cmd)
-        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+        self.assertEqual(u"ADD_ONION RSA1024:{} Port=80,127.0.0.1:80 Flags=Detach".format(_test_private_key_blob), cmd)
+        d.callback("PrivateKey={}\nServiceID={}".format(_test_private_key_blob, _test_onion_id))
 
     def test_ephemeral_v3_no_key(self):
         protocol = FakeControlProtocol([])
@@ -203,7 +225,7 @@ class OnionServiceTest(unittest.TestCase):
 
         cmd, d = protocol.commands[0]
         self.assertEqual(u"ADD_ONION NEW:ED25519-V3 Port=80,127.0.0.1:80 Flags=Detach", cmd)
-        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+        d.callback("PrivateKey={}\nServiceID={}".format(_test_private_key_blob, _test_onion_id))
 
     @defer.inlineCallbacks
     def test_ephemeral_v3_wrong_key_type(self):
@@ -359,16 +381,16 @@ class OnionServiceTest(unittest.TestCase):
 
         cmd, d = protocol.commands[0]
         self.assertEqual(u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80 Flags=DiscardPK", cmd)
-        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+        d.callback("PrivateKey={}\nServiceID={}".format(_test_private_key_blob, _test_onion_id))
 
         # get the event-listener callback that torconfig code added
         cb = protocol.events['HS_DESC']
 
         for x in range(6):
-            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOAD {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         for x in range(6):
-            cb('FAILED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('FAILED {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         # now when we wait for our onion, it should already be failed
         # because all 6 uploads failed.
@@ -417,19 +439,19 @@ class OnionServiceTest(unittest.TestCase):
         cmd, d = protocol.commands[0]
         self.assertEqual(u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80", cmd)
 
-        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+        d.callback("PrivateKey={}\nServiceID={}".format(_test_private_key_blob, _test_onion_id))
         cb = protocol.events['HS_DESC']
 
         for x in range(6):
-            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOAD {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         for x in range(6):
-            cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOADED {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         hs = yield eph_d
         remove_d = hs.remove()
         cmd, d = protocol.commands[-1]
-        self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
+        self.assertEqual(u"DEL_ONION {}".format(_test_onion_id), cmd)
         d.callback('OK')
         yield remove_d
 
@@ -446,19 +468,19 @@ class OnionServiceTest(unittest.TestCase):
         cmd, d = protocol.commands[0]
         self.assertEqual(u"ADD_ONION NEW:BEST Port=80,127.0.0.1:80", cmd)
 
-        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname")
+        d.callback("PrivateKey={}\nServiceID={}".format(_test_private_key_blob, _test_onion_id))
         cb = protocol.events['HS_DESC']
 
         for x in range(6):
-            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOAD {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         for x in range(6):
-            cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOADED {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         hs = yield eph_d
         remove_d = hs.remove()
         cmd, d = protocol.commands[-1]
-        self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
+        self.assertEqual(u"DEL_ONION {}".format(_test_onion_id), cmd)
         d.callback('bad stuff')
         with self.assertRaises(RuntimeError):
             yield remove_d
@@ -531,7 +553,7 @@ class OnionServiceTest(unittest.TestCase):
         hsdir = self.mktemp()
         os.mkdir(hsdir)
         with open(join(hsdir, "hostname"), "w") as f:
-            f.write("onionfakehostname.onion")
+            f.write('{}.onion'.format(_test_onion_id))
 
         def my_progress(a, b, c):
             pass
@@ -546,8 +568,8 @@ class OnionServiceTest(unittest.TestCase):
 
         # arrange HS_DESC callbacks so we get the hs instance back
         cb = protocol.events['HS_DESC']
-        cb('UPLOAD onionfakehostname UNKNOWN hsdir0')
-        cb('UPLOADED onionfakehostname UNKNOWN hsdir0')
+        cb('UPLOAD {} UNKNOWN hsdir0'.format(_test_onion_id))
+        cb('UPLOADED {} UNKNOWN hsdir0'.format(_test_onion_id))
 
         yield eph_d
 
@@ -573,14 +595,14 @@ class OnionServiceTest(unittest.TestCase):
         self.assertIn(u"ClientAuth=steve", cmd)
         self.assertIn(u"ClientAuth=carol:c4r0ls33kr1t", cmd)
 
-        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname\nClientAuth=steve:aseekritofsomekind")
+        d.callback("PrivateKey={}\nServiceID={}\nClientAuth=steve:aseekritofsomekind".format(_test_private_key_blob, _test_onion_id))
         cb = protocol.events['HS_DESC']
 
         for x in range(6):
-            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOAD {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         for x in range(6):
-            cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOADED {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         hs = yield eph_d
 
@@ -594,7 +616,7 @@ class OnionServiceTest(unittest.TestCase):
             steve.auth_token,
         )
         self.assertEqual(
-            "onionfakehostname.onion",
+            "{}.onion".format(_test_onion_id),
             steve.hostname,
         )
         self.assertEqual(
@@ -611,13 +633,13 @@ class OnionServiceTest(unittest.TestCase):
             carol.auth_token,
         )
         self.assertEqual(
-            "onionfakehostname.onion",
+            "{}.onion".format(_test_onion_id),
             carol.hostname,
         )
 
         remove_d = hs.remove()
         cmd, d = protocol.commands[-1]
-        self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
+        self.assertEqual(u"DEL_ONION {}".format(_test_onion_id), cmd)
         d.callback('OK')
         yield remove_d
 
@@ -643,14 +665,19 @@ class OnionServiceTest(unittest.TestCase):
         self.assertIn(u"ClientAuth=steve", cmd)
         self.assertIn(u"ClientAuth=carol:c4r0ls33kr1t", cmd)
 
-        d.callback("PrivateKey=fakeprivatekeyblob\nServiceID=onionfakehostname\nClientAuth=steve:aseekritofsomekind")
+        d.callback(
+            "PrivateKey={}\nServiceID={}\nClientAuth=steve:aseekritofsomekind".format(
+                _test_private_key_blob,
+                _test_onion_id,
+            )
+        )
         cb = protocol.events['HS_DESC']
 
         for x in range(6):
-            cb('UPLOAD onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOAD {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         for x in range(6):
-            cb('UPLOADED onionfakehostname UNKNOWN hsdir_{}'.format(x))
+            cb('UPLOADED {} UNKNOWN hsdir_{}'.format(_test_onion_id, x))
 
         hs = yield eph_d
 
@@ -664,7 +691,7 @@ class OnionServiceTest(unittest.TestCase):
             steve.auth_token,
         )
         self.assertEqual(
-            "onionfakehostname.onion",
+            "{}.onion".format(_test_onion_id),
             steve.hostname,
         )
         self.assertEqual(
@@ -681,13 +708,13 @@ class OnionServiceTest(unittest.TestCase):
             carol.auth_token,
         )
         self.assertEqual(
-            "onionfakehostname.onion",
+            "{}.onion".format(_test_onion_id),
             carol.hostname,
         )
 
         remove_d = hs.remove()
         cmd, d = protocol.commands[-1]
-        self.assertEqual(u"DEL_ONION onionfakehostname", cmd)
+        self.assertEqual(u"DEL_ONION {}".format(_test_onion_id), cmd)
         d.callback('not okay')
         with self.assertRaises(RuntimeError):
             yield remove_d

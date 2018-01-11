@@ -22,6 +22,9 @@ from twisted.internet.interfaces import IReactorTCP
 from twisted.internet.interfaces import IListeningPort
 from twisted.internet.interfaces import IAddress
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+
 from txtorcon import TorControlProtocol
 from txtorcon import TorConfig
 from txtorcon import TCPHiddenServiceEndpoint
@@ -31,6 +34,7 @@ from txtorcon import IProgressProvider
 from txtorcon import TorOnionAddress
 from txtorcon.onion import IAuthenticatedOnionClients
 from txtorcon.onion import IOnionService
+from txtorcon.onion import _compute_permanent_id
 from txtorcon import AuthStealth
 from txtorcon import AuthBasic
 from txtorcon.util import NoOpProtocolFactory
@@ -42,7 +46,7 @@ from txtorcon.controller import Tor
 from txtorcon.socks import _TorSocksFactory
 
 from . import util
-from .test_torconfig import FakeControlProtocol  # FIXME
+from txtorcon.testutil import FakeControlProtocol
 
 
 @implementer(IReactorCore)
@@ -352,6 +356,60 @@ class EndpointTests(unittest.TestCase):
             self.assertEqual(e, listen)
 
         repr(self.config.HiddenServices)
+
+    @defer.inlineCallbacks
+    def test_basic_auth(self, ftb):
+        reactor = proto_helpers.MemoryReactor()
+        reactor.addSystemEventTrigger = Mock()
+        privkey = (
+            b'-----BEGIN RSA PRIVATE KEY-----\n'
+            b'MIICXAIBAAKBgQC+bxV7+iEjJCmvQW/2SOYFQBsF06VuAdVKr3xTNMHgqI5mks6O\n'
+            b'D8cizQ1nr0bL/bqtLPA2whUSvaJmDZjkmpC62v90YU1p99tGOv+ILZTzoIIjcWWn\n'
+            b'3muDzA7p+zlN50x55ABuxEwQ3TfRA6nM1JF4HamYuHNae5nzbdwuxXpQ4wIDAQAB\n'
+            b'AoGBAJLjbkf11M+dWkXjjLAE5OAR5YYmDYmAAnycRaKMpCtc+JIoFQlBJFI0pm1e\n'
+            b'ppY8fVyMuDEUnVqaSYS8Yj2a95zD84hr0SzNFf5wSbffEcLIsmw7I18Mxq/YMrmy\n'
+            b'oGwizMnhV/IVPKh40xctPl2cIpg9AdBLYgnc/sO8oBr5k+uRAkEA8B4jeVq4IYv/\n'
+            b'b/kPzWiav/9weFMqKZdDh0O7ashbRe4b6CaHI2+XxX4uop9bFCTXsq73yCL7gqpU\n'
+            b'AkzCPGWvmwJBAMsHqQQjKn7KlPezZsYL4FY2IkqKuq2x6vFWhMPfXl6y66Ya6/uO\n'
+            b'of5kJUlolVcbvAEq4kLAk7nWi9RzWux/DFkCQHk1HX8StkPo4YZqWPm9RfCJRwLW\n'
+            b'KEBaZPIQ1LhwbvJ74YZsfGb828YLjgr1GgqvFlrSS62xSviIdmO6z4mhYuUCQAK9\n'
+            b'E7aOkuAq819z+Arr1hbTnBrNTD9Tiwu+UwQhWzCD0VHoQw6dmenIiAg5dOo74YlS\n'
+            b'fsLPvi5fintPIwbVn+ECQCh6PEvaTP+fsPTyaRPOftCPqgLZbfzGnmt3ZJh1EB60\n'
+            b'6X5Sz7FXRbQ8G5kmBy7opEoT4vsLMWGI+uq5WCXiuqY=\n'
+            b'-----END RSA PRIVATE KEY-----\n'
+        )
+        perm_id = _compute_permanent_id(
+            serialization.load_pem_private_key(
+                privkey,
+                password=None,
+                backend=default_backend(),
+            )
+        )
+        print("perm {} {}".format(perm_id, type(perm_id)))
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+        with open(os.path.join(hsdir, 'private_key'), 'wb') as f:
+            f.write(privkey)
+
+        ep = TCPHiddenServiceEndpoint(
+            reactor, self.config, 123,
+            ephemeral=False,
+            hidden_service_dir=hsdir,
+            auth=AuthBasic(['alice', 'bob']),
+        )
+        assert self.config.post_bootstrap.called
+        yield self.config.post_bootstrap
+        self.assertTrue(IProgressProvider.providedBy(ep))
+
+        port_d = ep.listen(NoOpProtocolFactory())
+        self.assertEqual(4, len(self.protocol.sets))
+        hsdesc = self.protocol.events['HS_DESC']
+        hsdesc("UPLOAD {} x x x x".format(perm_id))
+        hsdesc("UPLOADED {} x x x x".format(perm_id))
+        print(port_d)
+        port = yield port_d
+        print(port)
+
 
     @defer.inlineCallbacks
     def test_not_ephemeral_no_hsdir(self, ftb):

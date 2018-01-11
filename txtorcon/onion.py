@@ -1,7 +1,13 @@
 import os
 import re
 import six
+import time
+import base64
+import struct
+import hashlib
 import functools
+import warnings
+from os.path import isabs, abspath
 
 from zope.interface import Interface, Attribute, implementer
 
@@ -11,6 +17,10 @@ from twisted.python import log
 from txtorcon.util import find_keywords, version_at_least
 from txtorcon.util import _is_non_public_numeric_address
 from txtorcon.util import available_tcp_port
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+
 
 # XXX
 # think: port vs ports: and how do we represent that? i.e. if we
@@ -97,6 +107,16 @@ class IAuthenticatedOnionClients(Interface):
     doesn't yet support ephemeral authenticated services.
     """
 
+    def get_permanent_id(self):
+        """
+        :return: the service's permanent id, in hex
+
+        (For authenticated services, this is not the same as the
+        .onion URI of any of the clients). The Permanent ID is the
+        base32 encoding of the first 10 bytes of the SHA1 hash of the
+        public-key of the service.
+        """
+
     def client_names(self):
         """
         :return: list of str instances, one for each client
@@ -109,12 +129,12 @@ class IAuthenticatedOnionClients(Interface):
 
     def add_client(self, name):
         """
-        probably returns a Deferred? god fucking knows
+        probably should return a Deferred?
         """
 
     def del_client(self, name):
         """
-        moar deferreds
+        probably should return a Deferred?
         """
 
 
@@ -136,16 +156,44 @@ class IOnionClient(IOnionService):
     #    ports
 
 
+def _canonical_hsdir(hsdir):
+    """
+    Internal helper.
+
+    :return: the absolute path for 'hsdir' (and issue a warning)
+        issuing a warning) if it was relative. Otherwise, returns the path
+        unmodified.
+    """
+    if not isabs(hsdir):
+        abs_hsdir = abspath(hsdir)
+        warnings.warn(
+            "Onions service directory ({}) is relative and has"
+            " been resolved to '{}'".format(hsdir, abs_hsdir)
+        )
+        hsdir = abs_hsdir
+    return hsdir
+
+
 @implementer(IOnionService)
 @implementer(IFilesystemOnionService)
 class FilesystemOnionService(object):
     """
     """
 
+    #XXX this should NOT allow relative paths, because they're
+    #relative to *Tor's* cwd, not the controller's cwd (or, we should
+    #allow relative paths, but canonical-ize them ourselves)
+
     @staticmethod
     @defer.inlineCallbacks
-    def create(config, hsdir, ports, version=2, group_readable=False, auth=None, progress=None):
-        fhs = FilesystemOnionService(config, hsdir, ports, ver=version, group_readable=group_readable, auth=auth)
+    def create(config, hsdir, ports, version=2, group_readable=False, progress=None):
+
+        # if hsdir is relative, it's "least surprising" (IMO) to make
+        # it into a absolute path here -- otherwise, it's relative to
+        # whatever Tor's cwd is.
+        hsdir = _canonical_hsdir(hsdir)
+
+        fhs = FilesystemOnionService(config, hsdir, ports, version=version, group_readable=group_readable)
         config.HiddenServices.append(fhs)
         # we .save() down below, after setting HS_DESC listener
 
@@ -188,8 +236,7 @@ class FilesystemOnionService(object):
         yield uploaded[0]
         defer.returnValue(fhs)
 
-    def __init__(self, config, thedir, ports,
-                 auth=None, ver=2, group_readable=0):
+    def __init__(self, config, thedir, ports, version=2, group_readable=0):
         if not isinstance(ports, list):
             raise ValueError("'ports' must be a list of strings")
         self._config = config
@@ -199,8 +246,8 @@ class FilesystemOnionService(object):
             ports,
             functools.partial(config.mark_unsaved, 'HiddenServices'),
         )
-        self._auth = auth
-        self._version = ver
+#        self._auth = auth
+        self._version = version
         self._group_readable = group_readable
         self._hostname = None
         self._private_key = None
@@ -339,6 +386,15 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
     failed_uploads = set()
     uploaded = defer.Deferred()
 
+    def hostname_matches(hostname):
+        print("hostname ? {}".format(hostname[:-6]))
+        if IAuthenticatedOnionClients.providedBy(onion):
+            print(" {} {} {}".format(hostname[:-6], onion.get_permanent_id(), hostname[:-6] == onion.get_permanent_id()))
+            return hostname[:-6] == onion.get_permanent_id()
+        else:
+            # provides IOnionService
+            return onion.hostname == hostname
+
     def hs_desc(evt):
         """
         From control-spec:
@@ -349,7 +405,8 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
         args = evt.split()
         subtype = args[0]
         if subtype == 'UPLOAD':
-            if onion.hostname and args[1] == onion.hostname[:-6]:
+            if hostname_matches('{}.onion'.format(args[1])):
+                #if onion.hostname and args[1] == onion.hostname[:-6]:
                 attempted_uploads.add(args[3])
                 if progress:
                     progress(
@@ -374,12 +431,13 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
                         "Successful upload to {}".format(args[3])
                     )
                 confirmed_uploads.add(args[3])
-                log.msg("Uploaded '{}' to '{}'".format(onion.hostname, args[3]))
+                log.msg("Uploaded '{}' to '{}'".format(args[1], args[3]))
                 if not uploaded.called:
                     uploaded.callback(onion)
 
         elif subtype == 'FAILED':
-            if onion.hostname and args[1] == onion.hostname[:-6]:
+            if hostname_matches('{}.onion'.format(args[1])):
+            #if onion.hostname and args[1] == onion.hostname[:-6]:
                 failed_uploads.add(args[3])
                 if progress:
                     progress(
@@ -389,7 +447,7 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
                     )
                 if failed_uploads == attempted_uploads:
                     msg = "Failed to upload '{}' to: {}".format(
-                        onion.hostname,
+                        args[1],
                         ', '.join(failed_uploads),
                     )
                     uploaded.errback(RuntimeError(msg))
@@ -535,10 +593,12 @@ class _AuthCommon(object):
 
 class AuthBasic(_AuthCommon):
     auth_type = 'basic'
+    # note that _AuthCommon.__init__ takes 'clients'
 
 
 class AuthStealth(_AuthCommon):
     auth_type = 'stealth'
+    # note that _AuthCommon.__init__ takes 'clients'
 
 
 DISCARD = object()
@@ -546,10 +606,14 @@ DISCARD = object()
 
 @implementer(IAuthenticatedOnionClients)
 class EphemeralAuthenticatedOnionService(object):
+    """
+    An onion service with either 'stealth' or 'basic' authentication
+    and keys stored in memory only (Tor doesn't store the private keys
+    anywhere and erases them when shutting down).
 
-    # XXX as per discussion below w/ kurt looks like I decided on
-    # something like "auth=NoAuth()", "auth=AuthBasic(["alice",
-    # "bob"])" or "auth=StealthAuth(["alice", "bob"])" or similar.
+    Use the async class-method ``create`` to make instances of this.
+    """
+
     @classmethod
     @defer.inlineCallbacks
     def create(cls, config, ports,
@@ -600,6 +664,20 @@ class EphemeralAuthenticatedOnionService(object):
         self._version = version
         self._detach = detach
         self._clients = dict()
+
+    def get_permanent_id(self):
+        """
+        IAuthenticatedOnionClients API
+        """
+        print("keydata:\n{}".format(self._private_key))
+        keydata = b'-----BEGIN RSA PRIVATE KEY-----\n' + self._private_key.encode('ascii') + b'\n-----END RSA PRIVATE KEY-----\n'
+        print(keydata)
+        private_key = serialization.load_pem_private_key(
+            keydata,
+            password=None,
+            backend=default_backend(),
+        )
+        return _compute_permanent_id(private_key)
 
     def client_names(self):
         return self._clients.keys()
@@ -830,6 +908,49 @@ class AuthenticatedFilesystemOnionServiceClient(object):
         return self._parent.version
 
 
+def _compute_descriptor_id(client_key):
+    h1 = hashlib.new('SHA1')
+    h1.update(client_key)
+    permanent_id = h1.digest()[:10]
+    print("perm {}".format(base64.b32encode(permanent_id).lower()))
+    print("perm %r" % permanent_id[0])
+    permanent_id_byte = struct.unpack('B', permanent_id[0:1])[0]
+    print('0x%x' % permanent_id_byte)
+
+    # should use reactor.seconds() instead of time.time()
+    current_time = int(time.time())
+    time_period = int((current_time + permanent_id_byte * 86400 / 256) / 86400)
+    #print('%s' % time_period)
+    h0 = hashlib.new('SHA1')
+    h0.update(struct.pack('>Hb', time_period, 0))
+    #print(h0.hexdigest())
+
+    h2 = hashlib.new('SHA1')
+    h2.update(permanent_id + h0.digest())
+    return base64.b32encode(h2.digest()[:10]).lower()
+
+
+def _compute_permanent_id(private_key):
+    """
+    Internal helper. Return an authenticated service's permanent ID
+    given an RSA private key object.
+
+    The permanent ID is the base32 encoding of the SHA1 hash of the
+    first 10 bytes (80 bits) of the public key.
+    """
+    pub = private_key.public_key()
+    p = pub.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.PKCS1
+    )
+    z = ''.join(p.decode('ascii').strip().split('\n')[1:-1])
+    b = base64.b64decode(z)
+    h1 = hashlib.new('sha1')
+    h1.update(b)
+    permanent_id = h1.digest()[:10]
+    return base64.b32encode(permanent_id).lower().decode('ascii')
+
+
 @implementer(IAuthenticatedOnionClients)
 class AuthenticatedFilesystemOnionService(object):
     """
@@ -847,21 +968,75 @@ class AuthenticatedFilesystemOnionService(object):
       HiddenServicePort 80 127.0.0.1:99
       HiddenServiceAuthorizeClient basic foo,bar,baz
     """
-    # XXX should take "auth={AuthBasic, AuthStealth}" like the other thing...
-    def __init__(self, config, thedir, ports, auth_type='basic', clients=None, ver=2, group_readable=0):
+
+    @staticmethod
+    @defer.inlineCallbacks
+    def create(config, hsdir, ports, auth=None, version=2, group_readable=False, progress=None):
+        # if hsdir is relative, it's "least surprising" (IMO) to make
+        # it into a relative path here -- otherwise, it's relative to
+        # whatever Tor's cwd is. Issue similar warning to Tor?
+        hsdir = _canonical_hsdir(hsdir)
+
+        fhs = AuthenticatedFilesystemOnionService(
+            config, hsdir, ports, auth,
+            version=version,
+            group_readable=group_readable,
+        )
+        config.HiddenServices.append(fhs)
+
+        # most of this code same as non-authenticated version; can we share?
+        # we .save() down below, after setting HS_DESC listener
+        uploaded = [None]
+        if not version_at_least(config.tor_protocol.version, 0, 2, 7, 2):
+            if progress:
+                progress(
+                    102, "wait_desctiptor",
+                    "Adding an onion service to Tor requires at least version"
+                )
+                progress(
+                    103, "wait_desctiptor",
+                    "0.2.7.2 so that HS_DESC events work properly and we can"
+                )
+                progress(
+                    104, "wait_desctiptor",
+                    "detect our desctiptor being uploaded."
+                )
+                progress(
+                    105, "wait_desctiptor",
+                    "Your version is '{}'".format(config.tor_protocol.version),
+                )
+                progress(
+                    106, "wait_desctiptor",
+                    "So, we'll just declare it done right now..."
+                )
+                uploaded[0] = defer.succeed(None)
+        else:
+            # XXX actually, there's some versions of Tor when v3
+            # filesystem services could be added but they didn't send
+            # HS_DESC updates -- did any of these actually get
+            # released?!
+            uploaded[0] = _await_descriptor_upload(config.tor_protocol, fhs, progress)
+
+        print("saving")
+        yield config.save()
+        print("saved, now {}".format(uploaded[0]))
+        yield uploaded[0]
+        defer.returnValue(fhs)
+
+    def __init__(self, config, thedir, ports, auth, version=2, group_readable=0):
         # XXX do we need version here? probably...
         self._config = config
         self._dir = thedir
         self._ports = ports
-        self._auth_type = auth_type
-        if auth_type not in ['basic', 'stealth']:
-            raise ValueError("Unknown auth_type '{}'".format(auth_type))
+        if auth is None:
+            raise ValueError("Must provide an auth= instance")
+        if not isinstance(auth, (AuthBasic, AuthStealth)):
+            raise ValueError("auth= must be one of AuthBasic or AuthStealth")
+        self._auth = auth
         # dict: name -> IAuthenticatedOnionClient
         self._clients = None
-        self._expected_clients = clients
-        if clients and any(' ' in client for client in clients):
-            raise ValueError("Client names can't have spaces")
-        self._version = ver
+        self._expected_clients = auth.client_names()
+        self._version = version
         self._group_readable = group_readable
         self._client_keys = None
 
@@ -884,6 +1059,18 @@ class AuthenticatedFilesystemOnionService(object):
     # basically everything in HiddenService, except the only API we
     # provide is "clients" because there's a separate .onion hostname
     # and authentication token per client.
+
+    def get_permanent_id(self):
+        """
+        IAuthenticatedOnionClients API
+        """
+        with open(os.path.join(self._dir, "private_key"), "rb") as f:
+            private_key = serialization.load_pem_private_key(
+                f.read(),
+                password=None,
+                backend=default_backend(),
+            )
+        return _compute_permanent_id(private_key)
 
     def client_names(self):
         """
@@ -933,19 +1120,24 @@ class AuthenticatedFilesystemOnionService(object):
 
     def _parse_hostname(self):
         clients = {}
-        with open(os.path.join(self._dir, 'hostname')) as f:
-            for idx, line in enumerate(f.readlines()):
-                # lines are like: hex.onion hex # client: name
-                m = re.match("(.*) (.*) # client: (.*)", line)
-                hostname, cookie, name = m.groups()
-                # -> for auth'd services we end up with multiple
-                # -> HiddenService instances now (because different
-                # -> hostnames)
-                clients[name] = AuthenticatedFilesystemOnionServiceClient(
-                    self, name, hostname,
-                    ports=self._ports,
-                    token=cookie,
-                )
+        try:
+            with open(os.path.join(self._dir, 'hostname')) as f:
+                for idx, line in enumerate(f.readlines()):
+                    # lines are like: hex.onion hex # client: name
+                    m = re.match("(.*) (.*) # client: (.*)", line)
+                    hostname, cookie, name = m.groups()
+                    # -> for auth'd services we end up with multiple
+                    # -> HiddenService instances now (because different
+                    # -> hostnames)
+                    clients[name] = AuthenticatedFilesystemOnionServiceClient(
+                        self, name, hostname,
+                        ports=self._ports,
+                        token=cookie,
+                    )
+        except IOError:
+            self._clients = dict()
+            return
+
         self._clients = clients
         if self._expected_clients:
             for expected in self._expected_clients:
@@ -967,10 +1159,17 @@ class AuthenticatedFilesystemOnionService(object):
             rtn.append(('HiddenServicePort', str(port)))
         if self._version:
             rtn.append(('HiddenServiceVersion', str(self._version)))
-        rtn.append((
-            'HiddenServiceAuthorizeClient',
-            "{} {}".format(self._auth_type, ','.join(self.client_names()))
-        ))
+        if self._clients:
+            rtn.append((
+                'HiddenServiceAuthorizeClient',
+                "{} {}".format(self._auth.auth_type, ','.join(self.client_names()))
+            ))
+        else:
+            rtn.append((
+                'HiddenServiceAuthorizeClient',
+                "{} {}".format(self._auth.auth_type, ','.join(self._expected_clients))
+            ))
+        print("ATTR {}".format(rtn))
         return rtn
 
 

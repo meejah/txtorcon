@@ -34,7 +34,9 @@ from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
 from .torconfig import TorConfig
+from .onion import IAuthenticatedOnionClients
 from .onion import FilesystemOnionService, EphemeralOnionService
+from .onion import AuthenticatedFilesystemOnionService
 from .onion import EphemeralAuthenticatedOnionService
 from .onion import AuthStealth  # , AuthBasic
 from .torconfig import _endpoint_from_socksport_line
@@ -463,6 +465,8 @@ class TCPHiddenServiceEndpoint(object):
     def onion_uri(self):
         if self.hiddenservice is None:
             return None
+        if IAuthenticatedOnionClients.providedBy(self.hiddenservice):
+            return _maybe_unique_host(self.hiddenservice)
         return self.hiddenservice.hostname
 
     @property
@@ -579,7 +583,7 @@ class TCPHiddenServiceEndpoint(object):
         if not already:
             if self.ephemeral:
                 if self.auth is not None:
-                    self.hiddenservice = yield EphemeralAuthenticatedOnionService.create(
+                    create_d = EphemeralAuthenticatedOnionService.create(
                         self._config,
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                         private_key=self.private_key,
@@ -590,7 +594,7 @@ class TCPHiddenServiceEndpoint(object):
                     )
 
                 else:
-                    self.hiddenservice = yield EphemeralHiddenService.create(
+                    create_d = EphemeralOnionService.create(
                         self._config,
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                         private_key=self.private_key,
@@ -599,16 +603,27 @@ class TCPHiddenServiceEndpoint(object):
                         version=self.version,
                     )
             else:
-                # XXX FIXME we want a similar auth vs. no-auth this as above, right?
-                self.hiddenservice = yield FilesystemHiddenService.create(
-                    self._config,
-                    self.hidden_service_dir,
-                    ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
-                    auth=self.auth,
-                    progress=self._tor_progress_update,
-                    group_readable=self.group_readable,
-                    version=self.version,
-                )
+                if self.auth is not None:
+                    create_d = AuthenticatedFilesystemOnionService.create(
+                        self._config,
+                        self.hidden_service_dir,
+                        ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+                        auth=self.auth,  # AuthBasic or AuthStealth
+                        progress=self._tor_progress_update,
+                        group_readable=self.group_readable,
+                        version=self.version,
+                    )
+                else:
+                    create_d = FilesystemOnionService.create(
+                        self._config,
+                        self.hidden_service_dir,
+                        ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+                        progress=self._tor_progress_update,
+                        group_readable=self.group_readable,
+                        version=self.version,
+                    )
+            self.hiddenservice = yield create_d
+
         else:
             if not self.ephemeral:
                 for hs in self._config.HiddenServices:
@@ -622,7 +637,12 @@ class TCPHiddenServiceEndpoint(object):
         self._tor_progress_update(110.0, 'wait_descriptor',
                                   'At least one descriptor uploaded')
 
-        log.msg('Started hidden service on %s:%d' % (self.onion_uri, self.public_port))
+        if IAuthenticatedOnionClients.providedBy(self.hiddenservice):
+            log.msg('Started authenticated onion service on:')
+            for nm in self.hiddenservice.client_names():
+                log.msg('  {}: {}'.format(nm, self.hiddenservice.get_client(nm).hostname))
+        else:
+            log.msg('Started onion service on %s:%d' % (self.onion_uri, self.public_port))
 
         # XXX should just return self.hiddenservice here??
         # -> no, don't think so for a couple reasons:
@@ -649,22 +669,46 @@ class TCPHiddenServiceEndpoint(object):
 @implementer(IAddress)
 class TorOnionAddress(FancyEqMixin, object):
     """
-    A ``TorOnionAddress`` represents the public address of a Tor hidden
-    service.
+    A ``TorOnionAddress`` represents the public address of a Tor onion
+    service. Instances of these come from calling the Twisted method
+    `.getHost()` on :api:`twisted.internet.interfaces.IListeningPort`
+    which was returned from the :class:`txtorcon.TCPHiddenServiceEndpoint.listen`
 
     :ivar type: A string describing the type of transport, 'onion'.
 
-    :ivar port: The public port we're advertising
+    :ivar onion_port: The public port we're advertising
 
-    :ivar clients: A list of IHiddenServiceClient instances, at least 1.
+    :ivar onion_key: the private key for the service
     """
     compareAttributes = ('type', 'onion_port', 'onion_key')
     type = 'onion'
 
+    # for authenticated services, there is a private-key for "the
+    # service"; for stealth-auth'd services, there are *also*
+    # private-keys for each client
+
     def __init__(self, port, hs):
         self.onion_port = port
-        self.onion_uri = hs.hostname
+
+        # this gets a bit weird .. partially for backwards-
+        # compatibility: .onion_uri is/was an existing property -- but
+        # doesn't always make sense. so, users should be encouraged to
+        # use .onion_service and access things directly (i.e. they
+        # know if they have an authenticated service or not, or can
+        # find out via .providedBy())
+
+        if IAuthenticatedOnionClients.providedBy(hs):
+            try:
+                self.onion_uri = _maybe_unique_host(hs)
+            except ValueError:
+                self.onion_uri = None
+        else:
+            self.onion_uri = hs.hostname
         self._hiddenservice = hs
+
+    @property
+    def onion_service(self):
+        return self._hiddenservice
 
     @property
     def onion_key(self):
@@ -674,6 +718,7 @@ class TorOnionAddress(FancyEqMixin, object):
         return '%s(%s)' % (self.__class__.__name__, self.onion_uri)
 
     def __hash__(self):
+        # should be "URIs", not URI
         return hash((self.type, self.onion_uri, self.onion_port))
 
 
@@ -1114,3 +1159,28 @@ class TorClientEndpointStringParser(object):
         # for Twisted 14 and 15 (and more) the first argument is
         # 'reactor', for older Twisteds it's not
         return self._parseClient(*args, **kwargs)
+
+
+def _maybe_unique_host(onion):
+    """
+    :param onion: IAuthenticatedOnionClients provider
+
+    :returns: a .onion hostname if all clients have the same name or
+        raises ValueError otherwise
+    """
+    hosts = [
+        onion.get_client(nm).hostname
+        for nm in onion.client_names()
+    ]
+    if not hosts:
+        raise ValueError(
+            "Can't access .onion_uri because there are no clients"
+        )
+    host = hosts[0]
+    for h in hosts[1:]:
+        if h != host:
+            raise ValueError(
+                "Cannot access .onion_uri for stealth-authenticated services "
+                "because each client has a unique URI"
+            )
+    return host

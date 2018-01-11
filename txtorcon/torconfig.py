@@ -23,10 +23,11 @@ from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.interface import ITorControlProtocol
 from txtorcon.util import find_keywords
-from .onion import IOnionClient, FilesystemHiddenService, AuthenticatedFilesystemOnionService
+from .onion import IOnionClient, FilesystemOnionService, AuthenticatedFilesystemOnionService
 from .onion import EphemeralOnionService
 from .onion import _await_descriptor_upload
 from .onion import DISCARD
+from .onion import AuthStealth, AuthBasic
 from .util import _Version
 
 
@@ -960,7 +961,7 @@ class TorConfig(object):
 
         # XXX FIXME uhm...how to do all the different types of hidden-services?
         if name.lower() == 'hiddenservices':
-            return FilesystemHiddenService
+            return FilesystemOnionService
         return type(self.parsers[name])
 
     def _conf_changed(self, arg):
@@ -1275,15 +1276,23 @@ class TorConfig(object):
                 if directory not in directories:
                     directories.append(directory)
                     if not auth:
-                        service = FilesystemHiddenService(
-                            self, directory, ports, auth, ver, group_read
+                        service = FilesystemOnionService(
+                            self, directory, ports, ver, group_read
                         )
                         hs.append(service)
                     else:
                         auth_type, clients = auth.split(' ', 1)
                         clients = clients.split(',')
+                        if auth_type == 'basic':
+                            auth0 = AuthBasic(clients)
+                        elif auth_type == 'stealth':
+                            auth0 = AuthStealth(clients)
+                        else:
+                            raise ValueError(
+                                "Unknown auth type '{}'".format(auth_type)
+                            )
                         parent_service = AuthenticatedFilesystemOnionService(
-                            self, directory, ports, auth_type, clients, ver, group_read
+                            self, directory, ports, auth0, ver, group_read
                         )
                         for client_name in parent_service.client_names():
                             hs.append(parent_service.get_client(client_name))
