@@ -47,6 +47,23 @@ class TorProtocolError(RuntimeError):
         return str(self.code) + ' ' + self.text
 
 
+class TorDisconnectError(RuntimeError):
+    """
+    Happens when Tor disconnects unexpectedly (i.e. while commands are pending)
+
+    :ivar text: a human-readable description of the error
+    :ivar error: the Failure instance that connectionLost received
+    """
+
+    def __init__(self, text, error):
+        self.text = text
+        self.error = error
+        super(TorDisconnectError, self).__init__(text)
+
+    def __str__(self):
+        return self.text
+
+
 @implementer(IProtocolFactory)
 class TorProtocolFactory(object):
     """
@@ -246,6 +263,8 @@ class TorControlProtocol(LineOnlyReceiver):
         self.valid_signals = []
         """A list of all valid signals we accept from Tor"""
 
+        # XXX bad practice; this should be like an on_disconnct()
+        # method that returns a new Deferred each time...
         self.on_disconnect = defer.Deferred()
         """
         This Deferred is triggered when the connection is closed. If
@@ -627,12 +646,23 @@ class TorControlProtocol(LineOnlyReceiver):
     def connectionLost(self, reason):
         "Protocol API"
         txtorlog.msg('connection terminated: ' + str(reason))
-        if self.on_disconnect.callbacks:
+        if not self.on_disconnect.called:
             if reason.check(ConnectionDone):
                 self.on_disconnect.callback(self)
             else:
                 self.on_disconnect.errback(reason)
         self.on_disconnect = None
+        outstanding = [self.command] + self.commands if self.command else self.commands
+        for d, cmd, cmd_arg in outstanding:
+            d.errback(
+                Failure(
+                    TorDisconnectError(
+                        text=("Tor unexpectedly disconnected while "
+                              "running: {}".format(cmd.decode('ascii'))),
+                        error=reason,
+                    )
+                )
+            )
         return None
 
     def _handle_notify(self, code, rest):
