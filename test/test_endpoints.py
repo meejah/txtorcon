@@ -413,7 +413,6 @@ class EndpointTests(unittest.TestCase):
         port = yield port_d
         print(port)
 
-
     @defer.inlineCallbacks
     def test_not_ephemeral_no_hsdir(self, ftb):
         listen = RuntimeError("listen")

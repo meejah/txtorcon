@@ -31,7 +31,6 @@ from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import AuthenticatedFilesystemOnionService
 from txtorcon.onion import AuthBasic
-from txtorcon.onion import AuthStealth
 
 from txtorcon.testutil import FakeControlProtocol
 

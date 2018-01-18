@@ -1,9 +1,7 @@
 import os
 import re
 import six
-import time
 import base64
-import struct
 import hashlib
 import functools
 import warnings
@@ -389,7 +387,6 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
         subtype = args[0]
         if subtype == 'UPLOAD':
             if hostname_matches('{}.onion'.format(args[1])):
-                #if onion.hostname and args[1] == onion.hostname[:-6]:
                 attempted_uploads.add(args[3])
                 if progress:
                     progress(
@@ -420,7 +417,6 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
 
         elif subtype == 'FAILED':
             if hostname_matches('{}.onion'.format(args[1])):
-            #if onion.hostname and args[1] == onion.hostname[:-6]:
                 failed_uploads.add(args[3])
                 if progress:
                     progress(

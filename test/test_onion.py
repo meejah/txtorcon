@@ -922,7 +922,7 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
         def progress(pct, tag, msg):
             print(pct, tag, msg)
         self.config.tor_protocol.version = "0.2.0.0"
-        d = AuthenticatedFilesystemOnionService.create(
+        AuthenticatedFilesystemOnionService.create(
             self.config, hsdir, ports,
             auth=AuthBasic(['alice']),
             progress=progress,
