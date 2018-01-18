@@ -1568,3 +1568,111 @@ class LegacyTests(unittest.TestCase):
             "deprecated",
             str(w[0].message),
         )
+
+    def test_defaults(self):
+        eph = EphemeralHiddenService("80 localhost:80")
+        self.assertEqual(eph._ports, ["80,localhost:80"])
+
+    def test_wrong_blob(self):
+        wrong_blobs = ["", " ", "foo", ":", " : ", "foo:", ":foo", 0]
+        for b in wrong_blobs:
+            try:
+                EphemeralHiddenService("80 localhost:80", b)
+                self.fail("should get exception")
+            except ValueError:
+                pass
+
+    def test_add(self):
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
+        proto = Mock()
+        proto.queue_command = Mock(return_value="PrivateKey=blam\nServiceID=ohai")
+        eph.add_to_tor(proto)
+
+        self.assertEqual("blam", eph.private_key)
+        self.assertEqual("ohai.onion", eph.hostname)
+
+    def test_add_keyblob(self):
+        eph = EphemeralHiddenService("80 127.0.0.1:80", "alg:blam")
+        proto = Mock()
+        proto.queue_command = Mock(return_value="ServiceID=ohai")
+        eph.add_to_tor(proto)
+
+        self.assertEqual("alg:blam", eph.private_key)
+        self.assertEqual("ohai.onion", eph.hostname)
+
+    def test_descriptor_wait(self):
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
+        proto = FakeControlProtocol(["PrivateKey=blam\nServiceID=ohai\n"])
+
+        eph.add_to_tor(proto)
+
+        proto.event_happened('HS_DESC', 'UPLOADED ohai UNKNOWN somehsdir')
+        proto.event_happened('HS_DESC', 'UPLOADED UNKNOWN UNKNOWN somehsdir')
+
+        self.assertEqual("blam", eph.private_key)
+        self.assertEqual("ohai.onion", eph.hostname)
+
+    def test_remove(self):
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
+        eph.hostname = 'foo.onion'
+        proto = Mock()
+        proto.queue_command = Mock(return_value="OK")
+
+        eph.remove_from_tor(proto)
+
+    @defer.inlineCallbacks
+    def test_remove_error(self):
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
+        eph.hostname = 'foo.onion'
+        proto = Mock()
+        proto.queue_command = Mock(return_value="it's not ok")
+
+        try:
+            yield eph.remove_from_tor(proto)
+            self.fail("should have gotten exception")
+        except RuntimeError:
+            pass
+
+    def test_failed_upload(self):
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
+        proto = FakeControlProtocol([
+            "PrivateKey=seekrit\nServiceID=42\n",
+        ])
+
+        d = eph.add_to_tor(proto)
+
+        # Tor leads with UPLOAD events for each attempt; we queue 2 of
+        # these...
+        proto.event_happened('HS_DESC', 'UPLOAD 42 UNKNOWN hsdir0')
+        proto.event_happened('HS_DESC', 'UPLOAD 42 UNKNOWN hsdir1')
+
+        # ...but fail them both
+        proto.event_happened('HS_DESC', 'FAILED 42 UNKNOWN hsdir1 REASON=UPLOAD_REJECTED')
+        proto.event_happened('HS_DESC', 'FAILED 42 UNKNOWN hsdir0 REASON=UPLOAD_REJECTED')
+
+        self.assertEqual("seekrit", eph.private_key)
+        self.assertEqual("42.onion", eph.hostname)
+        self.assertTrue(d.called)
+        d.addErrback(lambda e: self.assertTrue('Failed to upload' in str(e)))
+
+    def test_single_failed_upload(self):
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
+        proto = FakeControlProtocol([
+            "PrivateKey=seekrit\nServiceID=42\n",
+        ])
+
+        d = eph.add_to_tor(proto)
+
+        # Tor leads with UPLOAD events for each attempt; we queue 2 of
+        # these...
+        proto.event_happened('HS_DESC', 'UPLOAD 42 UNKNOWN hsdir0')
+        proto.event_happened('HS_DESC', 'UPLOAD 42 UNKNOWN hsdir1')
+
+        # ...then fail one
+        proto.event_happened('HS_DESC', 'FAILED 42 UNKNOWN hsdir1 REASON=UPLOAD_REJECTED')
+        # ...and succeed on the last.
+        proto.event_happened('HS_DESC', 'UPLOADED 42 UNKNOWN hsdir0')
+
+        self.assertEqual("seekrit", eph.private_key)
+        self.assertEqual("42.onion", eph.hostname)
+        self.assertTrue(d.called)

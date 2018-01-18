@@ -462,6 +462,8 @@ class EphemeralHiddenService(object):
             raise ValueError(
                 'key_blob_or_type must be a string in the formats '
                 '"NEW:<ALGORITHM>" or "<ALGORITHM>:<KEY>"')
+        if isinstance(ports, (six.text_type, str)):
+            ports = [ports]
         self._ports = [x.replace(' ', ',') for x in ports]
         self._keyblob = key_blob_or_type
         self.auth = auth  # FIXME ununsed
