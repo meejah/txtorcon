@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 import functools
+import warnings
 from six import StringIO
 from mock import Mock, patch
 from os.path import join
@@ -27,6 +28,7 @@ from txtorcon import TorNotFound
 from txtorcon.torconfig import parse_client_keys
 from txtorcon.torconfig import CommaList
 from txtorcon.torconfig import launch_tor
+from txtorcon.torconfig import EphemeralHiddenService
 from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import AuthenticatedFilesystemOnionService
@@ -1538,4 +1540,31 @@ class HiddenServiceAuthTests(unittest.TestCase):
         self.assertRaises(
             RuntimeError,
             parse_client_keys, data
+        )
+
+
+class LegacyTests(unittest.TestCase):
+    """
+    This tests that any pre-18.0.0 code for onion/hidden services will
+    still work. These can be removed when the deprecated code is gone.
+    """
+
+    def setUp(self):
+        self.protocol = FakeControlProtocol([])
+
+    @defer.inlineCallbacks
+    def test_add_to_tor(self):
+        self.protocol.answers.append("ServiceID=asdf\nPrivateKey=blob")
+        with warnings.catch_warnings(record=True) as w:
+            hs = EphemeralHiddenService(["80 127.0.0.1:1234"])
+        d = hs.add_to_tor(self.protocol)
+        self.protocol.event_happened('HS_DESC', 'UPLOAD asdf x x x x')
+        self.protocol.event_happened('HS_DESC', 'UPLOADED asdf x x x x')
+        yield d
+
+        self.assertEqual(hs.hostname, "asdf.onion")
+        self.assertEqual(hs.private_key, "blob")
+        self.assertIn(
+            "deprecated",
+            str(w[0].message),
         )

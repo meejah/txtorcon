@@ -30,12 +30,20 @@ class FakeControlProtocol(object):
         self.events = {}  #: event type -> callback
         self.pending_events = {}  #: event type -> list
         self.is_owned = -1
-        self.commands = []
         self.version = "0.2.8.0"
+        # XXX can we get rud of 'commands' and just use pending?
+        self.commands = []
 
     def queue_command(self, cmd):
-        d = defer.Deferred()
+        if len(self.answers) == 0:
+            d = defer.Deferred()
+            self.pending.append(d)
+            self.commands.append((cmd, d))
+            return d
+
+        d = defer.succeed(self.answers[0])
         self.commands.append((cmd, d))
+        self.answers = self.answers[1:]
         return d
 
     def event_happened(self, event_type, *args):

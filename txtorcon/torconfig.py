@@ -436,11 +436,11 @@ def _is_valid_keyblob(key_blob_or_type):
 
 # we can't use @deprecated here because then you can't use the
 # resulting class in isinstance() things and the like, because Twisted
-# makes it into a function instead :(
-# @deprecated(_Version("txtorcon", 17, 0, 0))
+# makes it into a function instead :( so we @deprecate __init__ for now
+# @deprecated(_Version("txtorcon", 18, 0, 0))
 class EphemeralHiddenService(object):
     '''
-    Deprecated as of 17.0.0. Please instead use :class:`txtorcon.EphemeralOnionService`
+    Deprecated as of 18.0.0. Please instead use :class:`txtorcon.EphemeralOnionService`
 
     This uses the ephemeral hidden-service APIs (in comparison to
     torrc or SETCONF). This means your hidden-service private-key is
@@ -449,6 +449,7 @@ class EphemeralHiddenService(object):
     https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1295
     '''
 
+    @deprecated(_Version("txtorcon", 18, 0, 0))
     def __init__(self, ports, key_blob_or_type='NEW:BEST', auth=[], ver=2):
         # deprecated; use Tor.create_onion_service
         warn(
@@ -466,6 +467,7 @@ class EphemeralHiddenService(object):
         self.auth = auth  # FIXME ununsed
         # FIXME nicer than assert, plz
         self.version = ver
+        self.hostname = None
 
     @defer.inlineCallbacks
     def add_to_tor(self, protocol):
