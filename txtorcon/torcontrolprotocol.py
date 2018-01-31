@@ -530,7 +530,9 @@ class TorControlProtocol(LineOnlyReceiver):
             circuit or stream creation etc. see TorState and methods
             like add_circuit_listener
 
-        :Return: ``None``
+        :returns: a Deferred that fires when the listener is added
+            (this may involve a controller command if this is the first
+            listener for this event).
 
         .. todo::
             - should have an interface for the callback
@@ -551,6 +553,7 @@ class TorControlProtocol(LineOnlyReceiver):
         evt.listen(callback)
         return d
 
+    # XXX this should have been async all along
     def remove_event_listener(self, evt, cb):
         """
         The opposite of :meth:`TorControlProtocol.add_event_listener`
@@ -558,6 +561,10 @@ class TorControlProtocol(LineOnlyReceiver):
         :param evt: the event name (or an Event object)
 
         :param cb: the callback object to remove
+
+        :returns: a Deferred that fires when the listener is removed
+            (this may involve a controller command if this is the last
+            listener for this event).
         """
         if evt not in self.valid_events.values():
             # this lets us pass a string or a real event-object
@@ -572,7 +579,9 @@ class TorControlProtocol(LineOnlyReceiver):
             # type to come in before the SETEVENTS succeeds; see
             # _handle_notify which explicitly ignore this case.
             del self.events[evt.name]
-            self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+            return self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+        else:
+            return defer.succeed(None)
 
     def protocolinfo(self):
         """
