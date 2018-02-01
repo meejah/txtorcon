@@ -29,6 +29,19 @@ all the onion changes, releasing *that* as 18.1.0?)
    `.errback()` for the corresponding Deferred is now correctly fired
    (with a :class:`txtorcon.TorDisconnectError`
 
+ * tired: `get_global_tor()` (now deprecated)
+   wired: :meth:`txtorcon.get_global_tor_instance`
+
+ * Adds a comprehensive set of Onion Services APIs (for all six
+   variations). For non-authenticated services, instances of
+   :class:`txtorcon.IOnionService` represent services; for
+   authenticated services, instances of
+   :class:`txtorcon.IAuthenticatedOnionClients` encapsulated named
+   lists of clients (each client is an instance implementing
+   `IOnionService`).
+ * Version 3 ("Proposition 279") Onion service support (same APIs) as
+   released in latest Tor
+
 # XXX THINK: I think we maybe just want to nuke these for now (and
 # users can use EphemeralOnionService.create et al. to do the same
 # thing)
@@ -54,6 +67,9 @@ all the onion changes, releasing *that* as 18.1.0?)
    ** :method:`txtorcon.Tor.create_filesystem_onion_endpoint`
  * see :ref:`create_onion` for information on how to choose an
    appropriate type of Onion Service.
+
+ * Additional APIs to make visiting authenticated Onion services as a
+   client easier:
 
  * :method:`txtorcon.Tor.add_onion_authentication` will add a
    client-side Onion service authentication token. If you add a token

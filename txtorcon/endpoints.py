@@ -155,7 +155,8 @@ class IProgressProvider(Interface):
 @implementer(IStreamServerEndpoint)
 @implementer(IProgressProvider)
 class TCPHiddenServiceEndpoint(object):
-    """This represents something listening on an arbitrary local port
+    """
+    This represents something listening on an arbitrary local port
     that has a Tor configured with a Hidden Service pointing at
     it. :api:`twisted.internet.endpoints.TCP4ServerEndpoint
     <TCP4ServerEndpoint>` is used under the hood to do the local
@@ -186,33 +187,26 @@ class TCPHiddenServiceEndpoint(object):
     instance of this class yourself (i.e. with a TorConfig instance
     you've created).
 
-    No matter how you came by your instance, calling `listen()` on it
-    causes Tor to be launched or connected-to, your hidden service to
-    be added, checks that the descriptor is uploaded and you get a
-    ``Deferred`` with an ``IListeningPort`` whose ``getHost()`` will
-    return a :class:`txtorcon.TorOnionAddress`. The port object will
-    also implement :class:`txtorcon.IHiddenService` so you can get the
-    locally-listening address and hidden serivce directory::
+    No matter how you came by this endpoing instance, you should call
+    `listen()` on it to trigger any work required to create the
+    service: Tor will be launched or connected-to; config for the onion service will
+    be added; the uploading of descriptors is awaited.
 
-        endpoint = ...
-        port = yield endpoint.listen(...)
-        uri = port.getHost().onion_uri
-        port = port.getHost().onion_port
-        addr = IHiddenService(port).local_address
-        hsdir = IHiddenService(port).hidden_service_dir
-
-    returns (via Deferred) an object that implements
-    :api:`twisted.internet.interfaces.IStreamServerEndpoint`
+    The ``Deferred`` from ``listen()`` will fire with an
+    ``IListeningPort`` whose ``getHost()`` will return a
+    :class:`txtorcon.TorOnionAddress`. The port object also has a
+    `.onion_service` property which resolves to the
+    :class:`txtorcon.IOnionService` or
+    :class:`txtorcon.IAuthenticatedOnionClients` instance (and from
+    which you can recover private keys, the hostname, etc)
 
     :ivar onion_uri: the public key, like ``timaq4ygg2iegci7.onion``
         which came from the hidden_service_dir's ``hostname`` file
 
     :ivar onion_private_key: the contents of ``hidden_service_dir/private_key``
 
-
-    :ivar hiddenServiceDir: the data directory, either passed in or created
+    :ivar hidden_service_dir: the data directory, either passed in or created
         with ``tempfile.mkdtemp``
-
     """
 
     @classmethod
@@ -500,28 +494,16 @@ class TCPHiddenServiceEndpoint(object):
         Returns a Deferred that delivers an
         :api:`twisted.internet.interfaces.IListeningPort` implementation.
 
-        This port can also be adapted to two other interfaces:
-
-        :class:`txtorcon.IHiddenService` so you can get the
-        `onion_uri` and `onion_private_key` members (these correspond
-        to "hostname" and "private_key" from the HiddenServiceDir Tor
-        is using).
-
-        :class:`txtorcon.IProgressProvider` can provide you progress
-        updates while Tor is launched. Note that Tor is not always
-        launched when calling this listen() method.
+        This object will also have a `.onion_service` property which
+        resolve to an instance implementing
+        :class:`txtorcon.IOnionService` or
+        :class:`txtorcon.IAuthenticatedOnionClients` (depending on
+        whether the service is authenticated or not).
 
         At this point, Tor will have fully started up and successfully
-        accepted the hidden service's config.
-
-        FIXME TODO: also listen for an INFO-level Tor message (does
-        exist, #tor-dev says) that indicates the hidden service's
-        descriptor is published.
-
-        It is "connection_dir_client_reached_eof(): Uploaded
-        rendezvous descriptor (status 200 ("Service descriptor (v2)
-        stored"))" at INFO level.
-
+        accepted the hidden service's config. The Onion Service's
+        descriptor will be uploaded to at least one directory (as
+        reported via the `HS_DESC` event).
         """
 
         self.protocolfactory = protocolfactory
