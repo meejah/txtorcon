@@ -322,9 +322,6 @@ def launch(reactor,
 
     log.msg('Spawning tor process with DataDirectory', data_directory)
     args = [tor_binary] + config_args
-    # XXX note to self; we create data_directory above, so when this
-    # is master we can close
-    # https://github.com/meejah/txtorcon/issues/178
     transport = reactor.spawnProcess(
         process_protocol,
         tor_binary,
