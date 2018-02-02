@@ -329,7 +329,6 @@ def launch(reactor,
         env={'HOME': data_directory},
         path=data_directory if os.path.exists(data_directory) else None,  # XXX error if it doesn't exist?
     )
-    # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
     transport.closeStdin()
     proto = yield connected_cb
     # note "proto" here is a TorProcessProtocol
@@ -350,10 +349,6 @@ def launch(reactor,
         )
     )
 
-
-# XXX
-# what about control_endpoint_or_endpoints? (i.e. allow a list to try?)
-# what about if it's None (default?) and we try some candidates?
 
 @inlineCallbacks
 def connect(reactor, control_endpoint=None, password_function=None):
