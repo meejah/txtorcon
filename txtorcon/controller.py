@@ -176,7 +176,8 @@ def launch(reactor,
         raise TorNotFound('Tor binary could not be found')
 
     # make sure we got things that have write() for stderr, stdout
-    # kwargs (XXX is there a "better" way to check for file-like object?)
+    # kwargs (XXX is there a "better" way to check for file-like
+    # object? do we use anything besides 'write()'?)
     for arg in [stderr, stdout]:
         if arg and not getattr(arg, "write", None):
             raise RuntimeError(
@@ -225,6 +226,8 @@ def launch(reactor,
     except KeyError:
         pass
     else:
+        # if we're root, make sure the directory is owned by the User
+        # that Tor is configured to drop to
         if sys.platform in ('linux', 'linux2', 'darwin') and os.geteuid() == 0:
             os.chown(data_directory, pwd.getpwnam(our_user).pw_uid, -1)
 
@@ -825,10 +828,6 @@ class Tor(object):
             reactor=self._reactor,
         )
 
-    # XXX justification for create_authenticated_onion_endpoint versus
-    # create_onion_endpoint is the latter returns IOnionService
-    # instance whereas the authenticated one returns
-    # IAuthenticatedOnionClients instead.
     def create_authenticated_onion_endpoint(self, port, auth, private_key=None, version=None):
         """
         WARNING: API subject to change
