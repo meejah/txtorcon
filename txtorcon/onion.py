@@ -313,12 +313,12 @@ class FilesystemOnionService(object):
         self._config.mark_unsaved('HiddenServices')
 
     @property
-    def dir(self):  # XXX propbably should be 'directory'?
+    def directory(self):
         return self._dir
 
     @dir.setter
-    def dir(self, d):
-        self._dir = d  # XXX FIXME see above
+    def directory(self, d):
+        self._dir = d
         self._config.mark_unsaved('HiddenServices')
 
     @property
@@ -334,9 +334,12 @@ class FilesystemOnionService(object):
         self._version = v
         self._config.mark_unsaved('HiddenServices')
 
-    # etcetc, basically the old "HiddenService" object
-
     def config_attributes(self):
+        """
+        Helper method used by TorConfig when generating a torrc file and
+        SETCONF commands
+        """
+
         rtn = [('HiddenServiceDir', str(self._dir))]
         if self._config._supports['HiddenServiceDirGroupReadable'] \
            and self.group_readable:
@@ -1110,7 +1113,8 @@ class AuthenticatedFilesystemOnionService(object):
 
     def config_attributes(self):
         """
-        Helper method used by TorConfig when generating a torrc file.
+        Helper method used by TorConfig when generating a torrc file and
+        SETCONF commands
         """
 
         rtn = [('HiddenServiceDir', str(self._dir))]
