@@ -317,10 +317,20 @@ class FilesystemOnionService(object):
     def directory(self):
         return self._dir
 
-    @dir.setter
+    @directory.setter
     def directory(self, d):
         self._dir = d
         self._config.mark_unsaved('HiddenServices')
+
+    @property
+    def dir(self):
+        # deprecated
+        return self.directory
+
+    @dir.setter
+    def dir(self, d):
+        # deprecated
+        self.directory = d
 
     @property
     def group_readable(self):
