@@ -5,8 +5,11 @@ from twisted.trial import unittest
 from twisted.internet import defer
 from twisted.internet.address import IPv4Address
 from twisted.internet.protocol import Protocol
+from twisted.internet.interfaces import IStreamClientEndpoint
 from twisted.test import proto_helpers
 from twisted.test.iosim import connect, FakeTransport
+
+from zope.interface import directlyProvides
 
 from txtorcon import socks
 
@@ -511,6 +514,7 @@ class SocksConnectTests(unittest.TestCase):
     @defer.inlineCallbacks
     def test_connect_deferred_proxy(self):
         socks_ep = Mock()
+        directlyProvides(socks_ep, IStreamClientEndpoint)
         transport = proto_helpers.StringTransport()
 
         def connect(factory):
@@ -532,6 +536,25 @@ class SocksConnectTests(unittest.TestCase):
         )
         proto = yield ep.connect(factory)
         self.assertEqual(proto, protocol)
+
+    @defer.inlineCallbacks
+    def test_connect_deferred_proxy_wrong_return(self):
+
+        class NotAnEndpoint(object):
+            "definitely doesn't implement IStreamClientEndpoint"
+        not_an_endpoint = NotAnEndpoint()
+        factory = Mock()
+        ep = socks.TorSocksEndpoint(
+            socks_endpoint=defer.succeed(not_an_endpoint),
+            host=u'meejah.ca',
+            port=443,
+        )
+        with self.assertRaises(ValueError) as ctx:
+            yield ep.connect(factory)
+        self.assertIn(
+            "must resolve to an IStreamClientEndpoint provider",
+            str(ctx.exception),
+        )
 
     @defer.inlineCallbacks
     def test_connect_tls(self):

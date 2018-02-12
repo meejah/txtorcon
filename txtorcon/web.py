@@ -6,7 +6,7 @@ from __future__ import with_statement
 
 from twisted.web.iweb import IAgentEndpointFactory
 from twisted.web.client import Agent
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
 from zope.interface import implementer
@@ -20,8 +20,14 @@ class _AgentEndpointFactoryUsingTor(object):
     def __init__(self, reactor, tor_socks_endpoint):
         self._reactor = reactor
         self._proxy_ep = tor_socks_endpoint
-        # XXX could accept optional "tls=" to do something besides
-        # optionsForClientTLS(hostname)?
+        # if _proxy_ep is Deferred, but we get called twice, we must
+        # remember the resolved object here
+        if isinstance(tor_socks_endpoint, Deferred):
+            self._proxy_ep.addCallback(self._set_proxy)
+
+    def _set_proxy(self, p):
+        self._proxy_ep = p
+        return p
 
     def endpointForURI(self, uri):
         return TorSocksEndpoint(
