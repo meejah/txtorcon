@@ -1170,6 +1170,11 @@ def _validate_ports(reactor, ports):
     This is async in case it needs to ask for a random, unallocated
     local port.
     """
+    if not isinstance(ports, (list, tuple)):
+        raise ValueError("'ports' must be a list of strings, ints or 2-tuples")
+    if any([not isinstance(x, str) for x in ports]):
+        raise ValueError("'ports' must be a list of strings, ints or 2-tuples")
+
     processed_ports = []
     for port in ports:
         if isinstance(port, (set, list, tuple)):
