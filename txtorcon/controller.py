@@ -584,6 +584,7 @@ class Tor(object):
         processed_ports = yield _validate_ports(self._reactor, ports)
         config = yield self.get_config()
         service = yield EphemeralOnionService.create(
+            reactor=self._reactor,
             config=config,
             ports=processed_ports,
             # version=version,  XXX add now? or wait until v3 ships ADD_ONION
@@ -640,6 +641,7 @@ class Tor(object):
             )
         config = yield self.get_config()
         service = yield FilesystemOnionService.create(
+            reactor=self._reactor,
             config=config,
             hsdir=onion_service_dir,
             ports=processed_ports,

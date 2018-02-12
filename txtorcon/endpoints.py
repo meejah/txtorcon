@@ -566,6 +566,7 @@ class TCPHiddenServiceEndpoint(object):
             if self.ephemeral:
                 if self.auth is not None:
                     create_d = EphemeralAuthenticatedOnionService.create(
+                        self._reactor,
                         self._config,
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                         private_key=self.private_key,
@@ -577,6 +578,7 @@ class TCPHiddenServiceEndpoint(object):
 
                 else:
                     create_d = EphemeralOnionService.create(
+                        self._reactor,
                         self._config,
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                         private_key=self.private_key,
@@ -587,6 +589,7 @@ class TCPHiddenServiceEndpoint(object):
             else:
                 if self.auth is not None:
                     create_d = AuthenticatedFilesystemOnionService.create(
+                        self._reactor,
                         self._config,
                         self.hidden_service_dir,
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
@@ -597,6 +600,7 @@ class TCPHiddenServiceEndpoint(object):
                     )
                 else:
                     create_d = FilesystemOnionService.create(
+                        self._reactor,
                         self._config,
                         self.hidden_service_dir,
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],

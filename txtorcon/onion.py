@@ -184,14 +184,15 @@ class FilesystemOnionService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(config, hsdir, ports, version=2, group_readable=False, progress=None):
+    def create(reactor, config, hsdir, ports, version=2, group_readable=False, progress=None):
 
         # if hsdir is relative, it's "least surprising" (IMO) to make
         # it into a absolute path here -- otherwise, it's relative to
         # whatever Tor's cwd is.
         hsdir = _canonical_hsdir(hsdir)
+        processed_ports = yield _validate_ports(reactor, ports)
 
-        fhs = FilesystemOnionService(config, hsdir, ports, version=version, group_readable=group_readable)
+        fhs = FilesystemOnionService(config, hsdir, processed_ports, version=version, group_readable=group_readable)
         config.HiddenServices.append(fhs)
         # we .save() down below, after setting HS_DESC listener
 
@@ -596,9 +597,9 @@ class EphemeralAuthenticatedOnionService(object):
     Use the async class-method ``create`` to make instances of this.
     """
 
-    @classmethod
+    @staticmethod
     @defer.inlineCallbacks
-    def create(cls, config, ports,
+    def create(reactor, config, ports,
                detach=False,
                private_key=None,  # or DISCARD or a key
                version=None,
@@ -620,8 +621,10 @@ class EphemeralAuthenticatedOnionService(object):
         version = 2 if version is None else version
         assert version in (2, 3)
 
+        processed_ports = yield _validate_ports(reactor, ports)
+
         onion = EphemeralAuthenticatedOnionService(
-            config, ports,
+            config, processed_ports,
             private_key=private_key,
             detach=detach,
             version=version,
@@ -711,9 +714,9 @@ class EphemeralAuthenticatedOnionService(object):
 
 @implementer(IOnionService)
 class EphemeralOnionService(object):
-    @classmethod
+    @staticmethod
     @defer.inlineCallbacks
-    def create(cls, config, ports,
+    def create(reactor, config, ports,
                detach=False,
                private_key=None,  # or DISCARD
                version=None,
@@ -736,8 +739,10 @@ class EphemeralOnionService(object):
         version = 2 if version is None else version
         assert version in (2, 3)
 
+        processed_ports = yield _validate_ports(reactor, ports)
+
         onion = EphemeralOnionService(
-            config, ports,
+            config, processed_ports,
             hostname=None,
             private_key=private_key,
             detach=detach,
@@ -939,14 +944,15 @@ class AuthenticatedFilesystemOnionService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(config, hsdir, ports, auth=None, version=2, group_readable=False, progress=None):
+    def create(reactor, config, hsdir, ports, auth=None, version=2, group_readable=False, progress=None):
         # if hsdir is relative, it's "least surprising" (IMO) to make
         # it into a relative path here -- otherwise, it's relative to
         # whatever Tor's cwd is. Issue similar warning to Tor?
         hsdir = _canonical_hsdir(hsdir)
+        processed_ports = yield _validate_ports(reactor, ports)
 
         fhs = AuthenticatedFilesystemOnionService(
-            config, hsdir, ports, auth,
+            config, hsdir, processed_ports, auth,
             version=version,
             group_readable=group_readable,
         )

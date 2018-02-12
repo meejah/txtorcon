@@ -56,6 +56,7 @@ class OnionServiceTest(unittest.TestCase):
             f.write(u'{}.onion'.format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
+            Mock(),
             config,
             hsdir=hsdir,
             ports=["80 127.0.0.1:4321"],
@@ -85,6 +86,7 @@ class OnionServiceTest(unittest.TestCase):
             f.write('{}.onion'.format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
+            Mock(),
             config,
             hsdir=hsdir,
             ports=["80 127.0.0.1:4321"],
@@ -113,6 +115,7 @@ class OnionServiceTest(unittest.TestCase):
             f.write('{}.onion'.format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
+            Mock(),
             config,
             hsdir=hsdir0,
             ports=["80 127.0.0.1:4321"],
@@ -139,6 +142,7 @@ class OnionServiceTest(unittest.TestCase):
             f.write("{}.onion".format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
+            Mock(),
             config,
             hsdir=hsdir,
             ports=["80 127.0.0.1:4321"],
@@ -162,6 +166,7 @@ class OnionServiceTest(unittest.TestCase):
             f.write('{}.onion'.format(_test_onion_id))
 
         hs_d = FilesystemOnionService.create(
+            Mock(),
             config,
             hsdir=hsdir,
             ports=["80 127.0.0.1:4321"],
@@ -185,6 +190,7 @@ class OnionServiceTest(unittest.TestCase):
         os.mkdir(hsdir)
 
         hs = yield FilesystemOnionService.create(
+            Mock(),
             config,
             hsdir=hsdir,
             ports=["80 127.0.0.1:4321"],
@@ -201,6 +207,7 @@ class OnionServiceTest(unittest.TestCase):
 
         # returns a Deferred we're ignoring
         EphemeralOnionService.create(
+            Mock(),
             config,
             ports=["80 127.0.0.1:80"],
             private_key=_test_private_key_blob,
@@ -217,6 +224,7 @@ class OnionServiceTest(unittest.TestCase):
 
         # returns a Deferred we're ignoring
         EphemeralOnionService.create(
+            Mock(),
             config,
             ports=["80 127.0.0.1:80"],
             detach=True,
@@ -235,6 +243,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralOnionService.create(
+                Mock(),
                 config,
                 ports=["80 127.0.0.1:80"],
                 detach=True,
@@ -254,6 +263,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralOnionService.create(
+                Mock(),
                 config,
                 ports="80 127.0.0.1:80",
                 private_key=privkey,
@@ -271,6 +281,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralOnionService.create(
+                Mock(),
                 config,
                 ports=[(80, "127.0.0.1:80")],
                 private_key=privkey,
@@ -288,6 +299,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralOnionService.create(
+                Mock(),
                 config,
                 ports=["80:127.0.0.1:80"],
                 private_key=privkey,
@@ -305,6 +317,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralOnionService.create(
+                Mock(),
                 config,
                 ports=["80 127.0.0.1;80"],
                 private_key=privkey,
@@ -322,6 +335,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralOnionService.create(
+                Mock(),
                 config,
                 ports=["80 8.8.8.8:80"],
                 private_key=privkey,
@@ -339,6 +353,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralOnionService.create(
+                Mock(),
                 config,
                 ports=["web 127.0.0.1:80"],
                 private_key=privkey,
@@ -355,6 +370,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield FilesystemOnionService.create(
+                Mock(),
                 config,
                 "/dev/null",
                 ports="80 127.0.0.1:80",
@@ -373,6 +389,7 @@ class OnionServiceTest(unittest.TestCase):
         def progress(*args):
             progress_messages.append(args)
         eph_d = EphemeralOnionService.create(
+            Mock(),
             config,
             ports=["80 127.0.0.1:80"],
             progress=progress,
@@ -409,6 +426,7 @@ class OnionServiceTest(unittest.TestCase):
         def progress(*args):
             progress_messages.append(args)
         eph_d = EphemeralOnionService.create(
+            Mock(),
             config,
             ports=["80 127.0.0.1:80"],
             progress=progress,
@@ -432,6 +450,7 @@ class OnionServiceTest(unittest.TestCase):
         config = TorConfig(protocol)
 
         eph_d = EphemeralOnionService.create(
+            Mock(),
             config,
             ports=["80 127.0.0.1:80"],
         )
@@ -461,6 +480,7 @@ class OnionServiceTest(unittest.TestCase):
         config = TorConfig(protocol)
 
         eph_d = EphemeralOnionService.create(
+            Mock(),
             config,
             ports=["80 127.0.0.1:80"],
         )
@@ -519,6 +539,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralAuthenticatedOnionService.create(
+                Mock(),
                 config,
                 ports=["80 127.0.0.1:80"],
                 auth=AuthStealth(["steve", "carol"]),
@@ -539,6 +560,7 @@ class OnionServiceTest(unittest.TestCase):
             pass
 
         eph_d = FilesystemOnionService.create(
+            Mock(),
             config,
             hsdir,
             ports=["80 127.0.0.1:80"],
@@ -559,6 +581,7 @@ class OnionServiceTest(unittest.TestCase):
             pass
 
         eph_d = FilesystemOnionService.create(
+            Mock(),
             config,
             hsdir,
             ports=["80 127.0.0.1:80"],
@@ -579,6 +602,7 @@ class OnionServiceTest(unittest.TestCase):
         config = TorConfig(protocol)
 
         eph_d = EphemeralAuthenticatedOnionService.create(
+            Mock(),
             config,
             ports=["80 127.0.0.1:80"],
             auth=AuthBasic([
@@ -649,6 +673,7 @@ class OnionServiceTest(unittest.TestCase):
         config = TorConfig(protocol)
 
         eph_d = EphemeralAuthenticatedOnionService.create(
+            Mock(),
             config,
             ports=["80 127.0.0.1:80"],
             auth=AuthBasic([
@@ -734,6 +759,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralAuthenticatedOnionService.create(
+                Mock(),
                 config,
                 ports=["80 127.0.0.1:80"],
                 auth=["carol", "steve"],
@@ -750,6 +776,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralAuthenticatedOnionService.create(
+                Mock(),
                 config,
                 ports="80 127.0.0.1:80",
                 auth=AuthBasic(["xavier"]),
@@ -766,6 +793,7 @@ class OnionServiceTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as ctx:
             yield EphemeralAuthenticatedOnionService.create(
+                Mock(),
                 config,
                 ports=[80],
                 auth=AuthBasic(["xavier"]),
@@ -923,7 +951,7 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
             print(pct, tag, msg)
         self.config.tor_protocol.version = "0.2.0.0"
         AuthenticatedFilesystemOnionService.create(
-            self.config, hsdir, ports,
+            Mock(), self.config, hsdir, ports,
             auth=AuthBasic(['alice']),
             progress=progress,
         )
