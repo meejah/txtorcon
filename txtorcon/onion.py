@@ -236,10 +236,14 @@ class FilesystemOnionService(object):
         defer.returnValue(fhs)
 
     def __init__(self, config, thedir, ports, version=2, group_readable=0):
-        if not isinstance(ports, list):
-            raise ValueError("'ports' must be a list of strings")
+        """
+        Do not instantiate directly; use
+        :func:`txtorcon.onion.FilesystemOnionService.create`
+        """
         self._config = config
         self._dir = os.path.realpath(thedir)
+
+        _validate_ports_low_level(ports)
         from .torconfig import _ListWrapper
         self._ports = _ListWrapper(
             ports,
@@ -1171,8 +1175,6 @@ def _validate_ports(reactor, ports):
     local port.
     """
     if not isinstance(ports, (list, tuple)):
-        raise ValueError("'ports' must be a list of strings, ints or 2-tuples")
-    if any([not isinstance(x, str) for x in ports]):
         raise ValueError("'ports' must be a list of strings, ints or 2-tuples")
 
     processed_ports = []

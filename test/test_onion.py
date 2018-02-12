@@ -15,6 +15,7 @@ from txtorcon.onion import AuthenticatedFilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import EphemeralAuthenticatedOnionService
 from txtorcon.onion import AuthStealth, AuthBasic, DISCARD
+from txtorcon.onion import _validate_ports_low_level
 
 from txtorcon.testutil import FakeControlProtocol
 
@@ -273,19 +274,9 @@ class OnionServiceTest(unittest.TestCase):
             str(ctx.exception)
         )
 
-    @defer.inlineCallbacks
     def test_ephemeral_ports_not_strings(self):
-        protocol = FakeControlProtocol([])
-        config = TorConfig(protocol)
-        privkey = 'a' * 32
-
         with self.assertRaises(ValueError) as ctx:
-            yield EphemeralOnionService.create(
-                Mock(),
-                config,
-                ports=[(80, "127.0.0.1:80")],
-                private_key=privkey,
-            )
+            _validate_ports_low_level([(80, "127.0.0.1:80")])
         self.assertIn(
             "'ports' must be a list of strings",
             str(ctx.exception)
@@ -788,16 +779,17 @@ class OnionServiceTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_ephemeral_ports_bad1(self):
-        protocol = FakeControlProtocol([])
-        config = TorConfig(protocol)
-
         with self.assertRaises(ValueError) as ctx:
-            yield EphemeralAuthenticatedOnionService.create(
-                Mock(),
-                config,
-                ports=[80],
-                auth=AuthBasic(["xavier"]),
-            )
+            _validate_ports_low_level([80])
+        self.assertIn(
+            "'ports' must be a list of strings",
+            str(ctx.exception),
+        )
+
+    @defer.inlineCallbacks
+    def test_ephemeral_ports_bad2(self):
+        with self.assertRaises(ValueError) as ctx:
+            _validate_ports_low_level("not even a list")
         self.assertIn(
             "'ports' must be a list of strings",
             str(ctx.exception),

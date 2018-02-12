@@ -499,7 +499,6 @@ class Tor(object):
                 "This Tor has no protocol instance; we can't quit"
             )
 
-    # XXX bikeshed on this name?
     @property
     def process(self):
         if self._process_protocol:
