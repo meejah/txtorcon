@@ -29,6 +29,7 @@ unreleased
  * use OnionOO via Onion service `tgel7v4rpcllsrk2.onion` for :func:`txtorcon.Router.get_onionoo_details`
  * fix parsing of Router started-times
  * `Issue 255 <https://github.com/meejah/txtorcon/issues/255>`_ removed routers now deleted following NEWCONSENSUS
+ * `Issue 279 <https://github.com/meejah/txtorcon/issues/279>`_ remember proxy endpoint
 
 
 v0.19.3

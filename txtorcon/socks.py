@@ -689,6 +689,7 @@ class TorSocksEndpoint(object):
     # IAddress-implementer?
     def __init__(self, socks_endpoint, host, port, tls=False):
         self._proxy_ep = socks_endpoint  # can be Deferred
+        assert self._proxy_ep is not None
         if six.PY2 and isinstance(host, str):
             host = unicode(host)  # noqa
         if six.PY3 and isinstance(host, bytes):
@@ -735,6 +736,11 @@ class TorSocksEndpoint(object):
         # XXX isn't this just maybeDeferred()
         if isinstance(self._proxy_ep, Deferred):
             proxy_ep = yield self._proxy_ep
+            if not IStreamClientEndpoint.providedBy(proxy_ep):
+                raise ValueError(
+                    "The Deferred provided as 'socks_endpoint' must "
+                    "resolve to an IStreamClientEndpoint provider"
+                )
         else:
             proxy_ep = self._proxy_ep
 

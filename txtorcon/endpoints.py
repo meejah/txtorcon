@@ -679,6 +679,7 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
         yield control_protocol.set_conf(*args)
         socks_endpoint = _endpoint_from_socksport_line(reactor, socks_config)
 
+    assert socks_endpoint is not None
     defer.returnValue(socks_endpoint)
 
 
