@@ -676,7 +676,11 @@ class EphemeralAuthenticatedOnionService(object):
         else:
             blob = self._private_key.encode('ascii')
         keydata = b'-----BEGIN RSA PRIVATE KEY-----\n' + blob + b'\n-----END RSA PRIVATE KEY-----\n'
-#        keydata = b'-----BEGIN PRIVATE KEY-----\n' + blob + b'\n-----END PRIVATE KEY-----\n'
+        # keydata = b'-----BEGIN PRIVATE KEY-----\n' + blob + b'\n-----END PRIVATE KEY-----\n'
+
+        # XXX Hmm, it seems PyPy 5.8.0 *on travis* fails this (on my
+        # system it works fine). Only relevant difference I can see is
+        # openssl version 1.0.1f vs 1.0.1t
         private_key = serialization.load_pem_private_key(
             keydata,
             password=None,

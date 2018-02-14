@@ -1,8 +1,10 @@
 from __future__ import print_function
 
 import os
+import sys
 from mock import Mock
 from os.path import join
+from unittest import skipIf
 
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -587,6 +589,7 @@ class OnionServiceTest(unittest.TestCase):
 
         yield eph_d
 
+    @skipIf('pypy' in sys.version.lower(), "Weird OpenSSL+PyPy problem on Travis")
     @defer.inlineCallbacks
     def test_ephemeral_auth_basic(self):
         protocol = FakeControlProtocol([])
@@ -658,6 +661,7 @@ class OnionServiceTest(unittest.TestCase):
         d.callback('OK')
         yield remove_d
 
+    @skipIf('pypy' in sys.version.lower(), "Weird OpenSSL+PyPy problem on Travis")
     @defer.inlineCallbacks
     def test_ephemeral_auth_basic_remove_fails(self):
         protocol = FakeControlProtocol([])

@@ -1,8 +1,10 @@
 from __future__ import print_function
 
 import os
+import sys
 from mock import patch
 from mock import Mock, MagicMock
+from unittest import skipIf
 
 from zope.interface import implementer, directlyProvides
 
@@ -801,6 +803,7 @@ class EndpointTests(unittest.TestCase):
             str(ctx.exception)
         )
 
+    @skipIf('pypy' in sys.version.lower(), "Weird OpenSSL+PyPy problem on Travis")
     @defer.inlineCallbacks
     def test_basic_auth_ephemeral(self, ftb):
         '''
