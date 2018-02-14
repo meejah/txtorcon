@@ -777,7 +777,6 @@ class OnionServiceTest(unittest.TestCase):
             str(ctx.exception),
         )
 
-    @defer.inlineCallbacks
     def test_ephemeral_ports_bad1(self):
         with self.assertRaises(ValueError) as ctx:
             _validate_ports_low_level([80])
@@ -786,7 +785,6 @@ class OnionServiceTest(unittest.TestCase):
             str(ctx.exception),
         )
 
-    @defer.inlineCallbacks
     def test_ephemeral_ports_bad2(self):
         with self.assertRaises(ValueError) as ctx:
             _validate_ports_low_level("not even a list")
