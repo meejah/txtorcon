@@ -35,7 +35,9 @@ from zope.interface import Interface, Attribute
 
 from .torconfig import TorConfig
 from .onion import IAuthenticatedOnionClients
-from .onion import FilesystemOnionService, EphemeralOnionService
+from .onion import FilesystemOnionService
+from .onion import IFilesystemOnionService
+from .onion import EphemeralOnionService
 from .onion import AuthenticatedFilesystemOnionService
 from .onion import EphemeralAuthenticatedOnionService
 from .onion import AuthStealth  # , AuthBasic
@@ -708,10 +710,22 @@ class TorOnionAddress(FancyEqMixin, object):
         return hash((self.type, self.onion_uri, self.onion_port))
 
 
+class IHiddenService(Interface):
+    local_address = Attribute(
+        'The actual machine address we are listening on.')
+    hidden_service_dir = Attribute(
+        'The hidden service directory, where "hostname" and "private_key" '
+        'files live.')
+    tor_config = Attribute(
+        'The TorConfig object attached to the Tor hosting this hidden service '
+        '(in turn has .protocol for TorControlProtocol).')
+
+
 # XXX should implement IOnionService?
 # ...so what shall implement IOnionClients etc? need multiple TorOnionListeningPort impls?
 # --> no, you'll have to get at .service (or .onion_serivce?) from this ...
 @implementer(IListeningPort)
+@implementer(IHiddenService)  # deprecated; use .onion_service
 class TorOnionListeningPort(object):
     """
     Our TCPHiddenServiceEndpoint's `listen` method will return a deferred
@@ -729,7 +743,7 @@ class TorOnionListeningPort(object):
 
     def __init__(self, listening_port, public_port, hiddenservice, tor_config):
         # XXX can get these from the service
-        self.local_address = listening_port
+        self._local_address = listening_port
         self.public_port = public_port
         # XXX should this be a weakref too? is there circ-ref here?
         self._service = hiddenservice
@@ -739,11 +753,11 @@ class TorOnionListeningPort(object):
 
     def startListening(self):
         """IListeningPort API"""
-        self.local_address.startListening()
+        self._local_address.startListening()
 
     def stopListening(self):
         """IListeningPort API"""
-        self.local_address.stopListening()
+        self._local_address.stopListening()
 
     def getHost(self):
         """IListeningPort API"""
@@ -752,14 +766,33 @@ class TorOnionListeningPort(object):
     def __str__(self):
         return '<TorOnionListeningPort %s:%d>' % (self._address.onion_uri, self._address.onion_port)
 
-    # XXX actually, can get this via the onion_service if req'd?
+    # preferred method of accessing everything
     @property
+    def onion_service(self):
+        return self._service
+
+    # these are implemented by the now-deprecated IHiddenService API;
+    # do not use for new code -- get all information from .onion_service
+
+    @property
+    @deprecated(_Version("txtorcon", 18, 0, 0))
     def tor_config(self):
         return self._config_ref()  # None if ref dead
 
     @property
-    def onion_service(self):
-        return self._service
+    @deprecated(_Version("txtorcon", 18, 0, 0))
+    def local_address(self):
+        return self._local_address
+
+    @property
+    @deprecated(_Version("txtorcon", 18, 0, 0))
+    def hidden_service_dir(self):
+        if not IFilesystemOnionService.providedBy(self._service):
+            raise ValueError(
+                "No 'hidden_service_dir' because our _service doesn't provide"
+                " IFilesystemOnionService"
+            )
+        return self._service.directory
 
 
 @implementer(IStreamServerEndpointStringParser, IPlugin)

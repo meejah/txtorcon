@@ -193,6 +193,13 @@ class EndpointTests(unittest.TestCase):
                 port.startListening()
                 str(port)
                 port.tor_config
+                port.local_address
+                with self.assertRaises(ValueError) as ctx:
+                    port.hidden_service_dir
+                self.assertIn(
+                    "our _service doesn't provide IFilesystemOnionService",
+                    str(ctx.exception)
+                )
                 # system_tor should be connecting to a running one,
                 # *not* launching a new one.
                 self.assertFalse(launch_mock.called)
@@ -235,6 +242,7 @@ class EndpointTests(unittest.TestCase):
                 port.startListening()
                 str(port)
                 port.tor_config
+                port.hidden_service_dir
                 # system_tor should be connecting to a running one,
                 # *not* launching a new one.
                 self.assertFalse(launch_mock.called)
