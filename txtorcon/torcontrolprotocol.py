@@ -934,7 +934,6 @@ class TorControlProtocol(LineOnlyReceiver):
     def _is_multi_line(self, line):
         "for FSM"
         code = int(line[:3])
-        # print("isMultiLine",code,line,line[3])
         if self.code and self.code != code:
             raise RuntimeError("Unexpected code %d, wanted %d" % (code,
                                                                   self.code))

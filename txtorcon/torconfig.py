@@ -829,31 +829,6 @@ class TorConfig(object):
             _endpoint_from_socksport_line(reactor, socks_config)
         )
 
-    def onion_create(self, ports, auth=None, directory=None, private_key=None):
-        """
-        Creates a new Onion service.
-
-        :param ports: list of strings like "80 127.0.0.1:80"
-
-        :param auth: None, or an IOnionAuthentication provider (in
-            practice, an instance of :class:`OnionAuthBasic` or
-            :class:`OnionAuthStealth`)
-
-        :param directory: None means an ephemeral hidden service (the
-            default). Otherwise, a "normal", persistent hidden-service
-            using data in the provided directory (if the directory is
-            empty, a new private key will be written there by Tor).
-
-        :param private_key: If creating an ephemeral service, this can
-            be provided. This will be something previously retrieved from
-            the ``.private_key`` attribute of a HiddenService instance.
-
-        :return: Deferred that fires with the HiddenService instance
-            once it is configured.
-        """
-        # ephemeral service if directory is None
-        # can't specify directory *and* private_key
-
     # FIXME should re-name this to "tor_protocol" to be consistent
     # with other things? Or rename the other things?
     """
@@ -1059,7 +1034,7 @@ class TorConfig(object):
                             services.append(parent)
                     elif isinstance(hs, (EphemeralOnionService, EphemeralHiddenService)):
                         raise ValueError(
-                            "Only txtorcon.HiddenService instances may be added"
+                            "Only filesystem based Onion services may be added"
                             " via TorConfig.hiddenservices; ephemeral services"
                             " must be created with 'create_onion_service'."
                         )
