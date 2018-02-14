@@ -29,6 +29,7 @@ env:
   # - TOX_ENV=pypy-tx17
 
 script:
+  - apt-cache policy libssl-dev
   - tox -c tox.ini -e $TOX_ENV
 
 after_success:
