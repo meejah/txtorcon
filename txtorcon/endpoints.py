@@ -708,26 +708,6 @@ class TorOnionAddress(FancyEqMixin, object):
         return hash((self.type, self.onion_uri, self.onion_port))
 
 
-class IHiddenService(Interface):
-    local_address = Attribute(
-        'The actual local machine address we are listening on.')
-    public_port = Attribute("The port our service can be contacted on")
-    tor_config = Attribute(
-        'The TorConfig object attached to the Tor hosting this hidden service '
-        '(in turn has .protocol for TorControlProtocol).')
-    clients = Attribute(
-        'List of IHiddenServiceClient instances.'
-        'Unauthenticated services will have 0 clients.'
-        'Basic-auth services will have 1 client, called "default".'
-    )
-
-
-class IHiddenServiceClient(Interface):
-    name = Attribute('A descriptive name of this client; "default" for basic-auth services')
-    onion_uri = Attribute('Derived from the public key, e.g. "timaq4ygg2iegci7.onion"')
-    private_key = Attribute('Blob of bytes representing the private key for this service')
-
-
 # XXX should implement IOnionService?
 # ...so what shall implement IOnionClients etc? need multiple TorOnionListeningPort impls?
 # --> no, you'll have to get at .service (or .onion_serivce?) from this ...
