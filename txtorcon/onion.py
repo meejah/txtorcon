@@ -60,7 +60,7 @@ class HiddenServiceClientAuth(object):
     def __init__(self, name, cookie, key=None):
         self.name = name
         self.cookie = cookie
-        self.key = parse_rsa_blob(key) if key else None
+        self.key = _parse_rsa_blob(key) if key else None
 
 
 class IOnionService(Interface):
@@ -1098,7 +1098,7 @@ class AuthenticatedFilesystemOnionService(object):
     def _parse_client_keys(self):
         try:
             with open(os.path.join(self._dir, 'client_keys'), 'r') as f:
-                keys = parse_client_keys(f)
+                keys = _parse_client_keys(f)
         except IOError:
             keys = []
         self._client_keys = {}
@@ -1265,11 +1265,11 @@ def _validate_single_port_string(port):
         )
 
 
-def parse_rsa_blob(lines):
+def _parse_rsa_blob(lines):
     return 'RSA1024:' + ''.join(lines[1:-1])
 
 
-def parse_client_keys(stream):
+def _parse_client_keys(stream):
     '''
     This parses a hidden-service "client_keys" file, either stealth or
     basic (they're the same, except "stealth" includes a
