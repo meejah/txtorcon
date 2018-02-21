@@ -403,24 +403,36 @@ them.
 Onion (Hidden) Services
 -----------------------
 
-.. caution::
-
-  The Onion service APIs are not stable and will still change; the
-  following is written to what they *will probably* become but **DO
-  NOT** document the current state of the code.
-
 An "Onion Service" (also called a "Hidden Service") refers to a
 feature of Tor allowing servers (e.g. a Web site) to be availble via
-Tor. These bring additional security properties such as: hiding the
-server's network location; providing end-to-end encryption;
-self-certifying domain-names; no NAT issues; or offering
-authentication. For details of how this works, please read `Tor's
-documentation on Hidden Services
+Tor. These bring additional security properties such as:
+
+ * hiding the server's network location;
+ * providing end-to-end encryption;
+ * self-certifying domain-names;
+ * NAT penetration (connections to Tor network are client-like);
+ * or offering authentication.
+
+For details of how this works, please read `Tor's documentation on
+Hidden Services
 <https://www.torproject.org/docs/hidden-services.html.en>`_.
 
 For more background, the `RiseUp Onion service best-practices guide
 <https://riseup.net/en/security/network-security/tor/onionservices-best-practices>`_
 is a good read as well.
+
+In the newest Tor versions, Onion services have been upgraded
+("`Proposition 279
+<https://gitweb.torproject.org/torspec.git/plain/proposals/279-naming-layer-api.txt>`_")
+and these are known as "version 3" services. The prior / legacy is
+"version 2". In txtorcon, the default is version 3; if you expect to
+connect to an older Tor release, pass `version=2`.
+
+.. note::
+
+   In some places there will be "Hidden" in a classname; these are
+   typically for backwards-compatilibity reasons. "Onion service" is
+   the preferred name.
 
 From an API perspective, here are the parts we care about:
 
@@ -429,7 +441,8 @@ From an API perspective, here are the parts we care about:
     - these keys can be on disk (in the "hidden service directory");
     - or, they can be "ephemeral" (only in memory);
  - the "host name" is a hash of the public-key (e.g. ``timaq4ygg2iegci7.onion``);
- - a "Descriptor" (which tells clients how to connect) must be published;
+ - a "Descriptor" (which tells clients how to connect) must be
+   published (to a "Hidden Service Directory", or HSDir);
  - a service has a list of port-mappings (public -> local)
     - e.g. ``"80 127.0.0.1:5432"`` says you can contact the service
       publically on port 80, which Tor will redirect to a daemon
@@ -480,36 +493,29 @@ non-authenticated services because they have a list of
 clients. Services on-disk are "slightly" different because the user
 may need to know the "hidden service dir" that contains the private
 keys. However, there is a single endpoint which takes enough options
-to produce any kind of onion service; the service returned after the
-``.listen()`` call will, however, be different and implement one of
-the interfaces in the table above. Those are:
+to produce any kind of onion service. The service instance you
+retrieve after the ``.listen()`` call will, however, be different and
+implement one of the interfaces in the table above. Those are:
 
  - :class:`txtorcon.IOnionService`
  - :class:`txtorcon.IFilesystemOnionService` (also includes all of ``IOnionService``)
  - :class:`txtorcon.IOnionServiceClients` (for authenticated services)
 
-The ``listen()`` method will return an instance implementing
-`IListeningPort`_. In addition to `IListeningPort`_, these instances
-will implement one of:
+The ``.listen()`` method of the endpoint will return an instance
+implementing `IListeningPort`_. This will have a ``.onion_service``
+property that gives you an instance implementing one of the above
+interfaces.
 
- - :class:`txtorcon.IOnionService` or;
- - :class:`txtorcon.IOnionServiceClients`
-
-The first one corresponds to a non-authenticated service, while the
-latter is authenticated. The latter manages a collection of instances
-by (arbitrary) client names, where each of these instances implements
-:class:`txtorcon.IOnionClient` (and therefore also
-:class:`txtorcon.IOnionService`). Note that the ``.auth_token`` member
+`IOnionService` and its subclass `IFilesystemOnionService` correspond
+to a non-authenticated services, while `IOnionServiceClients` is
+authenticated. The latter manages a collection of instances by
+(arbitrary) client names, where each of these instances implements
+:class:`txtorcon.IOnionClient`. Note that the ``.auth_token`` member
 is secret, private data which you need to give to **one** client; this
 information goes in the client's Tor configuration as ``HidServAuth
 onion-address auth-cookie [service-name]``. See `the Tor manual
 <https://www.torproject.org/docs/tor-manual-dev.html.en>`_ for more
 information.
-
-If the underlying onion service created has its keys stored on disk
-(``ephemeral=False``, the default) then
-:class:`txtorcon.IFilesystemOnionService` will be implemented by
-everything that implements :class:`txtorcon.IOnionService`.
 
 
 .. _create_onion:
@@ -522,7 +528,8 @@ allow you to create `IStreamServerEndpoint` instances for the various
 Onion Service types.
 
 Each of the four main classes of onion service has a corresponding
-factory method:
+factory method (while these get nearly to Java lengths, these are at
+least explicit):
 
  - :meth:`txtorcon.Tor.create_onion_service`: ephemeral service
  - :meth:`txtorcon.Tor.create_authenticated_onion_service`: ephemeral service with authentication
@@ -542,24 +549,28 @@ service or not:
  - if you don't even want anyone to be able to decrypt the descriptor
    without a unique URL *and* a secret authentication token, you want
    **stealth** authentication (a lot less scalable; for only "a few"
-   clients).
+   clients less than 16 in latest Tor).
 
 
 Non-Authenticated Services
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For non-authenticated services, you want to create a
-:class:`txtorcon.TCPHiddenServiceEndpoint` instance.
+For all service types there is a single endpoint that you create:
+:class:`txtorcon.TCPHiddenServiceEndpoint`. Thus, you **are advised to
+use a factory-method to create the instance**
 
-You can do this via the :meth:`txtorcon.create_onion_service` factory
-function or with :meth:`txtorcon.Tor.create_onion_service`. It's also
-possible to use Twisted's ``serverFromString`` API with the ``onion:``
-prefix. (Thus, any program supporting endpoint strings for
-configuration can use Tor Onion Services with *no code changes*).
+You can do this with :meth:`txtorcon.Tor.create_onion_service` (for an
+ephemeral service) or
+:meth:`txtorcon.Tor.create_filesystem_onion_service` (for an on-disk
+service). It's also possible to use Twisted's ``serverFromString`` API
+with the ``onion:`` prefix. (Thus, any program supporting endpoint
+strings for configuration can use Tor Onion Services with *no code
+changes*).
 
-If you don't want to manage launching or connecting to Tor yourself,
-you can use one of the three @classmethods on the class, which all
-return a new endpoint instance:
+If you don't want to manage launching or connecting to Tor yourself
+(and thus a :class:`txtorcon.Tor` instance), you can use one of the
+three `@classmethod`s on :class:`txtorcon.TCPHiddenServiceEndpoint`,
+which all return a new endpoint instance:
 
  - :meth:`txtorcon.TCPHiddenSeviceEndpoint.global_tor`: uses a Tor
    instance launched at most once in this Python process (the
@@ -584,19 +595,21 @@ launched, the Onion Service created, and the descriptor published.
 Authenticated Services
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To use authenticated services, you want to create a
-:class:`txtorcon.TCPAuthenticatedHiddenServiceEndpoint` instance. This
-provides the very same factory methods as for non-authenticatd
-instances, but adds arguments for a list of clients (strings) and an
-authentication method (``"basic"`` or ``"stealth"``).
+Authenticated services take an instance of :class:`txtorcon.AuthBasic`
+or :class:`txtorcon.AuthStealth`. You may use the factory methods on
+:class:`txtorcon.Tor`:
+:meth:`txtorcon.Tor.create_authenticated_onion_service` (for an
+ephemeral service) or
+:meth:`txtorcon.Tor.create_authenticated_filesystem_onion_service`
+(for an on-disk service).
 
-For completeness, the methods to create authenticated endpoints are:
+You may also use one of the three `@classmethod`s on
+:class:`txtorcon.TCPHiddenServiceEndpoint` (and passing an `auth=`
+kwarg):
 
- - :meth:`txtorcon.Tor.create_authenticated_onion_service()`;
- - :meth:`txtorcon.create_authenticated_onion_service`;
- - :meth:`txtorcon.TCPAuthenticatedHiddenSeviceEndpoint.global_tor`
- - :meth:`txtorcon.TCPAuthenticatedHiddenSeviceEndpoint.system_tor`
- - :meth:`txtorcon.TCPAuthenticatedHiddenSeviceEndpoint.private_tor`
+ - :meth:`txtorcon.TCPHiddenSeviceEndpoint.global_tor`
+ - :meth:`txtorcon.TCPHiddenSeviceEndpoint.system_tor`
+ - :meth:`txtorcon.TCPHiddenSeviceEndpoint.private_tor`
 
 
 Onion Service Configuration
@@ -604,9 +617,9 @@ Onion Service Configuration
 
 If you just want to "look at" the configuration of existing onion
 services, they are avaialble via :class:`txtorcon.TorConfig` and the
-``.HiddenServices`` attribute.
+``.HiddenServices`` or ``.EphemeralHiddenServices` attributes.
 
-This presents a "flattened" version of any authenticated services, so
+These presents a "flattened" version of any authenticated services, so
 that each element in the list of ``.HiddenServices`` is itself at
 least a :class:`txtorcon.IOnionService` (it may also implement other
 interfaces, but every one will implement ``IOnionService``).
@@ -617,7 +630,7 @@ configuration for them will be updated when you call
 "ephemeral" services cannot be updated after they're created.
 
 Note that it's possible for other controllers to create ephemeral
-services that your controller can't enumerate.
+services that Tor doesn't allow your controller to enumerate.
 
 
 .. _guide_custom_circuits:
