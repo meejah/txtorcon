@@ -535,8 +535,9 @@ class Tor(object):
     # trigger off "onion_service_dir" or something? But I think better
     # to have different ones.
     @inlineCallbacks
-    def create_onion_service(self, ports, private_key=None, version=2, progress=None):
-        """Create a new Onion service
+    def create_onion_service(self, ports, private_key=None, version=3, progress=None):
+        """
+        Create a new Onion service
 
         This method will create a new Onion service, returning (via
         Deferred) an instance that implements IOnionService. (To
@@ -558,24 +559,17 @@ class Tor(object):
             private key from Tor and so there will be no way to re-create
             an Onion Service on the same address after Tor exits.
 
-        :param version: which kind of Onion Service to create. Once
-            Proposition 224 (version 3) Onions are supported by the
-            ``ADD_ONION`` command, they will become the default. Currently
-            the only valid value for this is ``2``.
+        :param version: The latest Tor releases support 'Proposition
+            224' (version 3) services. These are the default.
 
         :param progress: if provided, a function that takes 3
             arguments: ``(percent_done, tag, description)`` which may
             be called any number of times to indicate some progress has
             been made.
-
         """
         if version not in (2, 3):
             raise ValueError(
                 "The only valid Onion service versions are 2 or 3"
-            )
-        if version == 3:
-            raise ValueError(
-                "Ephemeral version=3 Onion services are not supported by Tor"
             )
         if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
             raise ValueError("'ports' must be a sequence (list, tuple, ..)")
@@ -586,7 +580,7 @@ class Tor(object):
             reactor=self._reactor,
             config=config,
             ports=processed_ports,
-            # version=version,  XXX add now? or wait until v3 ships ADD_ONION
+            version=version,
             progress=progress,
         )
         returnValue(service)
