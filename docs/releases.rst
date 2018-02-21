@@ -18,6 +18,14 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v17.0.0*
 
+
+v0.20.0
+-------
+
+February 22, 2018
+
+ * `txtorcon-0.20.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.20.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.20.0>`_ (:download:`local-sig </../signatues/txtorcon-0.20.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.20.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.20.0.tar.gz>`_)
+
  * doc fixes from `hotelzululima <https://twitter.com/hotelzululima>`_
  * fix endpoints so `.connect` on them works properly more than once
    from `Brian Warner <https://github.com/warner>`_
