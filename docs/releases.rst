@@ -7,7 +7,7 @@ There isn't a "release schedule" in any sense. If there is something
 in master your project depends upon, let me know and I'll do a
 release.
 
-Starting after v0.19.x versions will follow `calendar versioning
+Starting after v0.20.x versions will follow `calendar versioning
 <http://calver.org/>`_ with the major version being the 2-digit
 year. The second digit will be "non-trivial" releases and the third
 will be for bugfix releases.
@@ -16,7 +16,7 @@ will be for bugfix releases.
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v17.0.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v18.0.0*
 
 
 v0.20.0
