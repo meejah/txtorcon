@@ -35,11 +35,11 @@ Release Checklist
      * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}-py2-none-any.whl
      * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}.tar.gz
   * copy signatures back to build machine, in dist/
-  * double-check that they validate
-     * gpg --verify dist/txtorcon-${VERSION}-py2-none-any.whl.asc
-     * gpg --verify dist/txtorcon-${VERSION}.tar.gz.asc
+  * double-check that they validate::
+     gpg --verify dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc
+     gpg --verify dist/txtorcon-${VERSION}.tar.gz.asc
 
-* generate sha256sum for each:
+* generate sha256sum for each::
      sha256sum dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2.py3-none-any.whl
 
 * copy signature files to <root of dist>/signatures and commit them
