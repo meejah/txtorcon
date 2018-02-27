@@ -498,6 +498,8 @@ class Tor(object):
             raise RuntimeError(
                 "This Tor has no protocol instance; we can't quit"
             )
+        if self._protocol is not None:
+            yield self._protocol.on_disconnect
 
     @property
     def process(self):
