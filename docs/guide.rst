@@ -115,12 +115,8 @@ It's also possible to launch your own Tor instance. txtorcon keeps a
 "global" tor available for use by e.g. the ``.global_tor`` endpoint
 factory functions (like
 :func:`txtorcon.TCPHiddenServiceEndpoint.global_tor`). You can access
-it via :func:`txtorcon.get_global_tor`. There is exactly zero or one
-of these *per Python process* that uses ``txtorcon``.
-
- XXX FIXME the above isn't quite true, as that function existed
- previously and returned a TorConfig so we need to come up with
- another name :(
+it via :func:`txtorcon.get_global_tor_instance`. There is exactly zero
+or one of these *per Python process* that uses ``txtorcon``.
 
 To explicitly launch your own Tor instance, use
 :meth:`txtorcon.launch`. You can pass a couple of minimal options
@@ -549,7 +545,7 @@ service or not:
  - if you don't even want anyone to be able to decrypt the descriptor
    without a unique URL *and* a secret authentication token, you want
    **stealth** authentication (a lot less scalable; for only "a few"
-   clients less than 16 in latest Tor).
+   clients -- less than 16 in latest Tor).
 
 
 Non-Authenticated Services
