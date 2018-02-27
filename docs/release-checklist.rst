@@ -101,7 +101,7 @@ Release Checklist
    * verify sigs
    * verify sha256sums versus announcement text
    * verify tag (git tag --verify v${VERSION}) on machine other than signing-machine
-   * run: ./scripts/download-release-onion.sh
+   * run: ./scripts/download-release-onion.sh ${VERSION}
 
 * upload release
    * to PyPI: "make release" (which uses twine so this isn't the same step as "sign the release")
@@ -115,5 +115,5 @@ Release Checklist
 * make announcement
    * post to tor-dev@ the clear-signed release announcement
    * post to twisted-python@ the clear-signed release announcement
-   * tweet as @txtorcon 
+   * tweet as @txtorcon
    * tell #tor-dev??
