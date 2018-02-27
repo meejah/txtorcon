@@ -178,10 +178,6 @@ class FilesystemOnionService(object):
     """
     """
 
-    #XXX this should NOT allow relative paths, because they're
-    #relative to *Tor's* cwd, not the controller's cwd (or, we should
-    #allow relative paths, but canonical-ize them ourselves)
-
     @staticmethod
     @defer.inlineCallbacks
     def create(reactor, config, hsdir, ports, version=2, group_readable=False, progress=None):
