@@ -42,11 +42,11 @@ from txtorcon.onion import IOnionService
 from txtorcon.onion import IFilesystemOnionService
 from txtorcon.onion import IAuthenticatedOnionClients
 from txtorcon.onion import IOnionClient
-# could consider exporting the concrete classes .. but not for now
-# from txtorcon.onion import FilesystemOnionService
-# from txtorcon.onion import FilesystemAuthenticatedOnionService
-# from txtorcon.onion import EphemeralOnionService
-# from txtorcon.onion import EphemeralAuthenticatedOnionService
+from txtorcon.onion import FilesystemOnionService
+from txtorcon.onion import AuthenticatedFilesystemOnionService
+from txtorcon.onion import EphemeralOnionService
+from txtorcon.onion import EphemeralAuthenticatedOnionService
+from txtorcon.onion import EphemeralAuthenticatedOnionServiceClient
 from txtorcon.onion import AuthStealth
 from txtorcon.onion import AuthBasic
 from txtorcon.onion import DISCARD

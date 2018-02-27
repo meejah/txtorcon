@@ -188,7 +188,32 @@ class FilesystemOnionService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(reactor, config, hsdir, ports, version=2, group_readable=False, progress=None):
+    def create(reactor, config, hsdir, ports, version=3, group_readable=False, progress=None):
+        """
+        returns a new FilesystemOnionService after adding it to the
+        provided config and ensuring at least one of its descriptors
+        is uploaded.
+
+        :param config: a :class:`txtorcon.TorConfig` instance
+
+        :param ports: a list of ports to make available; any of these
+            can be 2-tuples of (remote, local) if you want to expose a
+            particular port locally (otherwise, an available one is
+            chosen)
+
+        :param hsdir: the directory in which to store private keys
+
+        :param version: 2 or 3, which kind of service to create
+
+        :param group_readable: if True, the Tor option
+            `HiddenServiceDirGroupReadable` is set to 1 for this service
+
+        :param progress: a callable taking (percent, tag, description)
+            that is called periodically to report progress.
+
+        See also :meth:`txtorcon.Tor.create_onion_service` (which
+        ultimately calls this).
+        """
 
         # if hsdir is relative, it's "least surprising" (IMO) to make
         # it into a absolute path here -- otherwise, it's relative to
@@ -239,7 +264,7 @@ class FilesystemOnionService(object):
         yield uploaded[0]
         defer.returnValue(fhs)
 
-    def __init__(self, config, thedir, ports, version=2, group_readable=0):
+    def __init__(self, config, thedir, ports, version=3, group_readable=0):
         """
         Do not instantiate directly; use
         :func:`txtorcon.onion.FilesystemOnionService.create`
@@ -634,6 +659,29 @@ class EphemeralAuthenticatedOnionService(object):
                auth=None):  # AuthBasic, or AuthStealth instance
 
         """
+        returns a new EphemeralAuthenticatedOnionService after adding it
+        to the provided config and ensuring at least one of its
+        descriptors is uploaded.
+
+        :param config: a :class:`txtorcon.TorConfig` instance
+
+        :param ports: a list of ports to make available; any of these
+            can be 2-tuples of (remote, local) if you want to expose a
+            particular port locally (otherwise, an available one is
+            chosen)
+
+        :param private_key: None, `DISCARD`, or a private key blob
+
+        :param detach: if True, tell Tor to NOT associate this control
+            connection with the lifetime of the created service
+
+        :param version: 2 or 3, which kind of service to create
+
+        :param progress: a callable taking (percent, tag, description)
+            that is called periodically to report progress.
+
+        See also :meth:`txtorcon.Tor.create_onion_service` (which
+        ultimately calls this).
         """
         if not isinstance(auth, (AuthBasic, AuthStealth)):
             raise ValueError(
@@ -660,7 +708,7 @@ class EphemeralAuthenticatedOnionService(object):
 
         defer.returnValue(onion)
 
-    def __init__(self, config, ports, hostname=None, private_key=None, auth=[], version=2,
+    def __init__(self, config, ports, hostname=None, private_key=None, auth=[], version=3,
                  detach=False):
         """
         Users should create instances of this class by using the async
@@ -770,6 +818,16 @@ class EphemeralOnionService(object):
             particular port locally (otherwise, an available one is
             chosen)
 
+        :param private_key: None, `DISCARD`, or a private key blob
+
+        :param detach: if True, tell Tor to NOT associate this control
+            connection with the lifetime of the created service
+
+        :param version: 2 or 3, which kind of service to create
+
+        :param progress: a callable taking (percent, tag, description)
+            that is called periodically to report progress.
+
         See also :meth:`txtorcon.Tor.create_onion_service` (which
         ultimately calls this).
         """
@@ -790,7 +848,7 @@ class EphemeralOnionService(object):
 
         defer.returnValue(onion)
 
-    def __init__(self, config, ports, hostname=None, private_key=None, version=2,
+    def __init__(self, config, ports, hostname=None, private_key=None, version=3,
                  detach=False, **kwarg):
         """
         Users should create instances of this class by using the async
@@ -984,7 +1042,7 @@ class AuthenticatedFilesystemOnionService(object):
         :param auth: an instance of :class:`txtorcon.AuthBasic` or
             :class:`txtorcon.AuthStealth`
 
-        :param version: which kind of onion service to create
+        :param version: 2 or 3, which kind of service to create
 
         :param group_readable: if True, the Tor option
             `HiddenServiceDirGroupReadable` is set to 1 for this service
@@ -1042,7 +1100,7 @@ class AuthenticatedFilesystemOnionService(object):
         yield uploaded[0]
         defer.returnValue(fhs)
 
-    def __init__(self, config, thedir, ports, auth, version=2, group_readable=0):
+    def __init__(self, config, thedir, ports, auth, version=3, group_readable=0):
         # XXX do we need version here? probably...
         self._config = config
         self._dir = thedir
