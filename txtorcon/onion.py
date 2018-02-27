@@ -84,6 +84,13 @@ class IOnionService(Interface):
 
 
 class IFilesystemOnionService(IOnionService):
+    """
+    Encapsulates a single filesystem-based service.
+
+    Note this is a subclass of IOnionService; it just adds two
+    attributes that ephemeral services lack: hidden_service_directory
+    and group_readable.
+    """
     # XXX do we want to expose the directory in the API? probably...
     hidden_service_directory = Attribute('The directory where private data is kept')
     group_readable = Attribute("set HiddenServiceGroupReadable if true")
@@ -92,8 +99,11 @@ class IFilesystemOnionService(IOnionService):
 class IAuthenticatedOnionClients(Interface):
     """
     This encapsulates both 'stealth' and 'basic' authenticated Onion
-    (nee Hidden) services, whether ephemeral or not. Note that Tor
-    doesn't yet support ephemeral authenticated services.
+    services, whether ephemeral or not.
+
+    Each client has an arbitrary (ASCII, no spaces) name. You may
+    access the clients with `get_client`, which will all be
+    :class:`txtorcon.IOnionClient` instances.
     """
 
     def get_permanent_id(self):
@@ -133,8 +143,14 @@ class IOnionClient(IOnionService):
     this because hidden services can have different URLs and/or
     auth_tokens on a per-client basis. So, the only way to access
     *anything* from an authenticated onion service is to list the
-    cleints -- which gives you one IAuthenticatedOnionClient per
-    client.
+    cleints -- which gives you one IOnionClient per client.
+
+    Note that this inherits from :class:`txtorcon.IOnionService` and
+    adds only those attributes required for authentication. For
+    'stealth' authentication, the hostnames of each client will be
+    unique; for 'basic' authentication the hostname is the same. The
+    auth_tokens are always unique -- these are given to clients to
+    include using the Tor option `HidServAuth`
     """
     auth_token = Attribute('Some secret bytes')
     name = Attribute('str')  # XXX required? probably.
@@ -167,6 +183,7 @@ def _canonical_hsdir(hsdir):
 @implementer(IFilesystemOnionService)
 class FilesystemOnionService(object):
     """
+    An Onion service whose keys are stored on disk.
     """
 
     @staticmethod

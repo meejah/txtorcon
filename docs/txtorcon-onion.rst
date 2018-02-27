@@ -8,11 +8,11 @@ For non-authenticated services:
 
 IOnionService
 -------------
-.. autoclass:: txtorcon.IOnionService
+.. autointerface:: txtorcon.IOnionService
 
 IFilesystemOnionService
 -----------------------
-.. autoclass:: txtorcon.IFilesystemOnionService
+.. autointerface:: txtorcon.IFilesystemOnionService
 
 
 
@@ -21,11 +21,11 @@ these interfaces:
 
 IAuthenticatedOnionClients
 --------------------------
-.. autoclass:: txtorcon.IAuthenticatedOnionClients
+.. autointerface:: txtorcon.IAuthenticatedOnionClients
 
 IOnionClient
 --------------------------
-.. autoclass:: txtorcon.IOnionClient
+.. autointerface:: txtorcon.IOnionClient
 
 
 Concrete classes implementing specific variations of Onion
