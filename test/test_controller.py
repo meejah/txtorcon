@@ -1302,12 +1302,6 @@ class EphemeralOnionFactoryTests(unittest.TestCase):
             yield self.tor.create_onion_service([80], version=1)
         self.assertIn("The only valid Onion service versions", str(ctx.exception))
 
-    @defer.inlineCallbacks
-    def test_version_invalid_for_now(self):
-        with self.assertRaises(ValueError) as ctx:
-            yield self.tor.create_onion_service([80], version=3)
-        self.assertIn("not supported by Tor", str(ctx.exception))
-
     def test_auth(self):
         self.tor.create_authenticated_onion_endpoint(80, AuthBasic(['alice']))
 
