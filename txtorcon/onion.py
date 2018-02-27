@@ -573,6 +573,9 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
 
 
 class _AuthCommon(object):
+    """
+    Common code for all types of authentication
+    """
 
     def __init__(self, clients):
         self._clients = dict()
@@ -593,11 +596,17 @@ class _AuthCommon(object):
 
 
 class AuthBasic(_AuthCommon):
+    """
+    Authentication details for 'basic' auth.
+    """
     auth_type = 'basic'
     # note that _AuthCommon.__init__ takes 'clients'
 
 
 class AuthStealth(_AuthCommon):
+    """
+    Authentication details for 'stealth' auth.
+    """
     auth_type = 'stealth'
     # note that _AuthCommon.__init__ takes 'clients'
 
@@ -734,6 +743,14 @@ class EphemeralAuthenticatedOnionService(object):
 
 @implementer(IOnionService)
 class EphemeralOnionService(object):
+    """
+    An Onion service whose keys live in memory and are not persisted
+    by Tor.
+
+    It is up to the application developer to retrieve and store the
+    private key if this service is ever to be brought online again.
+    """
+
     @staticmethod
     @defer.inlineCallbacks
     def create(reactor, config, ports,
@@ -836,8 +853,6 @@ class EphemeralAuthenticatedOnionServiceClient(object):
 
     These are only created by and returned from the .clients property
     of an AuthenticatedOnionService instance.
-
-    # needs 'auth_token', 'name', 'parent' for IOnionClient
     """
 
     def __init__(self, parent, name, token):
@@ -947,24 +962,36 @@ def _compute_permanent_id(private_key):
 @implementer(IAuthenticatedOnionClients)
 class AuthenticatedFilesystemOnionService(object):
     """
-    Corresponds to::
-
-      HiddenServiceDir /home/mike/src/tor/hidserv-stealth
-      HiddenServiceDirGroupReadable 1
-      HiddenServicePort 80 127.0.0.1:99
-      HiddenServiceAuthorizeClient stealth quux,flummox,zinga
-
-    or::
-
-      HiddenServiceDir /home/mike/src/tor/hidserv-basic
-      HiddenServiceDirGroupReadable 1
-      HiddenServicePort 80 127.0.0.1:99
-      HiddenServiceAuthorizeClient basic foo,bar,baz
+    An Onion service whose keys are stored on disk by Tor and which
+    does authentication.
     """
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(reactor, config, hsdir, ports, auth=None, version=2, group_readable=False, progress=None):
+    def create(reactor, config, hsdir, ports, auth=None, version=3, group_readable=False, progress=None):
+        """
+        returns a new AuthenticatedFilesystemOnionService after adding it
+        to the provided config and ensureing at least one of its
+        descriptors is uploaded.
+
+        :param config: a :class:`txtorcon.TorConfig` instance
+
+        :param ports: a list of ports to make available; any of these
+            can be 2-tuples of (remote, local) if you want to expose a
+            particular port locally (otherwise, an available one is
+            chosen)
+
+        :param auth: an instance of :class:`txtorcon.AuthBasic` or
+            :class:`txtorcon.AuthStealth`
+
+        :param version: which kind of onion service to create
+
+        :param group_readable: if True, the Tor option
+            `HiddenServiceDirGroupReadable` is set to 1 for this service
+
+        :param progress: a callable taking (percent, tag, description)
+            that is called periodically to report progress.
+        """
         # if hsdir is relative, it's "least surprising" (IMO) to make
         # it into a relative path here -- otherwise, it's relative to
         # whatever Tor's cwd is. Issue similar warning to Tor?
@@ -1270,6 +1297,9 @@ def _validate_single_port_string(port):
 
 
 def _parse_rsa_blob(lines):
+    '''
+    Internal helper.
+    '''
     return 'RSA1024:' + ''.join(lines[1:-1])
 
 
