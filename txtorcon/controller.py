@@ -533,9 +533,13 @@ class Tor(object):
             self._config = yield TorConfig.from_protocol(self._protocol)
         returnValue(self._config)
 
-    # XXX we *could* have just one "create_onion_service" method and
-    # trigger off "onion_service_dir" or something? But I think better
-    # to have different ones.
+    # For all these create_*() methods, instead of magically computing
+    # the class-name from arguments (e.g. we could decide "it's a
+    # Filesystem thing" if "hidden_service_dir=" is passed) we have an
+    # explicit method for each type of service. This means each method
+    # always returns the name type of object (good!) and user-code is
+    # more explicit about what they want (also good!)
+
     @inlineCallbacks
     def create_onion_service(self, ports, private_key=None, version=3, progress=None):
         """
