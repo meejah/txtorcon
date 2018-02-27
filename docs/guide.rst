@@ -299,22 +299,33 @@ over which you're iterating.
 Here's a simple sketch that traverses all circuits printing their
 router IDs, and closing each stream and circuit afterwards:
 
-(XXX FIXME test this for realz; can we put it in a "listing"-type
-file?)
-
 .. code-block:: python
 
+    from twisted.internet.task import react
+    from twisted.internet.defer import inlineCallbacks
+    from twisted.internet.endpoints import UNIXClientEndpoint
+
+    import txtorcon
+
+
+    @react
     @inlineCallbacks
     def main(reactor):
-        tor = yield connect(reactor, UNIXClientEndpoint('/var/run/tor/control'))
-        state = yield tor.get_state()
-        for circuit in state.circuits.values():
-            path = '->'.join(map(lambda r: r.id_hex, circuit.streams))
+        """
+        Close all open streams and circuits in the Tor we connect to
+        """
+        control_ep = UNIXClientEndpoint(reactor, '/var/run/tor/control')
+        tor = yield txtorcon.connect(reactor, control_ep)
+        state = yield tor.create_state()
+        print("Closing all circuits:")
+        for circuit in list(state.circuits.values()):
+            path = '->'.join(map(lambda r: r.id_hex, circuit.path))
             print("Circuit {} through {}".format(circuit.id, path))
             for stream in circuit.streams:
                 print("  Stream {} to {}".format(stream.id, stream.target_host))
                 yield stream.close()
             yield circuit.close()
+        yield tor.quit()
 
 
 .. _guide_client_use:
