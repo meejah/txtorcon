@@ -37,15 +37,6 @@ from cryptography.hazmat.primitives import serialization
 # --> also: direct people to Tor() thing
 
 
-## TODO
-
-# - naming:
-#   FilesystemOnionService, OnionService vs. FilesystemHiddenService,
-#   EphemeralHiddenService, etc. (can the latter just be aliases for
-#   the former??)
-#
-
-
 class HiddenServiceClientAuth(object):
     """
     Encapsulates a single client-authorization, as parsed from a
@@ -1347,8 +1338,3 @@ def _parse_client_keys(stream):
 
     parser_state.create_key()  # make sure we get the "last" one
     return parser_state.keys
-
-
-## aliases, that we should deprecate
-FilesystemHiddenService = FilesystemOnionService  # XXX
-EphemeralHiddenService = EphemeralOnionService  # XXX
