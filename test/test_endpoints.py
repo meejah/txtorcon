@@ -398,7 +398,6 @@ class EndpointTests(unittest.TestCase):
                 backend=default_backend(),
             )
         )
-        print("perm {} {}".format(perm_id, type(perm_id)))
         hsdir = self.mktemp()
         os.mkdir(hsdir)
         with open(os.path.join(hsdir, 'private_key'), 'wb') as f:
@@ -419,9 +418,7 @@ class EndpointTests(unittest.TestCase):
         hsdesc = self.protocol.events['HS_DESC']
         hsdesc("UPLOAD {} x x x x".format(perm_id))
         hsdesc("UPLOADED {} x x x x".format(perm_id))
-        print(port_d)
         port = yield port_d
-        print(port)
 
     @defer.inlineCallbacks
     def test_not_ephemeral_no_hsdir(self, ftb):
