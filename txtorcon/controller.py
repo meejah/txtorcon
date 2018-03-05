@@ -906,6 +906,27 @@ class Tor(object):
     def create_filesystem_onion_endpoint(self, port, hs_dir, group_readable=False, version=None):
         """
         WARNING: API subject to change
+
+        :returns: an object that implements IStreamServerEndpoint. When
+            the ``.listen()`` method is called, the endpoint will create
+            an Onion service whose keys are on disk when ``.listen()`` is
+            called. The object returned from ``.listen()`` will be a
+            :class:TorOnionListeningPort``; its ``.onion_service``
+            attribute will be a :class:`txtorcon.IOnionService` instance.
+
+        :param port: the port to listen publically on the Tor network
+           on (e.g. 80 for a Web server)
+
+        :param hs_dir: the directory in which keys are stored for this
+            service.
+
+        :param group_readable: controls the Tor
+            `HiddenServiceDirGroupReadable` which will either set (or not)
+            group read-permissions on the hs_dir.
+
+        :param version: if not None, a specific version of service to
+            use; version=3 is Proposition 224 and version=2 is the
+            older 1024-bit key based implementation. The default is version 3.
         """
         return TCPHiddenServiceEndpoint(
             self._reactor, self.get_config(), port,
@@ -921,6 +942,31 @@ class Tor(object):
     def create_authenticated_filesystem_onion_endpoint(self, port, hs_dir, auth, group_readable=False, version=None):
         """
         WARNING: API subject to change
+
+        :returns: an object that implements IStreamServerEndpoint. When
+            the ``.listen()`` method is called, the endpoint will create
+            an Onion service whose keys are on disk when ``.listen()`` is
+            called. The object returned from ``.listen()`` will be a
+            :class:TorOnionListeningPort``; its ``.onion_service``
+            attribute will be a :class:`txtorcon.IOnionService` instance.
+
+        :param port: the port to listen publically on the Tor network
+           on (e.g. 80 for a Web server)
+
+        :param hs_dir: the directory in which keys are stored for this
+            service.
+
+        :param auth: instance of :class:`txtorcon.AuthBasic` or
+            :class:`txtorcon.AuthStealth` controlling the type of
+            authentication to use.
+
+        :param group_readable: controls the Tor
+            `HiddenServiceDirGroupReadable` which will either set (or not)
+            group read-permissions on the hs_dir.
+
+        :param version: if not None, a specific version of service to
+            use; version=3 is Proposition 224 and version=2 is the
+            older 1024-bit key based implementation. The default is version 3.
         """
         return TCPHiddenServiceEndpoint(
             self._reactor, self.get_config(), port,
