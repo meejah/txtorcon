@@ -552,7 +552,6 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     flags = []
     if onion._detach:
         flags.append('Detach')
-    # XXX from below, make "private_key=THROW_AWAY" the way to do this?
     if onion.private_key is DISCARD:
         flags.append('DiscardPK')
     if auth is not None:

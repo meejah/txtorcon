@@ -537,8 +537,9 @@ class Tor(object):
     # the class-name from arguments (e.g. we could decide "it's a
     # Filesystem thing" if "hidden_service_dir=" is passed) we have an
     # explicit method for each type of service. This means each method
-    # always returns the name type of object (good!) and user-code is
-    # more explicit about what they want (also good!)
+    # always returns the same type of object (good!) and user-code is
+    # more explicit about what they want (also good!) .. but the
+    # method names are kind of long (not-ideal)
 
     @inlineCallbacks
     def create_onion_service(self, ports, private_key=None, version=3, progress=None):
@@ -552,7 +553,7 @@ class Tor(object):
         to the Tor network -- this can take from 30s to a couple
         minutes.
 
-        :param private_key: None, ``THROW_AWAY`` or a key-blob
+        :param private_key: None, ``txtorcon.DISCARD`` or a key-blob
             retained from a prior run
 
             Passing ``None`` means a new one will be created. It can be
@@ -561,7 +562,7 @@ class Tor(object):
             to this method in the future) if you wish to keep the same
             ``.onion`` domain when re-starting your program.
 
-            Passing ``THROW_AWAY`` means txtorcon will never learn the
+            Passing ``txtorcon.DISCARD`` means txtorcon will never learn the
             private key from Tor and so there will be no way to re-create
             an Onion Service on the same address after Tor exits.
 
