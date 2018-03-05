@@ -1,5 +1,10 @@
 
-class _AsyncOnionContext(object):
+class _AsyncOnionAuthContext(object):
+    """
+    Internal helper. An async context manager that holds client-style
+    onion authentication details and adds + removes them using
+    underlying :class:`txtorcon.Tor` methods.
+    """
     def __init__(self, tor, onion_host, token):
         self._tor = tor
         self._host = onion_host

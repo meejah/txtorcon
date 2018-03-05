@@ -39,7 +39,7 @@ from txtorcon.util import _is_non_public_numeric_address
 from . import socks
 from .interface import ITor
 if not six.PY2:
-    from .controller_py3 import _AsyncOnionContext
+    from .controller_py3 import _AsyncOnionAuthContext
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
@@ -781,7 +781,7 @@ class Tor(object):
             raise RuntimeError(
                 "async context-managers not supported in Python2"
             )
-        return _AsyncOnionContext(
+        return _AsyncOnionAuthContext(
             self, onion_host, token
         )
 
