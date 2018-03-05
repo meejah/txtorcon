@@ -83,6 +83,13 @@ __all__ = [
     "IOnionService", "IFilesystemOnionService",
     "IAuthenticatedOnionClients", "IOnionClient",
     "AuthStealth", "AuthBasic", "DISCARD",
+    # should I really export the concrete classes, too?
+    "EphemeralOnionService",
+    "FilesystemOnionService",
+    "EphemeralAuthenticatedOnionService",
+    "EphemeralAuthenticatedOnionServiceClient",
+    "AuthenticatedFilesystemOnionService",
+    # XXX FIXME switch AuthenticatedFilesystemOnionService around to match the others or vice-versa
 
     "get_global_tor",
     "build_timeout_circuit",
