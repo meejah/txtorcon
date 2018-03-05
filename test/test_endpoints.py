@@ -418,7 +418,7 @@ class EndpointTests(unittest.TestCase):
         hsdesc = self.protocol.events['HS_DESC']
         hsdesc("UPLOAD {} x x x x".format(perm_id))
         hsdesc("UPLOADED {} x x x x".format(perm_id))
-        port = yield port_d
+        yield port_d
 
     @defer.inlineCallbacks
     def test_not_ephemeral_no_hsdir(self, ftb):
