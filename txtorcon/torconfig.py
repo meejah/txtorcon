@@ -24,10 +24,11 @@ from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.interface import ITorControlProtocol
 from txtorcon.util import find_keywords
 from .onion import IOnionClient, FilesystemOnionService, AuthenticatedFilesystemOnionService
-from .onion import EphemeralOnionService
-from .onion import _await_descriptor_upload
 from .onion import DISCARD
 from .onion import AuthStealth, AuthBasic
+from .onion import EphemeralOnionService
+from .onion import _await_descriptor_upload
+from .onion import _parse_client_keys
 from .util import _Version
 
 
@@ -253,23 +254,6 @@ if six.PY2:
     setattr(_ListWrapper, '__setslice__', _wrapture(list.__setslice__))
 
 
-class HiddenServiceClientAuth(object):
-    """
-    Encapsulates a single client-authorization, as parsed from a
-    HiddenServiceDir's "client_keys" file if you have stealth or basic
-    authentication turned on.
-
-    :param name: the name you gave it in the HiddenServiceAuthorizeClient line
-    :param cookie: random password
-    :param key: RSA private key, or None if this was basic auth
-    """
-
-    def __init__(self, name, cookie, key=None):
-        self.name = name
-        self.cookie = cookie
-        self.key = parse_rsa_blob(key) if key else None
-
-
 class HiddenService(object):
     """
     Because hidden service configuration is handled specially by Tor,
@@ -404,7 +388,7 @@ class HiddenService(object):
             self._client_keys = []
             if os.path.exists(fname):
                 with open(fname) as f:
-                    self._client_keys = parse_client_keys(f)
+                    self._client_keys = _parse_client_keys(f)
         return self._client_keys
 
     def config_attributes(self):
@@ -513,90 +497,6 @@ class EphemeralHiddenService(object):
 
 def parse_rsa_blob(lines):
     return 'RSA1024:' + ''.join(lines[1:-1])
-
-
-def parse_client_keys(stream):
-    '''
-    This parses a hidden-service "client_keys" file, either stealth or
-    basic (they're the same, except "stealth" includes a
-    "client-key"). Returns a list of HiddenServiceClientAuth() instances.
-
-    Note that the key does NOT include the "----BEGIN ---" markers,
-    nor *any* embedded whitespace. It is *just* the key blob.
-
-    '''
-
-    def parse_error(data):
-        raise RuntimeError("Parse error at: " + data)
-
-    class ParserState(object):
-        def __init__(self):
-            self.keys = []
-            self.reset()
-
-        def reset(self):
-            self.name = None
-            self.cookie = None
-            self.key = []
-
-        def create_key(self):
-            if self.name is not None:
-                self.keys.append(HiddenServiceClientAuth(self.name, self.cookie, self.key))
-            self.reset()
-
-        def set_name(self, name):
-            self.create_key()
-            self.name = name.split()[1]
-
-        def set_cookie(self, cookie):
-            self.cookie = cookie.split()[1]
-            if self.cookie.endswith('=='):
-                self.cookie = self.cookie[:-2]
-
-        def add_key_line(self, line):
-            self.key.append(line)
-
-    from txtorcon.spaghetti import FSM, State, Transition
-    init = State('init')
-    got_name = State('got_name')
-    got_cookie = State('got_cookie')
-    reading_key = State('got_key')
-
-    parser_state = ParserState()
-
-    # initial state; we want "client-name" or it's an error
-    init.add_transitions([
-        Transition(got_name, lambda line: line.startswith('client-name '), parser_state.set_name),
-        Transition(init, lambda line: not line.startswith('client-name '), parse_error),
-    ])
-
-    # next up is "descriptor-cookie" or it's an error
-    got_name.add_transitions([
-        Transition(got_cookie, lambda line: line.startswith('descriptor-cookie '), parser_state.set_cookie),
-        Transition(init, lambda line: not line.startswith('descriptor-cookie '), parse_error),
-    ])
-
-    # the "interesting bit": there's either a client-name if we're a
-    # "basic" file, or an RSA key (with "client-key" before it)
-    got_cookie.add_transitions([
-        Transition(reading_key, lambda line: line.startswith('client-key'), None),
-        Transition(got_name, lambda line: line.startswith('client-name '), parser_state.set_name),
-    ])
-
-    # if we're reading an RSA key, we accumulate it in current_key.key
-    # until we hit a line starting with "client-name"
-    reading_key.add_transitions([
-        Transition(reading_key, lambda line: not line.startswith('client-name'), parser_state.add_key_line),
-        Transition(got_name, lambda line: line.startswith('client-name '), parser_state.set_name),
-    ])
-
-    # create our FSM and parse the data
-    fsm = FSM([init, got_name, got_cookie, reading_key])
-    for line in stream.readlines():
-        fsm.process(line.strip())
-
-    parser_state.create_key()  # make sure we get the "last" one
-    return parser_state.keys
 
 
 def _endpoint_from_socksport_line(reactor, socks_config):

@@ -25,10 +25,10 @@ from txtorcon import HiddenService
 from txtorcon import launch
 from txtorcon import TorNotFound
 
-from txtorcon.torconfig import parse_client_keys
 from txtorcon.torconfig import CommaList
 from txtorcon.torconfig import launch_tor
 from txtorcon.torconfig import EphemeralHiddenService
+from txtorcon.onion import _parse_client_keys
 from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import AuthenticatedFilesystemOnionService
@@ -1519,7 +1519,7 @@ class HiddenServiceAuthTests(unittest.TestCase):
     def test_parse_client_keys(self):
         data = StringIO(keydata)
 
-        clients = list(parse_client_keys(data))
+        clients = list(_parse_client_keys(data))
 
         self.assertEqual(3, len(clients))
         self.assertEqual('bar', clients[0].name)
@@ -1539,7 +1539,7 @@ class HiddenServiceAuthTests(unittest.TestCase):
 
         self.assertRaises(
             RuntimeError,
-            parse_client_keys, data
+            _parse_client_keys, data
         )
 
 
