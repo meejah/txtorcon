@@ -37,7 +37,7 @@ from txtorcon.endpoints import TCPHiddenServiceEndpoint
 from txtorcon.endpoints import TCPHiddenServiceEndpointParser
 from txtorcon.endpoints import TorClientEndpoint
 from txtorcon.endpoints import TorClientEndpointStringParser
-from txtorcon.endpoints import IProgressProvider
+from txtorcon.endpoints import IHiddenService, IProgressProvider
 from txtorcon.onion import IOnionService
 from txtorcon.onion import IFilesystemOnionService
 from txtorcon.onion import IAuthenticatedOnionClients
@@ -77,6 +77,7 @@ __all__ = [
     "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",
     "TorClientEndpoint", "TorClientEndpointStringParser",
     "IProgressProvider",
+    "IHiddenService",  # deprecated
     "TorOnionAddress", "TorOnionListeningPort",
 
     # newest Onion API classes
