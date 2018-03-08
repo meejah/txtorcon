@@ -397,7 +397,6 @@ class TCPHiddenServiceEndpoint(object):
         if ephemeral is None:
             ephemeral = True
             if hidden_service_dir is not None:
-                # XXX emit warning?
                 ephemeral = False
 
         # backwards-compatibility for stealth_auth= kwarg
@@ -823,7 +822,6 @@ class TCPHiddenServiceEndpointParser(object):
     # do magic parsing stuff, and to conform to Twisted's conventions
     # we should use camelCase in the endpoint definitions...
 
-    # XXX need to be able to pass privateKey too (mutually exclusive with hiddenServiceDir)
     def parseStreamServer(self, reactor, public_port, localPort=None,
                           controlPort=None, hiddenServiceDir=None,
                           privateKey=None, version=None):
@@ -849,8 +847,6 @@ class TCPHiddenServiceEndpointParser(object):
             )
 
         ephemeral = None
-        if version == 3:
-            ephemeral = False
 
         public_port = int(public_port)
 
