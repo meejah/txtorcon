@@ -495,10 +495,6 @@ class EphemeralHiddenService(object):
             raise RuntimeError('Failed to remove hidden service: "%s".' % r)
 
 
-def parse_rsa_blob(lines):
-    return 'RSA1024:' + ''.join(lines[1:-1])
-
-
 def _endpoint_from_socksport_line(reactor, socks_config):
     """
     Internal helper.
