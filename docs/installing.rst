@@ -45,6 +45,11 @@ setuptools. At least on Debian, it is important to upgrade setuptools
    pip install path/to/txtorcon-*.whl
 
 
+If you get an error like `SyntaxError: invalid syntax` on
+`txtorcon/test/py3_torstate.py` or similar, you have an out-of-date
+pip or setuptools; see above.
+
+
 Compatibility
 -------------
 
