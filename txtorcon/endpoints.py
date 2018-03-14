@@ -525,7 +525,6 @@ class TCPHiddenServiceEndpoint(object):
                 )
             )
         # just to be sure:
-#        self._config.bootstrap()
         yield self._config.post_bootstrap
 
         # XXX - perhaps allow the user to pass in an endpoint
@@ -654,10 +653,6 @@ class TCPHiddenServiceEndpoint(object):
         )
 
 
-# XXX hmm, why don't we just declare that HiddenService et
-# al. instances actually implement IAddress -- then getHost() just
-# returns one of these things (e.g. an IOnionService-implementing
-# object)...
 @implementer(IAddress)
 class TorOnionAddress(FancyEqMixin, object):
     """
@@ -725,9 +720,6 @@ class IHiddenService(Interface):
         '(in turn has .protocol for TorControlProtocol).')
 
 
-# XXX should implement IOnionService?
-# ...so what shall implement IOnionClients etc? need multiple TorOnionListeningPort impls?
-# --> no, you'll have to get at .service (or .onion_serivce?) from this ...
 @implementer(IListeningPort)
 @implementer(IHiddenService)  # deprecated; use .onion_service
 class TorOnionListeningPort(object):
@@ -742,7 +734,6 @@ class TorOnionListeningPort(object):
     ListeningPort" object...
     which implements IListeningPort interface but has many more
     responsibilities we needn't worry about here.
-
     """
 
     def __init__(self, listening_port, public_port, hiddenservice, tor_config):

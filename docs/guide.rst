@@ -406,8 +406,11 @@ In the newest Tor versions, Onion services have been upgraded
 ("`Proposition 279
 <https://gitweb.torproject.org/torspec.git/plain/proposals/279-naming-layer-api.txt>`_")
 and these are known as "version 3" services. The prior / legacy is
-"version 2". In txtorcon, the default is version 3; if you expect to
-connect to an older Tor release, pass `version=2`.
+"version 2". In txtorcon, the default is version is **usually** 3 but
+in some older APIs the default has to remain "2" if unspecified (for
+backwards-compatibility). You should thus usually pass "version=3"
+(and if you expect to connect to an older Tor release, pass
+`version=2`).
 
 .. note::
 

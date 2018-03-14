@@ -20,23 +20,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
 
-# XXX
-# think: port vs ports: and how do we represent that? i.e. if we
-# decide "port" then we have to allow for multiple HiddenSerivce
-# instances to have the same private key/hostname but different ports.
-
-# XXX: what about 'detached' versus not onions...
-
-# XXX: okay, so is this now just too many options in one factory
-# function?
-
-# XXX: so, should create_onion() "just" be a dispatcher to "more
-# specific" factory-functions, like "create_ephemeral_onion"
-# "create_detached_onion" "create_permanent_onion??" etc...?
-# --> yes.
-# --> also: direct people to Tor() thing
-
-
 class HiddenServiceClientAuth(object):
     """
     Encapsulates a single client-authorization, as parsed from a
@@ -91,7 +74,6 @@ class IFilesystemOnionService(IOnionService):
     attributes that ephemeral services lack: hidden_service_directory
     and group_readable.
     """
-    # XXX do we want to expose the directory in the API? probably...
     hidden_service_directory = Attribute('The directory where private data is kept')
     group_readable = Attribute("set HiddenServiceGroupReadable if true")
 
