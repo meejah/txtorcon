@@ -38,7 +38,7 @@ from .onion import IAuthenticatedOnionClients
 from .onion import FilesystemOnionService
 from .onion import IFilesystemOnionService
 from .onion import EphemeralOnionService
-from .onion import AuthenticatedFilesystemOnionService
+from .onion import FilesystemAuthenticatedOnionService
 from .onion import EphemeralAuthenticatedOnionService
 from .onion import AuthStealth  # , AuthBasic
 from .torconfig import _endpoint_from_socksport_line
@@ -587,7 +587,7 @@ class TCPHiddenServiceEndpoint(object):
                     )
             else:
                 if self.auth is not None:
-                    create_d = AuthenticatedFilesystemOnionService.create(
+                    create_d = FilesystemAuthenticatedOnionService.create(
                         self._reactor,
                         self._config,
                         self.hidden_service_dir,

@@ -31,7 +31,7 @@ from txtorcon.torconfig import EphemeralHiddenService
 from txtorcon.onion import _parse_client_keys
 from txtorcon.onion import FilesystemOnionService
 from txtorcon.onion import EphemeralOnionService
-from txtorcon.onion import AuthenticatedFilesystemOnionService
+from txtorcon.onion import FilesystemAuthenticatedOnionService
 from txtorcon.onion import AuthBasic
 
 from txtorcon.testutil import FakeControlProtocol
@@ -1029,7 +1029,7 @@ DnkEGTrOUFZ7CbDp+SM18BjmFXI2n0bFJEznXFhH+Awz
 -----END RSA PRIVATE KEY-----
 '''.format(name=name))
 
-        hs = AuthenticatedFilesystemOnionService(
+        hs = FilesystemAuthenticatedOnionService(
             conf, fakedir, ['1 127.0.0.1:12345'],
             auth=AuthBasic(['alice']),
         )
@@ -1049,7 +1049,7 @@ DnkEGTrOUFZ7CbDp+SM18BjmFXI2n0bFJEznXFhH+Awz
 
         # create a client-auth'd onion service, but only "add" one of
         # its newly created clients
-        hs = AuthenticatedFilesystemOnionService(
+        hs = FilesystemAuthenticatedOnionService(
             conf, fakedir, ['1 127.0.0.1:12345'],
             auth=AuthBasic(['alice', 'bob']),
             group_readable=True,

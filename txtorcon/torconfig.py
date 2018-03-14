@@ -23,7 +23,7 @@ from txtorcon.torcontrolprotocol import parse_keywords, DEFAULT_VALUE
 from txtorcon.torcontrolprotocol import TorProtocolError
 from txtorcon.interface import ITorControlProtocol
 from txtorcon.util import find_keywords
-from .onion import IOnionClient, FilesystemOnionService, AuthenticatedFilesystemOnionService
+from .onion import IOnionClient, FilesystemOnionService, FilesystemAuthenticatedOnionService
 from .onion import DISCARD
 from .onion import AuthStealth, AuthBasic
 from .onion import EphemeralOnionService
@@ -1166,7 +1166,7 @@ class TorConfig(object):
                             raise ValueError(
                                 "Unknown auth type '{}'".format(auth_type)
                             )
-                        parent_service = AuthenticatedFilesystemOnionService(
+                        parent_service = FilesystemAuthenticatedOnionService(
                             self, directory, ports, auth0, ver, group_read
                         )
                         for client_name in parent_service.client_names():

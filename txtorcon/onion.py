@@ -943,12 +943,12 @@ class EphemeralAuthenticatedOnionServiceClient(object):
 
 
 @implementer(IOnionClient)
-class AuthenticatedFilesystemOnionServiceClient(object):
+class FilesystemAuthenticatedOnionServiceClient(object):
     """
-    A single client of an AuthenticatedFilesystemOnionService
+    A single client of an FilesystemAuthenticatedOnionService
 
     These are only created by and returned from the .clients property
-    of an AuthenticatedFilesystemOnionService instance.
+    of an FilesystemAuthenticatedOnionService instance.
     """
 
     def __init__(self, parent, name, hostname, ports, token):
@@ -1017,7 +1017,7 @@ def _compute_permanent_id(private_key):
 
 
 @implementer(IAuthenticatedOnionClients)
-class AuthenticatedFilesystemOnionService(object):
+class FilesystemAuthenticatedOnionService(object):
     """
     An Onion service whose keys are stored on disk by Tor and which
     does authentication.
@@ -1027,7 +1027,7 @@ class AuthenticatedFilesystemOnionService(object):
     @defer.inlineCallbacks
     def create(reactor, config, hsdir, ports, auth=None, version=3, group_readable=False, progress=None):
         """
-        returns a new AuthenticatedFilesystemOnionService after adding it
+        returns a new FilesystemAuthenticatedOnionService after adding it
         to the provided config and ensureing at least one of its
         descriptors is uploaded.
 
@@ -1055,7 +1055,7 @@ class AuthenticatedFilesystemOnionService(object):
         hsdir = _canonical_hsdir(hsdir)
         processed_ports = yield _validate_ports(reactor, ports)
 
-        fhs = AuthenticatedFilesystemOnionService(
+        fhs = FilesystemAuthenticatedOnionService(
             config, hsdir, processed_ports, auth,
             version=version,
             group_readable=group_readable,
@@ -1169,7 +1169,7 @@ class AuthenticatedFilesystemOnionService(object):
     def add_client(self, name, hostname, ports, token):
         if self._clients is None:
             self._parse_hostname()
-        client = AuthenticatedFilesystemOnionServiceClient(
+        client = FilesystemAuthenticatedOnionServiceClient(
             parent=self,
             name=name,
             hostname=hostname,
@@ -1204,7 +1204,7 @@ class AuthenticatedFilesystemOnionService(object):
                     # -> for auth'd services we end up with multiple
                     # -> HiddenService instances now (because different
                     # -> hostnames)
-                    clients[name] = AuthenticatedFilesystemOnionServiceClient(
+                    clients[name] = FilesystemAuthenticatedOnionServiceClient(
                         self, name, hostname,
                         ports=self._ports,
                         token=cookie,

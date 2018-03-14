@@ -43,7 +43,7 @@ from txtorcon.onion import IFilesystemOnionService
 from txtorcon.onion import IAuthenticatedOnionClients
 from txtorcon.onion import IOnionClient
 from txtorcon.onion import FilesystemOnionService
-from txtorcon.onion import AuthenticatedFilesystemOnionService
+from txtorcon.onion import FilesystemAuthenticatedOnionService
 from txtorcon.onion import EphemeralOnionService
 from txtorcon.onion import EphemeralAuthenticatedOnionService
 from txtorcon.onion import EphemeralAuthenticatedOnionServiceClient
@@ -89,8 +89,7 @@ __all__ = [
     "FilesystemOnionService",
     "EphemeralAuthenticatedOnionService",
     "EphemeralAuthenticatedOnionServiceClient",
-    "AuthenticatedFilesystemOnionService",
-    # XXX FIXME switch AuthenticatedFilesystemOnionService around to match the others or vice-versa
+    "FilesystemAuthenticatedOnionService",
 
     "get_global_tor",
     "build_timeout_circuit",

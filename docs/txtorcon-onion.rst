@@ -51,13 +51,13 @@ FilesystemOnionService
 ----------
 .. autoclass:: txtorcon.FilesystemOnionService
 
-AuthenticatedFilesystemOnionService
+FilesystemAuthenticatedOnionService
 ----------
-.. autoclass:: txtorcon.AuthenticatedFilesystemOnionService
+.. autoclass:: txtorcon.FilesystemAuthenticatedOnionService
 
-AuthenticatedFilesystemOnionServiceClient
+FilesystemAuthenticatedOnionServiceClient
 ----------
-.. autoclass:: txtorcon.AuthenticatedFilesystemOnionServiceClient
+.. autoclass:: txtorcon.FilesystemAuthenticatedOnionServiceClient
 
 
 Some utility-style classes:
