@@ -103,7 +103,7 @@ def get_global_tor_instance(reactor,
         _global_tor_lock.release()
 
 
-@deprecated(_Version("txtorcon", 0, 19, 3))
+@deprecated(_Version("txtorcon", 18, 0, 0))
 @defer.inlineCallbacks
 def get_global_tor(reactor, control_port=None,
                    progress_updates=None,
