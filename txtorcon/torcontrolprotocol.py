@@ -666,8 +666,7 @@ class TorControlProtocol(LineOnlyReceiver):
             else:
                 self.on_disconnect.errback(reason)
         self.on_disconnect = None
-        outstanding = [self.command] + self.commands if self.command else self.commands
-        for d, cmd, cmd_arg in outstanding:
+        for d, cmd, cmd_arg in self.commands:
             d.errback(
                 Failure(
                     TorDisconnectError(
