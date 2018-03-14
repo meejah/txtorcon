@@ -533,124 +533,6 @@ class Tor(object):
             self._config = yield TorConfig.from_protocol(self._protocol)
         returnValue(self._config)
 
-    # For all these create_*() methods, instead of magically computing
-    # the class-name from arguments (e.g. we could decide "it's a
-    # Filesystem thing" if "hidden_service_dir=" is passed) we have an
-    # explicit method for each type of service. This means each method
-    # always returns the same type of object (good!) and user-code is
-    # more explicit about what they want (also good!) .. but the
-    # method names are kind of long (not-ideal)
-
-    @inlineCallbacks
-    def create_onion_service(self, ports, private_key=None, version=3, progress=None):
-        """
-        Create a new Onion service
-
-        This method will create a new Onion service, returning (via
-        Deferred) an instance that implements IOnionService. (To
-        create authenticated onion services, see XXX). This method
-        awaits at least one upload of the Onion service's 'descriptor'
-        to the Tor network -- this can take from 30s to a couple
-        minutes.
-
-        :param private_key: None, ``txtorcon.DISCARD`` or a key-blob
-            retained from a prior run
-
-            Passing ``None`` means a new one will be created. It can be
-            retrieved from the ``.private_key`` property of the returned
-            object. You **must** retain this key yourself (and pass it in
-            to this method in the future) if you wish to keep the same
-            ``.onion`` domain when re-starting your program.
-
-            Passing ``txtorcon.DISCARD`` means txtorcon will never learn the
-            private key from Tor and so there will be no way to re-create
-            an Onion Service on the same address after Tor exits.
-
-        :param version: The latest Tor releases support 'Proposition
-            224' (version 3) services. These are the default.
-
-        :param progress: if provided, a function that takes 3
-            arguments: ``(percent_done, tag, description)`` which may
-            be called any number of times to indicate some progress has
-            been made.
-        """
-        if version not in (2, 3):
-            raise ValueError(
-                "The only valid Onion service versions are 2 or 3"
-            )
-        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
-            raise ValueError("'ports' must be a sequence (list, tuple, ..)")
-
-        processed_ports = yield _validate_ports(self._reactor, ports)
-        config = yield self.get_config()
-        service = yield EphemeralOnionService.create(
-            reactor=self._reactor,
-            config=config,
-            ports=processed_ports,
-            version=version,
-            progress=progress,
-        )
-        returnValue(service)
-
-    @inlineCallbacks
-    def create_filesystem_onion_service(self, ports, onion_service_dir,
-                                        version=3,
-                                        group_readable=False,
-                                        progress=None):
-        """Create a new Onion service stored on disk
-
-        This method will create a new Onion service, returning (via
-        Deferred) an instance that implements IOnionService. (To
-        create authenticated onion services, see XXX). This method
-        awaits at least one upload of the Onion service's 'descriptor'
-        to the Tor network -- this can take from 30s to a couple
-        minutes.
-
-        :param ports: a collection of ports to advertise; these are
-            forwarded locally on a random port. Each entry may instead be
-            a 2-tuple, which chooses an explicit local port.
-
-        :param onion_service_dir: a path to an Onion Service
-            directory.
-
-            Tor will write a ``hostname`` file in this directory along
-            with the private keys for the service (if they do not already
-            exist). You do not need to retain the private key yourself.
-
-        :param version: which kind of Onion Service to create. The
-            default is ``3`` which are the Proposition 224
-            services. Version ``2`` are the previous services. There are
-            no other valid versions currently.
-
-        :param group_readable: if True, Tor creates the directory with
-           group read permissions. The default is False.
-
-        :param progress: if provided, a function that takes 3
-            arguments: ``(percent_done, tag, description)`` which may
-            be called any number of times to indicate some progress has
-            been made.
-
-        """
-        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
-            raise ValueError("'ports' must be a sequence (list, tuple, ..)")
-        processed_ports = yield _validate_ports(self._reactor, ports)
-
-        if version not in (2, 3):
-            raise ValueError(
-                "The only valid Onion service versions are 2 or 3"
-            )
-        config = yield self.get_config()
-        service = yield FilesystemOnionService.create(
-            reactor=self._reactor,
-            config=config,
-            hsdir=onion_service_dir,
-            ports=processed_ports,
-            version=version,
-            group_readable=group_readable,
-            progress=progress,
-        )
-        returnValue(service)
-
     def web_agent(self, pool=None, socks_endpoint=None):
         """
         :param socks_endpoint: If ``None`` (the default), a suitable
@@ -1039,6 +921,129 @@ class Tor(object):
         if self._socks_endpoint is None:
             self._socks_endpoint = yield _create_socks_endpoint(self._reactor, self._protocol)
         returnValue(self._socks_endpoint)
+
+    # XXX THINK do we *really* want these? Most users should use the
+    # endpoints....well, for "multiple ports, one onion" we don't have
+    # any other option currently.
+
+    # For all these create_*() methods, instead of magically computing
+    # the class-name from arguments (e.g. we could decide "it's a
+    # Filesystem thing" if "hidden_service_dir=" is passed) we have an
+    # explicit method for each type of service. This means each method
+    # always returns the same type of object (good!) and user-code is
+    # more explicit about what they want (also good!) .. but the
+    # method names are kind of long (not-ideal)
+
+    @inlineCallbacks
+    def create_onion_service(self, ports, private_key=None, version=3, progress=None):
+        """
+        Create a new Onion service
+
+        This method will create a new Onion service, returning (via
+        Deferred) an instance that implements IOnionService. (To
+        create authenticated onion services, see XXX). This method
+        awaits at least one upload of the Onion service's 'descriptor'
+        to the Tor network -- this can take from 30s to a couple
+        minutes.
+
+        :param private_key: None, ``txtorcon.DISCARD`` or a key-blob
+            retained from a prior run
+
+            Passing ``None`` means a new one will be created. It can be
+            retrieved from the ``.private_key`` property of the returned
+            object. You **must** retain this key yourself (and pass it in
+            to this method in the future) if you wish to keep the same
+            ``.onion`` domain when re-starting your program.
+
+            Passing ``txtorcon.DISCARD`` means txtorcon will never learn the
+            private key from Tor and so there will be no way to re-create
+            an Onion Service on the same address after Tor exits.
+
+        :param version: The latest Tor releases support 'Proposition
+            224' (version 3) services. These are the default.
+
+        :param progress: if provided, a function that takes 3
+            arguments: ``(percent_done, tag, description)`` which may
+            be called any number of times to indicate some progress has
+            been made.
+        """
+        if version not in (2, 3):
+            raise ValueError(
+                "The only valid Onion service versions are 2 or 3"
+            )
+        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
+            raise ValueError("'ports' must be a sequence (list, tuple, ..)")
+
+        processed_ports = yield _validate_ports(self._reactor, ports)
+        config = yield self.get_config()
+        service = yield EphemeralOnionService.create(
+            reactor=self._reactor,
+            config=config,
+            ports=processed_ports,
+            private_key=private_key,
+            version=version,
+            progress=progress,
+        )
+        returnValue(service)
+
+    @inlineCallbacks
+    def create_filesystem_onion_service(self, ports, onion_service_dir,
+                                        version=3,
+                                        group_readable=False,
+                                        progress=None):
+        """Create a new Onion service stored on disk
+
+        This method will create a new Onion service, returning (via
+        Deferred) an instance that implements IOnionService. (To
+        create authenticated onion services, see XXX). This method
+        awaits at least one upload of the Onion service's 'descriptor'
+        to the Tor network -- this can take from 30s to a couple
+        minutes.
+
+        :param ports: a collection of ports to advertise; these are
+            forwarded locally on a random port. Each entry may instead be
+            a 2-tuple, which chooses an explicit local port.
+
+        :param onion_service_dir: a path to an Onion Service
+            directory.
+
+            Tor will write a ``hostname`` file in this directory along
+            with the private keys for the service (if they do not already
+            exist). You do not need to retain the private key yourself.
+
+        :param version: which kind of Onion Service to create. The
+            default is ``3`` which are the Proposition 224
+            services. Version ``2`` are the previous services. There are
+            no other valid versions currently.
+
+        :param group_readable: if True, Tor creates the directory with
+           group read permissions. The default is False.
+
+        :param progress: if provided, a function that takes 3
+            arguments: ``(percent_done, tag, description)`` which may
+            be called any number of times to indicate some progress has
+            been made.
+
+        """
+        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
+            raise ValueError("'ports' must be a sequence (list, tuple, ..)")
+        processed_ports = yield _validate_ports(self._reactor, ports)
+
+        if version not in (2, 3):
+            raise ValueError(
+                "The only valid Onion service versions are 2 or 3"
+            )
+        config = yield self.get_config()
+        service = yield FilesystemOnionService.create(
+            reactor=self._reactor,
+            config=config,
+            hsdir=onion_service_dir,
+            ports=processed_ports,
+            version=version,
+            group_readable=group_readable,
+            progress=progress,
+        )
+        returnValue(service)
 
 
 class TorNotFound(RuntimeError):
