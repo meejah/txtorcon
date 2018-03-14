@@ -187,10 +187,11 @@ class TCPHiddenServiceEndpoint(object):
     instance of this class yourself (i.e. with a TorConfig instance
     you've created).
 
-    No matter how you came by this endpoing instance, you should call
+    No matter how you came by this endpoint instance, you should call
     `listen()` on it to trigger any work required to create the
-    service: Tor will be launched or connected-to; config for the onion service will
-    be added; the uploading of descriptors is awaited.
+    service: Tor will be launched or connected-to; config for the
+    onion service will be added; the uploading of descriptors is
+    awaited.
 
     The ``Deferred`` from ``listen()`` will fire with an
     ``IListeningPort`` whose ``getHost()`` will return a
@@ -207,6 +208,11 @@ class TCPHiddenServiceEndpoint(object):
 
     :ivar hidden_service_dir: the data directory, either passed in or created
         with ``tempfile.mkdtemp``
+
+    **NOTE** that if you do not specify a `version=` then you will get
+    a version 2 service (new onion APIs return version=3 services by
+    default). This is for backwards-compatiblity reasons, as version=
+    didn't exist before 18.0.0
     """
 
     @classmethod
@@ -433,7 +439,8 @@ class TCPHiddenServiceEndpoint(object):
 
         self.ephemeral = ephemeral
         self.private_key = private_key
-        # XXX what if we're an ephemeral service?
+        # if we're an ephemeral service, hidden_service_dir is None
+        # and ephemeral is True
         self.hidden_service_dir = hidden_service_dir
         self.tcp_listening_port = None
         self.hiddenservice = None
