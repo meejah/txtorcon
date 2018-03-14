@@ -942,7 +942,7 @@ class AuthenticatedFilesystemHiddenServiceTest(unittest.TestCase):
         ports = ["80 127.0.0.1:1234"]
 
         def progress(pct, tag, msg):
-            print(pct, tag, msg)
+            pass  # print(pct, tag, msg)
         self.config.tor_protocol.version = "0.2.0.0"
         AuthenticatedFilesystemOnionService.create(
             Mock(), self.config, hsdir, ports,

@@ -250,7 +250,7 @@ class EndpointTests(unittest.TestCase):
                 self.assertFalse(launch_mock.called)
 
     @defer.inlineCallbacks
-    def test_system_tor_explit_dir_not_readable(self, ftb):
+    def test_system_tor_explit_dir_not_readable0(self, ftb):
         # same as above, but we pass an explicit (but non-existent)
         # hsdir and then simulate Tor creating it...
 
@@ -301,7 +301,7 @@ class EndpointTests(unittest.TestCase):
                 self.assertIs(None, ep.onion_uri)
 
     @defer.inlineCallbacks
-    def test_system_tor_explit_dir_not_readable2(self, ftb):
+    def test_system_tor_explit_dir_not_readable_version3(self, ftb):
         # same as above, but we pass an explicit (but non-existent)
         # hsdir and then simulate Tor creating it...
 
@@ -348,6 +348,62 @@ class EndpointTests(unittest.TestCase):
                 # system_tor should be connecting to a running one,
                 # *not* launching a new one.
                 self.assertFalse(launch_mock.called)
+
+    @defer.inlineCallbacks
+    def test_explit_dir_not_readable_version2(self, ftb):
+
+        def boom():
+            # why does the new_callable thing need a callable that
+            # returns a callable? Feels like I must be doing something
+            # wrong somewhere...
+            def bam(*args, **kw):
+                self.config.bootstrap()
+                return defer.succeed(Tor(Mock(), self.protocol, _tor_config=self.config))
+            return bam
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+
+        with patch('txtorcon.controller.launch') as launch_mock:
+            with patch('txtorcon.controller.connect', new_callable=boom):
+                client = clientFromString(
+                    self.reactor,
+                    "tcp:host=localhost:port=9050"
+                )
+                ep = yield TCPHiddenServiceEndpoint.system_tor(
+                    self.reactor, client, 80,
+                    hidden_service_dir=hsdir,
+                    version=2,
+                )
+                port_d = ep.listen(NoOpProtocolFactory())
+
+                fname = os.path.join(hsdir, "hostname")
+                with open(fname, 'w') as f:
+                    f.write("service.onion")
+
+                self.protocol.events['HS_DESC']('UPLOAD service x x x x')
+                self.protocol.events['HS_DESC']('UPLOADED service x x x x')
+
+                # make it re-read the hostname information
+                ep.hiddenservice._hostname = None
+                # make an IOError happen when we try to read the hostname
+                os.chmod(fname, 0x0)
+
+                fname = os.path.join(hsdir, "private_key")
+                with open(fname, 'w') as f:
+                    f.write("privkey")
+                os.chmod(fname, 0x0)
+
+                port = yield port_d
+                toa = port.getHost()
+                self.assertTrue(hasattr(toa, 'onion_uri'))
+                self.assertTrue(hasattr(toa, 'onion_port'))
+                port.startListening()
+                str(port)
+                port.tor_config
+                # system_tor should be connecting to a running one,
+                # *not* launching a new one.
+                self.assertFalse(launch_mock.called)
+                self.assertIs(None, port.onion_service.private_key)
 
     @defer.inlineCallbacks
     def test_basic(self, ftb):
