@@ -655,7 +655,12 @@ class TorControlProtocol(LineOnlyReceiver):
     def connectionLost(self, reason):
         "Protocol API"
         txtorlog.msg('connection terminated: ' + str(reason))
-        if not self.on_disconnect.called:
+        # ...and this is why we don't do on_disconnect = Deferred() :(
+        # and instead should have had on_disconnect() method that
+        # returned a new Deferred to each caller..(we're checking if
+        # this Deferred has any callbacks because if it doesn't we'll
+        # generate an "Unhandled error in Deferred")
+        if not self.on_disconnect.called and self.on_disconnect.callbacks:
             if reason.check(ConnectionDone):
                 self.on_disconnect.callback(self)
             else:
