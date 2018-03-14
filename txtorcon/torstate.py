@@ -411,7 +411,8 @@ class TorState(object):
         self.post_bootstrap.callback(self)
         self.post_boostrap = None
 
-    def _undo_attacher(self):
+    # XXX this should be hidden as _undo_attacher
+    def undo_attacher(self):
         """
         Shouldn't Tor handle this by turning this back to 0 if the
         controller that twiddled it disconnects?
@@ -448,7 +449,7 @@ class TorState(object):
             self._attacher = None
 
         if self._attacher is None:
-            d = self._undo_attacher()
+            d = self.undo_attacher()
             if self._cleanup:
                 react.removeSystemEventTrigger(self._cleanup)
                 self._cleanup = None
@@ -457,7 +458,7 @@ class TorState(object):
             d = self.protocol.set_conf("__LeaveStreamsUnattached", "1")
             self._cleanup = react.addSystemEventTrigger(
                 'before', 'shutdown',
-                self._undo_attacher,
+                self.undo_attacher,
             )
         return d
 
