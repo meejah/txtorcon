@@ -518,7 +518,7 @@ class _Version(object):
         return '{}.{}.{}'.format(self.major, self.minor, self.patch)
 
 
-# XXX from magic-wormhole
+# originally from magic-wormhole code
 def _is_non_public_numeric_address(host):
     """
     returns True if 'host' is not public

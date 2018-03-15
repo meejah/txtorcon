@@ -8,11 +8,13 @@ from __future__ import with_statement
 import json
 from datetime import datetime
 from .util import NetLocation
+from .util import _Version
 import six
 from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
 from twisted.internet.defer import inlineCallbacks, returnValue, succeed
+from twisted.python.deprecate import deprecated
 from twisted.web.client import readBody
 
 
@@ -137,8 +139,8 @@ class Router(object):
             return d
         return succeed(self._location)
 
-    # XXX fixme, deprecate
     @property
+    @deprecated(_Version("txtorcon", 18, 0, 0))
     def location(self):
         """
         A NetLocation instance with some GeoIP or pygeoip information
