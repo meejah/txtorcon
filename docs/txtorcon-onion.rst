@@ -24,7 +24,7 @@ IAuthenticatedOnionClients
 .. autointerface:: txtorcon.IAuthenticatedOnionClients
 
 IOnionClient
---------------------------
+------------
 .. autointerface:: txtorcon.IOnionClient
 
 
@@ -33,44 +33,40 @@ services. First, ephemeral services (private keys do not live on
 disk). See :ref:`server_use` for an overview of the variations.
 
 EphemeralOnionService
-----------
+---------------------
 .. autoclass:: txtorcon.EphemeralOnionService
 
 EphemeralAuthenticatedOnionService
-----------
+----------------------------------
 .. autoclass:: txtorcon.EphemeralAuthenticatedOnionService
 
 EphemeralAuthenticatedOnionServiceClient
-----------
+----------------------------------------
 .. autoclass:: txtorcon.EphemeralAuthenticatedOnionServiceClient
 
 
 Onion services which store their secret keys on disk:
 
 FilesystemOnionService
-----------
+----------------------
 .. autoclass:: txtorcon.FilesystemOnionService
 
 FilesystemAuthenticatedOnionService
-----------
+-----------------------------------
 .. autoclass:: txtorcon.FilesystemAuthenticatedOnionService
 
 FilesystemAuthenticatedOnionServiceClient
-----------
+-----------------------------------------
 .. autoclass:: txtorcon.FilesystemAuthenticatedOnionServiceClient
 
 
 Some utility-style classes:
-
-HiddenServiceClientAuth
-----------
-.. autoclass:: txtorcon.HiddenServiceClientAuth
 
 AuthBasic
 ---------
 .. autoclass:: txtorcon.AuthBasic
 
 AuthStealth
-----------
+-----------
 .. autoclass:: txtorcon.AuthStealth
 
