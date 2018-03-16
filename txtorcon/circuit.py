@@ -15,12 +15,32 @@ from twisted.internet import defer
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
-from .interface import IRouterContainer, IStreamAttacher
+from .interface import IRouterContainer, IStreamAttacher, ICircuitListener
 from txtorcon.util import find_keywords, maybe_ip_addr, SingleObserver
+
+from txtorcon.log import txtorlog
 
 
 # look like "2014-01-25T02:12:14.593772"
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+
+def extract_reason(kw):
+    """
+    Internal helper. Extracts a reason (possibly both reasons!) from
+    the kwargs for a circuit failed or closed event.
+    """
+    try:
+        # we "often" have a REASON
+        reason = kw['REASON']
+        try:
+            # ...and sometimes even have a REMOTE_REASON
+            reason = '{}, {}'.format(reason, kw['REMOTE_REASON'])
+        except KeyError:
+            pass  # should still be the 'REASON' error if we had it
+    except KeyError:
+        reason = "unknown"
+    return reason
 
 
 @implementer(IStreamAttacher)
@@ -506,6 +526,67 @@ class CircuitBuildTimedOutError(Exception):
     """
 
 
+@implementer(ICircuitListener)
+class TimeoutCircuitListener(object):
+    """
+    implements ICircuitListener
+    """
+
+    def __init__(self):
+        """
+        """
+        self.circuits = {}
+        self.reason = ''
+
+    def circuit_launched(self, circuit):
+        "ICircuitListener API"
+        txtorlog.msg("circuit_launched", circuit)
+        self.circuits[circuit.id] = circuit
+
+    def circuit_extend(self, circuit, router):
+        "ICircuitListener API"
+        txtorlog.msg("circuit_extend:", circuit.id, router)
+
+    def circuit_built(self, circuit):
+        "ICircuitListener API"
+        txtorlog.msg(
+            "circuit_built:", circuit.id,
+            "->".join("%s.%s" % (x.name, x.location.countrycode) for x in circuit.path),
+            circuit.streams
+        )
+
+    def circuit_new(self, circuit):
+        "ICircuitListener API"
+        txtorlog.msg("circuit_new:", circuit.id)
+        self.circuits[circuit.id] = circuit
+
+    def circuit_destroy(self, circuit):
+        "Used by circuit_closed and circuit_failed (below)"
+        txtorlog.msg("circuit_destroy:", circuit.id)
+        circuit._when_built.fire(
+            Failure(Exception("Destroying circuit; will never hit BUILT"))
+        )
+        del self.circuits[circuit.id]
+
+    def circuit_closed(self, circuit, **kw):
+        "ICircuitListener API"
+        self.reason = extract_reason(kw)
+        txtorlog.msg("circuit_closed", circuit)
+        circuit._when_built.fire(
+            Failure(Exception("Circuit closed ('{}')".format(extract_reason(kw))))
+        )
+        self.circuit_destroy(circuit)
+
+    def circuit_failed(self, circuit, **kw):
+        "ICircuitListener API"
+        self.reason = extract_reason(kw)
+        txtorlog.msg("circuit_failed", circuit, str(kw))
+        circuit._when_built.fire(
+            Failure(Exception("Circuit failed ('{}')".format(extract_reason(kw))))
+        )
+        self.circuit_destroy(circuit)
+
+
 def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False):
     """
     Build a new circuit within a timeout.
@@ -519,8 +600,10 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     """
     timed_circuit = []
     d = tor_state.build_circuit(routers=path, using_guards=using_guards)
+    listener = TimeoutCircuitListener()
 
     def get_circuit(c):
+        c.listen(listener)
         timed_circuit.append(c)
         return c
 
@@ -528,6 +611,7 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
         f.trap(defer.CancelledError)
         if timed_circuit:
             d2 = timed_circuit[0].close()
+            d2.addCallback(lambda ign: listener.reason)
         else:
             d2 = defer.succeed(None)
         d2.addCallback(lambda ign: Failure(CircuitBuildTimedOutError("circuit build timed out")))
