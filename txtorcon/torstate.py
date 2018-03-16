@@ -19,7 +19,7 @@ from zope.interface import implementer
 
 from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.stream import Stream
-from txtorcon.circuit import Circuit
+from txtorcon.circuit import Circuit, _extract_reason
 from txtorcon.router import Router, hashFromHexId
 from txtorcon.addrmap import AddrMap
 from txtorcon.torcontrolprotocol import parse_keywords
@@ -165,24 +165,6 @@ def flags_from_dict(kw):
     # note that we want the leading space if there's at least one
     # flag.
     return flags
-
-
-def _extract_reason(kw):
-    """
-    Internal helper. Extracts a reason (possibly both reasons!) from
-    the kwargs for a circuit failed or closed event.
-    """
-    try:
-        # we "often" have a REASON
-        reason = kw['REASON']
-        try:
-            # ...and sometimes even have a REMOTE_REASON
-            reason = '{}, {}'.format(reason, kw['REMOTE_REASON'])
-        except KeyError:
-            pass  # should still be the 'REASON' error if we had it
-    except KeyError:
-        reason = "unknown"
-    return reason
 
 
 @implementer(ICircuitListener)
