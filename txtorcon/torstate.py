@@ -210,8 +210,9 @@ class TorState(object):
     :class:`txtorcon.interface.IRouterContainer`.
 
     :cvar DO_NOT_ATTACH:
-    Constant to return from an IAttacher indicating you don't want to
-    attach this stream at all.
+        Constant to return from an IAttacher indicating you don't want to
+        attach this stream at all.
+
     """
 
     @classmethod

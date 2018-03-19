@@ -13,12 +13,10 @@ Tor
 connect
 -------
 
-# FIXME why doesn't "txtorcon.connect" work here with automethod??
-
-.. method:: txtorcon.connect
+.. automethod:: txtorcon.controller.connect
 
 
 launch
 ------
 
-.. method:: txtorcon.launch
+.. automethod:: txtorcon.controller.launch

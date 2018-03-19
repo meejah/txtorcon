@@ -1,3 +1,5 @@
+.. _onion_api:
+
 Onion APIs
 ==========
 

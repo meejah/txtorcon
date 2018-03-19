@@ -527,7 +527,7 @@ June 1, 2012
  * faster TorState startup;
  * SAFECOOKIE support;
  * several bug fixes;
- * options to :ref:`circuit_failure_rates.py` example to make it actually-useful;
+ * options to `circuit_failure_rates.py` example to make it actually-useful;
  * include built documentation + sources in tarball;
  * include tests in tarball;
  * improved logging;

@@ -420,7 +420,7 @@ backwards-compatibility). You should thus usually pass ``version=3``
 From an API perspective, here are the parts we care about:
 
 - each service has a secret, private key (with a corresponding public
-  part):
+  part);
    - these keys can be on disk (in the "hidden service directory");
    - or, they can be "ephemeral" (only in memory);
 - the "host name" is a hash of the public-key (e.g. ``timaq4ygg2iegci7.onion``);
@@ -440,16 +440,16 @@ From an API perspective, here are the parts we care about:
 To summarize the above in a table format, here are the possible types
 of Onion Service interfaces classes you may interact with.
 
-+----------------------------------+--------------------------------------+--------------------------------------+
-|                                  | Keys on disk                         | Keys in memory                       |
-+==================================+======================================+======================================+
-|      **no authentication**       | :class:`.IFilesystemOnionService`    | :class:`.IOnionService`              |
-+----------------------------------+--------------------------------------+--------------------------------------+
-| **basic/stealth authentication** | :class:`.IAuthenticatedOnionClients` | :class:`.IAuthenticatedOnionClients` |
-+----------------------------------+--------------------------------------+--------------------------------------+
++----------------------------------+-------------------------------------------+--------------------------------------------+
+|                                  | Keys on disk                              | Keys in memory                             |
++==================================+===========================================+============================================+
+|      **no authentication**       | :obj:`txtorcon.IFilesystemOnionService`   | :obj:`txtorcon.IOnionService`              |
++----------------------------------+-------------------------------------------+--------------------------------------------+
+| **basic/stealth authentication** | :obj:`txtorcon.IAuthenticatedOnionClients`| :obj:`txtorcon.IAuthenticatedOnionClients` |
++----------------------------------+-------------------------------------------+--------------------------------------------+
 
-:class:`.IFilesystemOnionService` is a subclass of
-:class:`.IOnionService` and the concrete objects will
+:obj:`txtorcon.IFilesystemOnionService` is a subclass of
+:obj:`txtorcon.IOnionService` and the concrete objects will
 be different for on-disk versus in-memory keys; depend on the
 methods in the interfaces (only).
 
@@ -467,7 +467,7 @@ No matter which kind of service you need, you interact via Twisted's
 `IStreamServerEndpoint`_ interface. There are various txtorcon methods
 (see ":ref:`create_onion`") which return some instance implementing that
 interface. These instances will also implement
-:class:`.IProgressProvider` -- which is a hook to register
+:obj:`txtorcon.IProgressProvider` -- which is a hook to register
 listeners which get updates about Tor's launching progress (if we
 started a new Tor) and Descriptor uploading.
 
@@ -480,22 +480,22 @@ to produce any kind of onion service. The service instance you
 retrieve after the ``.listen()`` call will, however, be different and
 implement one of the interfaces in the table above. Those are:
 
- - :class:`.IOnionService`
- - :class:`.IFilesystemOnionService` (also includes all of ``IOnionService``)
- - :class:`.IOnionServiceClients` (for authenticated services)
+ - :obj:`txtorcon.IOnionService`
+ - :obj:`txtorcon.IFilesystemOnionService` (also includes all of ``IOnionService``)
+ - :obj:`txtorcon.IAuthenticatedOnionClients` (for authenticated services)
 
 The ``.listen()`` method of the endpoint will return an instance
 implementing `IListeningPort`_. This will have a ``.onion_service``
 property that gives you an instance implementing one of the above
 interfaces.
 
-:class:`.IOnionService` and its subclass
-:class:`.IFilesystemOnionService` correspond to a
+:obj:`txtorcon.IOnionService` and its subclass
+:obj:`txtorcon.IFilesystemOnionService` correspond to a
 non-authenticated services, while
-:class:`.IOnionServiceClients` is authenticated. The latter
+:obj:`txtorcon.IAuthenticatedOnionClients` is authenticated. The latter
 manages a collection of instances by (arbitrary) client names, where
 each of these instances implements
-:class:`.IOnionClient`. Note that the ``.auth_token`` member
+:obj:`txtorcon.IOnionClient`. Note that the ``.auth_token`` member
 is secret, private data which you need to give to **one** client; this
 information goes in the client's Tor configuration as ``HidServAuth
 onion-address auth-cookie [service-name]``. See `the Tor manual`_ for
@@ -508,7 +508,7 @@ Creating Onion Endpoints
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The easiest-to-use API are methods of :class:`.Tor`, which
-allow you to create `IStreamServerEndpoint` instances for the various
+allow you to create `IStreamServerEndpoint`_ instances for the various
 Onion Service types. For all service types there is a single endpoint
 that you create: :class:`.TCPHiddenServiceEndpoint`. Thus, you
 **are advised to use a factory-method to create the instance**
@@ -555,17 +555,17 @@ If you don't want to manage launching or connecting to Tor yourself
 three factory-functions in :class:`.TCPHiddenServiceEndpoint`,
 which all return a new endpoint instance:
 
- - :func:`.TCPHiddenSeviceEndpoint.global_tor`: uses a Tor
+ - :meth:`.TCPHiddenServiceEndpoint.global_tor`: uses a Tor
    instance launched at most once in this Python process (the
    underlying :class:`.Tor` instance for this is available via
    :func:`.get_global_tor()` if you need to make manual
    configuration adjustments);
 
- - :meth:`.TCPHiddenSeviceEndpoint.system_tor`: connects to
+ - :meth:`.TCPHiddenServiceEndpoint.system_tor`: connects to
    the control-protocol endpoint you provide (a good choice on Debian
    would be ``UNIXClientEndpoint('/var/run/tor/control')``);
 
- - :meth:`.TCPHiddenSeviceEndpoint.private_tor`: causes a
+ - :meth:`.TCPHiddenServiceEndpoint.private_tor`: causes a
    fresh, private instance of Tor to be launched for this service
    alone. This uses a tempdir (honoring ``$TMP``) which is deleted
    upon reactor shutdown or loss of the control connection.
@@ -586,13 +586,13 @@ ephemeral service) or
 :meth:`.Tor.create_authenticated_filesystem_onion_service`
 (for an on-disk service).
 
-You may also use one of the three `@classmethod`s on
+You may also use one of the three ``@classmethod``-s on
 :class:`.TCPHiddenServiceEndpoint` (and passing an `auth=`
 kwarg):
 
- - :func:`.TCPHiddenSeviceEndpoint.global_tor`
- - :func:`.TCPHiddenSeviceEndpoint.system_tor`
- - :func:`.TCPHiddenSeviceEndpoint.private_tor`
+ - :meth:`.TCPHiddenServiceEndpoint.global_tor`
+ - :meth:`.TCPHiddenServiceEndpoint.system_tor`
+ - :meth:`.TCPHiddenServiceEndpoint.private_tor`
 
 
 Onion Service Configuration
@@ -604,7 +604,7 @@ services, they are avaialble via :class:`.TorConfig` and the
 
 These presents a "flattened" version of any authenticated services, so
 that each element in the list of ``.HiddenServices`` is itself at
-least a :class:`.IOnionService` (it may also implement other
+least a :obj:`txtorcon.IOnionService` (it may also implement other
 interfaces, but every one will implement ``IOnionService``).
 
 You can still set any settable attributes on these objects, and Tor's
@@ -720,15 +720,18 @@ list of :class:`.Router` instances, which you can get from the
  - ``.routers_by_name`` or
  - ``.routers_by_hash``
 
-The last three are all hash-tables. For relays that have the ``Guard``
-flag, you can access the hash-tables ``.guards`` (for **all** of them)
-or ``.entry_guards`` (for just the entry guards configured on this Tor
+The last three are all dicts. For relays that have the ``Guard`` flag,
+you can access the dicts ``.guards`` (for **all** of them) or
+``.entry_guards`` (for just the entry guards configured on this Tor
 client).
 
 If you don't actually care which relays are used, but simply want a
 fresh circuit, you can call :meth:`.TorState.build_circuit`
 without any arguments at all which asks Tor to build a new circuit in
 the way it normally would (i.e. respecting your guard nodes etc).
+
+There is also :func:`.build_timeout_circuit` as a convenience method
+if you wish the attempt to time out after a while.
 
 
 .. _circuit_builder:
@@ -743,7 +746,7 @@ Building Many Circuits
    you want this now.
 
 If you would like to build many circuits, you'll want an instance that
-implements :class:`.ICircuitBuilder` (which is usually simply
+implements :obj:`txtorcon.ICircuitBuilder` (which is usually simply
 an instance of :class:`.CircuitBuilder`). Instances of this
 class can be created by calling one of the factory functions like
 :func:`.circuit_builder_fixed_exit`.
