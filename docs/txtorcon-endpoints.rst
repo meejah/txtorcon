@@ -32,9 +32,3 @@ IProgressProvider
 -----------------
 
 .. autointerface:: txtorcon.IProgressProvider
-
-
-IHiddenService
---------------
-
-.. autointerface:: txtorcon.IHiddenService

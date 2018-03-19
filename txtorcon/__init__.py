@@ -38,6 +38,19 @@ from txtorcon.endpoints import TCPHiddenServiceEndpointParser
 from txtorcon.endpoints import TorClientEndpoint
 from txtorcon.endpoints import TorClientEndpointStringParser
 from txtorcon.endpoints import IHiddenService, IProgressProvider
+from txtorcon.onion import IOnionService
+from txtorcon.onion import IFilesystemOnionService
+from txtorcon.onion import IAuthenticatedOnionClients
+from txtorcon.onion import IOnionClient
+from txtorcon.onion import FilesystemOnionService
+from txtorcon.onion import FilesystemAuthenticatedOnionService
+from txtorcon.onion import FilesystemAuthenticatedOnionServiceClient
+from txtorcon.onion import EphemeralOnionService
+from txtorcon.onion import EphemeralAuthenticatedOnionService
+from txtorcon.onion import EphemeralAuthenticatedOnionServiceClient
+from txtorcon.onion import AuthStealth
+from txtorcon.onion import AuthBasic
+from txtorcon.onion import DISCARD
 
 from txtorcon.endpoints import get_global_tor
 from . import util
@@ -64,8 +77,22 @@ __all__ = [
     "TorInfo",
     "TCPHiddenServiceEndpoint", "TCPHiddenServiceEndpointParser",
     "TorClientEndpoint", "TorClientEndpointStringParser",
-    "IHiddenService", "IProgressProvider",
+    "IProgressProvider",
+    "IHiddenService",  # deprecated
     "TorOnionAddress", "TorOnionListeningPort",
+
+    # newest Onion API classes
+    "IOnionService", "IFilesystemOnionService",
+    "IAuthenticatedOnionClients", "IOnionClient",
+    "AuthStealth", "AuthBasic", "DISCARD",
+    # should I really export the concrete classes, too?
+    "EphemeralOnionService",
+    "FilesystemOnionService",
+    "EphemeralAuthenticatedOnionService",
+    "EphemeralAuthenticatedOnionServiceClient",
+    "FilesystemAuthenticatedOnionService",
+    "FilesystemAuthenticatedOnionServiceClient",
+
     "get_global_tor",
     "build_timeout_circuit",
     "CircuitBuildTimedOutError",

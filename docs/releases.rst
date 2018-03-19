@@ -12,6 +12,78 @@ Starting after v0.20.x versions will follow `calendar versioning
 year. The second digit will be "non-trivial" releases and the third
 will be for bugfix releases.
 
+onion-api-v3 changes
+--------------------
+
+(probably release everything below as v0.20.0 or v18.0.0 then put in
+all the onion changes, releasing *that* as 18.1.0?)
+
+ * :meth:`txtorcon.TorControlProtocol.add_event_listener` and
+   :meth:`txtorcon.TorControlProtocol.remove_event_listener` are now
+   async methods returning Deferred -- they always should have been; new
+   code can now be assured that the event-listener change is known to Tor
+   by awaiting this Deferred.
+ * :meth:`txtorcon.TorControlProtocol.get_conf_on` method added, which
+   gets and returns (asynchronously) a single GETCONF key (instead of a dict)
+ * if Tor disconnects while a command is in-progress or pending, the
+   `.errback()` for the corresponding Deferred is now correctly fired
+   (with a :class:`txtorcon.TorDisconnectError`
+
+ * tired: `get_global_tor()` (now deprecated)
+   wired: :meth:`txtorcon.get_global_tor_instance`
+
+ * Adds a comprehensive set of Onion Services APIs (for all six
+   variations). For non-authenticated services, instances of
+   :class:`txtorcon.IOnionService` represent services; for
+   authenticated services, instances of
+   :class:`txtorcon.IAuthenticatedOnionClients` encapsulated named
+   lists of clients (each client is an instance implementing
+   `IOnionService`).
+ * Version 3 ("Proposition 279") Onion service support (same APIs) as
+   released in latest Tor
+
+# XXX THINK: I think we maybe just want to nuke these for now (and
+# users can use EphemeralOnionService.create et al. to do the same
+# thing)
+
+ * :method:`txtorcon.Tor.create_onion_service` to add a new ephemeral
+   Onion service to Tor. This uses the `ADD_ONION` command under the
+   hood and can be version 2 or version 3. Note that there is an
+   endpoint-style API as well so you don't have to worry about mapping
+   ports yourself (see below).
+ * :method:`txtorcon.Tor.create_filesystem_onion_service` to add a new
+   Onion service to Tor with configuration (private keys) stored in a
+   provided directory. These can be version 2 or version 3
+   services. Note that there is an endpoint-style API as well so you
+   don't have to worry about mapping ports yourself (see below).
+
+# ...just leave these convenience methods to create endpoints:
+
+ * Four new methods to handle creating endpoints for Onion services
+   (either ephemeral or not and authenticated or not):
+   ** :method:`txtorcon.Tor.create_authenticated_onion_endpoint`
+   ** :method:`txtorcon.Tor.create_authenticated_filesystem_onion_endpoint`
+   ** :method:`txtorcon.Tor.create_onion_endpoint`
+   ** :method:`txtorcon.Tor.create_filesystem_onion_endpoint`
+ * see :ref:`create_onion` for information on how to choose an
+   appropriate type of Onion Service.
+
+ * Additional APIs to make visiting authenticated Onion services as a
+   client easier:
+
+ * :method:`txtorcon.Tor.add_onion_authentication` will add a
+   client-side Onion service authentication token. If you add a token
+   for a service which already has a token, it is an error if they
+   don't match. This corresponds to `HidServAuth` lines in torrc.
+ * :method:`txtorcon.Tor.remove_onion_authentication` will remove a
+   previously added client-side Onion service authentication
+   token. Fires with True if such a token existed and was removed or
+   False if no existing token was found.
+ * :method:`txtorcon.Tor.onion_authentication` (Python3 only) an async
+   context-manager that adds and removes an Onion authentication token
+   (i.e. adds in on `__aenter__` and removes it on `__aexit__`).
+
+
 
 unreleased
 ----------
@@ -455,7 +527,7 @@ June 1, 2012
  * faster TorState startup;
  * SAFECOOKIE support;
  * several bug fixes;
- * options to :ref:`circuit_failure_rates.py` example to make it actually-useful;
+ * options to `circuit_failure_rates.py` example to make it actually-useful;
  * include built documentation + sources in tarball;
  * include tests in tarball;
  * improved logging;

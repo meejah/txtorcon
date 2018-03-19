@@ -551,6 +551,8 @@ class _TorSocksProtocol(Protocol):
 class _TorSocksFactory(Factory):
     protocol = _TorSocksProtocol
 
+    # XXX should do validation on this stuff so we get errors before
+    # building the protocol
     def __init__(self, *args, **kw):
         self._args = args
         self._kw = kw

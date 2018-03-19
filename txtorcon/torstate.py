@@ -210,8 +210,9 @@ class TorState(object):
     :class:`txtorcon.interface.IRouterContainer`.
 
     :cvar DO_NOT_ATTACH:
-    Constant to return from an IAttacher indicating you don't want to
-    attach this stream at all.
+        Constant to return from an IAttacher indicating you don't want to
+        attach this stream at all.
+
     """
 
     @classmethod
@@ -411,6 +412,7 @@ class TorState(object):
         self.post_bootstrap.callback(self)
         self.post_boostrap = None
 
+    # XXX this should be hidden as _undo_attacher
     def undo_attacher(self):
         """
         Shouldn't Tor handle this by turning this back to 0 if the
@@ -532,12 +534,20 @@ class TorState(object):
         )
 
     def add_circuit_listener(self, icircuitlistener):
+        """
+        Adds a new instance of :class:`txtorcon.interface.ICircuitListener` which
+        will receive updates for all existing and new circuits.
+        """
         listen = ICircuitListener(icircuitlistener)
         for circ in self.circuits.values():
             circ.listen(listen)
         self.circuit_listeners.append(listen)
 
     def add_stream_listener(self, istreamlistener):
+        """
+        Adds a new instance of :class:`txtorcon.interface.IStreamListener` which
+        will receive updates for all existing and new streams.
+        """
         listen = IStreamListener(istreamlistener)
         for stream in self.streams.values():
             stream.listen(listen)
@@ -599,6 +609,7 @@ class TorState(object):
 
     DO_NOT_ATTACH = object()
 
+    # @defer.inlineCallbacks  (this method is async, be nice to mark it ...)
     def _maybe_attach(self, stream):
         """
         If we've got a custom stream-attachment instance (see

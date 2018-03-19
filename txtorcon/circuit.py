@@ -183,14 +183,14 @@ class Circuit(object):
             - TESTING
             - CONTROLLER
 
-    :ivar id:
-        The ID of this circuit, a number (or None if unset).
+    :ivar id: The ID of this circuit, a number (or None if unset).
+
     """
 
     def __init__(self, routercontainer):
         """
-        :param routercontainer: should implement
-        :class:`txtorcon.interface.IRouterContainer`.
+        :param routercontainer:
+            should implement :class:`txtorcon.interface.IRouterContainer`.
         """
         self.listeners = []
         self.router_container = IRouterContainer(routercontainer)

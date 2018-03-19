@@ -8,11 +8,13 @@ from __future__ import with_statement
 import json
 from datetime import datetime
 from .util import NetLocation
+from .util import _Version
 import six
 from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue, succeed
+from twisted.python.deprecate import deprecated
 from twisted.web.client import readBody
 
 
@@ -118,7 +120,27 @@ class Router(object):
         # assert type(idhash) is not bytes
         # assert type(orhash) is not bytes
 
+    def get_location(self):
+        """
+        Returns a Deferred that fires with a NetLocation object for this
+        router.
+        """
+        if self._location:
+            return succeed(self._location)
+        if self.ip != 'unknown':
+            self._location = NetLocation(self.ip)
+        else:
+            self._location = NetLocation(None)
+        if not self._location.countrycode and self.ip != 'unknown':
+            # see if Tor is magic and knows more...
+            d = self.controller.get_info_raw('ip-to-country/' + self.ip)
+            d.addCallback(self._set_country)
+            d.addCallback(lambda _: self._location)
+            return d
+        return succeed(self._location)
+
     @property
+    @deprecated(_Version("txtorcon", 18, 0, 0))
     def location(self):
         """
         A NetLocation instance with some GeoIP or pygeoip information

@@ -132,3 +132,6 @@ venv:
 
 html: docs/*.rst
 	cd docs && make html
+
+html-server: html
+	twistd -n web --path docs/_build/html --port tcp:9999:interface=localhost

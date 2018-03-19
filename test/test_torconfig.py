@@ -4,8 +4,10 @@ import os
 import shutil
 import tempfile
 import functools
+import warnings
 from six import StringIO
 from mock import Mock, patch
+from os.path import join
 
 from zope.interface import implementer, directlyProvides
 from twisted.trial import unittest
@@ -22,106 +24,17 @@ from txtorcon import DEFAULT_VALUE
 from txtorcon import HiddenService
 from txtorcon import launch
 from txtorcon import TorNotFound
-from txtorcon import torconfig
 
-from txtorcon.torconfig import parse_client_keys
 from txtorcon.torconfig import CommaList
 from txtorcon.torconfig import launch_tor
+from txtorcon.torconfig import EphemeralHiddenService
+from txtorcon.onion import _parse_client_keys
+from txtorcon.onion import FilesystemOnionService
+from txtorcon.onion import EphemeralOnionService
+from txtorcon.onion import FilesystemAuthenticatedOnionService
+from txtorcon.onion import AuthBasic
 
-
-@implementer(ITorControlProtocol)     # actually, just get_info_raw
-class FakeControlProtocol:
-    """
-    This is a little weird, but in most tests the answer at the top of
-    the list is sent back immediately in an already-called
-    Deferred. However, if the answer list is empty at the time of the
-    call, instead the returned Deferred is added to the pending list
-    and answer_pending() may be called to have the next Deferred
-    fire. (see test_accept_all_postbootstrap for an example).
-
-    It is done this way in case we need to have some other code run
-    between the get_conf (or whatever) and the callback -- if the
-    Deferred is already-fired when get_conf runs, there's a Very Good
-    Chance (always?) that the callback just runs right away.
-    """
-
-    def __init__(self, answers):
-        self.answers = answers
-        self.pending = []
-        self.post_bootstrap = defer.succeed(self)
-        self.on_disconnect = defer.Deferred()
-        self.sets = []
-        self.events = {}  #: event type -> callback
-        self.pending_events = {}  #: event type -> list
-        self.is_owned = -1
-        self.commands = []
-        self.version = "0.2.8.0"
-
-    def queue_command(self, cmd):
-        d = defer.Deferred()
-        self.commands.append((cmd, d))
-        return d
-
-    def event_happened(self, event_type, *args):
-        '''
-        Use this in your tests to send 650 events when an event-listener
-        is added.  XXX Also if we've *already* added one? Do that if
-        there's a use-case for it
-        '''
-        if event_type in self.events:
-            self.events[event_type](*args)
-        elif event_type in self.pending_events:
-            self.pending_events[event_type].append(args)
-        else:
-            self.pending_events[event_type] = [args]
-
-    def answer_pending(self, answer):
-        d = self.pending[0]
-        self.pending = self.pending[1:]
-        d.callback(answer)
-
-    def get_info_raw(self, info):
-        if len(self.answers) == 0:
-            d = defer.Deferred()
-            self.pending.append(d)
-            return d
-
-        d = defer.succeed(self.answers[0])
-        self.answers = self.answers[1:]
-        return d
-
-    @defer.inlineCallbacks
-    def get_info_incremental(self, info, cb):
-        text = yield self.get_info_raw(info)
-        for line in text.split('\r\n'):
-            cb(line)
-        defer.returnValue('')  # FIXME uh....what's up at torstate.py:350?
-
-    def get_conf(self, info):
-        if len(self.answers) == 0:
-            d = defer.Deferred()
-            self.pending.append(d)
-            return d
-
-        d = defer.succeed(self.answers[0])
-        self.answers = self.answers[1:]
-        return d
-
-    get_conf_raw = get_conf  # up to test author ensure the answer is a raw string
-
-    def set_conf(self, *args):
-        for i in range(0, len(args), 2):
-            self.sets.append((args[i], args[i + 1]))
-        return defer.succeed('')
-
-    def add_event_listener(self, nm, cb):
-        self.events[nm] = cb
-        if nm in self.pending_events:
-            for event in self.pending_events[nm]:
-                cb(*event)
-
-    def remove_event_listener(self, nm, cb):
-        del self.events[nm]
+from txtorcon.testutil import FakeControlProtocol
 
 
 class CheckAnswer:
@@ -206,10 +119,47 @@ class PortLineDefaultsTests(unittest.TestCase):
         protocol.answers.append('config/names=\nSocksPortLines Dependant')
         protocol.answers.append('config/defaults=')
         protocol.answers.append({'SocksPort': 'auto'})
+        protocol.answers.append('')
         config = TorConfig(protocol)
         yield config.post_bootstrap
 
         self.assertEqual(0, len(config.SocksPort))
+
+    @defer.inlineCallbacks
+    def test_default_portlines(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=')
+        protocol.answers.append({'SocksPort': 'auto'})
+        protocol.answers.append('9123')
+        protocol.answers.append({'onions/current': ''})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(
+            ['9123'],
+            list(config.SocksPort),
+        )
+
+    @defer.inlineCallbacks
+    def test_onions_current(self):
+        protocol = FakeControlProtocol([])
+        protocol.answers.append('config/names=\nSocksPortLines Dependant')
+        protocol.answers.append('config/defaults=')
+        protocol.answers.append({'SocksPort': 'auto'})
+        protocol.answers.append('9123')
+        # hmmmm? why aren't these the other way around?
+        protocol.answers.append({'onions/detached': 'asdfasdf.onion'})
+        protocol.answers.append({'onions/current': 'something.onion'})
+        config = TorConfig(protocol)
+        yield config.post_bootstrap
+
+        self.assertEqual(
+            ['9123'],
+            list(config.SocksPort),
+        )
+        self.assertEqual(1, len(config.EphemeralOnionServices))
+        self.assertEqual(1, len(config.DetachedOnionServices))
 
     @defer.inlineCallbacks
     def test_no_defaults_support(self):
@@ -217,6 +167,7 @@ class PortLineDefaultsTests(unittest.TestCase):
         protocol.answers.append('config/names=\nSocksPortLines Dependant')
         protocol.answers.append(Failure(TorProtocolError(552, "foo")))
         protocol.answers.append({'SocksPort': 'auto'})
+        protocol.answers.append('')
         config = TorConfig(protocol)
         yield config.post_bootstrap
 
@@ -539,9 +490,8 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append({'SomethingExciting': 'a,b'})
         conf = TorConfig(self.protocol)
 
-        from txtorcon.torconfig import HiddenService
         self.assertEqual(conf.get_type('SomethingExciting'), CommaList)
-        self.assertEqual(conf.get_type('HiddenServices'), HiddenService)
+        self.assertEqual(conf.get_type('HiddenServices'), FilesystemOnionService)
 
     def test_immediate_hiddenservice_append(self):
         '''issue #88. we check that a .append(hs) works on a blank TorConfig'''
@@ -1047,6 +997,72 @@ HiddenServiceAuthorizeClient Dependant''')
         self.protocol.answers.append('')  # defaults
 
     @defer.inlineCallbacks
+    def test_config_client_keys(self):
+        self.protocol.answers.append('')  # no hiddenservices by default
+        conf = TorConfig(self.protocol)
+        yield conf.post_bootstrap
+        self.assertTrue(conf.post_bootstrap.called)
+        fakedir = self.mktemp()
+        os.mkdir(fakedir)
+        with open(join(fakedir, 'hostname'), 'w') as f:
+            for name in ['alice', 'bob']:
+                f.write('hostname_{name} cookie_{name} # client: {name}\n'.format(name=name))
+        with open(join(fakedir, 'client_keys'), 'w') as f:
+            for name in ['alice', 'bob']:
+                f.write('''client-name {name}
+descriptor-cookie CVAQuIn8iSsYo4KXW2Ljvw==
+client-key
+-----BEGIN RSA PRIVATE KEY-----
+MIICXQIBAAKBgQDgE+4otmhhRInd2IyZemfPGYjFiYEGCCnaVWQ7JpZv25atvxuj
+RB+S1PnSST6V2brF83vwaRuR4QWtFHz8v8VmUPDXcVEGoGQ+oQUrnwgGLTseBYJE
+n9uY8snE7755mrsddbMorLjg2JhmoTFmGUqga1YsypqZ39H5K0qsfRw2kwIDAQAB
+AoGAFoSqOFksYCn9GNg8OOg+KmfMgN1yo+KKIjDWo8Ma9x7AI7HC20NrUNwqRuGp
+cnGw/VecqupFJQHSCjS24sd61L9D0OZ7NHOWsBhpUlQ5tlM3xxCz7PQmSsISro/h
+IFAsAzCdhA7ies6our9m0vO93WsZTPE32hEmHCS476SvyBECQQD0OitF1gRhJ550
+rAkLnZwIQlVzNH1iK10AesgivBbAw2ywkeolplUp5l0cPrckrtCZW7FDZi6wgHhw
+hq2q/jetAkEA6uEczfRTYJ762pZxk/VQ17GP4T/0LBITCm4PIDQ13etuqoPe+AI7
+aOcAayecbmWA9CgJdmHE77g5zDcddxrvPwJBAKG2vp6AZuf59uckXtztILsrSS9+
+ayOMuQkvQ8QULTC4dgi4pYUGjU+wNKkWMei9RGy3lTmeuH2wo49G7knSCQUCQQC+
+1iiRLfKQjptC/vlJPghxN9OvMEczh3vw/XtMrx8VMDS6VmrTFv0uPoIYjhaLm+0q
+c1080jMwkn5jbmSCYWABAkB28YVDOpAbxRqb/7u4kYFoohWb4YpY9uBkqA9FMwsg
+DnkEGTrOUFZ7CbDp+SM18BjmFXI2n0bFJEznXFhH+Awz
+-----END RSA PRIVATE KEY-----
+'''.format(name=name))
+
+        hs = FilesystemAuthenticatedOnionService(
+            conf, fakedir, ['1 127.0.0.1:12345'],
+            auth=AuthBasic(['alice']),
+        )
+        hs._private_key('alice')
+
+    @defer.inlineCallbacks
+    def test_config_client_auth_service(self):
+        self.protocol.answers.append('')  # no hiddenservices by default
+        conf = TorConfig(self.protocol)
+        yield conf.post_bootstrap
+        self.assertTrue(conf.post_bootstrap.called)
+        fakedir = self.mktemp()
+        os.mkdir(fakedir)
+        with open(join(fakedir, 'hostname'), 'w') as f:
+            for name in ['alice', 'bob']:
+                f.write('hostname_{name} cookie_{name} # client: {name}\n'.format(name=name))
+
+        # create a client-auth'd onion service, but only "add" one of
+        # its newly created clients
+        hs = FilesystemAuthenticatedOnionService(
+            conf, fakedir, ['1 127.0.0.1:12345'],
+            auth=AuthBasic(['alice', 'bob']),
+            group_readable=True,
+        )
+        hs.add_client(
+            name="carol",
+            hostname="hostname_carol",
+            ports=['1 127.0.0.1:12345'],
+            token="cookie_carol",
+        )
+        yield conf.save()
+
+    @defer.inlineCallbacks
     def test_options_hidden(self):
         self.protocol.answers.append(
             'HiddenServiceDir=/fake/path\nHiddenServicePort=80 '
@@ -1091,6 +1107,16 @@ HiddenServiceAuthorizeClient Dependant''')
         conf.save()
         self.assertEqual(2, len(conf.HiddenServices))
 
+    def test_hs_ephemeral_wrong_list(self):
+        conf = TorConfig()
+        conf.HiddenServices.append(EphemeralOnionService(conf, []))
+        with self.assertRaises(ValueError) as ctx:
+            conf.save()
+        self.assertIn(
+            "ephemeral services must be created with",
+            str(ctx.exception)
+        )
+
     def test_onion_keys(self):
         # FIXME test without crapping on filesystem
         self.protocol.answers.append('HiddenServiceDir=/fake/path\n')
@@ -1117,6 +1143,57 @@ HiddenServiceAuthorizeClient Dependant''')
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_onion_keys_stealth(self):
+        self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServiceAuthorizeClient=stealth alice,bob,carol\n')
+        d = tempfile.mkdtemp()
+
+        try:
+            with open(os.path.join(d, 'hostname'), 'w') as f:
+                f.write('public')
+            with open(os.path.join(d, 'private_key'), 'w') as f:
+                f.write('private')
+            with open(os.path.join(d, 'client_keys'), 'w') as f:
+                f.write('client-name hungry\ndescriptor-cookie omnomnom\n')
+
+            conf = TorConfig(self.protocol)
+            hs = HiddenService(conf, d, [])
+
+            self.assertEqual(hs.hostname, 'public')
+            self.assertEqual(hs.private_key, 'private')
+            self.assertEqual(len(hs.client_keys), 1)
+            self.assertEqual(hs.client_keys[0].name, 'hungry')
+            self.assertEqual(hs.client_keys[0].cookie, 'omnomnom')
+            self.assertEqual(hs.client_keys[0].key, None)
+
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+        print(hs.config_attributes())
+
+    @defer.inlineCallbacks
+    def test_onion_keys_unknown_auth(self):
+        self.protocol.answers.append('HiddenServiceDir=/fake/path\nHiddenServiceAuthorizeClient=bogus_auth_method alice,bob,carol\n')
+        d = tempfile.mkdtemp()
+
+        try:
+            with open(os.path.join(d, 'hostname'), 'w') as f:
+                f.write('public')
+            with open(os.path.join(d, 'private_key'), 'w') as f:
+                f.write('private')
+            with open(os.path.join(d, 'client_keys'), 'w') as f:
+                f.write('client-name hungry\ndescriptor-cookie omnomnom\n')
+
+            with self.assertRaises(ValueError) as ctx:
+                conf = TorConfig(self.protocol)
+                yield conf.post_bootstrap
+            self.assertIn(
+                "Unknown auth type",
+                str(ctx.exception)
+            )
+
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_single_client(self):
         # FIXME test without crapping on filesystem
         self.protocol.answers.append('HiddenServiceDir=/fake/path\n')
@@ -1132,6 +1209,24 @@ HiddenServiceAuthorizeClient Dependant''')
             self.assertEqual(1, len(hs.clients))
             self.assertEqual('default', hs.clients[0][0])
             self.assertEqual('gobledegook', hs.clients[0][1])
+
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_single_client_ioerror(self):
+        # FIXME test without crapping on filesystem
+        self.protocol.answers.append('HiddenServiceDir=/fake/path\n')
+        d = tempfile.mkdtemp()
+
+        try:
+            with open(os.path.join(d, 'hostname'), 'w') as f:
+                f.write('gobledegook\n')
+            os.chmod(os.path.join(d, 'hostname'), 0)
+
+            conf = TorConfig(self.protocol)
+            hs = HiddenService(conf, d, [])
+
+            self.assertEqual(0, len(hs.clients))
 
         finally:
             shutil.rmtree(d, ignore_errors=True)
@@ -1188,26 +1283,51 @@ HiddenServiceAuthorizeClient Dependant''')
         self.assertEqual(h2, conf.hiddenservices[2])
         self.assertTrue(conf.needs_save())
 
-    def test_multiple_startup_services(self):
+    def test_hiddenservice_multiple_auth_lines(self):
+        fake0 = tempfile.mkdtemp()
+
+        with open(join(fake0, "hostname"), 'w') as f:
+            f.write('blarglyfoo.onion cookie # client: bob\n')
+
         conf = TorConfig(FakeControlProtocol(['config/names=']))
-        conf._setup_hidden_services('''HiddenServiceDir=/fake/path
+        with self.assertRaises(ValueError) as ctx:
+            conf._setup_hidden_services('''HiddenServiceDir={}
 HiddenServicePort=80 127.0.0.1:1234
 HiddenServiceVersion=2
-HiddenServiceAuthorizeClient=basic
-HiddenServiceDir=/some/other/fake/path
+HiddenServiceAuthorizeClient=basic bob
+HiddenServiceAuthorizeClient=stealth alice,jane
+'''.format(fake0))
+        self.assertIn(
+            "Multiple HiddenServiceAuthorizeClient lines",
+            str(ctx.exception),
+        )
+
+    def test_multiple_startup_services(self):
+        fake0 = tempfile.mkdtemp()
+        fake1 = tempfile.mkdtemp()
+
+        with open(join(fake0, "hostname"), 'w') as f:
+            f.write('blarglyfoo.onion cookie # client: bob\n')
+
+        conf = TorConfig(FakeControlProtocol(['config/names=']))
+        conf._setup_hidden_services('''HiddenServiceDir={}
 HiddenServicePort=80 127.0.0.1:1234
-HiddenServicePort=90 127.0.0.1:2345''')
+HiddenServiceVersion=2
+HiddenServiceAuthorizeClient=basic bob
+HiddenServiceDir={}
+HiddenServicePort=80 127.0.0.1:1234
+HiddenServicePort=90 127.0.0.1:2345'''.format(fake0, fake1))
 
         self.assertEqual(len(conf.hiddenservices), 2)
 
-        self.assertEqual(conf.hiddenservices[0].dir, '/fake/path')
-        self.assertEqual(conf.hiddenservices[0].version, 2)
-        self.assertEqual(len(conf.hiddenservices[0].authorize_client), 1)
-        self.assertEqual(conf.hiddenservices[0].authorize_client[0], 'basic')
-        self.assertEqual(len(conf.hiddenservices[0].ports), 1)
-        self.assertEqual(conf.hiddenservices[0].ports[0], '80 127.0.0.1:1234')
+        hs = conf.hiddenservices[0]
+        self.assertEqual(hs.hidden_service_directory, fake0)
+        self.assertEqual(hs.version, 2)
+        self.assertEqual(hs.authorize_client, 'bob cookie')
+        self.assertEqual(len(hs.ports), 1)
+        self.assertEqual(hs.ports[0], '80 127.0.0.1:1234')
 
-        self.assertEqual(conf.hiddenservices[1].dir, '/some/other/fake/path')
+        self.assertEqual(conf.hiddenservices[1].dir, fake1)
         self.assertEqual(len(conf.hiddenservices[1].ports), 2)
         self.assertEqual(conf.hiddenservices[1].ports[0], '80 127.0.0.1:1234')
         self.assertEqual(conf.hiddenservices[1].ports[1], '90 127.0.0.1:2345')
@@ -1253,7 +1373,7 @@ HiddenServiceDir=/fake/path'''
         self.assertTrue(self.protocol.post_bootstrap.called)
         self.assertTrue(conf.post_bootstrap is None or conf.post_bootstrap.called)
         self.assertEqual(len(conf.hiddenservices), 1)
-        self.assertTrue(conf.hiddenservices[0].conf)
+#        self.assertTrue(conf.hiddenservices[0].conf)
         conf.hiddenservices[0].version = 3
         self.assertTrue(conf.needs_save())
         conf.hiddenservices[0].version = 4
@@ -1399,7 +1519,7 @@ class HiddenServiceAuthTests(unittest.TestCase):
     def test_parse_client_keys(self):
         data = StringIO(keydata)
 
-        clients = list(parse_client_keys(data))
+        clients = list(_parse_client_keys(data))
 
         self.assertEqual(3, len(clients))
         self.assertEqual('bar', clients[0].name)
@@ -1419,26 +1539,51 @@ class HiddenServiceAuthTests(unittest.TestCase):
 
         self.assertRaises(
             RuntimeError,
-            parse_client_keys, data
+            _parse_client_keys, data
         )
 
 
-class EphemeralHiddenServiceTest(unittest.TestCase):
+class LegacyTests(unittest.TestCase):
+    """
+    This tests that any pre-18.0.0 code for onion/hidden services will
+    still work. These can be removed when the deprecated code is gone.
+    """
+
+    def setUp(self):
+        self.protocol = FakeControlProtocol([])
+
+    @defer.inlineCallbacks
+    def test_add_to_tor(self):
+        self.protocol.answers.append("ServiceID=asdf\nPrivateKey=blob")
+        with warnings.catch_warnings(record=True) as w:
+            hs = EphemeralHiddenService(["80 127.0.0.1:1234"])
+        d = hs.add_to_tor(self.protocol)
+        self.protocol.event_happened('HS_DESC', 'UPLOAD asdf x x x x')
+        self.protocol.event_happened('HS_DESC', 'UPLOADED asdf x x x x')
+        yield d
+
+        self.assertEqual(hs.hostname, "asdf.onion")
+        self.assertEqual(hs.private_key, "blob")
+        self.assertIn(
+            "deprecated",
+            str(w[0].message),
+        )
+
     def test_defaults(self):
-        eph = torconfig.EphemeralHiddenService("80 localhost:80")
+        eph = EphemeralHiddenService("80 localhost:80")
         self.assertEqual(eph._ports, ["80,localhost:80"])
 
     def test_wrong_blob(self):
         wrong_blobs = ["", " ", "foo", ":", " : ", "foo:", ":foo", 0]
         for b in wrong_blobs:
             try:
-                torconfig.EphemeralHiddenService("80 localhost:80", b)
+                EphemeralHiddenService("80 localhost:80", b)
                 self.fail("should get exception")
             except ValueError:
                 pass
 
     def test_add(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
         proto = Mock()
         proto.queue_command = Mock(return_value="PrivateKey=blam\nServiceID=ohai")
         eph.add_to_tor(proto)
@@ -1447,7 +1592,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("ohai.onion", eph.hostname)
 
     def test_add_keyblob(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80", "alg:blam")
+        eph = EphemeralHiddenService("80 127.0.0.1:80", "alg:blam")
         proto = Mock()
         proto.queue_command = Mock(return_value="ServiceID=ohai")
         eph.add_to_tor(proto)
@@ -1456,26 +1601,19 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         self.assertEqual("ohai.onion", eph.hostname)
 
     def test_descriptor_wait(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
-        proto = Mock()
-        proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=blam\nServiceID=ohai\n"))
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
+        proto = FakeControlProtocol(["PrivateKey=blam\nServiceID=ohai\n"])
 
         eph.add_to_tor(proto)
 
-        # get the event-listener callback that torconfig code added;
-        # the last call [-1] was to add_event_listener; we want the
-        # [1] arg of that
-        cb = proto.method_calls[-1][1][1]
-
-        # Tor doesn't actually provide the .onion, but we can test it anyway
-        cb('UPLOADED ohai UNKNOWN somehsdir')
-        cb('UPLOADED UNKNOWN UNKNOWN somehsdir')
+        proto.event_happened('HS_DESC', 'UPLOADED ohai UNKNOWN somehsdir')
+        proto.event_happened('HS_DESC', 'UPLOADED UNKNOWN UNKNOWN somehsdir')
 
         self.assertEqual("blam", eph.private_key)
         self.assertEqual("ohai.onion", eph.hostname)
 
     def test_remove(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
         eph.hostname = 'foo.onion'
         proto = Mock()
         proto.queue_command = Mock(return_value="OK")
@@ -1484,7 +1622,7 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_remove_error(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
         eph.hostname = 'foo.onion'
         proto = Mock()
         proto.queue_command = Mock(return_value="it's not ok")
@@ -1496,25 +1634,21 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
             pass
 
     def test_failed_upload(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
-        proto = Mock()
-        proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=seekrit\nServiceID=42\n"))
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
+        proto = FakeControlProtocol([
+            "PrivateKey=seekrit\nServiceID=42\n",
+        ])
 
         d = eph.add_to_tor(proto)
 
-        # get the event-listener callback that torconfig code added;
-        # the last call [-1] was to add_event_listener; we want the
-        # [1] arg of that
-        cb = proto.method_calls[-1][1][1]
-
         # Tor leads with UPLOAD events for each attempt; we queue 2 of
         # these...
-        cb('UPLOAD 42 UNKNOWN hsdir0')
-        cb('UPLOAD 42 UNKNOWN hsdir1')
+        proto.event_happened('HS_DESC', 'UPLOAD 42 UNKNOWN hsdir0')
+        proto.event_happened('HS_DESC', 'UPLOAD 42 UNKNOWN hsdir1')
 
         # ...but fail them both
-        cb('FAILED 42 UNKNOWN hsdir1 REASON=UPLOAD_REJECTED')
-        cb('FAILED 42 UNKNOWN hsdir0 REASON=UPLOAD_REJECTED')
+        proto.event_happened('HS_DESC', 'FAILED 42 UNKNOWN hsdir1 REASON=UPLOAD_REJECTED')
+        proto.event_happened('HS_DESC', 'FAILED 42 UNKNOWN hsdir0 REASON=UPLOAD_REJECTED')
 
         self.assertEqual("seekrit", eph.private_key)
         self.assertEqual("42.onion", eph.hostname)
@@ -1522,26 +1656,22 @@ class EphemeralHiddenServiceTest(unittest.TestCase):
         d.addErrback(lambda e: self.assertTrue('Failed to upload' in str(e)))
 
     def test_single_failed_upload(self):
-        eph = torconfig.EphemeralHiddenService("80 127.0.0.1:80")
-        proto = Mock()
-        proto.queue_command = Mock(return_value=defer.succeed("PrivateKey=seekrit\nServiceID=42\n"))
+        eph = EphemeralHiddenService("80 127.0.0.1:80")
+        proto = FakeControlProtocol([
+            "PrivateKey=seekrit\nServiceID=42\n",
+        ])
 
         d = eph.add_to_tor(proto)
 
-        # get the event-listener callback that torconfig code added;
-        # the last call [-1] was to add_event_listener; we want the
-        # [1] arg of that
-        cb = proto.method_calls[-1][1][1]
-
         # Tor leads with UPLOAD events for each attempt; we queue 2 of
         # these...
-        cb('UPLOAD 42 UNKNOWN hsdir0')
-        cb('UPLOAD 42 UNKNOWN hsdir1')
+        proto.event_happened('HS_DESC', 'UPLOAD 42 UNKNOWN hsdir0')
+        proto.event_happened('HS_DESC', 'UPLOAD 42 UNKNOWN hsdir1')
 
         # ...then fail one
-        cb('FAILED 42 UNKNOWN hsdir1 REASON=UPLOAD_REJECTED')
+        proto.event_happened('HS_DESC', 'FAILED 42 UNKNOWN hsdir1 REASON=UPLOAD_REJECTED')
         # ...and succeed on the last.
-        cb('UPLOADED 42 UNKNOWN hsdir0')
+        proto.event_happened('HS_DESC', 'UPLOADED 42 UNKNOWN hsdir0')
 
         self.assertEqual("seekrit", eph.private_key)
         self.assertEqual("42.onion", eph.hostname)
