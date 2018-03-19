@@ -37,23 +37,23 @@ High Level Overview
 -------------------
 
 Interacting with Tor via txtorcon should involve *only* calling
-methods of the :class:`txtorcon.Tor` class.
+methods of the :class:`.Tor` class.
 
-You get an instance of :class:`txtorcon.Tor` in one of two ways:
+You get an instance of :class:`.Tor` in one of two ways:
 
  - call :meth:`txtorcon.connect` or;
  - call :meth:`txtorcon.launch`
 
-Once you've got a ``Tor`` instance you can use it to gain access to
+Once you've got a :class:`.Tor` instance you can use it to gain access to
 (or create) instances of the other interesting classes; see "A Tor
 Instance" below for various use-cases.
 
-Note that for historical reasons (namely: ``Tor`` is a relatively new
-class) there are many other functions and classes exported from
-txtorcon but you *shouldn't* need to instantiate these directly. If
-something is missing from this top-level class, please get in touch
-(file a bug, chat on IRC, etc) because it's probably a missing
-feature.
+Note that for historical reasons (namely: :class:`.Tor` is a
+relatively new class) there are many other functions and classes
+exported from txtorcon but you *shouldn't* need to instantiate these
+directly. If something is missing from this top-level class, please
+get in touch (file a bug, chat on IRC, etc) because it's probably a
+missing feature.
 
 
 .. _guide_tor_instance:
@@ -66,7 +66,7 @@ control. This can be either an already-running Tor that you're
 authorized to connect to, or a Tor instance that has been freshly
 launched by txtorcon.
 
-We abstract "a Tor instance" behind the :class:`txtorcon.Tor` class,
+We abstract "a Tor instance" behind the :class:`.Tor` class,
 which provides a very high-level API for all the other things you
 might want to do:
 
@@ -78,7 +78,7 @@ might want to do:
  - issue low-level commands (see ":ref:`protocol`")
 
 The actual control-protocol connection to tor is abstracted behind
-:class:`txtorcon.TorControlProtocol`. This can usually be ignored by
+:class:`.TorControlProtocol`. This can usually be ignored by
 most users, but can be useful to issue protocol commands directly,
 listen to raw events, etc.
 
@@ -99,13 +99,13 @@ authentication is used; only if that is not available do we try
 password authentication.
 
 To connect, use :meth:`txtorcon.connect` which returns a Deferred that
-will fire with a :class:`txtorcon.Tor` instance. If you need access to
-the :class:`txtorcon.TorControlProtocol` instance, it's available via
-the ``.protocol`` property (there is always exactly one of these per
-:class:`txtorcon.Tor` instance). Similarly, the current configuration
-is available via ``.config``. You can change the configuration by
+will fire with a :class:`.Tor` instance. If you need access to the
+:class:`.TorControlProtocol` instance, it's available via the
+``.protocol`` property (there is always exactly one of these per
+:class:`.Tor` instance). Similarly, the current configuration is
+available via ``.config``. You can change the configuration by
 updating attributes on this class but it won't take effect until you
-call :meth:`txtorcon.TorConfig.save`.
+call :meth:`.TorConfig.save`.
 
 
 Launching a New Tor
@@ -114,14 +114,14 @@ Launching a New Tor
 It's also possible to launch your own Tor instance. txtorcon keeps a
 "global" tor available for use by e.g. the ``.global_tor`` endpoint
 factory functions (like
-:func:`txtorcon.TCPHiddenServiceEndpoint.global_tor`). You can access
-it via :func:`txtorcon.get_global_tor_instance`. There is exactly zero
+:func:`.TCPHiddenServiceEndpoint.global_tor`). You can access
+it via :func:`.get_global_tor_instance`. There is exactly zero
 or one of these *per Python process* that uses ``txtorcon``.
 
 To explicitly launch your own Tor instance, use
-:meth:`txtorcon.launch`. You can pass a couple of minimal options
+:meth:`.launch`. You can pass a couple of minimal options
 (``data_directory`` being recommended). If you need to set other Tor
-options, use ``.config`` to retrieve the :class:`txtorcon.TorConfig`
+options, use ``.config`` to retrieve the :class:`.TorConfig`
 instance associated with this tor and change configuration afterwards.
 
 Setting ``data_directory`` gives your Tor instance a place to cache
@@ -132,8 +132,7 @@ drammatically improved if Tor already has a recent consensus, so when
 integrating with Tor by launching your own client it's highly
 recommended to specify a ``data_directory`` somewhere sensible
 (e.g. ``~/.config/your_program_name/`` is a popular choice on
-Linux). See `the Tor manual
-<https://www.torproject.org/docs/tor-manual.html.en>`_ under the
+Linux). See `the Tor manual`_ under the
 ``DataDirectory`` option for more information.
 
 Tor itself will create a missing ``data_directory`` with the correct
@@ -151,9 +150,9 @@ Most of txtorcon tends towards "attribute-style access".  The guiding
 principle is that "mere data" that is immediately available will be an
 attribute, whereas things that "take work" or are async (and thus
 return ``Deferred`` s) will be functions. For example,
-:meth:`txtorcon.Router.get_location` is a method because it
+:meth:`.Router.get_location` is a method because it
 potentially has to ask Tor for the country, whereas
-:attr:`txtorcon.Router.hex_id` is a plain attribute because it's
+:attr:`.Router.hex_id` is a plain attribute because it's
 always available.
 
 
@@ -162,7 +161,7 @@ always available.
 Tracking and Changing Tor's Configuration
 -----------------------------------------
 
-Instances of the :class:`txtorcon.TorConfig` class represent the
+Instances of the :class:`.TorConfig` class represent the
 current, live state of a running Tor. There is a bit of
 attribute-magic to make it possible to simply get and set things
 easily:
@@ -197,7 +196,7 @@ all the CONF_CHANGED events). In normal use, there should only be a
 single ``TorConfig`` instance for every ``Tor`` instance so this
 shouldn't affect you unless you've created your own ``TorConfig``.
 
-Since :class:`txtorcon.TorConfig` conforms to the Iterator protocol,
+Since :class:`.TorConfig` conforms to the Iterator protocol,
 you can easily find all the config-options that Tor supports:
 
 .. sourcecode:: python
@@ -212,7 +211,7 @@ you can easily find all the config-options that Tor supports:
 These come from interrogating Tor using ``GETINFO config/names`` and
 so represent the configuration options of the current connected Tor
 process. If the value "isn't set" (i.e. is the default), the value
-from Tor will be ``txtorcon.DEFAULT_VALUE``.
+from Tor will be ``.DEFAULT_VALUE``.
 
 When you set values into ``TorConfig``, they are parsed according to
 control-spec for the different types given to the values, via
@@ -230,10 +229,10 @@ not fail until you call ``.save()``.
 Monitor and Change Tor's State
 ------------------------------
 
-Instances of :class:`txtorcon.TorState` prepresent a live, interactive
-version of all the relays/routers (:class:`txtorcon.Router`
-instances), all circuits (:class:`txtorcon.Circuit` instances) and
-streams (:class:`txtorcon.Stream` instances) active in the underlying
+Instances of :class:`.TorState` prepresent a live, interactive
+version of all the relays/routers (:class:`.Router`
+instances), all circuits (:class:`.Circuit` instances) and
+streams (:class:`.Stream` instances) active in the underlying
 Tor instance.
 
 As the ``TorState`` instance has subscribed to various events from
@@ -243,49 +242,49 @@ might be interacting with your Tor client.
 
 A ``Tor`` instance doesn't have a ``TorState`` instance by default (it
 can take a few hundred milliseconds to set up) and so one is created
-via the asynchronous method :meth:`txtorcon.Tor.get_state`.
+via the asynchronous method :meth:`.Tor.get_state`.
 
 .. note::
 
     If you need to be **absolutely sure** there's nothing stuck in
     networking buffers and that your instance is "definitely
     up-to-date" you can issue a do-nothing command to Tor via
-    :meth:`txtorcon.TorControlProtocol.queue_command` (e.g. ``yield
+    :meth:`.TorControlProtocol.queue_command` (e.g. ``yield
     queue_command("GETINFO version")``). Most users shouldn't have to
     worry about this edge-case. In any case, there could be a new
     update that Tor decides to issue at any moment.
 
 You can modify the state of Tor in a few simple ways. For example, you
-can call :meth:`txtorcon.Stream.close` or
-:meth:`txtorcon.Circuit.close` to cause a stream or circuit to be
+can call :meth:`.Stream.close` or
+:meth:`.Circuit.close` to cause a stream or circuit to be
 closed. You can wait for a circuit to become usable with
-:meth:`txtorcon.Circuit.when_built`.
+:meth:`.Circuit.when_built`.
 
 For a lot of the read-only state, you can simply access interesting
 attributes. The relays through which a circuit traverses are in
-``Circuit.path`` (a list of :class:`txtorcon.Router` instances),
-``Circuit.streams`` contains a list of :class:`txtorcon.Stream`
+``Circuit.path`` (a list of :class:`.Router` instances),
+``Circuit.streams`` contains a list of :class:`.Stream`
 instances, ``.state`` and ``.purpose`` are strings. ``.time_created``
 returns a `datetime
 <https://docs.python.org/2/library/datetime.html>`_ instance. There
-are also some convenience functions like :meth:`txtorcon.Circuit.age`.
+are also some convenience functions like :meth:`.Circuit.age`.
 
 For sending streams over a particular circuit,
-:meth:`txtorcon.Circuit.stream_via` returns an
+:meth:`.Circuit.stream_via` returns an
 `IStreamClientEndpoint`_ implementation that will cause a subsequent
 ``.connect()`` on it to go via the given circuit in Tor. A similar
-method (:meth:`txtorcon.Circuit.web_agent`) exists for Web requests.
+method (:meth:`.Circuit.web_agent`) exists for Web requests.
 
 Listening for certain events to happen can be done by implementing the
-interfaces :class:`txtorcon.interface.IStreamListener` and
-:class:`txtorcon.interface.ICircuitListener`. You can request
+interfaces :class:`.interface.IStreamListener` and
+:class:`.interface.ICircuitListener`. You can request
 notifications on a Tor-wide basis with
-:meth:`txtorcon.TorState.add_circuit_listener` or
-:meth:`txtorcon.TorState.add_stream_listener`. If you are just
+:meth:`.TorState.add_circuit_listener` or
+:meth:`.TorState.add_stream_listener`. If you are just
 interested in a single circuit, you can call
-:meth:`txtorcon.Circuit.listen` directly on a ``Circuit`` instance.
+:meth:`.Circuit.listen` directly on a ``Circuit`` instance.
 
-The Tor relays are abstracted with :class:`txtorcon.Router`
+The Tor relays are abstracted with :class:`.Router`
 instances. Again, these have read-only attributes for interesting
 information, e.g.: ``id_hex``, ``ip``, ``flags`` (a list of strings),
 ``bandwidth``, ``policy``, etc. Note that all information in these
@@ -293,7 +292,7 @@ objects is from "microdescriptors". If you're doing a long-running
 iteration over relays, it may be important to remember that the
 collection of routers can change every hour (when a new "consensus"
 from the Directory Authorities is published) which may change the
-underlying collection (e.g. :attr:`txtorcon.TorState.routers_by_hash`)
+underlying collection (e.g. :attr:`.TorState.routers_by_hash`)
 over which you're iterating.
 
 Here's a simple sketch that traverses all circuits printing their
@@ -320,20 +319,20 @@ All client-side interactions are via instances that implement
 `IStreamClientEndpoint`_. There are several factory functions used to
 create suitable instances.
 
-The recommended API is to acquire a :class:`txtorcon.Tor` instance
+The recommended API is to acquire a :class:`.Tor` instance
 (see ":ref:`guide_tor_instance`") and then call
-:meth:`txtorcon.Tor.create_client_endpoint`. To do DNS lookups (or
+:meth:`.Tor.create_client_endpoint`. To do DNS lookups (or
 reverse lookups) via a Tor circuit, use
-:meth:`txtorcon.Tor.dns_resolve` and
-:meth:`txtorcon.Tor.dns_resolve_ptr`.
+:meth:`.Tor.dns_resolve` and
+:meth:`.Tor.dns_resolve_ptr`.
 
 A common use-case is to download a Web resource; you can do so via
 Twisted's built-in ``twisted.web.client`` package, or using the
 friendlier `treq`_ library. In both cases, you need a
 `twisted.web.client.Agent
 <https://twistedmatrix.com/documents/current/api/twisted.web.client.Agent.html>`_
-instance which you can acquire with :meth:`txtorcon.Tor.web_agent` or
-:meth:`txtorcon.Circuit.web_agent`. The latter is used to make the
+instance which you can acquire with :meth:`.Tor.web_agent` or
+:meth:`.Circuit.web_agent`. The latter is used to make the
 request over a specific circuit. Usually, txtorcon will simply use one
 of the available SOCKS ports configured in the Tor it is connected to
 -- if you care which one, you can specify it as the optional
@@ -360,19 +359,19 @@ program that supports configuring endpoint strings gets Tor support
 ``tor:timaq4ygg2iegci7.onion:80`` to `clientFromString`_ will return
 an endpoint that will connect to txtorcon's onion-service
 website. Note that these endpoints will use the "global to txtorcon"
-Tor instance (available from :meth:`txtorcon.get_global_tor`). Thus,
+Tor instance (available from :meth:`.get_global_tor`). Thus,
 if you want to control *which* tor instance your circuit goes over,
 this is not a suitable API.
 
 There are also lower-level APIs to create
-:class:`txtorcon.TorClientEndpoint` instances directly if you have a
-:class:`txtorcon.TorConfig` instance. These very APIs are used by the
+:class:`.TorClientEndpoint` instances directly if you have a
+:class:`.TorConfig` instance. These very APIs are used by the
 ``Tor`` object mentioned above. If you have a use-case that *requires*
-using this API, I'd be curious to learn why the :class:`txtorcon.Tor`
+using this API, I'd be curious to learn why the :class:`.Tor`
 methods are un-suitable (as those are the suggested API).
 
 You should expect these APIs to raise SOCKS5 errors, which can all be
-handled by catching the :class:`txtorcon.socks.SocksError` class. If
+handled by catching the :class:`.socks.SocksError` class. If
 you need to work with each specific error (corresponding to the
 `RFC-specified SOCKS5 replies`_), see the ":ref:`socks`" for a list of
 them.
@@ -406,11 +405,11 @@ In the newest Tor versions, Onion services have been upgraded
 ("`Proposition 279
 <https://gitweb.torproject.org/torspec.git/plain/proposals/279-naming-layer-api.txt>`_")
 and these are known as "version 3" services. The prior / legacy is
-"version 2". In txtorcon, the default is version is **usually** 3 but
-in some older APIs the default has to remain "2" if unspecified (for
-backwards-compatibility). You should thus usually pass "version=3"
+"version 2". In txtorcon, the default version is **usually** 3 but in
+some older APIs the default has to remain "2" if unspecified (for
+backwards-compatibility). You should thus usually pass ``version=3``
 (and if you expect to connect to an older Tor release, pass
-`version=2`).
+``version=2``).
 
 .. note::
 
@@ -420,37 +419,37 @@ backwards-compatibility). You should thus usually pass "version=3"
 
 From an API perspective, here are the parts we care about:
 
- - each service has a secret, private key (with a corresponding public
-   part):
-    - these keys can be on disk (in the "hidden service directory");
-    - or, they can be "ephemeral" (only in memory);
- - the "host name" is a hash of the public-key (e.g. ``timaq4ygg2iegci7.onion``);
- - a "Descriptor" (which tells clients how to connect) must be
-   published (to a "Hidden Service Directory", or HSDir);
- - a service has a list of port-mappings (public -> local)
-    - e.g. ``"80 127.0.0.1:5432"`` says you can contact the service
-      publically on port 80, which Tor will redirect to a daemon
-      running locally on port ``5432``;
-    - note that "Descriptors" only show the public port
- - services can be "authenticated", which means they have a list of
-   client names for which Tor creates associated keys (``.auth_token``).
- - Tor has two flavours of service authentication: ``basic`` and
-   ``stealth`` -- there's no API-level difference, but the
-   ``.hostname`` is unique for each client in the ``stealth`` case.
+- each service has a secret, private key (with a corresponding public
+  part):
+   - these keys can be on disk (in the "hidden service directory");
+   - or, they can be "ephemeral" (only in memory);
+- the "host name" is a hash of the public-key (e.g. ``timaq4ygg2iegci7.onion``);
+- a "Descriptor" (which tells clients how to connect) must be
+  published (to a "Hidden Service Directory", or HSDir);
+- a service has a list of port-mappings (public -> local):
+   - e.g. ``"80 127.0.0.1:5432"`` says you can contact the service
+     publically on port 80, which Tor will redirect to a daemon
+     running locally on port ``5432``;
+   - note that "Descriptors" only show the public port
+- services can be "authenticated", which means they have a list of
+  client names for which Tor creates associated keys (``.auth_token``).
+- Tor has two flavours of service authentication: ``basic`` and
+  ``stealth`` -- there's no API-level difference, but the
+  ``.hostname`` is unique for each client in the ``stealth`` case.
 
 To summarize the above in a table format, here are the possible types
 of Onion Service interfaces classes you may interact with.
 
-+----------------------------------+----------------------------------+----------------------------+
-|                                  | Keys on disk                     | Keys in memory             |
-+==================================+==================================+============================+
-|      **no authentication**       | IFilesystemOnionService          | IOnionService              |
-+----------------------------------+----------------------------------+----------------------------+
-| **basic/stealth authentication** | IAuthenticatedOnionClients       | IAuthenticatedOnionClients |
-+----------------------------------+----------------------------------+----------------------------+
++----------------------------------+--------------------------------------+--------------------------------------+
+|                                  | Keys on disk                         | Keys in memory                       |
++==================================+======================================+======================================+
+|      **no authentication**       | :class:`.IFilesystemOnionService`    | :class:`.IOnionService`              |
++----------------------------------+--------------------------------------+--------------------------------------+
+| **basic/stealth authentication** | :class:`.IAuthenticatedOnionClients` | :class:`.IAuthenticatedOnionClients` |
++----------------------------------+--------------------------------------+--------------------------------------+
 
-:class:`txtorcon.IFilesystemOnionService` is a subclass of
-:class:`txtorcon.IOnionService` and the concrete objects will
+:class:`.IFilesystemOnionService` is a subclass of
+:class:`.IOnionService` and the concrete objects will
 be different for on-disk versus in-memory keys; depend on the
 methods in the interfaces (only).
 
@@ -458,7 +457,7 @@ Note that it's **up to you to save the private keys** of ephemeral
 services if you want to re-launch them later; the "ephemeral" refers
 to the fact that Tor doesn't persist the private keys -- when Tor
 shuts down, they're gone and there will never be a service at the same
-URI again.
+URI again (unless you saved the key).
 
 
 Onion Services Endpoints API
@@ -468,7 +467,7 @@ No matter which kind of service you need, you interact via Twisted's
 `IStreamServerEndpoint`_ interface. There are various txtorcon methods
 (see ":ref:`create_onion`") which return some instance implementing that
 interface. These instances will also implement
-:class:`txtorcon.IProgressProvider` -- which is a hook to register
+:class:`.IProgressProvider` -- which is a hook to register
 listeners which get updates about Tor's launching progress (if we
 started a new Tor) and Descriptor uploading.
 
@@ -481,25 +480,26 @@ to produce any kind of onion service. The service instance you
 retrieve after the ``.listen()`` call will, however, be different and
 implement one of the interfaces in the table above. Those are:
 
- - :class:`txtorcon.IOnionService`
- - :class:`txtorcon.IFilesystemOnionService` (also includes all of ``IOnionService``)
- - :class:`txtorcon.IOnionServiceClients` (for authenticated services)
+ - :class:`.IOnionService`
+ - :class:`.IFilesystemOnionService` (also includes all of ``IOnionService``)
+ - :class:`.IOnionServiceClients` (for authenticated services)
 
 The ``.listen()`` method of the endpoint will return an instance
 implementing `IListeningPort`_. This will have a ``.onion_service``
 property that gives you an instance implementing one of the above
 interfaces.
 
-`IOnionService` and its subclass `IFilesystemOnionService` correspond
-to a non-authenticated services, while `IOnionServiceClients` is
-authenticated. The latter manages a collection of instances by
-(arbitrary) client names, where each of these instances implements
-:class:`txtorcon.IOnionClient`. Note that the ``.auth_token`` member
+:class:`.IOnionService` and its subclass
+:class:`.IFilesystemOnionService` correspond to a
+non-authenticated services, while
+:class:`.IOnionServiceClients` is authenticated. The latter
+manages a collection of instances by (arbitrary) client names, where
+each of these instances implements
+:class:`.IOnionClient`. Note that the ``.auth_token`` member
 is secret, private data which you need to give to **one** client; this
 information goes in the client's Tor configuration as ``HidServAuth
-onion-address auth-cookie [service-name]``. See `the Tor manual
-<https://www.torproject.org/docs/tor-manual-dev.html.en>`_ for more
-information.
+onion-address auth-cookie [service-name]``. See `the Tor manual`_ for
+more information.
 
 
 .. _create_onion:
@@ -507,18 +507,24 @@ information.
 Creating Onion Endpoints
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The easiest-to-use API are methods of :class:`txtorcon.Tor`, which
+The easiest-to-use API are methods of :class:`.Tor`, which
 allow you to create `IStreamServerEndpoint` instances for the various
-Onion Service types.
+Onion Service types. For all service types there is a single endpoint
+that you create: :class:`.TCPHiddenServiceEndpoint`. Thus, you
+**are advised to use a factory-method to create the instance**
+
+It's also possible to use Twisted's ``serverFromString`` API with the
+``onion:`` prefix. (Thus, any program supporting endpoint strings for
+configuration can use Tor Onion Services with *no code changes*).
 
 Each of the four main classes of onion service has a corresponding
 factory method (while these get nearly to Java lengths, these are at
 least explicit):
 
- - :meth:`txtorcon.Tor.create_onion_service`: ephemeral service
- - :meth:`txtorcon.Tor.create_authenticated_onion_service`: ephemeral service with authentication
- - :meth:`txtorcon.Tor.create_filesystem_onion_service`: on-disk service
- - :meth:`txtorcon.Tor.create_filesystem_authenticated_onion_service`: on-disk service with authentication
+ - :meth:`.Tor.create_onion_endpoint`: ephemeral service
+ - :meth:`.Tor.create_authenticated_onion_endpoint`: ephemeral service with authentication
+ - :meth:`.Tor.create_filesystem_onion_endpoint`: on-disk service
+ - :meth:`.Tor.create_authenticated_filesystem_onion_endpoint`: on-disk service with authentication
 
 Factors to consider when deciding whether to use "authenticated"
 service or not:
@@ -539,34 +545,27 @@ service or not:
 Non-Authenticated Services
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For all service types there is a single endpoint that you create:
-:class:`txtorcon.TCPHiddenServiceEndpoint`. Thus, you **are advised to
-use a factory-method to create the instance**
-
-You can do this with :meth:`txtorcon.Tor.create_onion_service` (for an
-ephemeral service) or
-:meth:`txtorcon.Tor.create_filesystem_onion_service` (for an on-disk
-service). It's also possible to use Twisted's ``serverFromString`` API
-with the ``onion:`` prefix. (Thus, any program supporting endpoint
-strings for configuration can use Tor Onion Services with *no code
-changes*).
+You can create non-authenticated with
+:meth:`.Tor.create_onion_service` (for an ephemeral service)
+or :meth:`.Tor.create_filesystem_onion_service` (for an
+on-disk service).
 
 If you don't want to manage launching or connecting to Tor yourself
-(and thus a :class:`txtorcon.Tor` instance), you can use one of the
-three `@classmethod`s on :class:`txtorcon.TCPHiddenServiceEndpoint`,
+(and thus a :class:`.Tor` instance), you can use one of the
+three factory-functions in :class:`.TCPHiddenServiceEndpoint`,
 which all return a new endpoint instance:
 
- - :meth:`txtorcon.TCPHiddenSeviceEndpoint.global_tor`: uses a Tor
+ - :func:`.TCPHiddenSeviceEndpoint.global_tor`: uses a Tor
    instance launched at most once in this Python process (the
-   underlying :class:`txtorcon.Tor` instance for this is available via
-   :meth:`txtorcon.get_global_tor()` if you need to make manual
+   underlying :class:`.Tor` instance for this is available via
+   :func:`.get_global_tor()` if you need to make manual
    configuration adjustments);
 
- - :meth:`txtorcon.TCPHiddenSeviceEndpoint.system_tor`: connects to
+ - :meth:`.TCPHiddenSeviceEndpoint.system_tor`: connects to
    the control-protocol endpoint you provide (a good choice on Debian
    would be ``UNIXClientEndpoint('/var/run/tor/control')``);
 
- - :meth:`txtorcon.TCPHiddenSeviceEndpoint.private_tor`: causes a
+ - :meth:`.TCPHiddenSeviceEndpoint.private_tor`: causes a
    fresh, private instance of Tor to be launched for this service
    alone. This uses a tempdir (honoring ``$TMP``) which is deleted
    upon reactor shutdown or loss of the control connection.
@@ -579,38 +578,38 @@ launched, the Onion Service created, and the descriptor published.
 Authenticated Services
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Authenticated services take an instance of :class:`txtorcon.AuthBasic`
-or :class:`txtorcon.AuthStealth`. You may use the factory methods on
-:class:`txtorcon.Tor`:
-:meth:`txtorcon.Tor.create_authenticated_onion_service` (for an
+Authenticated services take an instance of :class:`.AuthBasic`
+or :class:`.AuthStealth`. You may use the factory methods on
+:class:`.Tor`:
+:meth:`.Tor.create_authenticated_onion_service` (for an
 ephemeral service) or
-:meth:`txtorcon.Tor.create_authenticated_filesystem_onion_service`
+:meth:`.Tor.create_authenticated_filesystem_onion_service`
 (for an on-disk service).
 
 You may also use one of the three `@classmethod`s on
-:class:`txtorcon.TCPHiddenServiceEndpoint` (and passing an `auth=`
+:class:`.TCPHiddenServiceEndpoint` (and passing an `auth=`
 kwarg):
 
- - :meth:`txtorcon.TCPHiddenSeviceEndpoint.global_tor`
- - :meth:`txtorcon.TCPHiddenSeviceEndpoint.system_tor`
- - :meth:`txtorcon.TCPHiddenSeviceEndpoint.private_tor`
+ - :func:`.TCPHiddenSeviceEndpoint.global_tor`
+ - :func:`.TCPHiddenSeviceEndpoint.system_tor`
+ - :func:`.TCPHiddenSeviceEndpoint.private_tor`
 
 
 Onion Service Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you just want to "look at" the configuration of existing onion
-services, they are avaialble via :class:`txtorcon.TorConfig` and the
-``.HiddenServices`` or ``.EphemeralHiddenServices` attributes.
+services, they are avaialble via :class:`.TorConfig` and the
+``.HiddenServices`` or ``.EphemeralHiddenServices`` attributes.
 
 These presents a "flattened" version of any authenticated services, so
 that each element in the list of ``.HiddenServices`` is itself at
-least a :class:`txtorcon.IOnionService` (it may also implement other
+least a :class:`.IOnionService` (it may also implement other
 interfaces, but every one will implement ``IOnionService``).
 
 You can still set any settable attributes on these objects, and Tor's
 configuration for them will be updated when you call
-:meth:`txtorcon.TorConfig.save` with an **important exception**:
+:meth:`.TorConfig.save` with an **important exception**:
 "ephemeral" services cannot be updated after they're created.
 
 Note that it's possible for other controllers to create ephemeral
@@ -633,12 +632,11 @@ High Level
 With that in mind, you may still decide to attach streams to
 circuits. Most often, this means you simply want to make a client
 connection over a particluar circuit. The recommended API uses
-:meth:`txtorcon.Circuit.stream_via` for arbitrary protocols or
-:meth:`txtorcon.Circuit.web_agent` as a convenience for Web
+:meth:`.Circuit.stream_via` for arbitrary protocols or
+:meth:`.Circuit.web_agent` as a convenience for Web
 connections. The latter can be used via `Twisted's Web client
 <https://twistedmatrix.com/documents/current/web/howto/client.html>`_
-or via `treq <https://treq.readthedocs.io/en/latest/>`_ (a
-"requests"-like library for Twisted).
+or via `treq`_ (a "requests"-like library for Twisted).
 
 See the following examples:
 
@@ -646,8 +644,8 @@ See the following examples:
  - :ref:`web_client_treq.py`
  - :ref:`web_client_custom_circuit.py`
 
-Note that these APIs mimic :meth:`txtorcon.Tor.stream_via` and
-:meth:`txtorcon.Tor.web_agent` except they use a particular Circuit.
+Note that these APIs mimic :meth:`.Tor.stream_via` and
+:meth:`.Tor.web_agent` except they use a particular Circuit.
 
 
 Low Level
@@ -678,24 +676,24 @@ telling Tor which circuit to use. There are two limitations though:
    goes to the correct Introduction Point).
 
 In order to do custom stream -> circuit mapping, you call
-:meth:`txtorcon.TorState.set_attacher` with an object implementing
-:class:`txtorcon.interface.IStreamAttacher`. Then every time a new
+:meth:`.TorState.set_attacher` with an object implementing
+:class:`.interface.IStreamAttacher`. Then every time a new
 stream is detected, txtorcon will call
-:meth:`txtorcon.interface.IStreamAttacher.attach_stream` with the
-:class:`txtorcon.Stream` instance and a list of all available
+:meth:`.interface.IStreamAttacher.attach_stream` with the
+:class:`.Stream` instance and a list of all available
 circuits. You make an appropriate return.
 
 There can be either no attacher at all or a single attacher
 object. You can "un-set" an attacher by calling ``set_attacher(None)``
 (in which case ``__LeaveStreamsUnattached`` will be set back to 0).
 If you really do need multiple attachers, you can use the utility
-class :class:`txtorcon.attacher.PriorityAttacher` which acts as the
+class :class:`.attacher.PriorityAttacher` which acts as the
 "top level" one (so you add your multiple attachers to it).
 
 Be aware that txtorcon internally uses this API itself if you've
 *ever* called the "high level" API
-(:meth:`txtorcon.Circuit.stream_via` or
-:meth:`txtorcon.Circuit.web_agent`) and so it is an **error** to set a
+(:meth:`.Circuit.stream_via` or
+:meth:`.Circuit.web_agent`) and so it is an **error** to set a
 new attacher if there is already an existing attacher.
 
 
@@ -713,9 +711,9 @@ Building a Single Circuit
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If your use-case needs just a single circuit, it is probably easiest
-to call :meth:`txtorcon.TorState.build_circuit`. This methods takes a
-list of :class:`txtorcon.Router` instances, which you can get from the
-:class:`txtorcon.TorState` instance by using one of the attributes:
+to call :meth:`.TorState.build_circuit`. This methods takes a
+list of :class:`.Router` instances, which you can get from the
+:class:`.TorState` instance by using one of the attributes:
 
  - ``.all_routers``
  - ``.routers``
@@ -728,7 +726,7 @@ or ``.entry_guards`` (for just the entry guards configured on this Tor
 client).
 
 If you don't actually care which relays are used, but simply want a
-fresh circuit, you can call :meth:`txtorcon.TorState.build_circuit`
+fresh circuit, you can call :meth:`.TorState.build_circuit`
 without any arguments at all which asks Tor to build a new circuit in
 the way it normally would (i.e. respecting your guard nodes etc).
 
@@ -745,10 +743,10 @@ Building Many Circuits
    you want this now.
 
 If you would like to build many circuits, you'll want an instance that
-implements :class:`txtorcon.ICircuitBuilder` (which is usually simply
-an instance of :class:`txtorcon.CircuitBuilder`). Instances of this
+implements :class:`.ICircuitBuilder` (which is usually simply
+an instance of :class:`.CircuitBuilder`). Instances of this
 class can be created by calling one of the factory functions like
-:func:`txtorcon.circuit_builder_fixed_exit`.
+:func:`.circuit_builder_fixed_exit`.
 
 XXX what about a "config object" idea, e.g. could have keys:
 
@@ -765,5 +763,6 @@ XXX what about a "config object" idea, e.g. could have keys:
 .. _clientfromstring: http://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.html#clientFromString
 .. _serverfromstring: http://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.html#serverFromString
 .. _ilisteningport: http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IListeningPort.html
-.. _treq: https://github.com/twisted/treq
+.. _treq: https://treq.readthedocs.io/en/latest/
 .. _`rfc-specified socks5 replies`: https://tools.ietf.org/html/rfc1928#section-6
+.. _`the Tor manual`: https://www.torproject.org/docs/tor-manual.html.en

@@ -266,8 +266,7 @@ class HiddenService(object):
     To create an additional hidden service, append a new instance of
     this class to the config (ignore the conf argument)::
 
-    state.hiddenservices.append(HiddenService('/path/to/dir', ['80
-    127.0.0.1:1234']))
+        state.hiddenservices.append(HiddenService('/path/to/dir', ['80 127.0.0.1:1234']))
     """
 
     def __init__(self, config, thedir, ports,
