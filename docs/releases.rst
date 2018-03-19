@@ -12,11 +12,10 @@ Starting after v0.20.x versions will follow `calendar versioning
 year. The second digit will be "non-trivial" releases and the third
 will be for bugfix releases.
 
-onion-api-v3 changes
---------------------
+unreleased
+----------
 
-(probably release everything below as v0.20.0 or v18.0.0 then put in
-all the onion changes, releasing *that* as 18.1.0?)
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v18.0.0*
 
  * :meth:`txtorcon.TorControlProtocol.add_event_listener` and
    :meth:`txtorcon.TorControlProtocol.remove_event_listener` are now
@@ -41,10 +40,14 @@ all the onion changes, releasing *that* as 18.1.0?)
    `IOnionService`).
  * Version 3 ("Proposition 279") Onion service support (same APIs) as
    released in latest Tor
-
-# XXX THINK: I think we maybe just want to nuke these for now (and
-# users can use EphemeralOnionService.create et al. to do the same
-# thing)
+ * Four new methods to handle creating endpoints for Onion services
+   (either ephemeral or not and authenticated or not):
+   ** :method:`txtorcon.Tor.create_authenticated_onion_endpoint`
+   ** :method:`txtorcon.Tor.create_authenticated_filesystem_onion_endpoint`
+   ** :method:`txtorcon.Tor.create_onion_endpoint`
+   ** :method:`txtorcon.Tor.create_filesystem_onion_endpoint`
+ * see :ref:`create_onion` for information on how to choose an
+   appropriate type of Onion Service.
 
  * :method:`txtorcon.Tor.create_onion_service` to add a new ephemeral
    Onion service to Tor. This uses the `ADD_ONION` command under the
@@ -56,17 +59,6 @@ all the onion changes, releasing *that* as 18.1.0?)
    provided directory. These can be version 2 or version 3
    services. Note that there is an endpoint-style API as well so you
    don't have to worry about mapping ports yourself (see below).
-
-# ...just leave these convenience methods to create endpoints:
-
- * Four new methods to handle creating endpoints for Onion services
-   (either ephemeral or not and authenticated or not):
-   ** :method:`txtorcon.Tor.create_authenticated_onion_endpoint`
-   ** :method:`txtorcon.Tor.create_authenticated_filesystem_onion_endpoint`
-   ** :method:`txtorcon.Tor.create_onion_endpoint`
-   ** :method:`txtorcon.Tor.create_filesystem_onion_endpoint`
- * see :ref:`create_onion` for information on how to choose an
-   appropriate type of Onion Service.
 
  * Additional APIs to make visiting authenticated Onion services as a
    client easier:
@@ -82,13 +74,6 @@ all the onion changes, releasing *that* as 18.1.0?)
  * :method:`txtorcon.Tor.onion_authentication` (Python3 only) an async
    context-manager that adds and removes an Onion authentication token
    (i.e. adds in on `__aenter__` and removes it on `__aexit__`).
-
-
-
-unreleased
-----------
-
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v18.0.0*
 
 
 v0.20.0
