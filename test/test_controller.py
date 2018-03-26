@@ -1282,6 +1282,11 @@ class EphemeralOnionFactoryTests(unittest.TestCase):
         yield _validate_ports(Mock(), [80])
 
     @defer.inlineCallbacks
+    def test_ports_contain_non_ints_unix_ok(self):
+        from txtorcon.controller import _validate_ports
+        yield _validate_ports(Mock(), [(80, "unix:/dev/null")])
+
+    @defer.inlineCallbacks
     def test_ports_contain_2_tuple(self):
         from txtorcon.controller import _validate_ports
         yield _validate_ports(Mock(), [(80, 54321)])
