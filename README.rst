@@ -49,7 +49,7 @@ txtorcon
 - MIT-licensed;
 - Python 2.7, PyPy 5.0.0+, Python 3.4+;
 - depends on
-  `Twisted <https://twistedmatrix.com>`_,
+  `Twisted`_,
   `Automat <https://github.com/glyph/automat>`_,
   (and the `ipaddress <https://pypi.python.org/pypi/ipaddress>`_ backport for non Python 3)
 
@@ -65,9 +65,8 @@ Ten Thousand Feet
 
 txtorcon is an implementation of the `control-spec
 <https://gitweb.torproject.org/torspec.git/blob/HEAD:/control-spec.txt>`_
-for `Tor <https://www.torproject.org/>`_ using the `Twisted
-<https://twistedmatrix.com/trac/>`_ networking library for `Python
-<http://python.org/>`_.
+for `Tor <https://www.torproject.org/>`_ using the `Twisted`_
+networking library for `Python <http://python.org/>`_.
 
 This is useful for writing utilities to control or make use of Tor in
 event-based Python programs. If your Twisted program supports
@@ -151,3 +150,5 @@ All the documentation starts `in docs/index.rst
 
 You'll want to start with `the introductions <docs/introduction.rst>`_ (`hosted at RTD
 <https://txtorcon.readthedocs.org/en/latest/introduction.html>`_).
+
+.. _Twisted: https://twistedmatrix.com/trac
