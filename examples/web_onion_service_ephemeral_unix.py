@@ -29,7 +29,7 @@ class Simple(resource.Resource):
     isLeaf = True
 
     def render_GET(self, request):
-        return b"<html>Hello, world! I'm an authenticated hidden service!</html>"
+        return b"<html>Hello, world! I'm an Onion service (ephemeral, over unix sockets)!</html>"
 
 
 @defer.inlineCallbacks
