@@ -1259,15 +1259,26 @@ def _validate_ports(reactor, ports):
             remote, local = port
             try:
                 remote = int(remote)
-                local = int(local)
             except ValueError:
                 raise ValueError(
                     "'ports' has a tuple with a non-integer "
                     "component: {}".format(port)
                 )
-            processed_ports.append(
-                "{} 127.0.0.1:{}".format(remote, local)
-            )
+            try:
+                local = int(local)
+            except ValueError:
+                if not local.startswith('unix:/'):
+                    raise ValueError(
+                        "local port must be either an integer"
+                        " or start with unix:/"
+                    )
+                processed_ports.append(
+                    "{} {}".format(remote, local)
+                )
+            else:
+                processed_ports.append(
+                    "{} 127.0.0.1:{}".format(remote, local)
+                )
 
         elif isinstance(port, (six.text_type, str)):
             _validate_single_port_string(port)
@@ -1327,12 +1338,13 @@ def _validate_single_port_string(port):
         raise ValueError(
             "Port '{}' local address should be 'IP:port'".format(port)
         )
-    ip, localport = internal.split(':')
-    if ip != 'localhost' and not _is_non_public_numeric_address(ip):
-        raise ValueError(
-            "Port '{}' internal IP '{}' should be a local "
-            "address".format(port, ip)
-        )
+    if not internal.startswith('unix:'):
+        ip, localport = internal.split(':')
+        if ip != 'localhost' and not _is_non_public_numeric_address(ip):
+            raise ValueError(
+                "Port '{}' internal IP '{}' should be a local "
+                "address".format(port, ip)
+            )
 
 
 def _parse_rsa_blob(lines):

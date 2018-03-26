@@ -1268,7 +1268,7 @@ class EphemeralOnionFactoryTests(unittest.TestCase):
     def test_ports_contain_non_ints4(self):
         with self.assertRaises(ValueError) as ctx:
             yield self.tor.create_onion_service([('1234', 'bad')])
-        self.assertIn("non-integer", str(ctx.exception))
+        self.assertIn("be either an integer", str(ctx.exception))
 
     @defer.inlineCallbacks
     def test_ports_contain_non_ints5(self):
@@ -1280,6 +1280,11 @@ class EphemeralOnionFactoryTests(unittest.TestCase):
     def test_ports_contain_non_ints6(self):
         from txtorcon.controller import _validate_ports
         yield _validate_ports(Mock(), [80])
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints_unix_ok(self):
+        from txtorcon.controller import _validate_ports
+        yield _validate_ports(Mock(), [(80, "unix:/dev/null")])
 
     @defer.inlineCallbacks
     def test_ports_contain_2_tuple(self):

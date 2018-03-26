@@ -74,6 +74,7 @@ unreleased
  * :method:`txtorcon.Tor.onion_authentication` (Python3 only) an async
    context-manager that adds and removes an Onion authentication token
    (i.e. adds in on `__aenter__` and removes it on `__aexit__`).
+ * onion services support listening on Unix paths.
 
 
 v0.20.0
