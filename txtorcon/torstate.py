@@ -562,7 +562,7 @@ class TorState(object):
         circ.update([str(circ_id), 'EXTENDED'])
         return circ
 
-    def build_circuit(self, routers=None, using_guards=True):
+    def build_circuit(self, routers=None, using_guards=True, purpose='controller'):
         """
         Builds a circuit consisting of exactly the routers specified,
         in order.  This issues an EXTENDCIRCUIT call to Tor with all
@@ -575,11 +575,16 @@ class TorState(object):
         :param using_guards: A warning is issued if the first router
             isn't in self.entry_guards.
 
+        :param purpose: may be 'controller' or 'general'
+
         :return:
             A Deferred that will callback with a Circuit instance
             (with the .id member being valid, and probably nothing
             else).
         """
+
+        if purpose not in ('general', 'controller'):
+            raise ValueError("Invalid purpose={}".format(purpose))
 
         if routers is None or routers == []:
             cmd = "EXTENDCIRCUIT 0"
@@ -603,6 +608,7 @@ class TorState(object):
                     cmd += router.decode('utf8')
                 else:
                     cmd += router.id_hex[1:]
+        cmd += ' purpose={}'.format(purpose)
         d = self.protocol.queue_command(cmd)
         d.addCallback(self._find_circuit_after_extend)
         return d
