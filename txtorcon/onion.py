@@ -15,6 +15,7 @@ from twisted.python import log
 from txtorcon.util import find_keywords, version_at_least
 from txtorcon.util import _is_non_public_numeric_address
 from txtorcon.util import available_tcp_port
+from txtorcon.torcontrolprotocol import TorProtocolError
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -552,7 +553,16 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
                 cmd += ' ClientAuth={}:{}'.format(client_name, keyblob)
                 onion._add_client(client_name, keyblob)
 
-    raw_res = yield config.tor_protocol.queue_command(cmd)
+    try:
+        raw_res = yield config.tor_protocol.queue_command(cmd)
+    except TorProtocolError as e:
+        if version > 2:
+            if e.code == 513 and "invalid key type" in e.message.lower():
+                raise RuntimeError(
+                    "Tor doesn't like the key-type; does your tor support "
+                    "version=3 or higher Onion services?"
+                )
+        raise
     res = find_keywords(raw_res.split('\n'))
     try:
         onion._hostname = res['ServiceID'] + '.onion'
