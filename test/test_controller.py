@@ -1311,7 +1311,7 @@ class EphemeralOnionFactoryTests(unittest.TestCase):
         self.tor.create_authenticated_onion_endpoint(80, AuthBasic(['alice']))
 
     def test_auth_fs(self):
-        self.tor.create_authenticated_filesystem_onion_endpoint(80, '/dev/null', AuthBasic(['alice']))
+        self.tor.create_filesystem_authenticated_onion_endpoint(80, '/dev/null', AuthBasic(['alice']))
 
     @defer.inlineCallbacks
     def test_happy_path(self):
