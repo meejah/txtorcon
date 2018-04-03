@@ -822,7 +822,7 @@ class Tor(object):
             auth=None,
         )
 
-    def create_authenticated_filesystem_onion_endpoint(self, port, hs_dir, auth, group_readable=False, version=None):
+    def create_filesystem_authenticated_onion_endpoint(self, port, hs_dir, auth, group_readable=False, version=None):
         """
         WARNING: API subject to change
 
