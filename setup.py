@@ -66,7 +66,6 @@ setup(
     url=__url__,
     license=__license__,
     packages=[
-        "test",
         "txtorcon",
         "twisted.plugins",
     ],
