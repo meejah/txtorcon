@@ -127,10 +127,12 @@ def build_local_tor_connection(reactor, host='127.0.0.1', port=9051,
                                socket='/var/run/tor/control', *args, **kwargs):
     """
     This builds a connection to a local Tor, either via 127.0.0.1:9051
-    (which is tried first) or /var/run/tor/control (by default). See
-    also :meth:`build_tor_connection
+    or /var/run/tor/control (by default; the latter is tried
+    first). See also :meth:`build_tor_connection
     <txtorcon.torstate.build_tor_connection>` for other key-word
     arguments that are accepted here also.
+
+    **Note**: new code should use :meth:`txtorcon.connect` instead.
 
     :param host:
         An IP address to find Tor at. Corresponds to the
