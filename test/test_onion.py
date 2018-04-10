@@ -221,6 +221,32 @@ class OnionServiceTest(unittest.TestCase):
         self.assertEqual(u"ADD_ONION RSA1024:{} Port=80,127.0.0.1:80 Flags=Detach".format(_test_private_key_blob), cmd)
         d.callback("PrivateKey={}\nServiceID={}".format(_test_private_key_blob, _test_onion_id))
 
+    def test_ephemeral_key_whitespace0(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        d = EphemeralOnionService.create(
+            Mock(),
+            config,
+            ports=["80 127.0.0.1:80"],
+            private_key=_test_private_key_blob + '\r',
+            detach=True,
+        )
+        return self.assertFailure(d, ValueError)
+
+    def test_ephemeral_key_whitespace1(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        d = EphemeralOnionService.create(
+            Mock(),
+            config,
+            ports=["80 127.0.0.1:80"],
+            private_key=_test_private_key_blob + '\n',
+            detach=True,
+        )
+        return self.assertFailure(d, ValueError)
+
     def test_ephemeral_v3_no_key(self):
         protocol = FakeControlProtocol([])
         config = TorConfig(protocol)
