@@ -528,6 +528,14 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
                 "version=3 but private key isn't 'ED25519-V3'"
             )
 
+    # hmm, is it better to validate keyblob args in the create
+    # methods? "Feels nicer" to see it here when building ADD_ONION
+    # though?
+    if '\r' in keystring or '\n' in keystring:
+        raise ValueError(
+            "No newline or return characters allowed in key blobs"
+        )
+
     cmd = 'ADD_ONION {}'.format(keystring)
     for port in onion._ports:
         cmd += ' Port={},{}'.format(*port.split(' ', 1))
