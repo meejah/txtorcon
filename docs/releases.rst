@@ -75,6 +75,7 @@ unreleased
    context-manager that adds and removes an Onion authentication token
    (i.e. adds in on `__aenter__` and removes it on `__aexit__`).
  * onion services support listening on Unix paths.
+ * make sure README renders on Warehouse/PyPI
 
 
 v0.20.0
