@@ -923,10 +923,6 @@ class Tor(object):
             self._socks_endpoint = yield _create_socks_endpoint(self._reactor, self._protocol)
         returnValue(self._socks_endpoint)
 
-    # XXX THINK do we *really* want these? Most users should use the
-    # endpoints....well, for "multiple ports, one onion" we don't have
-    # any other option currently.
-
     # For all these create_*() methods, instead of magically computing
     # the class-name from arguments (e.g. we could decide "it's a
     # Filesystem thing" if "hidden_service_dir=" is passed) we have an
@@ -936,7 +932,7 @@ class Tor(object):
     # method names are kind of long (not-ideal)
 
     @inlineCallbacks
-    def create_onion_service(self, ports, private_key=None, version=3, progress=None):
+    def create_onion_service(self, ports, private_key=None, version=3, progress=None, await_all_uploads=False):
         """
         Create a new Onion service
 
@@ -984,6 +980,7 @@ class Tor(object):
             private_key=private_key,
             version=version,
             progress=progress,
+            await_all_uploads=await_all_uploads,
         )
         returnValue(service)
 
@@ -991,7 +988,8 @@ class Tor(object):
     def create_filesystem_onion_service(self, ports, onion_service_dir,
                                         version=3,
                                         group_readable=False,
-                                        progress=None):
+                                        progress=None,
+                                        await_all_uploads=False):
         """Create a new Onion service stored on disk
 
         This method will create a new Onion service, returning (via
@@ -1043,6 +1041,7 @@ class Tor(object):
             version=version,
             group_readable=group_readable,
             progress=progress,
+            await_all_uploads=await_all_uploads,
         )
         returnValue(service)
 

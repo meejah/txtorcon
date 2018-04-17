@@ -462,7 +462,7 @@ class EphemeralHiddenService(object):
         succeeds.
         '''
 
-        upload_d = _await_descriptor_upload(protocol, self, progress=None)
+        upload_d = _await_descriptor_upload(protocol, self, progress=None, await_all_uploads=False)
 
         # _add_ephemeral_service takes a TorConfig but we don't have
         # that here ..  and also we're just keeping this for
