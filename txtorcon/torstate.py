@@ -7,7 +7,6 @@ from __future__ import with_statement
 import collections
 import os
 import stat
-import types
 import warnings
 
 from twisted.internet import defer
@@ -811,28 +810,23 @@ class TorState(object):
         txtorlog.msg(" --> addr_map", addr)
         self.addrmap.update(addr)
 
-    event_map = {'STREAM': _stream_update,
-                 'CIRC': _circuit_update,
-                 'NEWCONSENSUS': _update_network_status,
-                 'ADDRMAP': _addr_map}
-    """event_map used by add_events to map event_name -> unbound method"""
+    event_map = {
+        'STREAM': '_stream_update',
+        'CIRC': '_circuit_update',
+        'NEWCONSENSUS': '_update_network_status',
+        'ADDRMAP': '_addr_map',
+    }
+
     @defer.inlineCallbacks
     def _add_events(self):
         """
         Add listeners for all the events the controller is interested in.
         """
 
-        for (event, func) in self.event_map.items():
-            # the map contains unbound methods, so we bind them
-            # to self so they call the right thing
-            try:
-                bound = types.MethodType(func, self, TorState)
-            except TypeError:
-                # python3
-                bound = types.MethodType(func, self)
+        for (event, func_name) in self.event_map.items():
             yield self.protocol.add_event_listener(
                 event,
-                bound,
+                getattr(self, func_name),
             )
 
     # ICircuitContainer
