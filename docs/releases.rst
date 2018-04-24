@@ -17,6 +17,8 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v18.0.0*
 
+ * re-work how `TorState.event_map` works, hopefully reducing
+   reproducible-builds issues
  * :meth:`txtorcon.TorControlProtocol.add_event_listener` and
    :meth:`txtorcon.TorControlProtocol.remove_event_listener` are now
    async methods returning Deferred -- they always should have been; new
