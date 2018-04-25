@@ -18,8 +18,8 @@ env:
   - TOX_ENV=tx15
   - TOX_ENV=tx16
   - TOX_ENV=tx17
-  - TOX_ENV=flake8
-  - TOX_ENV=readme_render
+  # - TOX_ENV=flake8
+  # - TOX_ENV=readme_render
   # - TOX_ENV=py27-tx15
   # - TOX_ENV=py27-tx16
   # - TOX_ENV=py27-tx17
@@ -31,14 +31,10 @@ env:
   # - TOX_ENV=pypy-tx17
 
 matrix:
-  exclude:
-  - python: 2.7
+  include:
+  - python: "3.6"
     env: flake8
-  - python: 2.7
-    env: readme_render
-  - python: pypy
-    env: flake8
-  - python: pypy
+  - python: "3.6"
     env: readme_render
 
 script:
