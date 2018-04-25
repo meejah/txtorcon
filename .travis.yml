@@ -33,9 +33,9 @@ env:
 matrix:
   include:
   - python: "3.6"
-    TOX_ENV=flake8
+    env: TOX_ENV=flake8
   - python: "3.6"
-    TOX_ENV=readme_render
+    env: TOX_ENV=readme_render
 
 script:
   - apt-cache policy libssl-dev
