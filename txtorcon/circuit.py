@@ -25,7 +25,7 @@ from txtorcon.log import txtorlog
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 
-def extract_reason(kw):
+def _extract_reason(kw):
     """
     Internal helper. Extracts a reason (possibly both reasons!) from
     the kwargs for a circuit failed or closed event.

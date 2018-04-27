@@ -29,7 +29,8 @@ from txtorcon.interface import ICircuitListener
 from txtorcon.interface import IStreamListener
 from txtorcon.interface import StreamListenerMixin
 from txtorcon.interface import CircuitListenerMixin
-from txtorcon.circuit import _get_circuit_attacher, extract_reason
+from txtorcon.circuit import _get_circuit_attacher
+from txtorcon.circuit import _extract_reason
 
 if six.PY3:
     from .py3_torstate import TorStatePy3Tests  # noqa
@@ -359,7 +360,7 @@ class BootstrapTests(unittest.TestCase):
 class UtilTests(unittest.TestCase):
 
     def test_extract_reason_no_reason(self):
-        reason = extract_reason(dict())
+        reason = _extract_reason(dict())
         self.assertEqual("unknown", reason)
 
 

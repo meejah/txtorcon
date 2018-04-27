@@ -20,7 +20,7 @@ from zope.interface import implementer
 
 from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.stream import Stream
-from txtorcon.circuit import Circuit, extract_reason
+from txtorcon.circuit import Circuit, _extract_reason
 from txtorcon.router import Router, hashFromHexId
 from txtorcon.addrmap import AddrMap
 from txtorcon.torcontrolprotocol import parse_keywords
@@ -914,7 +914,7 @@ class TorState(object):
         "ICircuitListener API"
         txtorlog.msg("circuit_closed", circuit)
         circuit._when_built.fire(
-            Failure(Exception("Circuit closed ('{}')".format(extract_reason(kw))))
+            Failure(Exception("Circuit closed ('{}')".format(_extract_reason(kw))))
         )
         self.circuit_destroy(circuit)
 
@@ -922,6 +922,6 @@ class TorState(object):
         "ICircuitListener API"
         txtorlog.msg("circuit_failed", circuit, str(kw))
         circuit._when_built.fire(
-            Failure(Exception("Circuit failed ('{}')".format(extract_reason(kw))))
+            Failure(Exception("Circuit failed ('{}')".format(_extract_reason(kw))))
         )
         self.circuit_destroy(circuit)
