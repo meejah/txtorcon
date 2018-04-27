@@ -55,6 +55,7 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Internet :: Proxy Servers',
         'Topic :: Internet',
@@ -65,7 +66,6 @@ setup(
     url=__url__,
     license=__license__,
     packages=[
-        "test",
         "txtorcon",
         "twisted.plugins",
     ],

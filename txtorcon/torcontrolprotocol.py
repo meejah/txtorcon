@@ -4,6 +4,9 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
+import os
+import re
+import base64
 from binascii import b2a_hex, hexlify
 
 from twisted.python import log
@@ -22,9 +25,6 @@ from txtorcon.interface import ITorControlProtocol
 from .spaghetti import FSM, State, Transition
 from .util import maybe_coroutine
 
-import os
-import re
-import base64
 
 DEFAULT_VALUE = 'DEFAULT'
 
@@ -45,6 +45,23 @@ class TorProtocolError(RuntimeError):
 
     def __str__(self):
         return str(self.code) + ' ' + self.text
+
+
+class TorDisconnectError(RuntimeError):
+    """
+    Happens when Tor disconnects unexpectedly (i.e. while commands are pending)
+
+    :ivar text: a human-readable description of the error
+    :ivar error: the Failure instance that connectionLost received
+    """
+
+    def __init__(self, text, error):
+        self.text = text
+        self.error = error
+        super(TorDisconnectError, self).__init__(text)
+
+    def __str__(self):
+        return self.text
 
 
 @implementer(IProtocolFactory)
@@ -246,6 +263,8 @@ class TorControlProtocol(LineOnlyReceiver):
         self.valid_signals = []
         """A list of all valid signals we accept from Tor"""
 
+        # XXX bad practice; this should be like an on_disconnct()
+        # method that returns a new Deferred each time...
         self.on_disconnect = defer.Deferred()
         """
         This Deferred is triggered when the connection is closed. If
@@ -413,6 +432,33 @@ class TorControlProtocol(LineOnlyReceiver):
         d.addCallback(parse_keywords).addErrback(log.err)
         return d
 
+    def get_conf_one(self, key):
+        """
+        Uses GETCONF to obtain configuration values from Tor.
+
+        :param key: a key whose CONF value to retrieve. To
+            get all valid configuraiton names, you can call:
+            ``get_info('config/names')``
+
+        :return: a Deferred which callbacks with the configuration value.
+
+        Note that Tor differentiates between an empty value and a
+        default value; in the raw protocol one looks like '250
+        MyFamily' versus '250 MyFamily=' where the latter is set to
+        the empty string and the former is a default value. We
+        differentiate these by returning DEFAULT_VALUE for the default
+        value case, or an empty string otherwise.
+        """
+
+        d = self.queue_command('GETCONF {}'.format(key))
+        d.addCallback(parse_keywords).addErrback(log.err)
+        # d.addCallback(lambda kw: kw[key])  # extract key we asked for initially
+        # ...but, the key can have a different string-name because Tor
+        # will return *it's* representation (e.g. can ask for
+        # SOCKSPORT but it will tell you SocksPort=9050)
+        d.addCallback(lambda kw: list(kw.values())[0])
+        return d
+
     def get_conf_raw(self, *args):
         """
         Same as get_conf, except that the results are not parsed into a dict
@@ -460,6 +506,7 @@ class TorControlProtocol(LineOnlyReceiver):
             raise RuntimeError("Invalid signal " + nm)
         return self.queue_command('SIGNAL %s' % nm)
 
+    # XXX FIXME this should have been async all along :/
     def add_event_listener(self, evt, callback):
         """
         Add a listener to an Event object. This may be called multiple
@@ -483,7 +530,9 @@ class TorControlProtocol(LineOnlyReceiver):
             circuit or stream creation etc. see TorState and methods
             like add_circuit_listener
 
-        :Return: ``None``
+        :returns: a Deferred that fires when the listener is added
+            (this may involve a controller command if this is the first
+            listener for this event).
 
         .. todo::
             - should have an interface for the callback
@@ -498,10 +547,13 @@ class TorControlProtocol(LineOnlyReceiver):
 
         if evt.name not in self.events:
             self.events[evt.name] = evt
-            self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+            d = self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+        else:
+            d = defer.succeed(None)
         evt.listen(callback)
-        return None
+        return d
 
+    # XXX this should have been async all along
     def remove_event_listener(self, evt, cb):
         """
         The opposite of :meth:`TorControlProtocol.add_event_listener`
@@ -509,6 +561,10 @@ class TorControlProtocol(LineOnlyReceiver):
         :param evt: the event name (or an Event object)
 
         :param cb: the callback object to remove
+
+        :returns: a Deferred that fires when the listener is removed
+            (this may involve a controller command if this is the last
+            listener for this event).
         """
         if evt not in self.valid_events.values():
             # this lets us pass a string or a real event-object
@@ -523,7 +579,9 @@ class TorControlProtocol(LineOnlyReceiver):
             # type to come in before the SETEVENTS succeeds; see
             # _handle_notify which explicitly ignore this case.
             del self.events[evt.name]
-            self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+            return self.queue_command('SETEVENTS %s' % ' '.join(self.events.keys()))
+        else:
+            return defer.succeed(None)
 
     def protocolinfo(self):
         """
@@ -589,6 +647,7 @@ class TorControlProtocol(LineOnlyReceiver):
     def connectionMade(self):
         "Protocol API"
         txtorlog.msg('got connection, authenticating')
+        # XXX this Deferred is just being dropped on the floor
         d = self.protocolinfo()
         d.addCallback(self._do_authenticate)
         d.addErrback(self._auth_failed)
@@ -596,12 +655,28 @@ class TorControlProtocol(LineOnlyReceiver):
     def connectionLost(self, reason):
         "Protocol API"
         txtorlog.msg('connection terminated: ' + str(reason))
-        if self.on_disconnect.callbacks:
+        # ...and this is why we don't do on_disconnect = Deferred() :(
+        # and instead should have had on_disconnect() method that
+        # returned a new Deferred to each caller..(we're checking if
+        # this Deferred has any callbacks because if it doesn't we'll
+        # generate an "Unhandled error in Deferred")
+        if not self.on_disconnect.called and self.on_disconnect.callbacks:
             if reason.check(ConnectionDone):
                 self.on_disconnect.callback(self)
             else:
                 self.on_disconnect.errback(reason)
         self.on_disconnect = None
+        outstanding = [self.command] + self.commands if self.command else self.commands
+        for d, cmd, cmd_arg in outstanding:
+            d.errback(
+                Failure(
+                    TorDisconnectError(
+                        text=("Tor unexpectedly disconnected while "
+                              "running: {}".format(cmd.decode('ascii'))),
+                        error=reason,
+                    )
+                )
+            )
         return None
 
     def _handle_notify(self, code, rest):
@@ -644,7 +719,9 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         Errback if authentication fails.
         """
-
+        # it should be impossible for post_bootstrap to be
+        # already-called/failed at this point; _auth_failed only stems
+        # from _do_authentication failing
         self.post_bootstrap.errback(fail)
         return None
 
@@ -745,34 +822,32 @@ class TorControlProtocol(LineOnlyReceiver):
                 d = self.queue_command(cmd)
                 d.addCallback(self._safecookie_authchallenge)
                 d.addCallback(self._bootstrap)
-                d.addErrback(self._auth_failed)
-                return
+                return d
 
             elif 'COOKIE' in methods:
                 txtorlog.msg("Using COOKIE authentication",
                              cookiefile, len(self._cookie_data), "bytes")
                 d = self.authenticate(self._cookie_data)
                 d.addCallback(self._bootstrap)
-                d.addErrback(self._auth_failed)
-                return
+                return d
 
         if self.password_function and 'HASHEDPASSWORD' in methods:
             d = defer.maybeDeferred(self.password_function)
             d.addCallback(maybe_coroutine)
             d.addCallback(self._do_password_authentication)
-            d.addErrback(self._auth_failed)
-            return
+            return d
 
         if 'NULL' in methods:
             d = self.queue_command('AUTHENTICATE')
             d.addCallback(self._bootstrap)
-            d.addErrback(self._auth_failed)
-            return
+            return d
 
-        raise RuntimeError(
-            "The Tor I connected to doesn't support SAFECOOKIE nor COOKIE"
-            " authentication (or we can't read the cookie files) and I have"
-            " no password_function specified."
+        return defer.fail(
+            RuntimeError(
+                "The Tor I connected to doesn't support SAFECOOKIE nor COOKIE"
+                " authentication (or we can't read the cookie files) and I have"
+                " no password_function specified."
+            )
         )
 
     def _do_password_authentication(self, passwd):

@@ -65,6 +65,8 @@ def version_at_least(version_string, major, minor, micro, patch):
     for ver, gold in zip(parts.group(1, 2, 3, 4), (major, minor, micro, patch)):
         if int(ver) < int(gold):
             return False
+        elif int(ver) > int(gold):
+            return True
     return True
 
 
@@ -494,3 +496,40 @@ class SingleObserver(object):
             d.callback(self._fired)
         self._observers = None
         return value  # so we're transparent if used as a callback
+
+
+class _Version(object):
+    """
+    Replacement for incremental.Version until
+    https://github.com/meejah/txtorcon/issues/233 and/or
+    https://github.com/hawkowl/incremental/issues/31 is fixed.
+    """
+    # as of latest incremental, it should only access .package and
+    # .short() via the getVersionString() method that Twisted's
+    # deprecated() uses...
+
+    def __init__(self, package, major, minor, patch):
+        self.package = package
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+
+    def short(self):
+        return '{}.{}.{}'.format(self.major, self.minor, self.patch)
+
+
+# originally from magic-wormhole code
+def _is_non_public_numeric_address(host):
+    """
+    returns True if 'host' is not public
+    """
+    # for numeric hostnames, skip RFC1918 addresses, since no Tor exit
+    # node will be able to reach those. Likewise ignore IPv6 addresses.
+    try:
+        a = ipaddress.ip_address(six.text_type(host))
+    except ValueError:
+        return False        # non-numeric, let Tor try it
+    if a.is_loopback or a.is_multicast or a.is_private or a.is_reserved \
+       or a.is_unspecified:
+        return True         # too weird, don't connect
+    return False

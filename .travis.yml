@@ -1,6 +1,12 @@
 language: python
+python:
+ - "2.7"
+ - "3.6"
+ - "pypy"
 sudo: required
-dist: precise
+
+#install:
+# - pip install tox-travis
 
 install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install -r requirements.txt && pip install -r dev-requirements.txt"
 
@@ -9,17 +15,30 @@ install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev
 # many of the tests do that.
 
 env:
-  - TOX_ENV=py27-tx15
-  - TOX_ENV=py27-tx16
-  - TOX_ENV=py27-tx17
-  - TOX_ENV=py35-tx15
-  - TOX_ENV=py35-tx16
-  - TOX_ENV=py35-tx17
-  - TOX_ENV=pypy-tx15
-  - TOX_ENV=pypy-tx16
-  - TOX_ENV=pypy-tx17
+  - TOX_ENV=tx15
+  - TOX_ENV=tx16
+  - TOX_ENV=tx17
+  # - TOX_ENV=flake8
+  # - TOX_ENV=readme_render
+  # - TOX_ENV=py27-tx15
+  # - TOX_ENV=py27-tx16
+  # - TOX_ENV=py27-tx17
+  # - TOX_ENV=py35-tx15
+  # - TOX_ENV=py35-tx16
+  # - TOX_ENV=py35-tx17
+  # - TOX_ENV=pypy-tx15
+  # - TOX_ENV=pypy-tx16
+  # - TOX_ENV=pypy-tx17
+
+matrix:
+  include:
+  - python: "3.6"
+    env: TOX_ENV=flake8
+  - python: "3.6"
+    env: TOX_ENV=readme_render
 
 script:
+  - apt-cache policy libssl-dev
   - tox -c tox.ini -e $TOX_ENV
 
 after_success:

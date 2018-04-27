@@ -6,19 +6,17 @@ This is the recommended API. See the :ref:`programming_guide` for
 
 
 Tor
-----
+---
 .. autoclass:: txtorcon.Tor
 
 
 connect
 -------
 
-# FIXME why doesn't "txtorcon.connect" work here with automethod??
-
-.. method:: txtorcon.connect
+.. automethod:: txtorcon.controller.connect
 
 
 launch
 ------
 
-.. method:: txtorcon.launch
+.. automethod:: txtorcon.controller.launch

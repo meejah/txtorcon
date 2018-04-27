@@ -7,7 +7,6 @@ from __future__ import with_statement
 import collections
 import os
 import stat
-import types
 import warnings
 
 from twisted.internet import defer
@@ -127,10 +126,12 @@ def build_local_tor_connection(reactor, host='127.0.0.1', port=9051,
                                socket='/var/run/tor/control', *args, **kwargs):
     """
     This builds a connection to a local Tor, either via 127.0.0.1:9051
-    (which is tried first) or /var/run/tor/control (by default). See
-    also :meth:`build_tor_connection
+    or /var/run/tor/control (by default; the latter is tried
+    first). See also :meth:`build_tor_connection
     <txtorcon.torstate.build_tor_connection>` for other key-word
     arguments that are accepted here also.
+
+    **Note**: new code should use :meth:`txtorcon.connect` instead.
 
     :param host:
         An IP address to find Tor at. Corresponds to the
@@ -192,8 +193,9 @@ class TorState(object):
     :class:`txtorcon.interface.IRouterContainer`.
 
     :cvar DO_NOT_ATTACH:
-    Constant to return from an IAttacher indicating you don't want to
-    attach this stream at all.
+        Constant to return from an IAttacher indicating you don't want to
+        attach this stream at all.
+
     """
 
     @classmethod
@@ -393,6 +395,7 @@ class TorState(object):
         self.post_bootstrap.callback(self)
         self.post_boostrap = None
 
+    # XXX this should be hidden as _undo_attacher
     def undo_attacher(self):
         """
         Shouldn't Tor handle this by turning this back to 0 if the
@@ -514,12 +517,20 @@ class TorState(object):
         )
 
     def add_circuit_listener(self, icircuitlistener):
+        """
+        Adds a new instance of :class:`txtorcon.interface.ICircuitListener` which
+        will receive updates for all existing and new circuits.
+        """
         listen = ICircuitListener(icircuitlistener)
         for circ in self.circuits.values():
             circ.listen(listen)
         self.circuit_listeners.append(listen)
 
     def add_stream_listener(self, istreamlistener):
+        """
+        Adds a new instance of :class:`txtorcon.interface.IStreamListener` which
+        will receive updates for all existing and new streams.
+        """
         listen = IStreamListener(istreamlistener)
         for stream in self.streams.values():
             stream.listen(listen)
@@ -581,6 +592,7 @@ class TorState(object):
 
     DO_NOT_ATTACH = object()
 
+    # @defer.inlineCallbacks  (this method is async, be nice to mark it ...)
     def _maybe_attach(self, stream):
         """
         If we've got a custom stream-attachment instance (see
@@ -780,28 +792,23 @@ class TorState(object):
         txtorlog.msg(" --> addr_map", addr)
         self.addrmap.update(addr)
 
-    event_map = {'STREAM': _stream_update,
-                 'CIRC': _circuit_update,
-                 'NEWCONSENSUS': _update_network_status,
-                 'ADDRMAP': _addr_map}
-    """event_map used by add_events to map event_name -> unbound method"""
+    event_map = {
+        'STREAM': '_stream_update',
+        'CIRC': '_circuit_update',
+        'NEWCONSENSUS': '_update_network_status',
+        'ADDRMAP': '_addr_map',
+    }
+
     @defer.inlineCallbacks
     def _add_events(self):
         """
         Add listeners for all the events the controller is interested in.
         """
 
-        for (event, func) in self.event_map.items():
-            # the map contains unbound methods, so we bind them
-            # to self so they call the right thing
-            try:
-                bound = types.MethodType(func, self, TorState)
-            except TypeError:
-                # python3
-                bound = types.MethodType(func, self)
+        for (event, func_name) in self.event_map.items():
             yield self.protocol.add_event_listener(
                 event,
-                bound,
+                getattr(self, func_name),
             )
 
     # ICircuitContainer

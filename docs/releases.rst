@@ -12,11 +12,72 @@ Starting after v0.20.x versions will follow `calendar versioning
 year. The second digit will be "non-trivial" releases and the third
 will be for bugfix releases.
 
-
 unreleased
 ----------
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v18.0.0*
+
+ * re-work how `TorState.event_map` works, hopefully reducing
+   reproducible-builds issues
+ * :meth:`txtorcon.TorControlProtocol.add_event_listener` and
+   :meth:`txtorcon.TorControlProtocol.remove_event_listener` are now
+   async methods returning Deferred -- they always should have been; new
+   code can now be assured that the event-listener change is known to Tor
+   by awaiting this Deferred.
+ * :meth:`txtorcon.TorControlProtocol.get_conf_on` method added, which
+   gets and returns (asynchronously) a single GETCONF key (instead of a dict)
+ * if Tor disconnects while a command is in-progress or pending, the
+   `.errback()` for the corresponding Deferred is now correctly fired
+   (with a :class:`txtorcon.TorDisconnectError`
+
+ * tired: `get_global_tor()` (now deprecated)
+   wired: :meth:`txtorcon.get_global_tor_instance`
+
+ * Adds a comprehensive set of Onion Services APIs (for all six
+   variations). For non-authenticated services, instances of
+   :class:`txtorcon.IOnionService` represent services; for
+   authenticated services, instances of
+   :class:`txtorcon.IAuthenticatedOnionClients` encapsulated named
+   lists of clients (each client is an instance implementing
+   `IOnionService`).
+ * Version 3 ("Proposition 279") Onion service support (same APIs) as
+   released in latest Tor
+ * Four new methods to handle creating endpoints for Onion services
+   (either ephemeral or not and authenticated or not):
+   ** :method:`txtorcon.Tor.create_authenticated_onion_endpoint`
+   ** :method:`txtorcon.Tor.create_authenticated_filesystem_onion_endpoint`
+   ** :method:`txtorcon.Tor.create_onion_endpoint`
+   ** :method:`txtorcon.Tor.create_filesystem_onion_endpoint`
+ * see :ref:`create_onion` for information on how to choose an
+   appropriate type of Onion Service.
+
+ * :method:`txtorcon.Tor.create_onion_service` to add a new ephemeral
+   Onion service to Tor. This uses the `ADD_ONION` command under the
+   hood and can be version 2 or version 3. Note that there is an
+   endpoint-style API as well so you don't have to worry about mapping
+   ports yourself (see below).
+ * :method:`txtorcon.Tor.create_filesystem_onion_service` to add a new
+   Onion service to Tor with configuration (private keys) stored in a
+   provided directory. These can be version 2 or version 3
+   services. Note that there is an endpoint-style API as well so you
+   don't have to worry about mapping ports yourself (see below).
+
+ * Additional APIs to make visiting authenticated Onion services as a
+   client easier:
+
+ * :method:`txtorcon.Tor.add_onion_authentication` will add a
+   client-side Onion service authentication token. If you add a token
+   for a service which already has a token, it is an error if they
+   don't match. This corresponds to `HidServAuth` lines in torrc.
+ * :method:`txtorcon.Tor.remove_onion_authentication` will remove a
+   previously added client-side Onion service authentication
+   token. Fires with True if such a token existed and was removed or
+   False if no existing token was found.
+ * :method:`txtorcon.Tor.onion_authentication` (Python3 only) an async
+   context-manager that adds and removes an Onion authentication token
+   (i.e. adds in on `__aenter__` and removes it on `__aexit__`).
+ * onion services support listening on Unix paths.
+ * make sure README renders on Warehouse/PyPI
 
 
 v0.20.0
@@ -194,6 +255,15 @@ v0.15.0
  * spec-compliant string-un-escaping from `coffeemakr <https://github.com/coffeemakr>`_
  * a proposed new API: :meth:`txtorcon.connect`
  * fix `issue 176 <https://github.com/meejah/txtorcon/issues/176>`_
+
+
+v0.14.2
+-------
+
+*December 2, 2015*
+
+ * `txtorcon-0.14.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.14.2.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.14.2>`_ (:download:`local-sig </../signatues/txtorcon-0.14.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-0.14.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.14.2.tar.gz>`_)
+ * compatibility for Twisted 15.5.0 (released on 0.14.x for `OONI <http://ooni.io/>`_)
 
 
 v0.14.1
@@ -455,7 +525,7 @@ June 1, 2012
  * faster TorState startup;
  * SAFECOOKIE support;
  * several bug fixes;
- * options to :ref:`circuit_failure_rates.py` example to make it actually-useful;
+ * options to `circuit_failure_rates.py` example to make it actually-useful;
  * include built documentation + sources in tarball;
  * include tests in tarball;
  * improved logging;

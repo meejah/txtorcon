@@ -10,7 +10,6 @@ import six
 import shlex
 import tempfile
 import functools
-import ipaddress
 from io import StringIO
 from collections import Sequence
 from os.path import dirname, exists
@@ -33,8 +32,14 @@ from txtorcon.torcontrolprotocol import TorProtocolFactory
 from txtorcon.torstate import TorState
 from txtorcon.torconfig import TorConfig
 from txtorcon.endpoints import TorClientEndpoint, _create_socks_endpoint
+from txtorcon.endpoints import TCPHiddenServiceEndpoint
+from txtorcon.onion import EphemeralOnionService, FilesystemOnionService, _validate_ports
+from txtorcon.util import _is_non_public_numeric_address
+
 from . import socks
 from .interface import ITor
+if not six.PY2:
+    from .controller_py3 import _AsyncOnionAuthContext
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
@@ -171,7 +176,8 @@ def launch(reactor,
         raise TorNotFound('Tor binary could not be found')
 
     # make sure we got things that have write() for stderr, stdout
-    # kwargs (XXX is there a "better" way to check for file-like object?)
+    # kwargs (XXX is there a "better" way to check for file-like
+    # object? do we use anything besides 'write()'?)
     for arg in [stderr, stdout]:
         if arg and not getattr(arg, "write", None):
             raise RuntimeError(
@@ -220,6 +226,8 @@ def launch(reactor,
     except KeyError:
         pass
     else:
+        # if we're root, make sure the directory is owned by the User
+        # that Tor is configured to drop to
         if sys.platform in ('linux', 'linux2', 'darwin') and os.geteuid() == 0:
             os.chown(data_directory, pwd.getpwnam(our_user).pw_uid, -1)
 
@@ -314,9 +322,6 @@ def launch(reactor,
 
     log.msg('Spawning tor process with DataDirectory', data_directory)
     args = [tor_binary] + config_args
-    # XXX note to self; we create data_directory above, so when this
-    # is master we can close
-    # https://github.com/meejah/txtorcon/issues/178
     transport = reactor.spawnProcess(
         process_protocol,
         tor_binary,
@@ -324,7 +329,6 @@ def launch(reactor,
         env={'HOME': data_directory},
         path=data_directory if os.path.exists(data_directory) else None,  # XXX error if it doesn't exist?
     )
-    # FIXME? don't need rest of the args: uid, gid, usePTY, childFDs)
     transport.closeStdin()
     proto = yield connected_cb
     # note "proto" here is a TorProcessProtocol
@@ -345,10 +349,6 @@ def launch(reactor,
         )
     )
 
-
-# XXX
-# what about control_endpoint_or_endpoints? (i.e. allow a list to try?)
-# what about if it's None (default?) and we try some candidates?
 
 @inlineCallbacks
 def connect(reactor, control_endpoint=None, password_function=None):
@@ -498,8 +498,9 @@ class Tor(object):
             raise RuntimeError(
                 "This Tor has no protocol instance; we can't quit"
             )
+        if self._protocol is not None:
+            yield self._protocol.on_disconnect
 
-    # XXX bikeshed on this name?
     @property
     def process(self):
         if self._process_protocol:
@@ -587,6 +588,87 @@ class Tor(object):
         ans = yield socks.resolve_ptr(socks_ep, ip)
         returnValue(ans)
 
+    @inlineCallbacks
+    def add_onion_authentication(self, onion_host, token):
+        """
+        Add a client-side authentication token for a particular Onion
+        service.
+        """
+        # if we add the same onion twice, Tor rejects us. We throw an
+        # error if we already have that .onion but the incoming token
+        # doesn't match
+        if isinstance(onion_host, bytes):
+            onion_host = onion_host.decode('ascii')
+
+        config = yield self.get_config()
+        tokens = {
+            servauth.split()[0]: servauth.split()[1]
+            for servauth in config.HidServAuth
+        }
+        try:
+            maybe_token = tokens[onion_host]
+            if maybe_token != token:
+                raise ValueError(
+                    "Token conflict for host '{}'".format(onion_host)
+                )
+            return
+        except KeyError:
+            pass
+
+        # add our onion + token combo
+        config.HidServAuth.append(
+            u"{} {}".format(onion_host, token)
+        )
+        yield config.save()
+
+    @inlineCallbacks
+    def remove_onion_authentication(self, onion_host):
+        """
+        Remove a token for an onion host
+
+        :returns: True if successful, False if there wasn't a token
+            for that host.
+        """
+        if isinstance(onion_host, bytes):
+            onion_host = onion_host.decode('ascii')
+
+        config = yield self.get_config()
+        to_remove = None
+        for auth in config.HidServAuth:
+            host, token = auth.split()
+            if host == onion_host:
+                to_remove = auth
+
+        if to_remove is not None:
+            config.HidServAuth.remove(to_remove)
+            yield config.save()
+            returnValue(True)
+        returnValue(False)
+
+    def onion_authentication(self, onion_host, token):
+        """
+        (Python3 only!) This returns an async context-manager that will
+        add and remove onion authentication. For example, inside an
+        `async def` method that's had `ensureDeferred` called on it::
+
+            async with tor.onion_authentication("timaq4ygg2iegci7.onion", "seekrit token"):
+                agent = tor.web_agent()
+                resp = await agent.request(b'GET', "http://timaq4ygg2iegci7.onion/")
+                body = await readBody(resp)
+            # after the "async with" the token will be removed from Tor's configuration
+
+        Under the hood, this just uses the add_onion_authentication
+        and remove_onion_authentication methods so on Python2 you can
+        use those together with try/finally to get the same effect.
+        """
+        if six.PY2:
+            raise RuntimeError(
+                "async context-managers not supported in Python2"
+            )
+        return _AsyncOnionAuthContext(
+            self, onion_host, token
+        )
+
     def stream_via(self, host, port, tls=False, socks_endpoint=None):
         """
         This returns an IStreamClientEndpoint_ instance that will use this
@@ -623,8 +705,162 @@ class Tor(object):
             reactor=self._reactor,
         )
 
-    # XXX note to self: insert onion endpoint-creation functions when
-    # merging onion.py
+    def create_authenticated_onion_endpoint(self, port, auth, private_key=None, version=None):
+        """
+        WARNING: API subject to change
+
+        When creating an authenticated Onion service a token is
+        created for each user. For 'stealth' authentication, the
+        hostname is also different for each user. The difference between
+        this method and :meth:`txtorcon.Tor.create_onion_endpoint` is
+        in this case the "onion_service" instance implements
+        :class:`txtorcon.IAuthenticatedOnionClients`.
+
+        :returns: an object that implements IStreamServerEndpoint,
+            which will create an "ephemeral" Onion service when
+            ``.listen()`` is called. This uses the ``ADD_ONION`` Tor
+            control-protocol command. The object returned from
+            ``.listen()`` will be a :class:TorOnionListeningPort``;
+            its ``.onion_service`` attribute will be a
+            :class:`txtorcon.IAuthenticatedOnionClients` instance.
+
+        :param port: the port to listen publically on the Tor network
+           on (e.g. 80 for a Web server)
+
+        :param private_key: if not None (the default), this should be
+            the same blob of key material that you received from the
+            :class:`txtorcon.IOnionService` object during a previous
+            run (i.e. from the ``.provate_key`` attribute).
+
+        :param version: if not None, a specific version of service to
+            use; version=3 is Proposition 224 and version=2 is the
+            older 1024-bit key based implementation.
+
+        :param auth: a AuthBasic or AuthStealth instance
+        """
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.get_config(), port,
+            hidden_service_dir=None,
+            local_port=None,
+            ephemeral=True,
+            private_key=private_key,
+            version=version,
+            auth=auth,
+        )
+
+    def create_onion_endpoint(self, port, private_key=None, version=None):
+        """
+        WARNING: API subject to change
+
+        :returns: an object that implements IStreamServerEndpoint,
+            which will create an "ephemeral" Onion service when
+            ``.listen()`` is called. This uses the ``ADD_ONION`` tor
+            control-protocol command. The object returned from
+            ``.listen()`` will be a :class:TorOnionListeningPort``;
+            its ``.onion_service`` attribute will be a
+            :class:`txtorcon.IOnionService` instance.
+
+        :param port: the port to listen publically on the Tor network
+           on (e.g. 80 for a Web server)
+
+        :param private_key: if not None (the default), this should be
+            the same blob of key material that you received from the
+            :class:`txtorcon.IOnionService` object during a previous
+            run (i.e. from the ``.private_key`` attribute).
+
+        :param version: if not None, a specific version of service to
+            use; version=3 is Proposition 224 and version=2 is the
+            older 1024-bit key based implementation.
+        """
+        # note, we're just depending on this being The Ultimate
+        # Everything endpoint. Which seems fine, because "normal"
+        # users should use this or another factory-method to
+        # instantiate them...
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.get_config(), port,
+            hidden_service_dir=None,
+            local_port=None,
+            ephemeral=True,
+            private_key=private_key,
+            version=version,
+            auth=None,
+        )
+
+    def create_filesystem_onion_endpoint(self, port, hs_dir, group_readable=False, version=None):
+        """
+        WARNING: API subject to change
+
+        :returns: an object that implements IStreamServerEndpoint. When
+            the ``.listen()`` method is called, the endpoint will create
+            an Onion service whose keys are on disk when ``.listen()`` is
+            called. The object returned from ``.listen()`` will be a
+            :class:TorOnionListeningPort``; its ``.onion_service``
+            attribute will be a :class:`txtorcon.IOnionService` instance.
+
+        :param port: the port to listen publically on the Tor network
+           on (e.g. 80 for a Web server)
+
+        :param hs_dir: the directory in which keys are stored for this
+            service.
+
+        :param group_readable: controls the Tor
+            `HiddenServiceDirGroupReadable` which will either set (or not)
+            group read-permissions on the hs_dir.
+
+        :param version: if not None, a specific version of service to
+            use; version=3 is Proposition 224 and version=2 is the
+            older 1024-bit key based implementation. The default is version 3.
+        """
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.get_config(), port,
+            hidden_service_dir=hs_dir,
+            local_port=None,
+            ephemeral=False,
+            private_key=None,
+            group_readable=int(group_readable),
+            version=version,
+            auth=None,
+        )
+
+    def create_filesystem_authenticated_onion_endpoint(self, port, hs_dir, auth, group_readable=False, version=None):
+        """
+        WARNING: API subject to change
+
+        :returns: an object that implements IStreamServerEndpoint. When
+            the ``.listen()`` method is called, the endpoint will create
+            an Onion service whose keys are on disk when ``.listen()`` is
+            called. The object returned from ``.listen()`` will be a
+            :class:TorOnionListeningPort``; its ``.onion_service``
+            attribute will be a :class:`txtorcon.IOnionService` instance.
+
+        :param port: the port to listen publically on the Tor network
+           on (e.g. 80 for a Web server)
+
+        :param hs_dir: the directory in which keys are stored for this
+            service.
+
+        :param auth: instance of :class:`txtorcon.AuthBasic` or
+            :class:`txtorcon.AuthStealth` controlling the type of
+            authentication to use.
+
+        :param group_readable: controls the Tor
+            `HiddenServiceDirGroupReadable` which will either set (or not)
+            group read-permissions on the hs_dir.
+
+        :param version: if not None, a specific version of service to
+            use; version=3 is Proposition 224 and version=2 is the
+            older 1024-bit key based implementation. The default is version 3.
+        """
+        return TCPHiddenServiceEndpoint(
+            self._reactor, self.get_config(), port,
+            hidden_service_dir=hs_dir,
+            local_port=None,
+            ephemeral=False,
+            private_key=None,
+            group_readable=int(group_readable),
+            version=version,
+            auth=auth,
+        )
 
     # XXX or get_state()? and make there be always 0 or 1 states; cf. convo w/ Warner
     @inlineCallbacks
@@ -687,19 +923,128 @@ class Tor(object):
             self._socks_endpoint = yield _create_socks_endpoint(self._reactor, self._protocol)
         returnValue(self._socks_endpoint)
 
+    # XXX THINK do we *really* want these? Most users should use the
+    # endpoints....well, for "multiple ports, one onion" we don't have
+    # any other option currently.
 
-# XXX from magic-wormhole
-def _is_non_public_numeric_address(host):
-    # for numeric hostnames, skip RFC1918 addresses, since no Tor exit
-    # node will be able to reach those. Likewise ignore IPv6 addresses.
-    try:
-        a = ipaddress.ip_address(six.text_type(host))
-    except ValueError:
-        return False        # non-numeric, let Tor try it
-    if a.is_loopback or a.is_multicast or a.is_private or a.is_reserved \
-       or a.is_unspecified:
-        return True         # too weird, don't connect
-    return False
+    # For all these create_*() methods, instead of magically computing
+    # the class-name from arguments (e.g. we could decide "it's a
+    # Filesystem thing" if "hidden_service_dir=" is passed) we have an
+    # explicit method for each type of service. This means each method
+    # always returns the same type of object (good!) and user-code is
+    # more explicit about what they want (also good!) .. but the
+    # method names are kind of long (not-ideal)
+
+    @inlineCallbacks
+    def create_onion_service(self, ports, private_key=None, version=3, progress=None):
+        """
+        Create a new Onion service
+
+        This method will create a new Onion service, returning (via
+        Deferred) an instance that implements IOnionService. (To
+        create authenticated onion services, see XXX). This method
+        awaits at least one upload of the Onion service's 'descriptor'
+        to the Tor network -- this can take from 30s to a couple
+        minutes.
+
+        :param private_key: None, ``txtorcon.DISCARD`` or a key-blob
+            retained from a prior run
+
+            Passing ``None`` means a new one will be created. It can be
+            retrieved from the ``.private_key`` property of the returned
+            object. You **must** retain this key yourself (and pass it in
+            to this method in the future) if you wish to keep the same
+            ``.onion`` domain when re-starting your program.
+
+            Passing ``txtorcon.DISCARD`` means txtorcon will never learn the
+            private key from Tor and so there will be no way to re-create
+            an Onion Service on the same address after Tor exits.
+
+        :param version: The latest Tor releases support 'Proposition
+            224' (version 3) services. These are the default.
+
+        :param progress: if provided, a function that takes 3
+            arguments: ``(percent_done, tag, description)`` which may
+            be called any number of times to indicate some progress has
+            been made.
+        """
+        if version not in (2, 3):
+            raise ValueError(
+                "The only valid Onion service versions are 2 or 3"
+            )
+        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
+            raise ValueError("'ports' must be a sequence (list, tuple, ..)")
+
+        processed_ports = yield _validate_ports(self._reactor, ports)
+        config = yield self.get_config()
+        service = yield EphemeralOnionService.create(
+            reactor=self._reactor,
+            config=config,
+            ports=processed_ports,
+            private_key=private_key,
+            version=version,
+            progress=progress,
+        )
+        returnValue(service)
+
+    @inlineCallbacks
+    def create_filesystem_onion_service(self, ports, onion_service_dir,
+                                        version=3,
+                                        group_readable=False,
+                                        progress=None):
+        """Create a new Onion service stored on disk
+
+        This method will create a new Onion service, returning (via
+        Deferred) an instance that implements IOnionService. (To
+        create authenticated onion services, see XXX). This method
+        awaits at least one upload of the Onion service's 'descriptor'
+        to the Tor network -- this can take from 30s to a couple
+        minutes.
+
+        :param ports: a collection of ports to advertise; these are
+            forwarded locally on a random port. Each entry may instead be
+            a 2-tuple, which chooses an explicit local port.
+
+        :param onion_service_dir: a path to an Onion Service
+            directory.
+
+            Tor will write a ``hostname`` file in this directory along
+            with the private keys for the service (if they do not already
+            exist). You do not need to retain the private key yourself.
+
+        :param version: which kind of Onion Service to create. The
+            default is ``3`` which are the Proposition 224
+            services. Version ``2`` are the previous services. There are
+            no other valid versions currently.
+
+        :param group_readable: if True, Tor creates the directory with
+           group read permissions. The default is False.
+
+        :param progress: if provided, a function that takes 3
+            arguments: ``(percent_done, tag, description)`` which may
+            be called any number of times to indicate some progress has
+            been made.
+
+        """
+        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
+            raise ValueError("'ports' must be a sequence (list, tuple, ..)")
+        processed_ports = yield _validate_ports(self._reactor, ports)
+
+        if version not in (2, 3):
+            raise ValueError(
+                "The only valid Onion service versions are 2 or 3"
+            )
+        config = yield self.get_config()
+        service = yield FilesystemOnionService.create(
+            reactor=self._reactor,
+            config=config,
+            hsdir=onion_service_dir,
+            ports=processed_ports,
+            version=version,
+            group_readable=group_readable,
+            progress=progress,
+        )
+        returnValue(service)
 
 
 class TorNotFound(RuntimeError):

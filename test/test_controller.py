@@ -1,4 +1,5 @@
 import os
+import six
 import functools
 from os.path import join
 from mock import Mock, patch
@@ -18,11 +19,16 @@ from txtorcon import TorControlProtocol
 from txtorcon import TorProcessProtocol
 from txtorcon import launch
 from txtorcon import connect
+from txtorcon import AuthBasic
 from txtorcon.controller import _is_non_public_numeric_address, Tor
 from txtorcon.interface import ITorControlProtocol
 from .util import TempDir
 
 from zope.interface import implementer, directlyProvides
+
+
+if not six.PY2:
+    from .py3_test_controller import ClientOnionServiceAuthenticationTests3  # noqa: F401
 
 
 class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
@@ -307,6 +313,22 @@ class LaunchTorTests(unittest.TestCase):
         cfg = Mock()
         proto = Mock()
         proto.get_conf = Mock(return_value=defer.succeed({"SocksPort": "9050"}))
+        tor = Tor(Mock(), proto, _tor_config=cfg)
+        fake_socks.resolve = Mock(return_value=defer.succeed(answer))
+        ans = yield tor.dns_resolve("meejah.ca")
+        self.assertEqual(ans, answer)
+
+    @patch('txtorcon.controller.socks')
+    @defer.inlineCallbacks
+    def test_dns_resolve_default_socksport(self, fake_socks):
+        answer = object()
+        cfg = Mock()
+        from txtorcon.testutil import FakeControlProtocol
+        proto = FakeControlProtocol([
+            {"SocksPort": "DEFAULT"},
+            "9050",
+        ])
+        proto.answers
         tor = Tor(Mock(), proto, _tor_config=cfg)
         fake_socks.resolve = Mock(return_value=defer.succeed(answer))
         ans = yield tor.dns_resolve("meejah.ca")
@@ -1205,3 +1227,254 @@ class FactoryFunctionTests(unittest.TestCase):
         tor = Tor(Mock(), Mock())
         str(tor)
         # just testing the __str__ method doesn't explode
+
+
+class EphemeralOnionFactoryTests(unittest.TestCase):
+    """
+    the onion-service factory functions verify their args
+    """
+
+    def setUp(self):
+        reactor = Mock()
+        proto = Mock()
+        directlyProvides(proto, ITorControlProtocol)
+        self.cfg = Mock()
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
+
+    @defer.inlineCallbacks
+    def test_ports_not_sequence(self):
+        with self.assertRaises(ValueError):
+            yield self.tor.create_onion_service("not a sequence")
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([object()])
+        self.assertIn("non-integer entry", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints2(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([set([1, 2, 3])])
+        self.assertIn("contain a single int", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints3(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([('not', 'an int')])
+        self.assertIn("non-integer", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints4(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([('1234', 'bad')])
+        self.assertIn("be either an integer", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints5(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([object()])
+        self.assertIn("non-integer entry", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints6(self):
+        from txtorcon.controller import _validate_ports
+        yield _validate_ports(Mock(), [80])
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints_unix_ok(self):
+        from txtorcon.controller import _validate_ports
+        yield _validate_ports(Mock(), [(80, "unix:/dev/null")])
+
+    @defer.inlineCallbacks
+    def test_ports_contain_2_tuple(self):
+        from txtorcon.controller import _validate_ports
+        yield _validate_ports(Mock(), [(80, 54321)])
+
+    @defer.inlineCallbacks
+    def test_ports_contain_string0(self):
+        from txtorcon.controller import _validate_ports
+        yield _validate_ports(Mock(), [u"80 127.0.0.1:1234"])
+
+    @defer.inlineCallbacks
+    def test_ports_contain_string1(self):
+        from txtorcon.controller import _validate_ports
+        yield _validate_ports(Mock(), ["80 127.0.0.1:1234"])
+
+    @defer.inlineCallbacks
+    def test_version_invalid(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_onion_service([80], version=1)
+        self.assertIn("The only valid Onion service versions", str(ctx.exception))
+
+    def test_auth(self):
+        self.tor.create_authenticated_onion_endpoint(80, AuthBasic(['alice']))
+
+    def test_auth_fs(self):
+        self.tor.create_filesystem_authenticated_onion_endpoint(80, '/dev/null', AuthBasic(['alice']))
+
+    @defer.inlineCallbacks
+    def test_happy_path(self):
+        self.cfg.EphemeralOnionServices = []
+        with patch('txtorcon.onion.available_tcp_port', return_value=1234):
+            with patch.object(self.cfg, 'tor_protocol') as proto:
+                proto.queue_command = Mock(return_value="ServiceID=deadbeef\nPrivateKey=BlobbyMcBlobberson")
+                d = self.tor.create_onion_service([80])
+                f = proto.add_event_listener.mock_calls[0][1][1]
+                f("UPLOAD deadbeef x dirauth0")
+                f("UPLOADED x x dirauth0")
+                service = yield d
+        self.assertEqual("deadbeef.onion", service.hostname)
+        self.assertEqual("BlobbyMcBlobberson", service.private_key)
+        self.assertEqual(set(['80 127.0.0.1:1234']), service.ports)
+
+
+class FilesystemOnionFactoryTests(unittest.TestCase):
+    """
+    the onion-service factory functions verify their args
+    """
+
+    def setUp(self):
+        reactor = Mock()
+        proto = Mock()
+        directlyProvides(proto, ITorControlProtocol)
+        self.cfg = Mock()
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
+        self.hsdir = self.mktemp()
+        os.mkdir(self.hsdir)
+
+    @defer.inlineCallbacks
+    def test_ports_not_sequence(self):
+        with self.assertRaises(ValueError):
+            yield self.tor.create_filesystem_onion_service("not a sequence", self.hsdir)
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints0(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_filesystem_onion_service([('not', 'an int')], self.hsdir)
+        self.assertIn("a tuple with a non-integer", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_ports_contain_non_ints1(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_filesystem_onion_service([object()], self.hsdir)
+        self.assertIn("non-integer", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_version_invalid(self):
+        with self.assertRaises(ValueError) as ctx:
+            yield self.tor.create_filesystem_onion_service([80], self.hsdir, version=1)
+        self.assertIn("The only valid Onion service versions", str(ctx.exception))
+
+    @defer.inlineCallbacks
+    def test_happy_path(self):
+        self.cfg.OnionServices = []
+        with patch('txtorcon.onion.available_tcp_port', return_value=1234):
+            with patch.object(self.cfg, 'tor_protocol') as proto:
+                with open(join(self.hsdir, "hostname"), "w") as f:
+                    f.write("deadbeef.onion\n")
+                with open(join(self.hsdir, "hs_ed25519_secret_key"), "w") as f:
+                    f.write("BlobbyMcBlobberson")
+                proto.version = "0.3.2.1"
+                proto.queue_command = Mock(return_value="OK")
+                d = self.tor.create_filesystem_onion_service([80], self.hsdir)
+                f = proto.add_event_listener.mock_calls[0][1][1]
+                f("UPLOAD deadbeef x dirauth0")
+                f("UPLOADED x x dirauth0")
+                service = yield d
+        self.assertEqual("deadbeef.onion", service.hostname)
+        self.assertEqual(b"BlobbyMcBlobberson", service.private_key)
+        self.assertEqual(set(['80 127.0.0.1:1234']), set(service.ports))
+
+
+class FilesystemOnionEndpointFactoryTests(unittest.TestCase):
+
+    def setUp(self):
+        reactor = Mock()
+        proto = Mock()
+        directlyProvides(proto, ITorControlProtocol)
+        self.cfg = Mock()
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
+
+    @defer.inlineCallbacks
+    def test_filesystem_endpoint(self):
+        yield self.tor.create_filesystem_onion_endpoint(80, '/dev/null')
+
+    @defer.inlineCallbacks
+    def test_ephemeral_endpoint(self):
+        yield self.tor.create_onion_endpoint(80)
+
+
+class ClientOnionServiceAuthenticationTests(unittest.TestCase):
+
+    def setUp(self):
+        reactor = Mock()
+        proto = Mock()
+        directlyProvides(proto, ITorControlProtocol)
+        self.cfg = TorConfig()
+        self.cfg.HidServAuth = ["existing.onion some_token"]
+        self.tor = Tor(reactor, proto, _tor_config=self.cfg)
+
+    @defer.inlineCallbacks
+    def test_add(self):
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+
+    @defer.inlineCallbacks
+    def test_add_twice(self):
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+        # a second add of the same token should be fine
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+
+    @defer.inlineCallbacks
+    def test_add_twice_different_token(self):
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+        # a second token with a different value: error
+        with self.assertRaises(ValueError):
+            yield self.tor.add_onion_authentication("foo.onion", "a_different_token")
+
+    @defer.inlineCallbacks
+    def test_remove(self):
+        yield self.tor.remove_onion_authentication("existing.onion")
+        self.assertEqual(0, len(self.cfg.HidServAuth))
+
+    @defer.inlineCallbacks
+    def test_remove_unfound(self):
+        yield self.tor.remove_onion_authentication("existing.onion")
+        self.assertEqual(0, len(self.cfg.HidServAuth))
+        yield self.tor.remove_onion_authentication("non_existing.onion")
+        self.assertEqual(0, len(self.cfg.HidServAuth))
+
+    def test_context_manager_py2(self):
+        if not six.PY2:
+            return
+        with self.assertRaises(RuntimeError):
+            self.tor.onion_authentication("foo.onion", "token")
+
+    @defer.inlineCallbacks
+    def test_add_and_remove(self):
+        yield self.tor.add_onion_authentication("foo.onion", "a_token")
+        self.assertIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )
+        yield self.tor.remove_onion_authentication("foo.onion")
+        self.assertNotIn(
+            "foo.onion a_token",
+            self.cfg.HidServAuth,
+        )

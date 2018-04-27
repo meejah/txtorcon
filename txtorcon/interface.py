@@ -234,8 +234,8 @@ class ICircuitContainer(Interface):
     them up by id.
     """
 
-    def find_circuit(id):
-        ":return: a circuit for the id, or exception."
+    def find_circuit(circ_id):
+        ":return: a circuit for the cird_id, or exception."
 
     def close_circuit(circuit, **kwargs):
         """
@@ -292,8 +292,8 @@ class ICircuitListener(Interface):
             that: it could be anything.
 
             To facilitate declaring args you want in the method
-            (e.g. circuit_failed(self, circuit, reason=None,
-            remote_reason=None, **kw)) lower-case versions of all the
+            (e.g. ``circuit_failed(self, circuit, reason=None,
+            remote_reason=None, **kw)``) lower-case versions of all the
             keys are also provided (pointing to the same -- usually
             UPPERCASE -- strings as the upper-case keys).
 
@@ -316,8 +316,8 @@ class ICircuitListener(Interface):
             that: it could be anything.
 
             To facilitate declaring args you want in the method
-            (e.g. circuit_failed(self, circuit, reason=None,
-            remote_reason=None, **kw)) lower-case versions of all the
+            (e.g. ``circuit_failed(self, circuit, reason=None,
+            remote_reason=None, **kw)``) lower-case versions of all the
             keys are also provided (pointing to the same -- usually
             UPPERCASE -- strings as the upper-case keys).
         """

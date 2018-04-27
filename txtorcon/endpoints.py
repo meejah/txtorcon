@@ -16,6 +16,7 @@ from txtorcon.socks import TorSocksEndpoint
 from twisted.internet.interfaces import IStreamClientEndpointStringParserWithReactor
 from twisted.internet import defer, error
 from twisted.python import log
+from twisted.python.deprecate import deprecated
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamServerEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
@@ -32,22 +33,81 @@ from twisted.python.util import FancyEqMixin
 from zope.interface import implementer
 from zope.interface import Interface, Attribute
 
-from .torconfig import TorConfig, launch_tor, HiddenService
+from .torconfig import TorConfig
+from .onion import IAuthenticatedOnionClients
+from .onion import FilesystemOnionService
+from .onion import IFilesystemOnionService
+from .onion import EphemeralOnionService
+from .onion import FilesystemAuthenticatedOnionService
+from .onion import EphemeralAuthenticatedOnionService
+from .onion import AuthStealth  # , AuthBasic
 from .torconfig import _endpoint_from_socksport_line
-from .util import SingleObserver
+from .util import SingleObserver, _Version
 
 
-_global_tor_config = None
+_global_tor = None
 _global_tor_lock = defer.DeferredLock()
 # we need the lock because we (potentially) yield several times while
 # "creating" the TorConfig instance
 
 
+# in an ideal world, we'd have "get_global_tor()" and it would return
+# a Tor instance, and all would be well. HOWEVER, "get_global_tor" was
+# previously released to return a TorConfig instance. So it still
+# needs to do that, *and* it should be the very same TorConfig
+# instance attached to the "global Tor instance".
+# Anyway: get_global_tor_instance() is the newst API, and the one new
+# code should use (if at all -- ideally just use a .global_tor()
+# factory-function call instead)
+
+@defer.inlineCallbacks
+def get_global_tor_instance(reactor,
+                            control_port=None,
+                            progress_updates=None,
+                            _tor_launcher=None):
+    """
+    Normal users shouldn't need to call this; use
+    TCPHiddenServiceEndpoint::system_tor instead.
+
+    :return Tor: a 'global to this Python process' instance of
+        Tor. There isn't one of these until the first time this method
+        is called. All calls to this method return the same instance.
+    """
+    global _global_tor
+    global _global_tor_lock
+    yield _global_tor_lock.acquire()
+
+    if _tor_launcher is None:
+        # XXX :( mutual dependencies...really get_global_tor_instance
+        # should be in controller.py if it's going to return a Tor
+        # instance.
+        from .controller import launch
+        _tor_launcher = launch
+
+    try:
+        if _global_tor is None:
+            _global_tor = yield _tor_launcher(reactor, progress_updates=progress_updates)
+
+        else:
+            config = yield _global_tor.get_config()
+            already_port = config.ControlPort
+            if control_port is not None and control_port != already_port:
+                raise RuntimeError(
+                    "ControlPort is already '{}', but you wanted '{}'",
+                    already_port,
+                    control_port,
+                )
+
+        defer.returnValue(_global_tor)
+    finally:
+        _global_tor_lock.release()
+
+
+@deprecated(_Version("txtorcon", 18, 0, 0))
 @defer.inlineCallbacks
 def get_global_tor(reactor, control_port=None,
                    progress_updates=None,
-                   _tor_launcher=lambda r, c, p: launch_tor(
-                       c, r, progress_updates=p)):
+                   _tor_launcher=None):
     """
     See description of :class:`txtorcon.TCPHiddenServiceEndpoint`'s
     class-method ``global_tor``
@@ -66,40 +126,14 @@ def get_global_tor(reactor, control_port=None,
 
     The _tor_launcher keyword arg is internal-only.
     """
-    global _global_tor_config
-    global _global_tor_lock
-    yield _global_tor_lock.acquire()
-
-    try:
-        if _global_tor_config is None:
-            _global_tor_config = config = yield _create_default_config(reactor)
-
-            # start Tor launching
-            yield _tor_launcher(reactor, config, progress_updates)
-            yield config.post_bootstrap
-
-        else:
-            cp = _global_tor_config.ControlPort
-            if control_port is not None and control_port != cp:
-                raise RuntimeError(
-                    "ControlPort is %s, you wanted %s" % (cp, control_port))
-
-        defer.returnValue(_global_tor_config)
-    finally:
-        _global_tor_lock.release()
-
-
-@defer.inlineCallbacks
-def _create_default_config(reactor, control_port=None):
-    """
-    Internal method to create a new TorConfig instance with defaults.
-    """
-    config = TorConfig()
-    if control_port is None:
-        control_port = yield available_tcp_port(reactor)
-    config.ControlPort = control_port
-    config.SOCKSPort = 0
-    defer.returnValue(config)
+    tor = yield get_global_tor_instance(
+        reactor,
+        control_port=control_port,
+        progress_updates=progress_updates,
+        _tor_launcher=_tor_launcher,
+    )
+    cfg = yield tor.get_config()
+    defer.returnValue(cfg)
 
 
 class IProgressProvider(Interface):
@@ -114,9 +148,15 @@ class IProgressProvider(Interface):
         """
 
 
-@implementer(IStreamServerEndpoint, IProgressProvider)
+# XXX essentially, we either want an ephemeral vs. non-ephemeral etc
+# endpoint instance, *or* we just make this a "delayed" version of
+# create_onion_service -- i.e. holds all the same args as that and
+# listen() instantiates it and knows "which" tor it wants.
+@implementer(IStreamServerEndpoint)
+@implementer(IProgressProvider)
 class TCPHiddenServiceEndpoint(object):
-    """This represents something listening on an arbitrary local port
+    """
+    This represents something listening on an arbitrary local port
     that has a Tor configured with a Hidden Service pointing at
     it. :api:`twisted.internet.endpoints.TCP4ServerEndpoint
     <TCP4ServerEndpoint>` is used under the hood to do the local
@@ -147,38 +187,42 @@ class TCPHiddenServiceEndpoint(object):
     instance of this class yourself (i.e. with a TorConfig instance
     you've created).
 
-    No matter how you came by your instance, calling `listen()` on it
-    causes Tor to be launched or connected-to, your hidden service to
-    be added, checks that the descriptor is uploaded and you get a
-    ``Deferred`` with an ``IListeningPort`` whose ``getHost()`` will
-    return a :class:`txtorcon.TorOnionAddress`. The port object will
-    also implement :class:`txtorcon.IHiddenService` so you can get the
-    locally-listening address and hidden serivce directory::
+    No matter how you came by this endpoint instance, you should call
+    `listen()` on it to trigger any work required to create the
+    service: Tor will be launched or connected-to; config for the
+    onion service will be added; the uploading of descriptors is
+    awaited.
 
-        endpoint = ...
-        port = yield endpoint.listen(...)
-        uri = port.getHost().onion_uri
-        port = port.getHost().onion_port
-        addr = IHiddenService(port).local_address
-        hsdir = IHiddenService(port).hidden_service_dir
-
-    returns (via Deferred) an object that implements
-    :api:`twisted.internet.interfaces.IStreamServerEndpoint`
+    The ``Deferred`` from ``listen()`` will fire with an
+    ``IListeningPort`` whose ``getHost()`` will return a
+    :class:`txtorcon.TorOnionAddress`. The port object also has a
+    `.onion_service` property which resolves to the
+    :class:`txtorcon.IOnionService` or
+    :class:`txtorcon.IAuthenticatedOnionClients` instance (and from
+    which you can recover private keys, the hostname, etc)
 
     :ivar onion_uri: the public key, like ``timaq4ygg2iegci7.onion``
         which came from the hidden_service_dir's ``hostname`` file
 
     :ivar onion_private_key: the contents of ``hidden_service_dir/private_key``
 
-
-    :ivar hiddenServiceDir: the data directory, either passed in or created
+    :ivar hidden_service_dir: the data directory, either passed in or created
         with ``tempfile.mkdtemp``
 
+    **NOTE** that if you do not specify a `version=` then you will get
+    a version 2 service (new onion APIs return version=3 services by
+    default). This is for backwards-compatiblity reasons, as version=
+    didn't exist before 18.0.0
     """
 
     @classmethod
     def system_tor(cls, reactor, control_endpoint, public_port,
-                   hidden_service_dir=None, local_port=None):
+                   hidden_service_dir=None,
+                   local_port=None,
+                   ephemeral=None,
+                   auth=None,
+                   private_key=None,
+                   version=None):
         """
         This returns a TCPHiddenServiceEndpoint connected to the
         endpoint you specify in `control_endpoint`. After connecting, a
@@ -196,13 +240,26 @@ class TCPHiddenServiceEndpoint(object):
         tor = connect(reactor, control_endpoint)
         tor.addCallback(lambda t: t.get_config())
         # tor is a Deferred
-        return TCPHiddenServiceEndpoint(reactor, tor, public_port,
-                                        hidden_service_dir=hidden_service_dir,
-                                        local_port=local_port)
+        return TCPHiddenServiceEndpoint(
+            reactor, tor, public_port,
+            hidden_service_dir=hidden_service_dir,
+            local_port=local_port,
+            ephemeral=ephemeral,
+            private_key=private_key,
+            auth=auth,
+            version=version,
+        )
 
     @classmethod
-    def global_tor(cls, reactor, public_port, hidden_service_dir=None,
-                   local_port=None, control_port=None, stealth_auth=None):
+    def global_tor(cls, reactor, public_port,
+                   hidden_service_dir=None,
+                   local_port=None,
+                   control_port=None,
+                   stealth_auth=None,  # backwards-compat; don't use
+                   auth=None,
+                   ephemeral=None,
+                   private_key=None,
+                   version=None):
         """
         This returns a TCPHiddenServiceEndpoint connected to a
         txtorcon global Tor instance. The first time you call this, a
@@ -216,39 +273,52 @@ class TCPHiddenServiceEndpoint(object):
         unless you have a specific need to.
 
         You can also access this global txtorcon instance via
-        :meth:`txtorcon.get_global_tor` (which is precisely what
+        :meth:`txtorcon.get_global_tor_instance` (which is precisely what
         this method uses to get it).
 
         All keyword options have defaults (e.g. random ports, or
         tempdirs).
 
-        :param stealth_auth:
+        :param stealth_auth: **Deprecated**
             None, or a list of strings -- one for each stealth
-            authenticator you require.
+            authenticator you require. Use `auth=` now.
+
+        :param auth: None or an :class:`txtorcon.AuthBasic` or
+            :class:`txtorcon.AuthStealth` instance
         """
 
         def progress(*args):
             progress.target(*args)
-        config = get_global_tor(
+        tor = get_global_tor_instance(
             reactor,
             control_port=control_port,
             progress_updates=progress
         )
-        # config is a Deferred here, but endpoint resolves it in
-        # the listen() call
+        # tor is a Deferred here, but endpoint resolves it in the
+        # listen() call. Also, we want it to resolve to a TorConfig,
+        # not a Tor
+        tor.addCallback(lambda tor: tor.get_config())
         r = TCPHiddenServiceEndpoint(
-            reactor, config, public_port,
+            reactor, tor, public_port,
             hidden_service_dir=hidden_service_dir,
             local_port=local_port,
-            stealth_auth=stealth_auth,
+            auth=auth,
+            ephemeral=ephemeral,
+            private_key=private_key,
+            version=version,
         )
         progress.target = r._tor_progress_update
         return r
 
     @classmethod
     def private_tor(cls, reactor, public_port,
-                    hidden_service_dir=None, local_port=None,
-                    control_port=None):
+                    hidden_service_dir=None,
+                    local_port=None,
+                    control_port=None,
+                    ephemeral=None,
+                    private_key=None,
+                    auth=None,
+                    version=None):
         """
         This returns a TCPHiddenServiceEndpoint that's always
         connected to its own freshly-launched Tor instance. All
@@ -259,28 +329,40 @@ class TCPHiddenServiceEndpoint(object):
         def progress(*args):
             progress.target(*args)
 
-        @defer.inlineCallbacks
-        def _launch(control_port):
-            config = yield _create_default_config(reactor, control_port)
-            yield launch_tor(config, reactor, progress_updates=progress)
-            yield config.post_bootstrap
-            defer.returnValue(config)
-        r = TCPHiddenServiceEndpoint(reactor, _launch(control_port),
-                                     public_port,
-                                     hidden_service_dir=hidden_service_dir,
-                                     local_port=local_port)
+        from .controller import launch
+        tor = launch(
+            reactor,
+            progress_updates=progress,
+            control_port=control_port,
+        )
+        tor.addCallback(lambda t: t.get_config())
+        r = TCPHiddenServiceEndpoint(
+            reactor, tor, public_port,
+            hidden_service_dir=hidden_service_dir,
+            local_port=local_port,
+            ephemeral=ephemeral,
+            private_key=private_key,
+            auth=auth,
+            version=version,
+        )
         progress.target = r._tor_progress_update
         return r
 
     def __init__(self, reactor, config, public_port,
-                 hidden_service_dir=None, local_port=None,
-                 stealth_auth=None):
+                 hidden_service_dir=None,
+                 local_port=None,
+                 auth=None,  # new way to pass authentication information
+                 stealth_auth=None,  # deprecated; use auth=
+                 ephemeral=None,  # will be set to True, unless hsdir spec'd
+                 private_key=None,
+                 group_readable=False,
+                 version=None):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
 
         :param config:
-            :class:`txtorcon.TorConfig` instance.
+            :class:`txtorcon.TorConfig` instance or a Deferred yielding one
 
         :param public_port:
             The port number we will advertise in the hidden serivces
@@ -296,64 +378,118 @@ class TCPHiddenServiceEndpoint(object):
             not provided, one is created with temp.mkdtemp() AND
             DELETED when the reactor shuts down.
 
+        :param auth:
+            An AuthBasic or AuthStealth instance (or None)
+
         :param stealth_auth:
-            A list of strings, one name for each stealth authenticator
-            you want. Like: ``['alice', 'bob']``
+            **Deprecated; use ``auth=``**. This is for backwards-comapatibility only.
 
         :param endpoint_generator:
             A callable that generates a new instance of something that
             implements IServerEndpoint (by default TCP4ServerEndpoint)
+
+        :param group_readable:
+            Only for filesystem services. Causes the directory to be
+            group-readable when Tor creates it.
+
+        :param version:
+            Either None, 2 or 3 to specify a version 2 service or
+            Proposition 224 (version 3) service.
         """
 
-        self.reactor = reactor
-        self.config = defer.maybeDeferred(lambda: config)
+        # this supports API backwards-compatibility -- if you didn't
+        # explicitly specify ephemeral=True, but *did* set
+        # hidden_service_dir
+        if ephemeral is None:
+            ephemeral = True
+            if hidden_service_dir is not None:
+                ephemeral = False
+
+        # backwards-compatibility for stealth_auth= kwarg
+        if stealth_auth is not None:
+            log.msg("'stealth_auth' is deprecated; use auth= instead")
+            if auth is not None:
+                raise ValueError(
+                    "Both stealth_auth= and auth= passed; use auth= only for new code"
+                )
+            auth = AuthStealth(stealth_auth)
+            stealth_auth = None
+
+        if ephemeral and isinstance(auth, AuthStealth):
+            raise ValueError(
+                "'ephemeral=True' onion services don't support 'stealth' auth"
+            )
+
+        if ephemeral and hidden_service_dir is not None:
+            raise ValueError(
+                "Specifying 'hidden_service_dir' is incompatible"
+                " with 'ephemeral=True'"
+            )
+
+        if private_key is not None and not ephemeral:
+            raise ValueError(
+                "'private_key' only understood for ephemeral services"
+            )
+
+        self._reactor = reactor
+        self._config = defer.maybeDeferred(lambda: config)
         self.public_port = public_port
         self.local_port = local_port
-        self.stealth_auth = stealth_auth
+        self.auth = auth
 
+        self.ephemeral = ephemeral
+        self.private_key = private_key
+        # if we're an ephemeral service, hidden_service_dir is None
+        # and ephemeral is True
         self.hidden_service_dir = hidden_service_dir
         self.tcp_listening_port = None
         self.hiddenservice = None
+        self.group_readable = group_readable
+        self.version = version
         self.retries = 0
+
+        if self.version is None:
+            self.version = 2
 
         '''for IProgressProvider to add_progress_listener'''
         self.progress_listeners = []
 
-        if self.hidden_service_dir is None:
-            self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
-            log.msg('Will delete "%s" at shutdown.' % self.hidden_service_dir)
-            delete = functools.partial(shutil.rmtree, self.hidden_service_dir)
-            self.reactor.addSystemEventTrigger('before', 'shutdown', delete)
+        if not self.ephemeral:
+            if self.hidden_service_dir is None:
+                self.hidden_service_dir = tempfile.mkdtemp(prefix='tortmp')
+                log.msg('Will delete "%s" at shutdown.' % self.hidden_service_dir)
+                delete = functools.partial(shutil.rmtree, self.hidden_service_dir)
+                self._reactor.addSystemEventTrigger('before', 'shutdown', delete)
 
     @property
     def onion_uri(self):
         if self.hiddenservice is None:
             return None
-        try:
-            return self.hiddenservice.hostname
-        except IOError:
-            return None
+        if IAuthenticatedOnionClients.providedBy(self.hiddenservice):
+            return _maybe_unique_host(self.hiddenservice)
+        return self.hiddenservice.hostname
 
     @property
     def onion_private_key(self):
         if self.hiddenservice is None:
             return None
-        try:
-            return self.hiddenservice.private_key
-        except IOError:
-            return None
+        return self.hiddenservice.private_key
 
     def add_progress_listener(self, listener):
         """IProgressProvider API"""
         self.progress_listeners.append(listener)
 
     def _tor_progress_update(self, prog, tag, summary):
-        log.msg('%d%% %s' % (prog, summary))
         # we re-adjust the percentage-scale, using 105% and 110% for
         # the two parts of waiting for descriptor upload. That is, we
         # want: 110 * constant == 100.0
+        scaled_prog = prog * (100.0 / 110.0)
+        log.msg('%d%% %s' % (scaled_prog, summary))
         for p in self.progress_listeners:
-            p(prog * (100.0 / 110.0), tag, summary)
+            try:
+                p(scaled_prog, tag, summary)
+            except Exception:
+                pass
 
     @defer.inlineCallbacks
     def listen(self, protocolfactory):
@@ -364,110 +500,155 @@ class TCPHiddenServiceEndpoint(object):
         Returns a Deferred that delivers an
         :api:`twisted.internet.interfaces.IListeningPort` implementation.
 
-        This port can also be adapted to two other interfaces:
-
-        :class:`txtorcon.IHiddenService` so you can get the
-        `onion_uri` and `onion_private_key` members (these correspond
-        to "hostname" and "private_key" from the HiddenServiceDir Tor
-        is using).
-
-        :class:`txtorcon.IProgressProvider` can provide you progress
-        updates while Tor is launched. Note that Tor is not always
-        launched when calling this listen() method.
+        This object will also have a `.onion_service` property which
+        resolve to an instance implementing
+        :class:`txtorcon.IOnionService` or
+        :class:`txtorcon.IAuthenticatedOnionClients` (depending on
+        whether the service is authenticated or not).
 
         At this point, Tor will have fully started up and successfully
-        accepted the hidden service's config.
-
-        FIXME TODO: also listen for an INFO-level Tor message (does
-        exist, #tor-dev says) that indicates the hidden service's
-        descriptor is published.
-
-        It is "connection_dir_client_reached_eof(): Uploaded
-        rendezvous descriptor (status 200 ("Service descriptor (v2)
-        stored"))" at INFO level.
-
+        accepted the hidden service's config. The Onion Service's
+        descriptor will be uploaded to at least one directory (as
+        reported via the `HS_DESC` event).
         """
 
         self.protocolfactory = protocolfactory
 
-        # self.config is always a Deferred; see __init__
-        self.config = yield self.config
+        # self._config is always a Deferred; see __init__
+        self._config = yield self._config
+        if not isinstance(self._config, TorConfig):
+            raise ValueError(
+                'Expected a TorConfig instance but '
+                'got "{}.{}" instead.'.format(
+                    self._config.__class__.__module__,
+                    self._config.__class__.__name__,
+                )
+            )
         # just to be sure:
-        yield self.config.post_bootstrap
+        yield self._config.post_bootstrap
 
         # XXX - perhaps allow the user to pass in an endpoint
         # descriptor and make this one the default? Then would
         # probably want to check for "is a local interface or not" and
         # at *least* warn if it's not local...
-        self.tcp_endpoint = serverFromString(self.reactor,
-                                             'tcp:0:interface=127.0.0.1')
+        self.tcp_endpoint = serverFromString(
+            self._reactor,
+            'tcp:0:interface=127.0.0.1',
+        )
         d = self.tcp_endpoint.listen(self.protocolfactory)
         self.tcp_listening_port = yield d
         self.local_port = self.tcp_listening_port.getHost().port
 
-        # NOTE at some point, we can support unix sockets here
-        # once Tor does. See bug #XXX
+        # XXX can we detect if tor supports Unix sockets here? I guess
+        # we could try "unix:/tmp/blarg", and if it fails, try
+        # "tcp:0:interface=127.0.0.1" ...?
 
         # specifically NOT creating the hidden-service dir; letting
         # Tor do it will more-likely result in a usable situation...
-        if not os.path.exists(self.hidden_service_dir):
-            log.msg(
-                'Noting that "%s" does not exist; letting Tor create it.' %
-                self.hidden_service_dir
-            )
+        if not self.ephemeral:
+            if not os.path.exists(self.hidden_service_dir):
+                log.msg(
+                    'Noting that "%s" does not exist; letting Tor create it.' %
+                    self.hidden_service_dir
+                )
 
-        # listen for the descriptor upload event
-        info_callback = defer.Deferred()
+        # see note in _tor_progress_update; we extend the percent
+        # range to 110% for the descriptor upload
+        self._tor_progress_update(101.0, 'wait_descriptor',
+                                  'uploading descriptor')
 
-        def info_event(msg):
-            # XXX giant hack here; Right Thing would be to implement a
-            # "real" event in Tor and listen for that.
-            if 'Service descriptor (v2) stored' in msg:
-                info_callback.callback(None)
-        self.config.protocol.add_event_listener('INFO', info_event)
+        # see if the hidden-serivce instance we want is already in the
+        # config; for non-ephemeral services, the directory is unique;
+        # for ephemeral services, the key should exist and be unique.
+        already = False
+        if self.ephemeral:
+            already = self.hiddenservice is not None
+        else:
+            hs_dirs = [hs.dir for hs in self._config.HiddenServices if hasattr(hs, 'dir')]
+            already = os.path.abspath(self.hidden_service_dir) in hs_dirs
 
-        hs_dirs = [hs.dir for hs in self.config.HiddenServices]
-        if self.hidden_service_dir not in hs_dirs:
-            authlines = []
-            if self.stealth_auth:
-                # like "stealth name0,name1"
-                authlines = ['stealth ' + ','.join(self.stealth_auth)]
-            self.hiddenservice = HiddenService(
-                self.config, self.hidden_service_dir,
-                ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
-                group_readable=1, auth=authlines,
-            )
-            self.config.HiddenServices.append(self.hiddenservice)
-        yield self.config.save()
+        if not already:
+            if self.ephemeral:
+                if self.auth is not None:
+                    create_d = EphemeralAuthenticatedOnionService.create(
+                        self._reactor,
+                        self._config,
+                        ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+                        private_key=self.private_key,
+                        detach=False,
+                        progress=self._tor_progress_update,
+                        version=self.version,
+                        auth=self.auth,
+                    )
 
-        self._tor_progress_update(100.0, 'wait_descriptor',
-                                  'Waiting for descriptor upload...')
-        yield info_callback  # awaits an INFO log-line from Tor .. sketchy
-        yield self.config.protocol.remove_event_listener('INFO', info_event)
-        self._tor_progress_update(100.0, 'wait_descriptor',
-                                  'At least one descriptor uploaded.')
+                else:
+                    create_d = EphemeralOnionService.create(
+                        self._reactor,
+                        self._config,
+                        ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+                        private_key=self.private_key,
+                        detach=False,
+                        progress=self._tor_progress_update,
+                        version=self.version,
+                    )
+            else:
+                if self.auth is not None:
+                    create_d = FilesystemAuthenticatedOnionService.create(
+                        self._reactor,
+                        self._config,
+                        self.hidden_service_dir,
+                        ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+                        auth=self.auth,  # AuthBasic or AuthStealth
+                        progress=self._tor_progress_update,
+                        group_readable=self.group_readable,
+                        version=self.version,
+                    )
+                else:
+                    create_d = FilesystemOnionService.create(
+                        self._reactor,
+                        self._config,
+                        self.hidden_service_dir,
+                        ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
+                        progress=self._tor_progress_update,
+                        group_readable=self.group_readable,
+                        version=self.version,
+                    )
+            self.hiddenservice = yield create_d
 
-        # FIXME XXX need to work out what happens here on stealth-auth'd
-        # things. maybe we need a separate StealthHiddenService
-        # vs. HiddenService ?!
-        # XXX that is, self.onion_uri isn't always avaialble :/
+        else:
+            if not self.ephemeral:
+                for hs in self._config.HiddenServices:
+                    if hs.dir == os.path.abspath(self.hidden_service_dir):
+                        self.hiddenservice = hs
 
-        uri = None
-        if self.hiddenservice is not None:
-            log.msg('Started hidden service port %d' % self.public_port)
-            for client in self.hiddenservice.clients:
-                # XXX FIXME just taking the first one on multi-client services
-                if uri is None:
-                    uri = client[1]
-                log.msg('  listening on %s.onion' % client[1])
+        assert self.hiddenservice is not None, "internal error"
 
+        # note: _tor_progress_update is pro-rating the progress to give
+        # us more range (as tor itself uses [0->100])
+        self._tor_progress_update(110.0, 'wait_descriptor',
+                                  'At least one descriptor uploaded')
+
+        if IAuthenticatedOnionClients.providedBy(self.hiddenservice):
+            log.msg('Started authenticated onion service on:')
+            for nm in self.hiddenservice.client_names():
+                log.msg('  {}: {}'.format(nm, self.hiddenservice.get_client(nm).hostname))
+        else:
+            log.msg('Started onion service on %s:%d' % (self.onion_uri, self.public_port))
+
+        # XXX should just return self.hiddenservice here??
+        # -> no, don't think so for a couple reasons:
+
+        # 1. it's "ports" in the services, so "TorOnionListeningPort"
+        # is the only thing that knows there's just one in this one
+        # (so can provide .local_port -> shoujld be local_endpoint I
+        # guess actually...)
+        # 2. anyway, can provide access to the "real" hs anyway if we want
         defer.returnValue(
             TorOnionListeningPort(
                 self.tcp_listening_port,
-                self.hidden_service_dir,
-                uri,
                 self.public_port,
-                self.config,
+                self.hiddenservice,
+                self._config,
             )
         )
 
@@ -475,30 +656,56 @@ class TCPHiddenServiceEndpoint(object):
 @implementer(IAddress)
 class TorOnionAddress(FancyEqMixin, object):
     """
-    A ``TorOnionAddress`` represents the public address of a Tor hidden
-    service.
+    A ``TorOnionAddress`` represents the public address of a Tor onion
+    service. Instances of these come from calling the Twisted method
+    `.getHost()` on :api:`twisted.internet.interfaces.IListeningPort`
+    which was returned from the :class:`txtorcon.TCPHiddenServiceEndpoint.listen`
 
     :ivar type: A string describing the type of transport, 'onion'.
 
-    :ivar onion_uri: The public-key onion address (e.g. timaq4ygg2iegci7.onion)
+    :ivar onion_port: The public port we're advertising
 
-    :ivar onion_port: The port we're advertising inside the Tor network.
-
-    In otherwords, we should be reachable at (onion_uri, onion_port)
-    via Tor.
+    :ivar onion_key: the private key for the service
     """
-    compareAttributes = ('type', 'onion_uri', 'onion_port')
+    compareAttributes = ('type', 'onion_port', 'onion_key')
     type = 'onion'
 
-    def __init__(self, uri, port):
-        self.onion_uri = uri
+    # for authenticated services, there is a private-key for "the
+    # service"; for stealth-auth'd services, there are *also*
+    # private-keys for each client
+
+    def __init__(self, port, hs):
         self.onion_port = port
 
+        # this gets a bit weird .. partially for backwards-
+        # compatibility: .onion_uri is/was an existing property -- but
+        # doesn't always make sense. so, users should be encouraged to
+        # use .onion_service and access things directly (i.e. they
+        # know if they have an authenticated service or not, or can
+        # find out via .providedBy())
+
+        if IAuthenticatedOnionClients.providedBy(hs):
+            try:
+                self.onion_uri = _maybe_unique_host(hs)
+            except ValueError:
+                self.onion_uri = None
+        else:
+            self.onion_uri = hs.hostname
+        self._hiddenservice = hs
+
+    @property
+    def onion_service(self):
+        return self._hiddenservice
+
+    @property
+    def onion_key(self):
+        return self._hiddenservice.private_key
+
     def __repr__(self):
-        return '%s(%r, %d)' % (
-            self.__class__.__name__, self.onion_uri, self.onion_port)
+        return '%s(%s)' % (self.__class__.__name__, self.onion_uri)
 
     def __hash__(self):
+        # should be "URIs", not URI
         return hash((self.type, self.onion_uri, self.onion_port))
 
 
@@ -513,7 +720,8 @@ class IHiddenService(Interface):
         '(in turn has .protocol for TorControlProtocol).')
 
 
-@implementer(IListeningPort, IHiddenService)
+@implementer(IListeningPort)
+@implementer(IHiddenService)  # deprecated; use .onion_service
 class TorOnionListeningPort(object):
     """
     Our TCPHiddenServiceEndpoint's `listen` method will return a deferred
@@ -528,33 +736,58 @@ class TorOnionListeningPort(object):
     responsibilities we needn't worry about here.
     """
 
-    def __init__(self, listening_port, hs_dir, uri, port, tor_config):
-        self.local_address = listening_port
-        self.hidden_service_dir = hs_dir
+    def __init__(self, listening_port, public_port, hiddenservice, tor_config):
+        # XXX can get these from the service
+        self._local_address = listening_port
+        self.public_port = public_port
+        # XXX should this be a weakref too? is there circ-ref here?
+        self._service = hiddenservice
+        # XXX why is this a weakref? circ-ref? (also, can get from the service anyway, no?)
         self._config_ref = weakref.ref(tor_config)
-        self.address = TorOnionAddress(uri, port)
+        self._address = TorOnionAddress(public_port, hiddenservice)
 
     def startListening(self):
         """IListeningPort API"""
-        self.local_address.startListening()
+        self._local_address.startListening()
 
     def stopListening(self):
         """IListeningPort API"""
-        self.local_address.stopListening()
+        self._local_address.stopListening()
 
     def getHost(self):
         """IListeningPort API"""
-        return self.address
+        return self._address
 
     def __str__(self):
-        return '<TorOnionListeningPort %s:%d>' % (self.address.onion_uri,
-                                                  self.address.onion_port)
+        return '<TorOnionListeningPort %s:%d>' % (self._address.onion_uri, self._address.onion_port)
 
-    # local_address IHiddenService API fulfilled in ctor
-    # hidden_service_dir IHiddenService API fulfilled in ctor
+    # preferred method of accessing everything
     @property
+    def onion_service(self):
+        return self._service
+
+    # these are implemented by the now-deprecated IHiddenService API;
+    # do not use for new code -- get all information from .onion_service
+
+    @property
+    @deprecated(_Version("txtorcon", 18, 0, 0))
     def tor_config(self):
         return self._config_ref()  # None if ref dead
+
+    @property
+    @deprecated(_Version("txtorcon", 18, 0, 0))
+    def local_address(self):
+        return self._local_address
+
+    @property
+    @deprecated(_Version("txtorcon", 18, 0, 0))
+    def hidden_service_dir(self):
+        if not IFilesystemOnionService.providedBy(self._service):
+            raise ValueError(
+                "No 'hidden_service_dir' because our _service doesn't provide"
+                " IFilesystemOnionService"
+            )
+        return self._service.directory
 
 
 @implementer(IStreamServerEndpointStringParser, IPlugin)
@@ -586,11 +819,32 @@ class TCPHiddenServiceEndpointParser(object):
     # note that these are all camelCase because Twisted uses them to
     # do magic parsing stuff, and to conform to Twisted's conventions
     # we should use camelCase in the endpoint definitions...
+
     def parseStreamServer(self, reactor, public_port, localPort=None,
-                          controlPort=None, hiddenServiceDir=None):
-        '''
+                          controlPort=None, hiddenServiceDir=None,
+                          privateKey=None, version=None):
+        """
         :api:`twisted.internet.interfaces.IStreamServerEndpointStringParser`
-        '''
+        """
+
+        if hiddenServiceDir is not None and privateKey is not None:
+            raise ValueError(
+                "Only one of hiddenServiceDir and privateKey accepted"
+            )
+
+        if version is not None:
+            try:
+                version = int(version)
+            except ValueError:
+                raise ValueError(
+                    "version must be an integer"
+                )
+        if version not in (None, 2, 3):
+            raise ValueError(
+                "Invalid version '{}'".format(version)
+            )
+
+        ephemeral = None
 
         public_port = int(public_port)
 
@@ -611,15 +865,22 @@ class TCPHiddenServiceEndpointParser(object):
                     reactor, "tcp:host=127.0.0.1:port=%d" % int(controlPort))
             except ValueError:
                 ep = clientFromString(reactor, "unix:path=%s" % controlPort)
-            return TCPHiddenServiceEndpoint.system_tor(reactor, ep,
-                                                       public_port,
-                                                       hidden_service_dir=hsd,
-                                                       local_port=localPort)
+            return TCPHiddenServiceEndpoint.system_tor(
+                reactor, ep, public_port,
+                hidden_service_dir=hsd,
+                local_port=localPort,
+                ephemeral=ephemeral,
+                version=version,
+            )
 
-        return TCPHiddenServiceEndpoint.global_tor(reactor, public_port,
-                                                   hidden_service_dir=hsd,
-                                                   local_port=localPort,
-                                                   control_port=controlPort)
+        return TCPHiddenServiceEndpoint.global_tor(
+            reactor, public_port,
+            hidden_service_dir=hsd,
+            local_port=localPort,
+            control_port=controlPort,
+            ephemeral=ephemeral,
+            version=version,
+        )
 
 
 @defer.inlineCallbacks
@@ -637,6 +898,11 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
         socks_ports = list(socks_ports.values())[0]
         if not isinstance(socks_ports, list):
             socks_ports = [socks_ports]
+        # see TorConfig for more fun-times regarding *PortLines, including
+        # the __*Port things...
+        if socks_ports == ['DEFAULT']:
+            default = yield control_protocol.get_conf_one('__SocksPort')
+            socks_ports = [default]
     else:
         # return from get_conf was an empty dict; we want a list
         socks_ports = []
@@ -884,3 +1150,28 @@ class TorClientEndpointStringParser(object):
         # for Twisted 14 and 15 (and more) the first argument is
         # 'reactor', for older Twisteds it's not
         return self._parseClient(*args, **kwargs)
+
+
+def _maybe_unique_host(onion):
+    """
+    :param onion: IAuthenticatedOnionClients provider
+
+    :returns: a .onion hostname if all clients have the same name or
+        raises ValueError otherwise
+    """
+    hosts = [
+        onion.get_client(nm).hostname
+        for nm in onion.client_names()
+    ]
+    if not hosts:
+        raise ValueError(
+            "Can't access .onion_uri because there are no clients"
+        )
+    host = hosts[0]
+    for h in hosts[1:]:
+        if h != host:
+            raise ValueError(
+                "Cannot access .onion_uri for stealth-authenticated services "
+                "because each client has a unique URI"
+            )
+    return host

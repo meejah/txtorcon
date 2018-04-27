@@ -13,3 +13,4 @@ pep8
 mock
 ipaddress>=1.0.16
 geoip
+readme_renderer

@@ -14,6 +14,7 @@ place to start**.
     txtorcon-state
     txtorcon-config
     txtorcon-endpoints
+    txtorcon-onion
     txtorcon-protocol
     txtorcon-socks
     txtorcon-interface

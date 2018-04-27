@@ -265,11 +265,19 @@ class Stream(object):
                         self._notify('stream_attach', self, self.circuit)
 
                 else:
+                    # XXX I am seeing this from torexitscan (*and*
+                    # from my TorNS thing, so I think it's some kind
+                    # of 'consistent' behavior out of Tor) so ... this
+                    # is probably when we're doing stream-attachment
+                    # stuff? maybe the stream gets assigned a circuit
+                    # 'provisionally' and then it's changed?
+                    # ...yup, looks like it!
                     if self.circuit.id != cid:
+                        # you can get SENTCONNECT twice in a row (for example) with different circuit-ids if there is something (e.g. another txtorcon) doing R
                         log.err(
                             RuntimeError(
-                                'Circuit ID changed from %d to %d.' %
-                                (self.circuit.id, cid)
+                                'Circuit ID changed from %d to %d state=%s.' %
+                                (self.circuit.id, cid, self.state)
                             )
                         )
 

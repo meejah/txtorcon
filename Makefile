@@ -104,9 +104,11 @@ dist: dist/txtorcon-${VERSION}-py2.py3-none-any.whl dist/txtorcon-${VERSION}.tar
 dist-sigs: dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc dist/txtorcon-${VERSION}.tar.gz.asc
 
 sdist: setup.py
+	python setup.py check
 	python setup.py sdist
 
 dist/txtorcon-${VERSION}-py2.py3-none-any.whl:
+	python setup.py check
 	python setup.py bdist_wheel --universal
 
 dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc: dist/txtorcon-${VERSION}-py2.py3-none-any.whl
@@ -132,3 +134,6 @@ venv:
 
 html: docs/*.rst
 	cd docs && make html
+
+html-server: html
+	twistd -n web --path docs/_build/html --port tcp:9999:interface=localhost

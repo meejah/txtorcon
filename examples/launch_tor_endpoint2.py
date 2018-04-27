@@ -29,9 +29,8 @@ def setup_failed(arg):
 
 
 def setup_complete(port):
-    local = txtorcon.IHiddenService(port).local_address.getHost()
-    print("Hidden serivce:", port.getHost())
-    print("    locally at:", local)
+    print("Hidden serivce:", port.getHost().onion_service)
+    print("    locally at:", port.local_address)
 
 
 def progress(percent, tag, message):
