@@ -521,27 +521,11 @@ class Circuit(object):
 
 
 class CircuitBuildTimedOutError(Exception):
-        """
+    """
     This exception is thrown when using `timed_circuit_build`
     and the circuit build times-out.
     """
 
-
-class TimeoutCircuitListener(CircuitListenerMixin):
-    """
-    implements ICircuitListener
-    """
-
-    def __init__(self):
-        self.reason = ''
-
-    def circuit_closed(self, circuit, **kw):
-        self.reason = _extract_reason(kw)
-        txtorlog.msg("circuit_closed", circuit)
-
-    def circuit_failed(self, circuit, **kw):
-        self.reason = _extract_reason(kw)
-        txtorlog.msg("circuit_failed", circuit, str(kw))
 
 def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False):
     """
@@ -556,12 +540,6 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     """
     timed_circuit = []
     d = tor_state.build_circuit(routers=path, using_guards=using_guards)
-    listener = TimeoutCircuitListener()
-
-    def get_circuit(c):
-        c.listen(listener)
-        timed_circuit.append(c)
-        return c
 
     def trap_cancel(f):
         f.trap(defer.CancelledError)
@@ -570,11 +548,11 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
             d2.addCallback(lambda ign: listener.reason)
         else:
             d2 = defer.succeed(None)
-        d2.addCallback(lambda ign: Failure(CircuitBuildTimedOutError("circuit build timed out")))
+        d2.addCallback(lambda _: Failure(CircuitBuildTimedOutError("circuit build timed out")))
         return d2
 
-    d.addCallback(get_circuit)
     d.addCallback(lambda circ: circ.when_built())
     d.addErrback(trap_cancel)
+
     reactor.callLater(timeout, d.cancel)
     return d

@@ -921,7 +921,9 @@ class TorState(object):
         "ICircuitListener API"
         txtorlog.msg("circuit_closed", circuit)
         circuit._when_built.fire(
-            Failure(Exception("Circuit closed ('{}')".format(_extract_reason(kw))))
+            Failure(
+                CircuitBuildClosedError(_extract_reason(kw))
+            )
         )
         self.circuit_destroy(circuit)
 
@@ -929,6 +931,34 @@ class TorState(object):
         "ICircuitListener API"
         txtorlog.msg("circuit_failed", circuit, str(kw))
         circuit._when_built.fire(
-            Failure(Exception("Circuit failed ('{}')".format(_extract_reason(kw))))
+            Failure(
+                CircuitBuildFailedError(_extract_reason(kw))
+            )
         )
         self.circuit_destroy(circuit)
+
+
+class CircuitBuildFailedError(Exception):
+    """
+    This exception is thrown when a circuit we're building fails
+    """
+    def __init__(self, reason):
+        self.reason = reason
+        super(CircuitBuildFailedError, self).__init__(
+            "Circuit failed: {}".format(
+                self.reason,
+            )
+        )
+
+
+class CircuitBuildClosedError(Exception):
+    """
+    This exception is thrown when a circuit we're building is closed
+    """
+    def __init__(self, reason):
+        self.reason = reason
+        super(CircuitBuildClosedError, self).__init__(
+            "Circuit closed: {}".format(
+                self.reason,
+            )
+        )
