@@ -532,35 +532,7 @@ class TimeoutCircuitListener(CircuitListenerMixin):
     """
 
     def __init__(self):
-        """
-        """
-        self.circuits = {}
         self.reason = ''
-
-    def circuit_launched(self, circuit):
-        txtorlog.msg("circuit_launched", circuit)
-        self.circuits[circuit.id] = circuit
-
-    def circuit_extend(self, circuit, router):
-        txtorlog.msg("circuit_extend:", circuit.id, router)
-
-    def circuit_built(self, circuit):
-        txtorlog.msg(
-            "circuit_built:", circuit.id,
-            "->".join("%s.%s" % (x.name, x.location.countrycode) for x in circuit.path),
-            circuit.streams
-        )
-
-    def circuit_new(self, circuit):
-        txtorlog.msg("circuit_new:", circuit.id)
-        self.circuits[circuit.id] = circuit
-
-    def circuit_destroy(self, circuit):
-        txtorlog.msg("circuit_destroy:", circuit.id)
-        circuit._when_built.fire(
-            Failure(Exception("Destroying circuit; will never hit BUILT"))
-        )
-        del self.circuits[circuit.id]
 
     def circuit_closed(self, circuit, **kw):
         self.reason = _extract_reason(kw)
