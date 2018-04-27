@@ -521,35 +521,17 @@ class Circuit(object):
 
 
 class CircuitBuildTimedOutError(Exception):
-        """
+    """
     This exception is thrown when using `timed_circuit_build`
     and the circuit build times-out.
     """
-
-
-class TimeoutCircuitListener(CircuitListenerMixin):
-    """
-    implements ICircuitListener
-    """
-
-    def __init__(self):
-        self.reason = ''
-
-    def circuit_closed(self, circuit, **kw):
-        self.reason = _extract_reason(kw)
-        txtorlog.msg("circuit_closed", circuit)
-        circuit._when_built.fire(
-            Failure(
-                CircuitBuildTimedOutError('closed', _extract_reason(kw))
-            )
-        )
-
-    def circuit_failed(self, circuit, **kw):
-        self.reason = _extract_reason(kw)
-        txtorlog.msg("circuit_failed", circuit, str(kw))
-        circuit._when_built.fire(
-            Failure(
-                CircuitBuildTimedOutError('failed', _extract_reason(kw))
+    def __init__(self, kind, reason):
+        self.kind = kind
+        self.reason = reason
+        super(CircuitBuildTimedOutError, self).__init__(
+            "Circuit {}: {}".format(
+                self.kind,
+                self.reason,
             )
         )
 
@@ -567,12 +549,6 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     """
     timed_circuit = []
     d = tor_state.build_circuit(routers=path, using_guards=using_guards)
-    listener = TimeoutCircuitListener()
-
-    def get_circuit(c):
-        c.listen(listener)
-        timed_circuit.append(c)
-        return c
 
     def trap_cancel(f):
         f.trap(defer.CancelledError)
@@ -584,14 +560,8 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
         d2.addCallback(lambda ign: Failure(CircuitBuildTimedOutError("circuit build timed out")))
         return d2
 
-    d.addCallback(get_circuit)
     d.addCallback(lambda circ: circ.when_built())
     d.addErrback(trap_cancel)
-
-    def unlisten(arg):
-        timed_circuit[0].unlisten(listener)
-        return arg
-    d.addBoth(unlisten)
 
     reactor.callLater(timeout, d.cancel)
     return d
