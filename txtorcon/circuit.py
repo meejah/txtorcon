@@ -539,17 +539,19 @@ class TimeoutCircuitListener(CircuitListenerMixin):
         self.reason = _extract_reason(kw)
         txtorlog.msg("circuit_closed", circuit)
         circuit._when_built.fire(
-            Failure(Exception("Circuit closed ('{}')".format(_extract_reason(kw))))
+            Failure(
+                CircuitBuildTimedOutError('closed', _extract_reason(kw))
+            )
         )
-        self.circuit_destroy(circuit)
 
     def circuit_failed(self, circuit, **kw):
         self.reason = _extract_reason(kw)
         txtorlog.msg("circuit_failed", circuit, str(kw))
         circuit._when_built.fire(
-            Failure(Exception("Circuit failed ('{}')".format(_extract_reason(kw))))
+            Failure(
+                CircuitBuildTimedOutError('failed', _extract_reason(kw))
+            )
         )
-        self.circuit_destroy(circuit)
 
 
 def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False):
@@ -585,5 +587,11 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     d.addCallback(get_circuit)
     d.addCallback(lambda circ: circ.when_built())
     d.addErrback(trap_cancel)
+
+    def unlisten(arg):
+        timed_circuit[0].unlisten(listener)
+        return arg
+    d.addBoth(unlisten)
+
     reactor.callLater(timeout, d.cancel)
     return d
