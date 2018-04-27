@@ -4,7 +4,10 @@
 txtorcon
 ========
 
-- **docs**: https://txtorcon.readthedocs.org or http://timaq4ygg2iegci7.onion
+- **docs**:
+   - v3 onion: http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/
+   - v2 onion: http://timaq4ygg2iegci7.onion
+   - clearnet: https://txtorcon.readthedocs.org
 - **code**: https://github.com/meejah/txtorcon
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
 - .. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
