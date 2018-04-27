@@ -16,6 +16,7 @@ from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
 from .interface import IRouterContainer, IStreamAttacher, ICircuitListener
+from .interface import CircuitListenerMixin
 from txtorcon.util import find_keywords, maybe_ip_addr, SingleObserver
 
 from txtorcon.log import txtorlog
