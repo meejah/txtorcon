@@ -526,8 +526,7 @@ class CircuitBuildTimedOutError(Exception):
     """
 
 
-@implementer(ICircuitListener)
-class TimeoutCircuitListener(object):
+class TimeoutCircuitListener(CircuitListenerMixin):
     """
     implements ICircuitListener
     """
@@ -539,16 +538,13 @@ class TimeoutCircuitListener(object):
         self.reason = ''
 
     def circuit_launched(self, circuit):
-        "ICircuitListener API"
         txtorlog.msg("circuit_launched", circuit)
         self.circuits[circuit.id] = circuit
 
     def circuit_extend(self, circuit, router):
-        "ICircuitListener API"
         txtorlog.msg("circuit_extend:", circuit.id, router)
 
     def circuit_built(self, circuit):
-        "ICircuitListener API"
         txtorlog.msg(
             "circuit_built:", circuit.id,
             "->".join("%s.%s" % (x.name, x.location.countrycode) for x in circuit.path),
@@ -556,12 +552,10 @@ class TimeoutCircuitListener(object):
         )
 
     def circuit_new(self, circuit):
-        "ICircuitListener API"
         txtorlog.msg("circuit_new:", circuit.id)
         self.circuits[circuit.id] = circuit
 
     def circuit_destroy(self, circuit):
-        "Used by circuit_closed and circuit_failed (below)"
         txtorlog.msg("circuit_destroy:", circuit.id)
         circuit._when_built.fire(
             Failure(Exception("Destroying circuit; will never hit BUILT"))
@@ -569,7 +563,6 @@ class TimeoutCircuitListener(object):
         del self.circuits[circuit.id]
 
     def circuit_closed(self, circuit, **kw):
-        "ICircuitListener API"
         self.reason = extract_reason(kw)
         txtorlog.msg("circuit_closed", circuit)
         circuit._when_built.fire(
@@ -578,7 +571,6 @@ class TimeoutCircuitListener(object):
         self.circuit_destroy(circuit)
 
     def circuit_failed(self, circuit, **kw):
-        "ICircuitListener API"
         self.reason = extract_reason(kw)
         txtorlog.msg("circuit_failed", circuit, str(kw))
         circuit._when_built.fire(
