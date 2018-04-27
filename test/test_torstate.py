@@ -1460,7 +1460,4 @@ s Fast Guard Running Stable Valid
             self.assertEqual(fail.value.reason, 'TIMEOUT')
         d.addErrback(check_reason)
 
-        # should have gotten a warning about this not being an entry
-        # guard
-        self.assertEqual(len(self.flushWarnings()), 1)
         return d
