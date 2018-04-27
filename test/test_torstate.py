@@ -1454,7 +1454,11 @@ s Fast Guard Running Stable Valid
         # we can't just .send(b'650 CIRC 1234 BUILT') this because we
         # didn't fully hook up the protocol to the state, e.g. via
         # post_bootstrap etc.
-        self.state.circuits[1234].update(['1234', 'FAILED'])
+        self.state.circuits[1234].update(['1234', 'FAILED', 'REASON=TIMEOUT'])
+        def check_reason(reason):
+            self.assertEqual(reason, 'TIMEOUT')
+        d.addCallback(check_reason)
+
         # should have gotten a warning about this not being an entry
         # guard
         #self.assertEqual(len(self.flushWarnings()), 1)
