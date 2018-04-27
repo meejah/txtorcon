@@ -1457,7 +1457,7 @@ s Fast Guard Running Stable Valid
         self.state.circuits[1234].update(['1234', 'FAILED', 'REASON=TIMEOUT'])
         def check_reason(reason):
             self.assertEqual(reason, 'TIMEOUT')
-        d.addCallback(check_reason)
+        d.addErrback(check_reason)
 
         # should have gotten a warning about this not being an entry
         # guard
