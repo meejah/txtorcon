@@ -563,18 +563,18 @@ class TimeoutCircuitListener(CircuitListenerMixin):
         del self.circuits[circuit.id]
 
     def circuit_closed(self, circuit, **kw):
-        self.reason = extract_reason(kw)
+        self.reason = _extract_reason(kw)
         txtorlog.msg("circuit_closed", circuit)
         circuit._when_built.fire(
-            Failure(Exception("Circuit closed ('{}')".format(extract_reason(kw))))
+            Failure(Exception("Circuit closed ('{}')".format(_extract_reason(kw))))
         )
         self.circuit_destroy(circuit)
 
     def circuit_failed(self, circuit, **kw):
-        self.reason = extract_reason(kw)
+        self.reason = _extract_reason(kw)
         txtorlog.msg("circuit_failed", circuit, str(kw))
         circuit._when_built.fire(
-            Failure(Exception("Circuit failed ('{}')".format(extract_reason(kw))))
+            Failure(Exception("Circuit failed ('{}')".format(_extract_reason(kw))))
         )
         self.circuit_destroy(circuit)
 
