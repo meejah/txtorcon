@@ -950,7 +950,7 @@ class CircuitBuildClosedError(Exception):
     """
     def __init__(self, reason):
         self.reason = reason
-        super(CircuitBuildFailedError, self).__init__(
+        super(CircuitBuildClosedError, self).__init__(
             "Circuit closed: {}".format(
                 self.reason,
             )

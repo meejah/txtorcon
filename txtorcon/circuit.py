@@ -525,15 +525,6 @@ class CircuitBuildTimedOutError(Exception):
     This exception is thrown when using `timed_circuit_build`
     and the circuit build times-out.
     """
-    def __init__(self, kind, reason):
-        self.kind = kind
-        self.reason = reason
-        super(CircuitBuildTimedOutError, self).__init__(
-            "Circuit {}: {}".format(
-                self.kind,
-                self.reason,
-            )
-        )
 
 
 def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False):
@@ -557,7 +548,7 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
             d2.addCallback(lambda ign: listener.reason)
         else:
             d2 = defer.succeed(None)
-        d2.addCallback(lambda ign: Failure(CircuitBuildTimedOutError("circuit build timed out")))
+        d2.addCallback(lambda _: Failure(CircuitBuildTimedOutError("circuit build timed out")))
         return d2
 
     d.addCallback(lambda circ: circ.when_built())
