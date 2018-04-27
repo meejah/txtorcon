@@ -15,11 +15,8 @@ from twisted.internet import defer
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
-from .interface import IRouterContainer, IStreamAttacher, ICircuitListener
-from .interface import CircuitListenerMixin
+from .interface import IRouterContainer, IStreamAttacher
 from txtorcon.util import find_keywords, maybe_ip_addr, SingleObserver
-
-from txtorcon.log import txtorlog
 
 
 # look like "2014-01-25T02:12:14.593772"
@@ -521,35 +518,10 @@ class Circuit(object):
 
 
 class CircuitBuildTimedOutError(Exception):
-        """
+    """
     This exception is thrown when using `timed_circuit_build`
     and the circuit build times-out.
     """
-
-
-class TimeoutCircuitListener(CircuitListenerMixin):
-    """
-    implements ICircuitListener
-    """
-
-    def __init__(self):
-        self.reason = ''
-
-    def circuit_closed(self, circuit, **kw):
-        self.reason = _extract_reason(kw)
-        txtorlog.msg("circuit_closed", circuit)
-        circuit._when_built.fire(
-            Failure(Exception("Circuit closed ('{}')".format(_extract_reason(kw))))
-        )
-        self.circuit_destroy(circuit)
-
-    def circuit_failed(self, circuit, **kw):
-        self.reason = _extract_reason(kw)
-        txtorlog.msg("circuit_failed", circuit, str(kw))
-        circuit._when_built.fire(
-            Failure(Exception("Circuit failed ('{}')".format(_extract_reason(kw))))
-        )
-        self.circuit_destroy(circuit)
 
 
 def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False):
@@ -565,25 +537,18 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     """
     timed_circuit = []
     d = tor_state.build_circuit(routers=path, using_guards=using_guards)
-    listener = TimeoutCircuitListener()
-
-    def get_circuit(c):
-        c.listen(listener)
-        timed_circuit.append(c)
-        return c
 
     def trap_cancel(f):
         f.trap(defer.CancelledError)
         if timed_circuit:
             d2 = timed_circuit[0].close()
-            d2.addCallback(lambda ign: listener.reason)
         else:
             d2 = defer.succeed(None)
-        d2.addCallback(lambda ign: Failure(CircuitBuildTimedOutError("circuit build timed out")))
+        d2.addCallback(lambda _: Failure(CircuitBuildTimedOutError("circuit build timed out")))
         return d2
 
-    d.addCallback(get_circuit)
     d.addCallback(lambda circ: circ.when_built())
     d.addErrback(trap_cancel)
+
     reactor.callLater(timeout, d.cancel)
     return d
