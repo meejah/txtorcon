@@ -1452,11 +1452,12 @@ s Fast Guard Running Stable Valid
         # didn't fully hook up the protocol to the state, e.g. via
         # post_bootstrap etc.
         self.state.circuits[1234].update(['1234', 'FAILED', 'REASON=TIMEOUT'])
+
         def check_reason(fail):
             self.assertEqual(fail.value.reason, 'TIMEOUT')
         d.addErrback(check_reason)
 
         # should have gotten a warning about this not being an entry
         # guard
-        #self.assertEqual(len(self.flushWarnings()), 1)
+        self.assertEqual(len(self.flushWarnings()), 1)
         return d
