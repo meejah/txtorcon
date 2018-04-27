@@ -15,11 +15,8 @@ from twisted.internet import defer
 from twisted.internet.interfaces import IStreamClientEndpoint
 from zope.interface import implementer
 
-from .interface import IRouterContainer, IStreamAttacher, ICircuitListener
-from .interface import CircuitListenerMixin
+from .interface import IRouterContainer, IStreamAttacher
 from txtorcon.util import find_keywords, maybe_ip_addr, SingleObserver
-
-from txtorcon.log import txtorlog
 
 
 # look like "2014-01-25T02:12:14.593772"
@@ -545,7 +542,6 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
         f.trap(defer.CancelledError)
         if timed_circuit:
             d2 = timed_circuit[0].close()
-            d2.addCallback(lambda ign: listener.reason)
         else:
             d2 = defer.succeed(None)
         d2.addCallback(lambda _: Failure(CircuitBuildTimedOutError("circuit build timed out")))
