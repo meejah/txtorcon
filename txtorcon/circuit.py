@@ -538,6 +538,10 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
     timed_circuit = []
     d = tor_state.build_circuit(routers=path, using_guards=using_guards)
 
+    def get_circuit(c):
+        timed_circuit.append(c)
+        return c
+
     def trap_cancel(f):
         f.trap(defer.CancelledError)
         if timed_circuit:
@@ -548,6 +552,7 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
         return d2
 
     d.addCallback(lambda circ: circ.when_built())
+    d.addCallback(get_circuit)
     d.addErrback(trap_cancel)
 
     reactor.callLater(timeout, d.cancel)
