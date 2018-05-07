@@ -668,15 +668,16 @@ class TorControlProtocol(LineOnlyReceiver):
         self.on_disconnect = None
         outstanding = [self.command] + self.commands if self.command else self.commands
         for d, cmd, cmd_arg in outstanding:
-            d.errback(
-                Failure(
-                    TorDisconnectError(
-                        text=("Tor unexpectedly disconnected while "
-                              "running: {}".format(cmd.decode('ascii'))),
-                        error=reason,
+            if not d.called:
+                d.errback(
+                    Failure(
+                        TorDisconnectError(
+                            text=("Tor unexpectedly disconnected while "
+                                  "running: {}".format(cmd.decode('ascii'))),
+                            error=reason,
+                        )
                     )
                 )
-            )
         return None
 
     def _handle_notify(self, code, rest):

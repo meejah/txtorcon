@@ -186,6 +186,9 @@ class FakeEndpointAnswers:
         # since we use pop() we need these to be "backwards"
         self.answers.reverse()
 
+    def add_event_listener(self, *args):
+        return defer.succeed(None)
+
     def get_info_raw(self, keys):
         ans = ''
         for k in keys.split():
@@ -209,6 +212,7 @@ class FakeEndpointAnswers:
         self.proto.transport = proto_helpers.StringTransport()
         self.proto.get_info_raw = self.get_info_raw
         self.proto.get_info_incremental = self.get_info_incremental
+        self.proto.add_event_listener = self.add_event_listener
         self.proto._set_valid_events(
             'GUARD STREAM CIRC NS NEWCONSENSUS ORCONN NEWDESC ADDRMAP STATUS_GENERAL'
         )
