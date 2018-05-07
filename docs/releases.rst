@@ -17,6 +17,7 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v18.0.0*
 
+ * properly wait for all event-listeners during startup
  * re-work how `TorState.event_map` works, hopefully reducing
    reproducible-builds issues
  * :meth:`txtorcon.TorControlProtocol.add_event_listener` and

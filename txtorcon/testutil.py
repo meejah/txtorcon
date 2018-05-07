@@ -108,6 +108,7 @@ class FakeControlProtocol(object):
         if nm in self.pending_events:
             for event in self.pending_events[nm]:
                 cb(*event)
+        return defer.succeed(None)
 
     def remove_event_listener(self, nm, cb):
         del self.events[nm]

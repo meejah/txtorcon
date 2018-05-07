@@ -193,7 +193,7 @@ class ConfigTests(unittest.TestCase):
             post_bootstrap = defer.succeed(None)
 
             def add_event_listener(*args, **kw):
-                pass
+                return defer.succeed(None)
 
             def get_info_raw(*args, **kw):
                 return defer.succeed('config/names=')

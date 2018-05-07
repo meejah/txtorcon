@@ -369,7 +369,7 @@ class TorState(object):
                 continue            # FIXME
             self.addrmap.update(line)
 
-        self._add_events()
+        yield self._add_events()
 
         entries = yield self.protocol.get_info_raw("entry-guards")
         for line in entries.split('\n')[1:]:

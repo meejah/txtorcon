@@ -872,7 +872,7 @@ class TorConfig(object):
         pass an arg, it is ignored.
         '''
         try:
-            self.protocol.add_event_listener(
+            d = self.protocol.add_event_listener(
                 'CONF_CHANGED', self._conf_changed)
         except RuntimeError:
             # for Tor versions which don't understand CONF_CHANGED
@@ -880,7 +880,8 @@ class TorConfig(object):
             log.msg(
                 "Can't listen for CONF_CHANGED event; won't stay up-to-date "
                 "with other clients.")
-        d = self.protocol.get_info_raw("config/names")
+            d = defer.succeed(None)
+        d.addCallback(lambda _: self.protocol.get_info_raw("config/names"))
         d.addCallback(self._do_setup)
         d.addCallback(self.do_post_bootstrap)
         d.addErrback(self.do_post_errback)
