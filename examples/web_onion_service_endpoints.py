@@ -12,7 +12,7 @@
 # launch a Tor instance using it. cool!
 
 from __future__ import print_function
-from twisted.internet import defer, task, endpoints
+from twisted.internet import defer, task, endpoints, error
 from twisted.web import server, resource
 
 import txtorcon
@@ -47,15 +47,18 @@ def main(reactor):
 
     # this one should be "nyfnesplt3f5nvn3.onion"
 
-    print(default_control_port())
     ep = endpoints.serverFromString(reactor, "onion:80:controlPort={port}:privateKey=RSA1024\\:MIICWwIBAAKBgQDml0L1Btxe1QIs88mvKvcgAEd19bUorzMndfXXBbPt2y1lTjm+vGldJRCXb/RArfCb9F2q7IWL4ScuJBiUCqpKVG2aGK8yOxw4c5WKvnLW8MRf5+jAPlR3h7idBdrVGCY/9gXf9JzWfpIhMfFidM4Xq6VpzMvignss6FB6i9zhOwIDAQABAoGAXuWjVamUKabp9UwDFYbOGypiPmZ3Pp4TpErEeNBNAzdvUEDIPPnXNtEZKemWEMREwDnqDny2XSG0+SU7xDk7aQGTFxipo+NAl18QMW2XcBjWrIG5P0L9E+j58k5Nq6EEaMQ8G8X3hsnX7EwRqnJYOwUWUQ4emi6TvNScSMS251kCQQD6KJXltkSfwU3d5hOh37x3pOp4ZcpI6eKwwfgqP+1pVfOwjvXfLqLgLRf9+NtmG+cU5HRDwmf9rbJNCOE++11HAkEA6/mz/L+54NRk9tPN4vYfn969v7fz9CQndQUsTTrtArqtjg7baKts3ndagj+/itJfY6qV/OonN9XdntQXTWWGbQJAY244TmrJEfqieZ2WlhO49JFPRPWolpyoJvuiKSDpu6GXT8ky/zepM5OY4rDEe+yBR/OaJsihztn4cdgit4bvxwJAFsnZiOoXEFBSo8eWlXmBWlYPawlfxM8NBG8IdTjglKfkhNiIddZAQEe0dOmlHMnuLljV/UO7n9fGfEUtLutEDQJAC3c9gSe2of41TaZhQ+aHzQ8E9cs7fg3gXXUgWlocQK6fYq+tC0CF7dDmydShF8vI8oEcgJGhgtUAXQDwH9eD0A==".format(port=default_control_port()))
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
     txtorcon.IProgressProvider(ep).add_progress_listener(on_progress)
-    print("Note: descriptor upload can take several minutes")
 
-    port = yield ep.listen(server.Site(Simple()))
+    try:
+        port = yield ep.listen(server.Site(Simple()))
+    except error.ConnectionRefusedError:
+        print("Couldn't connect; is Tor listening on localhost:{}?".format(default_control_port()))
+        defer.returnValue(1)
+
     print("Site listening: {}".format(port.getHost()))
     print("Private key:\n{}".format(port.getHost().onion_key))
     yield defer.Deferred()  # wait forever
