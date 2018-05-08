@@ -615,6 +615,40 @@ class OnionServiceTest(unittest.TestCase):
 
         yield eph_d
 
+    @defer.inlineCallbacks
+    def test_tor_version_v3_progress_await_all(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+        hsdir = self.mktemp()
+        os.mkdir(hsdir)
+        with open(join(hsdir, "hostname"), "w") as f:
+            f.write('{}.onion'.format(_test_onion_id))
+
+        class Bad(Exception):
+            pass
+
+        def my_progress(a, b, c):
+            raise Bad("it's bad")
+
+        eph_d = FilesystemOnionService.create(
+            Mock(),
+            config,
+            hsdir,
+            ports=["80 127.0.0.1:80"],
+            progress=my_progress,
+            version=3,
+            await_all_uploads=True,
+        )
+
+        # arrange HS_DESC callbacks so we get the hs instance back
+        cb = protocol.events['HS_DESC']
+        cb('UPLOAD {} UNKNOWN hsdir0'.format(_test_onion_id))
+        cb('UPLOADED {} UNKNOWN hsdir0'.format(_test_onion_id))
+
+        yield eph_d
+        errs = self.flushLoggedErrors(Bad)
+        self.assertEqual(3, len(errs))  # because there's a "100%" one too
+
     @skipIf('pypy' in sys.version.lower(), "Weird OpenSSL+PyPy problem on Travis")
     @defer.inlineCallbacks
     def test_ephemeral_auth_basic(self):

@@ -517,13 +517,19 @@ class EndpointTests(unittest.TestCase):
         self.assertTrue(IProgressProvider.providedBy(ep))
         prog = IProgressProvider(ep)
 
+        class CustomBadness(Exception):
+            pass
+
         def boom(*args, **kw):
-            raise RuntimeError("the bad stuff")
+            raise CustomBadness("the bad stuff")
         prog.add_progress_listener(boom)
         args = (50, "blarg", "Doing that thing we talked about.")
         # kind-of cheating, test-wise?
         ep._tor_progress_update(*args)
+        ep._descriptor_progress_update(*args)
         # if we ignore the progress-listener error: success
+        errs = self.flushLoggedErrors(CustomBadness)
+        self.assertEqual(2, len(errs))
 
     def test_progress_updates_private_tor(self, ftb):
         with patch('txtorcon.controller.launch') as tor:

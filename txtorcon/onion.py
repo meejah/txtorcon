@@ -170,7 +170,7 @@ class FilesystemOnionService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(reactor, config, hsdir, ports, version=3, group_readable=False, progress=None):
+    def create(reactor, config, hsdir, ports, version=3, group_readable=False, progress=None, await_all_uploads=None):
         """
         returns a new FilesystemOnionService after adding it to the
         provided config and ensuring at least one of its descriptors
@@ -240,7 +240,7 @@ class FilesystemOnionService(object):
             # filesystem services could be added but they didn't send
             # HS_DESC updates -- did any of these actually get
             # released?!
-            uploaded[0] = _await_descriptor_upload(config.tor_protocol, fhs, progress)
+            uploaded[0] = _await_descriptor_upload(config.tor_protocol, fhs, progress, await_all_uploads)
 
         yield config.save()
         yield uploaded[0]
@@ -378,7 +378,7 @@ class FilesystemOnionService(object):
 
 
 @defer.inlineCallbacks
-def _await_descriptor_upload(tor_protocol, onion, progress):
+def _await_descriptor_upload(tor_protocol, onion, progress, await_all_uploads):
     """
     Internal helper.
 
@@ -392,11 +392,32 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
         descriptor upload for the service (as detected by listening for
         HS_DESC events)
     """
-    pct = 101.0
+    # For v3 services, Tor attempts to upload to 16 services; we'll
+    # assume that for now but also cap it (we want to show some
+    # progress for "attempting uploads" but we need to decide how
+    # much) .. so we leave 50% of the "progress" for attempts, and the
+    # other 50% for "are we done" (which is either "one thing
+    # uploaded" or "all the things uploaded")
     attempted_uploads = set()
     confirmed_uploads = set()
     failed_uploads = set()
     uploaded = defer.Deferred()
+    await_all = False if await_all_uploads is None else await_all_uploads
+
+    def translate_progress(tag, description):
+        if progress:
+            done = len(confirmed_uploads) + len(failed_uploads)
+            done_endpoint = float(len(attempted_uploads)) if await_all else 1.0
+            done_pct = 0 if not attempted_uploads else float(done) / done_endpoint
+            started_pct = float(min(16, len(attempted_uploads))) / 16.0
+            try:
+                progress(
+                    (done_pct * 50.0) + (started_pct * 50.0),
+                    tag,
+                    description,
+                )
+            except Exception:
+                log.err()
 
     def hostname_matches(hostname):
         if IAuthenticatedOnionClients.providedBy(onion):
@@ -411,18 +432,15 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
         "650" SP "HS_DESC" SP Action SP HSAddress SP AuthType SP HsDir
         [SP DescriptorID] [SP "REASON=" Reason] [SP "REPLICA=" Replica]
         """
-        global pct
         args = evt.split()
         subtype = args[0]
         if subtype == 'UPLOAD':
             if hostname_matches('{}.onion'.format(args[1])):
                 attempted_uploads.add(args[3])
-                if progress:
-                    progress(
-                        101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
-                        "wait_descriptor",
-                        "Upload to {} started".format(args[3])
-                    )
+                translate_progress(
+                    "wait_descriptor",
+                    "Upload to {} started".format(args[3])
+                )
 
         elif subtype == 'UPLOADED':
             # we only need ONE successful upload to happen for the
@@ -433,26 +451,26 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
             # properly with these now, so we can use those
             # (i.e. instead of matching to "attempted_uploads")
             if args[3] in attempted_uploads:
-                if progress:
-                    progress(
-                        101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
-                        "wait_descriptor",
-                        "Successful upload to {}".format(args[3])
-                    )
                 confirmed_uploads.add(args[3])
                 log.msg("Uploaded '{}' to '{}'".format(args[1], args[3]))
+                translate_progress(
+                    "wait_descriptor",
+                    "Successful upload to {}".format(args[3])
+                )
                 if not uploaded.called:
-                    uploaded.callback(onion)
+                    if await_all:
+                        if (len(failed_uploads) + len(confirmed_uploads)) == len(attempted_uploads):
+                            uploaded.callback(onion)
+                    else:
+                        uploaded.callback(onion)
 
         elif subtype == 'FAILED':
             if hostname_matches('{}.onion'.format(args[1])):
                 failed_uploads.add(args[3])
-                if progress:
-                    progress(
-                        101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
-                        "wait_descriptor",
-                        "Failed upload to {}".format(args[3])
-                    )
+                translate_progress(
+                    "wait_descriptor",
+                    "Failed upload to {}".format(args[3])
+                )
                 if failed_uploads == attempted_uploads:
                     msg = "Failed to upload '{}' to: {}".format(
                         args[1],
@@ -466,10 +484,20 @@ def _await_descriptor_upload(tor_protocol, onion, progress):
     yield tor_protocol.add_event_listener('HS_DESC', hs_desc)
     yield uploaded
     yield tor_protocol.remove_event_listener('HS_DESC', hs_desc)
+    # ensure we show "100%" at the end
+    if progress:
+        if await_all_uploads:
+            msg = "Completed descriptor uploads"
+        else:
+            msg = "At least one descriptor uploaded"
+        try:
+            progress(100.0, "wait_descriptor", msg)
+        except Exception:
+            log.err()
 
 
 @defer.inlineCallbacks
-def _add_ephemeral_service(config, onion, progress, version, auth=None):
+def _add_ephemeral_service(config, onion, progress, version, auth=None, await_all_uploads=None):
     """
     Internal Helper.
 
@@ -498,7 +526,7 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None):
     # we have to keep this as a Deferred for now so that HS_DESC
     # listener gets added before we issue ADD_ONION
     assert version in (2, 3)
-    uploaded_d = _await_descriptor_upload(config.tor_protocol, onion, progress)
+    uploaded_d = _await_descriptor_upload(config.tor_protocol, onion, progress, await_all_uploads)
 
     # we allow a key to be passed that *doestn'* start with
     # "RSA1024:" because having to escape the ":" for endpoint
@@ -645,7 +673,8 @@ class EphemeralAuthenticatedOnionService(object):
                private_key=None,  # or DISCARD or a key
                version=None,
                progress=None,
-               auth=None):  # AuthBasic, or AuthStealth instance
+               auth=None,
+               await_all_uploads=None):  # AuthBasic, or AuthStealth instance
 
         """
         returns a new EphemeralAuthenticatedOnionService after adding it
@@ -693,7 +722,7 @@ class EphemeralAuthenticatedOnionService(object):
             detach=detach,
             version=version,
         )
-        yield _add_ephemeral_service(config, onion, progress, version, auth)
+        yield _add_ephemeral_service(config, onion, progress, version, auth, await_all_uploads)
 
         defer.returnValue(onion)
 
@@ -794,7 +823,8 @@ class EphemeralOnionService(object):
                detach=False,
                private_key=None,  # or DISCARD
                version=None,
-               progress=None):
+               progress=None,
+               await_all_uploads=None):
         """
         returns a new EphemeralOnionService after adding it to the
         provided config and ensuring at least one of its descriptors
@@ -831,14 +861,15 @@ class EphemeralOnionService(object):
             private_key=private_key,
             detach=detach,
             version=version,
+            await_all_uploads=await_all_uploads,
         )
 
-        yield _add_ephemeral_service(config, onion, progress, version)
+        yield _add_ephemeral_service(config, onion, progress, version, None, await_all_uploads)
 
         defer.returnValue(onion)
 
     def __init__(self, config, ports, hostname=None, private_key=None, version=3,
-                 detach=False, **kwarg):
+                 detach=False, await_all_uploads=None, **kwarg):
         """
         Users should create instances of this class by using the async
         method :meth:`txtorcon.EphemeralOnionService.create`
@@ -1015,7 +1046,7 @@ class FilesystemAuthenticatedOnionService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(reactor, config, hsdir, ports, auth=None, version=3, group_readable=False, progress=None):
+    def create(reactor, config, hsdir, ports, auth=None, version=3, group_readable=False, progress=None, await_all_uploads=None):
         """
         returns a new FilesystemAuthenticatedOnionService after adding it
         to the provided config and ensureing at least one of its
@@ -1052,38 +1083,43 @@ class FilesystemAuthenticatedOnionService(object):
         )
         config.HiddenServices.append(fhs)
 
+        def translate_progress(pct, tag, description):
+            print("OHAI {} {}".format(pct, tag))
+            # XXX fixme actually translate..
+            if progress:
+                progress(pct, tag, description)
+
         # most of this code same as non-authenticated version; can we share?
         # we .save() down below, after setting HS_DESC listener
         uploaded = [None]
         if not version_at_least(config.tor_protocol.version, 0, 2, 7, 2):
-            if progress:
-                progress(
-                    102, "wait_desctiptor",
-                    "Adding an onion service to Tor requires at least version"
-                )
-                progress(
-                    103, "wait_desctiptor",
-                    "0.2.7.2 so that HS_DESC events work properly and we can"
-                )
-                progress(
-                    104, "wait_desctiptor",
-                    "detect our desctiptor being uploaded."
-                )
-                progress(
-                    105, "wait_desctiptor",
-                    "Your version is '{}'".format(config.tor_protocol.version),
-                )
-                progress(
-                    106, "wait_desctiptor",
-                    "So, we'll just declare it done right now..."
-                )
-                uploaded[0] = defer.succeed(None)
+            translate_progress(
+                102, "wait_desctiptor",
+                "Adding an onion service to Tor requires at least version"
+            )
+            translate_progress(
+                103, "wait_desctiptor",
+                "0.2.7.2 so that HS_DESC events work properly and we can"
+            )
+            translate_progress(
+                104, "wait_desctiptor",
+                "detect our desctiptor being uploaded."
+            )
+            translate_progress(
+                105, "wait_desctiptor",
+                "Your version is '{}'".format(config.tor_protocol.version),
+            )
+            translate_progress(
+                106, "wait_desctiptor",
+                "So, we'll just declare it done right now..."
+            )
+            uploaded[0] = defer.succeed(None)
         else:
             # XXX actually, there's some versions of Tor when v3
             # filesystem services could be added but they didn't send
             # HS_DESC updates -- did any of these actually get
             # released?!
-            uploaded[0] = _await_descriptor_upload(config.tor_protocol, fhs, progress)
+            uploaded[0] = _await_descriptor_upload(config.tor_protocol, fhs, progress, await_all_uploads)
 
         yield config.save()
         yield uploaded[0]
