@@ -404,17 +404,20 @@ def _await_descriptor_upload(tor_protocol, onion, progress, await_all_uploads):
     uploaded = defer.Deferred()
     await_all = False if await_all_uploads is None else await_all_uploads
 
-    def translate_progress(pct, tag, description):
-        done = len(confirmed_uploads) + len(failed_uploads)
-        done_endpoint = float(len(attempted_uploads)) if await_all else 1.0
-        done_pct = float(done) / done_endpoint
-        started_pct = float(min(16, len(attempted_uploads))) / 16.0
+    def translate_progress(tag, description):
         if progress:
-            progress(
-                (done_pct * 50.0) + (started_pct * 50.0),
-                tag,
-                description,
-            )
+            done = len(confirmed_uploads) + len(failed_uploads)
+            done_endpoint = float(len(attempted_uploads)) if await_all else 1.0
+            done_pct = 0 if not attempted_uploads else float(done) / done_endpoint
+            started_pct = float(min(16, len(attempted_uploads))) / 16.0
+            try:
+                progress(
+                    (done_pct * 50.0) + (started_pct * 50.0),
+                    tag,
+                    description,
+                )
+            except Exception:
+                log.err()
 
     def hostname_matches(hostname):
         if IAuthenticatedOnionClients.providedBy(onion):
@@ -435,7 +438,6 @@ def _await_descriptor_upload(tor_protocol, onion, progress, await_all_uploads):
             if hostname_matches('{}.onion'.format(args[1])):
                 attempted_uploads.add(args[3])
                 translate_progress(
-                    101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
                     "wait_descriptor",
                     "Upload to {} started".format(args[3])
                 )
@@ -452,7 +454,6 @@ def _await_descriptor_upload(tor_protocol, onion, progress, await_all_uploads):
                 confirmed_uploads.add(args[3])
                 log.msg("Uploaded '{}' to '{}'".format(args[1], args[3]))
                 translate_progress(
-                    101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
                     "wait_descriptor",
                     "Successful upload to {}".format(args[3])
                 )
@@ -467,7 +468,6 @@ def _await_descriptor_upload(tor_protocol, onion, progress, await_all_uploads):
             if hostname_matches('{}.onion'.format(args[1])):
                 failed_uploads.add(args[3])
                 translate_progress(
-                    101 + (len(attempted_uploads) + len(failed_uploads)) / 2.0,
                     "wait_descriptor",
                     "Failed upload to {}".format(args[3])
                 )
@@ -484,6 +484,16 @@ def _await_descriptor_upload(tor_protocol, onion, progress, await_all_uploads):
     yield tor_protocol.add_event_listener('HS_DESC', hs_desc)
     yield uploaded
     yield tor_protocol.remove_event_listener('HS_DESC', hs_desc)
+    # ensure we show "100%" at the end
+    if progress:
+        if await_all_uploads:
+            msg = "Completed descriptor uploads"
+        else:
+            msg = "At least one descriptor uploaded"
+        try:
+            progress(100.0, "wait_descriptor", msg)
+        except Exception:
+            log.err()
 
 
 @defer.inlineCallbacks

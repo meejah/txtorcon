@@ -479,6 +479,18 @@ class TCPHiddenServiceEndpoint(object):
         """IProgressProvider API"""
         self.progress_listeners.append(listener)
 
+    def _descriptor_progress_update(self, prog, tag, summary):
+        # 'prog' here ranges from 0 -> 100.0 but we've only reserved
+        # "10.0" of the range for the "upload descriptors" portion,
+        # and we know that Tor has launched, so we're mapping "prog"
+        # to the "100 -> 110" part of the range
+        scaled_prog = (100.0 + (prog / 10.0)) * (100.0 / 110.0)
+        for p in self.progress_listeners:
+            try:
+                p(scaled_prog, tag, summary)
+            except Exception:
+                log.err()
+
     def _tor_progress_update(self, prog, tag, summary):
         # we re-adjust the percentage-scale, using 105% and 110% for
         # the two parts of waiting for descriptor upload. That is, we
@@ -489,7 +501,7 @@ class TCPHiddenServiceEndpoint(object):
             try:
                 p(scaled_prog, tag, summary)
             except Exception:
-                pass
+                log.err()
 
     @defer.inlineCallbacks
     def listen(self, protocolfactory):
@@ -554,8 +566,9 @@ class TCPHiddenServiceEndpoint(object):
 
         # see note in _tor_progress_update; we extend the percent
         # range to 110% for the descriptor upload
-        self._tor_progress_update(101.0, 'wait_descriptor',
-                                  'uploading descriptor')
+        self._descriptor_progress_update(
+            0.0, 'wait_descriptor', 'uploading descriptor'
+        )
 
         # see if the hidden-serivce instance we want is already in the
         # config; for non-ephemeral services, the directory is unique;
@@ -576,7 +589,7 @@ class TCPHiddenServiceEndpoint(object):
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                         private_key=self.private_key,
                         detach=False,
-                        progress=self._tor_progress_update,
+                        progress=self._descriptor_progress_update,
                         version=self.version,
                         auth=self.auth,
                     )
@@ -588,7 +601,7 @@ class TCPHiddenServiceEndpoint(object):
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                         private_key=self.private_key,
                         detach=False,
-                        progress=self._tor_progress_update,
+                        progress=self._descriptor_progress_update,
                         version=self.version,
                     )
             else:
@@ -599,7 +612,7 @@ class TCPHiddenServiceEndpoint(object):
                         self.hidden_service_dir,
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
                         auth=self.auth,  # AuthBasic or AuthStealth
-                        progress=self._tor_progress_update,
+                        progress=self._descriptor_progress_update,
                         group_readable=self.group_readable,
                         version=self.version,
                     )
@@ -609,7 +622,7 @@ class TCPHiddenServiceEndpoint(object):
                         self._config,
                         self.hidden_service_dir,
                         ['%d 127.0.0.1:%d' % (self.public_port, self.local_port)],
-                        progress=self._tor_progress_update,
+                        progress=self._descriptor_progress_update,
                         group_readable=self.group_readable,
                         version=self.version,
                     )
@@ -622,11 +635,6 @@ class TCPHiddenServiceEndpoint(object):
                         self.hiddenservice = hs
 
         assert self.hiddenservice is not None, "internal error"
-
-        # note: _tor_progress_update is pro-rating the progress to give
-        # us more range (as tor itself uses [0->100])
-        self._tor_progress_update(110.0, 'wait_descriptor',
-                                  'At least one descriptor uploaded')
 
         if IAuthenticatedOnionClients.providedBy(self.hiddenservice):
             log.msg('Started authenticated onion service on:')

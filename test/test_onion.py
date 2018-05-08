@@ -624,8 +624,11 @@ class OnionServiceTest(unittest.TestCase):
         with open(join(hsdir, "hostname"), "w") as f:
             f.write('{}.onion'.format(_test_onion_id))
 
-        def my_progress(a, b, c):
+        class Bad(Exception):
             pass
+
+        def my_progress(a, b, c):
+            raise Bad("it's bad")
 
         eph_d = FilesystemOnionService.create(
             Mock(),
@@ -643,6 +646,8 @@ class OnionServiceTest(unittest.TestCase):
         cb('UPLOADED {} UNKNOWN hsdir0'.format(_test_onion_id))
 
         yield eph_d
+        errs = self.flushLoggedErrors(Bad)
+        self.assertEqual(3, len(errs))  # because there's a "100%" one too
 
     @skipIf('pypy' in sys.version.lower(), "Weird OpenSSL+PyPy problem on Travis")
     @defer.inlineCallbacks
