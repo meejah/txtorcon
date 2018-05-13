@@ -963,6 +963,11 @@ class Tor(object):
             arguments: ``(percent_done, tag, description)`` which may
             be called any number of times to indicate some progress has
             been made.
+
+        :param await_all_uploads: if False (the default) then we wait
+            until at least one upload of our Descriptor to a Directory
+            Authority has completed; if True we wait until all have
+            completed.
         """
         if version not in (2, 3):
             raise ValueError(
