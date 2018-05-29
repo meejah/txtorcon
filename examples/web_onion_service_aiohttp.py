@@ -1,6 +1,5 @@
 # This launches Tor and starts an Onion service using Twisted and
-# txtorcon, and then starts a Web server (on a Unix socket) using the
-# aiohttp library.
+# txtorcon, and then starts a Web server using the aiohttp library.
 #
 # This style of interop between asyncio and Twisted requires twisted
 # to use the "asyncioreactor" and for code to convert Futures/Tasks to
@@ -9,8 +8,8 @@
 # Thanks to Mark Williams for the inspiration, and this code:
 # https://gist.github.com/markrwilliams/bffb9c293194d105169ea06f03484ba1
 #
-# note: if run this in Python2, you'll get SyntaxErrors before we can
-# tell the user nicely
+# note: if run in Python2, there are SyntaxErrors before we can tell
+# the user nicely
 
 import os
 import asyncio
