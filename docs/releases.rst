@@ -7,15 +7,27 @@ There isn't a "release schedule" in any sense. If there is something
 in master your project depends upon, let me know and I'll do a
 release.
 
-Starting after v0.20.x versions will follow `calendar versioning
-<http://calver.org/>`_ with the major version being the 2-digit
-year. The second digit will be "non-trivial" releases and the third
-will be for bugfix releases.
+txtorcon follows `calendar versioning <http://calver.org/>`_ with the
+major version being the 2-digit year. The second digit will be
+"non-trivial" releases and the third will be for bugfix releases. So
+the second release in 2019 would be "19.2.0" and a bug-fix release of
+that will be "19.2.1".
+
+See also :ref:`api_stability`.
+
 
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v18.0.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
+
+
+v18.0.0
+-------
+
+June 21, 2018
+
+ * `txtorcon-18.0.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.0.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.0.0>`_ (:download:`local-sig </../signatues/txtorcon-18.0.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-18.0.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.0.0.tar.gz>`_)
 
  * `await_all_uploads` options when creating Onions
  * properly re-map progress percentages (including descriptor uploads)

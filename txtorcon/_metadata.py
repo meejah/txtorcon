@@ -1,4 +1,4 @@
-__version__ = '0.20.0'
+__version__ = '18.0.0'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/txtorcon'
