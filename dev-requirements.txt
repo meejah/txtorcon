@@ -9,7 +9,7 @@ codecov
 wheel
 twine
 pyflakes
-pep8
+pycodestyle
 mock
 ipaddress>=1.0.16
 geoip
