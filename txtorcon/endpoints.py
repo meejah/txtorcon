@@ -909,7 +909,7 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
         # see TorConfig for more fun-times regarding *PortLines, including
         # the __*Port things...
         if socks_ports == ['DEFAULT']:
-            default = yield control_protocol.get_conf_one('__SocksPort')
+            default = yield control_protocol.get_conf_single('__SocksPort')
             socks_ports = [default]
     else:
         # return from get_conf was an empty dict; we want a list

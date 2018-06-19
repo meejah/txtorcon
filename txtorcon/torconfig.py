@@ -1050,7 +1050,7 @@ class TorConfig(object):
                         initial = defaults[name[:-5]]
                     except KeyError:
                         default_key = '__{}'.format(name[:-5])
-                        default = yield self.protocol.get_conf_one(default_key)
+                        default = yield self.protocol.get_conf_single(default_key)
                         if not default:
                             initial = []
                         else:

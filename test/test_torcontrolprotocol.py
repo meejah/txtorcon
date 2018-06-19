@@ -637,8 +637,8 @@ OK'''.format(unexisting_file))
         self.send(b"250 ORPort=0")
         return d
 
-    def test_getconf_one(self):
-        d = self.protocol.get_conf_one("SOCKSPORT")
+    def test_getconf_single(self):
+        d = self.protocol.get_conf_single("SOCKSPORT")
         d.addCallback(CallbackChecker('9050'))
         self.send(b"250 SocksPort=9050")
         return d
@@ -758,6 +758,20 @@ OK'''.format(unexisting_file))
     def test_getinfo(self):
         d = self.protocol.get_info("version")
         d.addCallback(CallbackChecker({'version': '0.2.2.34'}))
+        d.addErrback(self.fail)
+
+        self.send(b"250-version=0.2.2.34")
+        self.send(b"250 OK")
+
+        self.assertEqual(
+            self.transport.value(),
+            b"GETINFO version\r\n",
+        )
+        return d
+
+    def test_getinfo_single(self):
+        d = self.protocol.get_info_single("version")
+        d.addCallback(CallbackChecker('0.2.2.34'))
         d.addErrback(self.fail)
 
         self.send(b"250-version=0.2.2.34")

@@ -405,6 +405,23 @@ class TorControlProtocol(LineOnlyReceiver):
         d.addCallback(parse_keywords, key_hints=args)
         return d
 
+    def get_info_single(self, key):
+        """
+        Uses GETINFO to obtain informatoin from Tor.
+
+        :param key:
+            the name of a GETINFO key to retrieve. For valid keys, see
+            control-spec.txt from torspec.
+
+        :return:
+            a ``Deferred`` which will callback with the value for that
+            key (a string).
+        """
+        d = self.get_info_raw(key)
+        d.addCallback(parse_keywords, key_hints=[key])
+        d.addCallback(lambda values: values[key])
+        return d
+
     def get_conf(self, *args):
         """
         Uses GETCONF to obtain configuration values from Tor.
@@ -432,7 +449,7 @@ class TorControlProtocol(LineOnlyReceiver):
         d.addCallback(parse_keywords).addErrback(log.err)
         return d
 
-    def get_conf_one(self, key):
+    def get_conf_single(self, key):
         """
         Uses GETCONF to obtain configuration values from Tor.
 

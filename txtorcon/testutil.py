@@ -96,7 +96,7 @@ class FakeControlProtocol(object):
         return d
 
     get_conf_raw = get_conf  # up to test author ensure the answer is a raw string
-    get_conf_one = get_conf
+    get_conf_single = get_conf
 
     def set_conf(self, *args):
         for i in range(0, len(args), 2):

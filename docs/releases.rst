@@ -27,8 +27,9 @@ unreleased
    async methods returning Deferred -- they always should have been; new
    code can now be assured that the event-listener change is known to Tor
    by awaiting this Deferred.
- * :meth:`txtorcon.TorControlProtocol.get_conf_on` method added, which
+ * :meth:`txtorcon.TorControlProtocol.get_conf_single` method added, which
    gets and returns (asynchronously) a single GETCONF key (instead of a dict)
+ * also :meth:`txtorcon.TorControlProtocol.get_info_single` similar to above
  * if Tor disconnects while a command is in-progress or pending, the
    `.errback()` for the corresponding Deferred is now correctly fired
    (with a :class:`txtorcon.TorDisconnectError`
