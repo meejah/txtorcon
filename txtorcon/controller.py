@@ -503,11 +503,14 @@ class Tor(object):
 
     @property
     def process(self):
+        """
+        An object implementing
+        :api:`twisted.internet.interfaces.IProcessProtocol` if this
+        Tor instance was launched, or None.
+        """
         if self._process_protocol:
             return self._process_protocol
-        raise RuntimeError(
-            "This Tor instance was not launched by us; no process to return"
-        )
+        return None
 
     @property
     def protocol(self):

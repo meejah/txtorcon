@@ -1073,9 +1073,10 @@ class TorAttributeTests(unittest.TestCase):
         self.tor = Tor(reactor, proto, _tor_config=self.cfg)
 
     def test_process(self):
-        with self.assertRaises(Exception) as ctx:
+        self.assertIs(
+            None,
             self.tor.process
-        self.assertTrue('not launched by us' in str(ctx.exception))
+        )
 
     def test_when_connected_already(self):
         tpp = TorProcessProtocol(lambda: None)
