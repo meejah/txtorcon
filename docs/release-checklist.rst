@@ -12,6 +12,10 @@ Release Checklist
 * run all tests, on all configurations
    * "tox"
 
+* ensure long_description will render properly:
+   * python setup.py check -r -s
+   * tox -e readme_render
+
 * "make pep8" should run cleanly (ideally)
 
 * update docs/releases.rst to reflect upcoming reality
