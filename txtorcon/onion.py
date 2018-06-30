@@ -1356,7 +1356,7 @@ def _validate_ports_low_level(ports):
     """
     if not isinstance(ports, (list, tuple)):
         raise ValueError("'ports' must be a list of strings")
-    if any([not isinstance(x, str) for x in ports]):
+    if any([not isinstance(x, (six.text_type, str)) for x in ports]):
         raise ValueError("'ports' must be a list of strings")
     for port in ports:
         _validate_single_port_string(port)
