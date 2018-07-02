@@ -9,7 +9,6 @@ from twisted.internet import task, defer
 from twisted.internet.interfaces import IStreamClientEndpoint, IReactorCore
 
 import tempfile
-import six
 
 from ipaddress import IPv4Address
 
@@ -32,8 +31,10 @@ from txtorcon.interface import CircuitListenerMixin
 from txtorcon.torstate import _extract_reason
 from txtorcon.circuit import _get_circuit_attacher
 
-if six.PY3:
+try:
     from .py3_torstate import TorStatePy3Tests  # noqa
+except SyntaxError:
+    pass
 
 
 @implementer(ICircuitListener)
