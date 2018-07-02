@@ -653,7 +653,9 @@ class TorState(object):
             txtorlog.msg("circuit:", circ)
             if circ is None or circ is TorState.DO_NOT_ATTACH:
                 # tell Tor to do what it likes
-                return self.protocol.queue_command(b"ATTACHSTREAM %d 0" % stream.id)
+                return self.protocol.queue_command(
+                    u"ATTACHSTREAM {} 0".format(stream.id).encode("ascii)
+                )
 
             else:
                 # should get a Circuit instance; check it for suitability
@@ -673,7 +675,7 @@ class TorState(object):
                     )
                 # we've got a valid Circuit instance; issue the command
                 return self.protocol.queue_command(
-                    b"ATTACHSTREAM %d %d" % (stream.id, circ.id)
+                    u"ATTACHSTREAM {} {}".format(stream.id, circ.id).encode("ascii")
                 )
 
         circ_d.addCallback(issue_stream_attach)
