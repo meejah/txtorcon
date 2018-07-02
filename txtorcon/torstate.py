@@ -654,7 +654,7 @@ class TorState(object):
             if circ is None or circ is TorState.DO_NOT_ATTACH:
                 # tell Tor to do what it likes
                 return self.protocol.queue_command(
-                    u"ATTACHSTREAM {} 0".format(stream.id).encode("ascii)
+                    u"ATTACHSTREAM {} 0".format(stream.id).encode("ascii")
                 )
 
             else:
