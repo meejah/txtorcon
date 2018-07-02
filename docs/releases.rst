@@ -21,6 +21,15 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
 
+v18.0.2
+-------
+
+July 2, 2018
+
+ * `txtorcon-18.0.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.0.2.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.0.2>`_ (:download:`local-sig </../signatues/txtorcon-18.0.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-18.0.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.0.2.tar.gz>`_)
+ * Python3.4 doesn't support async-def or await
+
+
 v18.0.1
 -------
 
