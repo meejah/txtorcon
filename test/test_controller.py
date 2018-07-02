@@ -27,7 +27,7 @@ from .util import TempDir
 from zope.interface import implementer, directlyProvides
 
 
-if not six.PY2:
+if not six.PY2 and not six.PY34:
     from .py3_test_controller import ClientOnionServiceAuthenticationTests3  # noqa: F401
 
 
