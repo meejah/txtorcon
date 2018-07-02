@@ -21,6 +21,14 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
 
+v18.0.1
+-------
+
+June 30, 2018
+
+ * `txtorcon-18.0.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.0.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.0.1>`_ (:download:`local-sig </../signatues/txtorcon-18.0.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-18.0.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.0.1.tar.gz>`_)
+ * fix a Python2/3 regression when parsing onion services
+
 
 v18.0.0
 -------
