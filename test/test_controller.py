@@ -20,14 +20,14 @@ from txtorcon import TorProcessProtocol
 from txtorcon import launch
 from txtorcon import connect
 from txtorcon import AuthBasic
-from txtorcon.controller import _is_non_public_numeric_address, Tor
+from txtorcon.controller import _is_non_public_numeric_address, Tor, HAVE_ASYNC
 from txtorcon.interface import ITorControlProtocol
 from .util import TempDir
 
 from zope.interface import implementer, directlyProvides
 
 
-if not six.PY2 and not six.PY34:
+if HAVE_ASYNC:
     from .py3_test_controller import ClientOnionServiceAuthenticationTests3  # noqa: F401
 
 
