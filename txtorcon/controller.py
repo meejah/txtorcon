@@ -38,7 +38,7 @@ from txtorcon.util import _is_non_public_numeric_address
 
 from . import socks
 from .interface import ITor
-if not six.PY2:
+if not six.PY2 and not six.PY34:
     from .controller_py3 import _AsyncOnionAuthContext
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
@@ -664,7 +664,7 @@ class Tor(object):
         and remove_onion_authentication methods so on Python2 you can
         use those together with try/finally to get the same effect.
         """
-        if six.PY2:
+        if six.PY2 or six.PY34:
             raise RuntimeError(
                 "async context-managers not supported in Python2"
             )
