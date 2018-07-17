@@ -23,6 +23,7 @@ from txtorcon.util import version_at_least
 from txtorcon.util import default_control_port
 from txtorcon.util import _Listener, _ListenerCollection
 from txtorcon.util import create_tbb_web_headers
+from txtorcon.util import maybe_create_db
 from txtorcon.testutil import FakeControlProtocol
 
 
@@ -56,6 +57,17 @@ class TestGeoIpDatabaseLoading(unittest.TestCase):
         "fail gracefully if a db is missing"
         from txtorcon import util
         self.assertRaises(IOError, util.create_geoip, '_missing_path_')
+
+    def test_create_fails(self):
+
+        def boom(_):
+            raise IOError("testing")
+
+        with patch('txtorcon.util.create_geoip', side_effect=boom):
+            self.assertEqual(
+                None,
+                maybe_create_db("/dev/null")
+            )
 
     def test_missing_geoip_module(self):
         "return none if geoip module is missing"
