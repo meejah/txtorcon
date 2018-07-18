@@ -551,8 +551,8 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
         d2.addCallback(lambda _: Failure(CircuitBuildTimedOutError("circuit build timed out")))
         return d2
 
-    d.addCallback(lambda circ: circ.when_built())
     d.addCallback(get_circuit)
+    d.addCallback(lambda circ: circ.when_built())
     d.addErrback(trap_cancel)
 
     reactor.callLater(timeout, d.cancel)
