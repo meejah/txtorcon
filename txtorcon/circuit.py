@@ -23,6 +23,24 @@ from txtorcon.util import find_keywords, maybe_ip_addr, SingleObserver
 TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 
+def _extract_reason(kw):
+    """
+    Internal helper. Extracts a reason (possibly both reasons!) from
+    the kwargs for a circuit failed or closed event.
+    """
+    try:
+        # we "often" have a REASON
+        reason = kw['REASON']
+        try:
+            # ...and sometimes even have a REMOTE_REASON
+            reason = '{}, {}'.format(reason, kw['REMOTE_REASON'])
+        except KeyError:
+            pass  # should still be the 'REASON' error if we had it
+    except KeyError:
+        reason = "unknown"
+    return reason
+
+
 @implementer(IStreamAttacher)
 class _CircuitAttacher(object):
     """
@@ -500,7 +518,7 @@ class Circuit(object):
 
 
 class CircuitBuildTimedOutError(Exception):
-        """
+    """
     This exception is thrown when using `timed_circuit_build`
     and the circuit build times-out.
     """
@@ -530,11 +548,12 @@ def build_timeout_circuit(tor_state, reactor, path, timeout, using_guards=False)
             d2 = timed_circuit[0].close()
         else:
             d2 = defer.succeed(None)
-        d2.addCallback(lambda ign: Failure(CircuitBuildTimedOutError("circuit build timed out")))
+        d2.addCallback(lambda _: Failure(CircuitBuildTimedOutError("circuit build timed out")))
         return d2
 
     d.addCallback(get_circuit)
     d.addCallback(lambda circ: circ.when_built())
     d.addErrback(trap_cancel)
+
     reactor.callLater(timeout, d.cancel)
     return d

@@ -28,8 +28,8 @@ from txtorcon.interface import ICircuitListener
 from txtorcon.interface import IStreamListener
 from txtorcon.interface import StreamListenerMixin
 from txtorcon.interface import CircuitListenerMixin
-from txtorcon.torstate import _extract_reason
 from txtorcon.circuit import _get_circuit_attacher
+from txtorcon.circuit import _extract_reason
 
 try:
     from .py3_torstate import TorStatePy3Tests  # noqa
@@ -1372,6 +1372,52 @@ s Fast Guard Running Stable Valid
         d.addErrback(check_for_timeout_error)
         return d
 
+    @defer.inlineCallbacks
+    def test_build_circuit_cancelled(self):
+        class FakeRouter:
+            def __init__(self, i):
+                self.id_hex = i
+                self.flags = []
+
+        path = []
+        for x in range(3):
+            path.append(FakeRouter("$%040d" % x))
+        # can't just check flags for guard status, need to know if
+        # it's in the running Tor's notion of Entry Guards
+        path[0].flags = ['guard']
+
+        class FakeCircuit:
+            close_called = False
+
+            def when_built(self):
+                return defer.Deferred()
+
+            def close(self):
+                self.close_called = True
+                return defer.succeed(None)
+
+        circ = FakeCircuit()
+
+        def _build(*args, **kw):
+            print("DING {} {}".format(args, kw))
+            return defer.succeed(circ)
+        self.state.build_circuit = _build
+
+        timeout = 10
+        clock = task.Clock()
+
+        # we want this circuit to get to BUILT, but *then* we call
+        # .cancel() on the deferred -- in which case, the circuit must
+        # be closed
+        d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=False)
+        clock.advance(1)
+        print("DING {}".format(self.state))
+        d.cancel()
+
+        with self.assertRaises(CircuitBuildTimedOutError):
+            yield d
+        self.assertTrue(circ.close_called)
+
     def test_build_circuit_timeout_after_progress(self):
         """
         Similar to above but we timeout after Tor has ack'd our
@@ -1433,4 +1479,33 @@ s Fast Guard Running Stable Valid
         # should have gotten a warning about this not being an entry
         # guard
         self.assertEqual(len(self.flushWarnings()), 1)
+        return d
+
+    def test_build_circuit_failure(self):
+        class FakeRouter:
+            def __init__(self, i):
+                self.id_hex = i
+                self.flags = []
+
+        path = []
+        for x in range(3):
+            path.append(FakeRouter("$%040d" % x))
+        path[0].flags = ['guard']
+
+        timeout = 10
+        clock = task.Clock()
+        d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=True)
+        d.addCallback(self.circuit_callback)
+
+        self.assertEqual(self.transport.value(), b'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002\r\n')
+        self.send(b"250 EXTENDED 1234")
+        # we can't just .send(b'650 CIRC 1234 BUILT') this because we
+        # didn't fully hook up the protocol to the state, e.g. via
+        # post_bootstrap etc.
+        self.state.circuits[1234].update(['1234', 'FAILED', 'REASON=TIMEOUT'])
+
+        def check_reason(fail):
+            self.assertEqual(fail.value.reason, 'TIMEOUT')
+        d.addErrback(check_reason)
+
         return d
