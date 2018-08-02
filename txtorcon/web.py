@@ -13,25 +13,28 @@ from zope.interface import implementer
 
 from txtorcon.socks import TorSocksEndpoint
 from txtorcon.log import txtorlog
+from txtorcon.util import SingleObserver
 
 
 @implementer(IAgentEndpointFactory)
 class _AgentEndpointFactoryUsingTor(object):
     def __init__(self, reactor, tor_socks_endpoint):
         self._reactor = reactor
-        self._proxy_ep = tor_socks_endpoint
+        self._proxy_ep = SingleObserver()
         # if _proxy_ep is Deferred, but we get called twice, we must
         # remember the resolved object here
         if isinstance(tor_socks_endpoint, Deferred):
-            self._proxy_ep.addCallback(self._set_proxy)
+            tor_socks_endpoint.addCallback(self._set_proxy)
+        else:
+            self._proxy_ep.fire(tor_socks_endpoint)
 
     def _set_proxy(self, p):
-        self._proxy_ep = p
+        self._proxy_ep.fire(p)
         return p
 
     def endpointForURI(self, uri):
         return TorSocksEndpoint(
-            self._proxy_ep,
+            self._proxy_ep.when_fired(),
             uri.host,
             uri.port,
             tls=(uri.scheme == b'https'),

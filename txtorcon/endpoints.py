@@ -922,7 +922,7 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
 
     # could check platform? but why would you have unix ports on a
     # platform that doesn't?
-    unix_ports = set([p.startswith('unix:') for p in socks_ports])
+    unix_ports = set([p for p in socks_ports if p.startswith('unix:')])
     tcp_ports = set(socks_ports) - unix_ports
 
     socks_endpoint = None
