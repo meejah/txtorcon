@@ -25,6 +25,9 @@ unreleased
    available) when circuit-builds fail (thanks David Stainton)
  * more-robust detection of "do we have Python3" (thanks `Balint
    Reczey <https://github.com/rbalint>`_)
+ * fix parsing of Unix-sockets for SOCKS
+ * better handling of concurrent Web agent requests before SOCKS ports
+   are known
 
 
 v18.0.2
