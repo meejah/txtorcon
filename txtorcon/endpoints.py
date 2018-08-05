@@ -929,10 +929,7 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
     for p in list(unix_ports) + list(tcp_ports):  # prefer unix-ports
         if socks_config and p != socks_config:
             continue
-        try:
-            socks_endpoint = _endpoint_from_socksport_line(reactor, p)
-        except Exception as e:
-            log.msg("clientFromString('{}') failed: {}".format(p, e))
+        socks_endpoint = _endpoint_from_socksport_line(reactor, p)
 
     # if we still don't have an endpoint, nothing worked (or there
     # were no SOCKSPort lines at all) so we add config to tor
