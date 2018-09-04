@@ -42,7 +42,7 @@ from .interface import ITor
 try:
     from .controller_py3 import _AsyncOnionAuthContext
     HAVE_ASYNC = True
-except SyntaxError:
+except Exception:
     HAVE_ASYNC = False
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
