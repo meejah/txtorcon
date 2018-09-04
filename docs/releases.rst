@@ -23,6 +23,8 @@ unreleased
 
  * better error-reporting (include REASON and REMOTE_REASON if
    available) when circuit-builds fail (thanks David Stainton)
+ * more-robust detection of "do we have Python3" (thanks `Balint
+   Reczey <https://github.com/rbalint>`_)
 
 
 v18.0.2
