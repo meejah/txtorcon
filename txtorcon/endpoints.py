@@ -17,6 +17,7 @@ from twisted.internet.interfaces import IStreamClientEndpointStringParserWithRea
 from twisted.internet import defer, error
 from twisted.python import log
 from twisted.python.deprecate import deprecated
+from twisted.python.failure import Failure
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamServerEndpoint
 from twisted.internet.interfaces import IStreamClientEndpoint
@@ -922,7 +923,7 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
 
     # could check platform? but why would you have unix ports on a
     # platform that doesn't?
-    unix_ports = set([p.startswith('unix:') for p in socks_ports])
+    unix_ports = set([p for p in socks_ports if p.startswith('unix:')])
     tcp_ports = set(socks_ports) - unix_ports
 
     socks_endpoint = None
@@ -932,7 +933,10 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
         try:
             socks_endpoint = _endpoint_from_socksport_line(reactor, p)
         except Exception as e:
-            log.msg("clientFromString('{}') failed: {}".format(p, e))
+            log.err(
+                Failure(),
+                "failed to process SOCKS port '{}': {}".format(p, e)
+            )
 
     # if we still don't have an endpoint, nothing worked (or there
     # were no SOCKSPort lines at all) so we add config to tor

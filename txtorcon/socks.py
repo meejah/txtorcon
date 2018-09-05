@@ -741,7 +741,8 @@ class TorSocksEndpoint(object):
             if not IStreamClientEndpoint.providedBy(proxy_ep):
                 raise ValueError(
                     "The Deferred provided as 'socks_endpoint' must "
-                    "resolve to an IStreamClientEndpoint provider"
+                    "resolve to an IStreamClientEndpoint provider (got "
+                    "{})".format(type(proxy_ep).__name__)
                 )
         else:
             proxy_ep = self._proxy_ep

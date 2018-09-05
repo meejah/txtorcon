@@ -1682,6 +1682,26 @@ class TestSocksFactory(unittest.TestCase):
         self.assertEqual("/tmp/boom", ep._path)
 
     @defer.inlineCallbacks
+    def test_unix_socket_bad(self):
+        reactor = Mock()
+        cp = Mock()
+        cp.get_conf = Mock(
+            return_value=defer.succeed({
+                'SocksPort': ['unix:bad worse wosrt']
+            })
+        )
+        the_error = Exception("a bad thing")
+
+        def boom(*args, **kw):
+            raise the_error
+
+        with patch('txtorcon.endpoints.available_tcp_port', lambda r: 1234):
+            with patch('txtorcon.torconfig.UNIXClientEndpoint', boom):
+                yield _create_socks_endpoint(reactor, cp)
+        errs = self.flushLoggedErrors()
+        self.assertEqual(errs[0].value, the_error)
+
+    @defer.inlineCallbacks
     def test_nothing_exists(self):
         reactor = Mock()
         cp = Mock()
