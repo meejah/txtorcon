@@ -22,7 +22,8 @@ unreleased
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
 
  * better error-reporting (include REASON and REMOTE_REASON if
-   available) when circuit-builds fail (thanks David Stainton)
+   available) when circuit-builds fail (thanks `David Stainton
+   <https://github.com/david415>`_)
  * more-robust detection of "do we have Python3" (thanks `Balint
    Reczey <https://github.com/rbalint>`_)
  * fix parsing of Unix-sockets for SOCKS
