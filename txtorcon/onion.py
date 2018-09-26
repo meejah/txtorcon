@@ -1311,11 +1311,20 @@ def _validate_ports(reactor, ports):
             try:
                 local = int(local)
             except ValueError:
-                if not local.startswith('unix:/'):
-                    raise ValueError(
-                        "local port must be either an integer"
-                        " or start with unix:/"
-                    )
+                if local.startswith('unix:/'):
+                    pass
+                else:
+                    if ':' not in local:
+                        raise ValueError(
+                            "local port must be either an integer"
+                            " or start with unix:/ or be an IP:port"
+                        )
+                    ip, port = local.split(':')
+                    if not _is_non_public_numeric_address(ip):
+                        log.msg(
+                            "'{}' used as onion port doesn't appear to be a "
+                            "local, numeric address".format(ip)
+                        )
                 processed_ports.append(
                     "{} {}".format(remote, local)
                 )
