@@ -264,6 +264,38 @@ class OnionServiceTest(unittest.TestCase):
         self.assertEqual(u"ADD_ONION NEW:ED25519-V3 Port=80,127.0.0.1:80 Flags=Detach", cmd)
         d.callback("PrivateKey={}\nServiceID={}".format(_test_private_key_blob, _test_onion_id))
 
+    def test_ephemeral_v3_ip_addr_tuple(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        # returns a Deferred we're ignoring
+        EphemeralOnionService.create(
+            Mock(),
+            config,
+            ports=[(80, "192.168.1.2:80")],
+            detach=True,
+            version=3,
+        )
+
+        cmd, d = protocol.commands[0]
+        self.assertEqual(u"ADD_ONION NEW:ED25519-V3 Port=80,192.168.1.2:80 Flags=Detach", cmd)
+        d.callback("PrivateKey={}\nServiceID={}".format(_test_private_key_blob, _test_onion_id))
+
+    @defer.inlineCallbacks
+    def test_ephemeral_v3_ip_addr_tuple_non_local(self):
+        protocol = FakeControlProtocol([])
+        config = TorConfig(protocol)
+
+        # returns a Deferred we're ignoring
+        with self.assertRaises(ValueError):
+            yield EphemeralOnionService.create(
+                Mock(),
+                config,
+                ports=[(80, "hostname:80")],
+                detach=True,
+                version=3,
+            )
+
     @defer.inlineCallbacks
     def test_ephemeral_v3_wrong_key_type(self):
         protocol = FakeControlProtocol([])

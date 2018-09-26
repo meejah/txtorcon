@@ -28,6 +28,9 @@ unreleased
  * fix parsing of Unix-sockets for SOCKS
  * better handling of concurrent Web agent requests before SOCKS ports
    are known
+ * allow fowarding to ip:port pairs for Onion services when using the
+   "list of 2-tuples" method of specifying the remote vs local
+   connections.
 
 
 v18.0.2
