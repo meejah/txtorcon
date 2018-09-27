@@ -16,8 +16,8 @@ txtorcon
   .. image:: https://coveralls.io/repos/meejah/txtorcon/badge.svg
       :target: https://coveralls.io/r/meejah/txtorcon
 
-  .. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
-      :target: http://codecov.io/github/meejah/txtorcon?branch=master
+  .. image:: https://codecov.io/gh/meejah/txtorcon/branch/master/graphs/badge.svg?branch=master
+      :target: https://codecov.io/github/meejah/txtorcon?branch=master
 
   .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=stable
       :target: https://txtorcon.readthedocs.io/en/stable
