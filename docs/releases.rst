@@ -21,6 +21,13 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
 
+
+v18.1.0
+-------
+
+September 26, 2018
+
+ * `txtorcon-18.1.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.1.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.1.0>`_ (:download:`local-sig </../signatues/txtorcon-18.1.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-18.1.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.1.0.tar.gz>`_)
  * better error-reporting (include REASON and REMOTE_REASON if
    available) when circuit-builds fail (thanks `David Stainton
    <https://github.com/david415>`_)
