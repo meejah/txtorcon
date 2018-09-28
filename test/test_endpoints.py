@@ -751,7 +751,67 @@ class EndpointTests(unittest.TestCase):
         )
         self.assertEqual(ep.public_port, 88)
         self.assertEqual(ep.local_port, 1234)
-        self.assertEqual(ep.private_key, b"ED25519-V3:{}".format(b2a_base64(b"H\x9e\xa6j\x0e\x98\x85\xa9\xec\xee@\x9d&\xe2\xbfe\xc9\x90\xb9\xcb\xb2g\xb0\xab\xe4\xd0\x14c\xb0\xb2\x9dX\xfa\xaa\xf8,di8\xec\xc6\x82t\xd0A\x16>u\xde\xc6&\x82\x03\x1app\x18c`T\xc3\xdc\x1a\xca")))
+        self.assertEqual(
+            ep.private_key,
+            u"ED25519-V3:" + b2a_base64(b"H\x9e\xa6j\x0e\x98\x85\xa9\xec\xee@\x9d&\xe2\xbfe\xc9\x90\xb9\xcb\xb2g\xb0\xab\xe4\xd0\x14c\xb0\xb2\x9dX\xfa\xaa\xf8,di8\xec\xc6\x82t\xd0A\x16>u\xde\xc6&\x82\x03\x1app\x18c`T\xc3\xdc\x1a\xca").decode('ascii'),
+        )
+
+    def test_parse_via_plugin_key_from_v2_private_file(self, ftb):
+        tmp = self.mktemp()
+        os.mkdir(tmp)
+        with open(os.path.join(tmp, 'some_data'), 'w') as f:
+            f.write('-----BEGIN RSA PRIVATE KEY-----\nthekeyblob\n-----END RSA PRIVATE KEY-----\n')
+
+        # make sure we have a valid thing from get_global_tor without
+        # actually launching tor
+        config = TorConfig()
+        config.post_bootstrap = defer.succeed(config)
+        from txtorcon import torconfig
+        torconfig._global_tor_config = None
+        get_global_tor(
+            self.reactor,
+            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+        )
+        ep = serverFromString(
+            self.reactor,
+            'onion:88:localPort=1234:privateKeyFile={}'.format(os.path.join(tmp, 'some_data')),
+        )
+        self.assertEqual(ep.public_port, 88)
+        self.assertEqual(ep.local_port, 1234)
+        self.assertEqual(
+            ep.private_key,
+            u"RSA1024:thekeyblob",
+        )
+
+    def test_parse_via_plugin_key_from_invalid_private_file(self, ftb):
+        tmp = self.mktemp()
+        os.mkdir(tmp)
+        with open(os.path.join(tmp, 'some_data'), 'w') as f:
+            f.write('nothing to see here\n')
+
+        # make sure we have a valid thing from get_global_tor without
+        # actually launching tor
+        config = TorConfig()
+        config.post_bootstrap = defer.succeed(config)
+        from txtorcon import torconfig
+        torconfig._global_tor_config = None
+        get_global_tor(
+            self.reactor,
+            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+        )
+
+        with self.assertRaises(ValueError):
+            serverFromString(
+                self.reactor,
+                'onion:88:localPort=1234:privateKeyFile={}'.format(os.path.join(tmp, 'some_data')),
+            )
+
+    def test_parse_via_plugin_key_and_keyfile(self, ftb):
+        with self.assertRaises(ValueError):
+            serverFromString(
+                self.reactor,
+                'onion:88:privateKeyFile=foo:privateKey=blarg'
+            )
 
     def test_parse_via_plugin_key_and_dir(self, ftb):
         with self.assertRaises(ValueError):
