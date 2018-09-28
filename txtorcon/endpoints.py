@@ -9,6 +9,7 @@ import shutil
 import weakref
 import tempfile
 import functools
+from binascii import b2a_base64
 
 from txtorcon.util import available_tcp_port
 from txtorcon.socks import TorSocksEndpoint
@@ -811,8 +812,8 @@ def _load_private_key_file(fname):
     with open(fname, "rb") as f:
         data = f.read()
     if b"\x00\x00\x00" in data:  # v3 private key file
-        blob = data[data.find(b"\x00\x00\x00"):]
-        return u"ED25519-V3:{}".format(b2a_base64(blob))
+        blob = data[data.find(b"\x00\x00\x00") + 3:]
+        return u"ED25519-V3:{}".format(b2a_base64(blob.strip()))
     if b"-----BEGIN RSA PRIVATE KEY-----" in data:  # v2 RSA key
         blob = "".join(data.split('\n')[1:-1])
         return u"RSA1024:{}".format(blob.decode('ascii'))
@@ -826,7 +827,6 @@ def _load_private_key_file(fname):
             fname,
         )
     )
-
 
 
 @implementer(IStreamServerEndpointStringParser, IPlugin)
