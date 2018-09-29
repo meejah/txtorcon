@@ -103,9 +103,10 @@ will fire with a :class:`.Tor` instance. If you need access to the
 :class:`.TorControlProtocol` instance, it's available via the
 ``.protocol`` property (there is always exactly one of these per
 :class:`.Tor` instance). Similarly, the current configuration is
-available via ``.config``. You can change the configuration by
-updating attributes on this class but it won't take effect until you
-call :meth:`.TorConfig.save`.
+available via ``.get_config`` (which returns a Deferred firing a
+:class:`.TorConfig`). You can change the configuration by updating
+attributes on this class but it won't take effect until you call
+:meth:`.TorConfig.save`.
 
 
 Launching a New Tor
