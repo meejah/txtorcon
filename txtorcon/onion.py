@@ -170,7 +170,11 @@ class FilesystemOnionService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(reactor, config, hsdir, ports, version=3, group_readable=False, progress=None, await_all_uploads=None):
+    def create(reactor, config, hsdir, ports,
+               version=3,
+               group_readable=False,
+               progress=None,
+               await_all_uploads=None):
         """
         returns a new FilesystemOnionService after adding it to the
         provided config and ensuring at least one of its descriptors
@@ -1076,7 +1080,12 @@ class FilesystemAuthenticatedOnionService(object):
 
     @staticmethod
     @defer.inlineCallbacks
-    def create(reactor, config, hsdir, ports, auth=None, version=3, group_readable=False, progress=None, await_all_uploads=None):
+    def create(reactor, config, hsdir, ports,
+               auth=None,
+               version=3,
+               group_readable=False,
+               progress=None,
+               await_all_uploads=None):
         """
         returns a new FilesystemAuthenticatedOnionService after adding it
         to the provided config and ensureing at least one of its

@@ -21,6 +21,12 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
 
+ * introduce `non_anonymous_mode=` kwarg in :func:`txtorcon.launch`
+   enabling Tor options making Onion Services non-anonymous for the
+   server (but they use a single hop instead of three to the
+   Introduction Point so they're slightly faster).
+
+
 v18.3.0
 -------
 
