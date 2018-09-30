@@ -193,6 +193,10 @@ class FilesystemOnionService(object):
         :param progress: a callable taking (percent, tag, description)
             that is called periodically to report progress.
 
+        :param await_all_uploads: if True, the Deferred only fires
+            after ALL descriptor uploads have completed (otherwise, it
+            fires when at least one has completed).
+
         See also :meth:`txtorcon.Tor.create_onion_service` (which
         ultimately calls this).
         """
@@ -1095,6 +1099,10 @@ class FilesystemAuthenticatedOnionService(object):
 
         :param progress: a callable taking (percent, tag, description)
             that is called periodically to report progress.
+
+        :param await_all_uploads: if True, the Deferred only fires
+            after ALL descriptor uploads have completed (otherwise, it
+            fires when at least one has completed).
         """
         # if hsdir is relative, it's "least surprising" (IMO) to make
         # it into a relative path here -- otherwise, it's relative to
