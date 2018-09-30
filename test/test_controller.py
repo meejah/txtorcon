@@ -236,6 +236,20 @@ class LaunchTorTests(unittest.TestCase):
             )
         self.assertTrue("must exist" in str(ctx.exception))
 
+    @defer.inlineCallbacks
+    def test_launch_tor_non_anonymous_and_socks(self):
+        reactor = FakeReactor(self, Mock(), None, [9050])
+        with self.assertRaises(ValueError) as ctx:
+            yield launch(
+                reactor,
+                non_anonymous_mode=True,
+                socks_port=1234,
+                tor_binary="/bin/echo",
+                stdout=Mock(),
+                stderr=Mock(),
+            )
+        self.assertIn("Cannot use SOCKS", str(ctx.exception))
+
     @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
     @defer.inlineCallbacks
     def test_launch_fails(self, ftb):
@@ -289,6 +303,35 @@ class LaunchTorTests(unittest.TestCase):
 
         tor = yield launch(reactor, _tor_config=config)
         self.assertTrue(isinstance(tor, Tor))
+
+    @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
+    @patch('txtorcon.controller.TorProcessProtocol')
+    @defer.inlineCallbacks
+    def test_successful_launch_non_anonymous(self, tpp, ftb):
+        trans = FakeProcessTransport()
+        reactor = FakeReactor(self, trans, lambda p: None, [1, 2, 3])
+        config = TorConfig()
+
+        def boot(arg=None):
+            config.post_bootstrap.callback(config)
+        config.__dict__['bootstrap'] = Mock(side_effect=boot)
+        config.__dict__['attach_protocol'] = Mock(return_value=defer.succeed(None))
+
+        def foo(*args, **kw):
+            rtn = Mock()
+            rtn.post_bootstrap = defer.succeed(None)
+            rtn.when_connected = Mock(return_value=defer.succeed(rtn))
+            return rtn
+        tpp.side_effect = foo
+
+        tor = yield launch(reactor, _tor_config=config, non_anonymous_mode=True)
+        self.assertTrue(isinstance(tor, Tor))
+        self.assertTrue(config.HiddenServiceNonAnonymousMode)
+
+        with self.assertRaises(Exception):
+            yield tor.web_agent()
+        with self.assertRaises(Exception):
+            yield tor.dns_resolve('meejah.ca')
 
     @defer.inlineCallbacks
     def test_quit(self):

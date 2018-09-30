@@ -35,6 +35,12 @@ January 15, 2019
  * add `purpose=` kwarg to :func:`TorState.build_circuit`
 
 
+ * introduce `non_anonymous_mode=` kwarg in :func:`txtorcon.launch`
+   enabling Tor options making Onion Services non-anonymous for the
+   server (but they use a single hop instead of three to the
+   Introduction Point so they're slightly faster).
+
+
 v18.3.0
 -------
 
