@@ -755,6 +755,7 @@ class EndpointTests(unittest.TestCase):
             ep.private_key,
             u"ED25519-V3:" + b2a_base64(b"H\x9e\xa6j\x0e\x98\x85\xa9\xec\xee@\x9d&\xe2\xbfe\xc9\x90\xb9\xcb\xb2g\xb0\xab\xe4\xd0\x14c\xb0\xb2\x9dX\xfa\xaa\xf8,di8\xec\xc6\x82t\xd0A\x16>u\xde\xc6&\x82\x03\x1app\x18c`T\xc3\xdc\x1a\xca").decode('ascii'),
         )
+        self.assertTrue("\n" not in ep.private_key)
 
     def test_parse_via_plugin_key_from_v2_private_file(self, ftb):
         tmp = self.mktemp()
