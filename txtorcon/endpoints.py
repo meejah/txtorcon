@@ -813,7 +813,7 @@ def _load_private_key_file(fname):
         data = f.read()
     if b"\x00\x00\x00" in data:  # v3 private key file
         blob = data[data.find(b"\x00\x00\x00") + 3:]
-        return u"ED25519-V3:{}".format(b2a_base64(blob.strip()).decode('ascii'))
+        return u"ED25519-V3:{}".format(b2a_base64(blob.strip()).decode('ascii').strip())
     if b"-----BEGIN RSA PRIVATE KEY-----" in data:  # v2 RSA key
         blob = "".join(data.decode('ascii').split('\n')[1:-2])
         return u"RSA1024:{}".format(blob)
