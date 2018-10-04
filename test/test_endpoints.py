@@ -548,6 +548,18 @@ class EndpointTests(unittest.TestCase):
         ep._tor_progress_update(40, "FOO", "foo to bar")
         return ep
 
+    def test_single_hop_non_ephemeral(self, ftb):
+        control_ep = Mock()
+        control_ep.connect = Mock(return_value=defer.succeed(None))
+        directlyProvides(control_ep, IStreamClientEndpoint)
+        with self.assertRaises(ValueError) as ctx:
+            TCPHiddenServiceEndpoint.system_tor(
+                self.reactor, control_ep, 1234,
+                ephemeral=False,
+                single_hop=True,
+            )
+        self.assertIn("single_hop=", str(ctx.exception))
+
     def test_progress_updates_global_tor(self, ftb):
         with patch('txtorcon.endpoints.get_global_tor_instance') as tor:
             ep = TCPHiddenServiceEndpoint.global_tor(self.reactor, 1234)

@@ -23,6 +23,7 @@ unreleased
 
  * add `privateKeyFile=` option to endpoint parser (ticket 313)
  * use `privateKey=` option properly in endpoint parser
+ * support `NonAnonymous` mode for `ADD_ONION` via `single_hop=` kwarg
 
 
 v18.1.0

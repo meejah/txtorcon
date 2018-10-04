@@ -755,7 +755,7 @@ class Tor(object):
             auth=auth,
         )
 
-    def create_onion_endpoint(self, port, private_key=None, version=None):
+    def create_onion_endpoint(self, port, private_key=None, version=None, single_hop=None):
         """
         WARNING: API subject to change
 
@@ -778,6 +778,11 @@ class Tor(object):
         :param version: if not None, a specific version of service to
             use; version=3 is Proposition 224 and version=2 is the
             older 1024-bit key based implementation.
+
+        :param single_hop: if True, pass the `NonAnonymous` flag. Note
+            that Tor options `HiddenServiceSingleHopMode`,
+            `HiddenServiceNonAnonymousMode` must be set to `1` and there
+            must be no `SOCKSPort` configured for this to actually work.
         """
         # note, we're just depending on this being The Ultimate
         # Everything endpoint. Which seems fine, because "normal"
@@ -791,6 +796,7 @@ class Tor(object):
             private_key=private_key,
             version=version,
             auth=None,
+            single_hop=single_hop,
         )
 
     def create_filesystem_onion_endpoint(self, port, hs_dir, group_readable=False, version=None):
@@ -939,7 +945,7 @@ class Tor(object):
     # method names are kind of long (not-ideal)
 
     @inlineCallbacks
-    def create_onion_service(self, ports, private_key=None, version=3, progress=None, await_all_uploads=False):
+    def create_onion_service(self, ports, private_key=None, version=3, progress=None, await_all_uploads=False, single_hop=None):
         """
         Create a new Onion service
 
@@ -975,6 +981,11 @@ class Tor(object):
             until at least one upload of our Descriptor to a Directory
             Authority has completed; if True we wait until all have
             completed.
+
+        :param single_hop: if True, pass the `NonAnonymous` flag. Note
+            that Tor options `HiddenServiceSingleHopMode`,
+            `HiddenServiceNonAnonymousMode` must be set to `1` and there
+            must be no `SOCKSPort` configured for this to actually work.
         """
         if version not in (2, 3):
             raise ValueError(
@@ -993,6 +1004,7 @@ class Tor(object):
             version=version,
             progress=progress,
             await_all_uploads=await_all_uploads,
+            single_hop=single_hop,
         )
         returnValue(service)
 

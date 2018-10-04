@@ -224,7 +224,8 @@ class TCPHiddenServiceEndpoint(object):
                    ephemeral=None,
                    auth=None,
                    private_key=None,
-                   version=None):
+                   version=None,
+                   single_hop=None):
         """
         This returns a TCPHiddenServiceEndpoint connected to the
         endpoint you specify in `control_endpoint`. After connecting, a
@@ -250,6 +251,7 @@ class TCPHiddenServiceEndpoint(object):
             private_key=private_key,
             auth=auth,
             version=version,
+            single_hop=single_hop,
         )
 
     @classmethod
@@ -261,7 +263,8 @@ class TCPHiddenServiceEndpoint(object):
                    auth=None,
                    ephemeral=None,
                    private_key=None,
-                   version=None):
+                   version=None,
+                   single_hop=None):
         """
         This returns a TCPHiddenServiceEndpoint connected to a
         txtorcon global Tor instance. The first time you call this, a
@@ -308,6 +311,7 @@ class TCPHiddenServiceEndpoint(object):
             ephemeral=ephemeral,
             private_key=private_key,
             version=version,
+            single_hop=single_hop,
         )
         progress.target = r._tor_progress_update
         return r
@@ -320,7 +324,8 @@ class TCPHiddenServiceEndpoint(object):
                     ephemeral=None,
                     private_key=None,
                     auth=None,
-                    version=None):
+                    version=None,
+                    single_hop=None):
         """
         This returns a TCPHiddenServiceEndpoint that's always
         connected to its own freshly-launched Tor instance. All
@@ -346,6 +351,7 @@ class TCPHiddenServiceEndpoint(object):
             private_key=private_key,
             auth=auth,
             version=version,
+            single_hop=single_hop,
         )
         progress.target = r._tor_progress_update
         return r
@@ -358,7 +364,8 @@ class TCPHiddenServiceEndpoint(object):
                  ephemeral=None,  # will be set to True, unless hsdir spec'd
                  private_key=None,
                  group_readable=False,
-                 version=None):
+                 version=None,
+                 single_hop=None):
         """
         :param reactor:
             :api:`twisted.internet.interfaces.IReactorTCP` provider
@@ -397,6 +404,11 @@ class TCPHiddenServiceEndpoint(object):
         :param version:
             Either None, 2 or 3 to specify a version 2 service or
             Proposition 224 (version 3) service.
+
+        :param single_hop: if True, pass the `NonAnonymous` flag. Note
+            that Tor options `HiddenServiceSingleHopMode`,
+            `HiddenServiceNonAnonymousMode` must be set to `1` and there
+            must be no `SOCKSPort` configured for this to actually work.
         """
 
         # this supports API backwards-compatibility -- if you didn't
@@ -433,6 +445,11 @@ class TCPHiddenServiceEndpoint(object):
                 "'private_key' only understood for ephemeral services"
             )
 
+        if single_hop and not ephemeral:
+            raise ValueError(
+                "'single_hop=' flag only makes sense for ephemeral onions"
+            )
+
         self._reactor = reactor
         self._config = defer.maybeDeferred(lambda: config)
         self.public_port = public_port
@@ -448,6 +465,7 @@ class TCPHiddenServiceEndpoint(object):
         self.hiddenservice = None
         self.group_readable = group_readable
         self.version = version
+        self.single_hop = single_hop
         self.retries = 0
 
         if self.version is None:
@@ -594,6 +612,7 @@ class TCPHiddenServiceEndpoint(object):
                         progress=self._descriptor_progress_update,
                         version=self.version,
                         auth=self.auth,
+                        single_hop=self.single_hop,
                     )
 
                 else:
@@ -605,6 +624,7 @@ class TCPHiddenServiceEndpoint(object):
                         detach=False,
                         progress=self._descriptor_progress_update,
                         version=self.version,
+                        single_hop=self.single_hop,
                     )
             else:
                 if self.auth is not None:

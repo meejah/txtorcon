@@ -193,6 +193,10 @@ class FilesystemOnionService(object):
         :param progress: a callable taking (percent, tag, description)
             that is called periodically to report progress.
 
+        :param await_all_uploads: if True, the Deferred only fires
+            after ALL descriptor uploads have completed (otherwise, it
+            fires when at least one has completed).
+
         See also :meth:`txtorcon.Tor.create_onion_service` (which
         ultimately calls this).
         """
@@ -576,6 +580,8 @@ def _add_ephemeral_service(config, onion, progress, version, auth=None, await_al
         assert isinstance(auth, AuthBasic)  # don't support AuthStealth yet
         if isinstance(auth, AuthBasic):
             flags.append('BasicAuth')
+    if onion._single_hop:
+        flags.append('NonAnonymous')  # depends on some Tor options, too
     if flags:
         cmd += ' Flags={}'.format(','.join(flags))
 
@@ -674,7 +680,8 @@ class EphemeralAuthenticatedOnionService(object):
                version=None,
                progress=None,
                auth=None,
-               await_all_uploads=None):  # AuthBasic, or AuthStealth instance
+               await_all_uploads=None,   # AuthBasic, or AuthStealth instance
+               single_hop=False):
 
         """
         returns a new EphemeralAuthenticatedOnionService after adding it
@@ -697,6 +704,15 @@ class EphemeralAuthenticatedOnionService(object):
 
         :param progress: a callable taking (percent, tag, description)
             that is called periodically to report progress.
+
+        :param await_all_uploads: if True, the Deferred only fires
+            after ALL descriptor uploads have completed (otherwise, it
+            fires when at least one has completed).
+
+        :param single_hop: if True, pass the `NonAnonymous` flag. Note
+            that Tor options `HiddenServiceSingleHopMode`,
+            `HiddenServiceNonAnonymousMode` must be set to `1` and there
+            must be no `SOCKSPort` configured for this to actually work.
 
         See also :meth:`txtorcon.Tor.create_onion_service` (which
         ultimately calls this).
@@ -721,13 +737,14 @@ class EphemeralAuthenticatedOnionService(object):
             private_key=private_key,
             detach=detach,
             version=version,
+            single_hop=single_hop,
         )
         yield _add_ephemeral_service(config, onion, progress, version, auth, await_all_uploads)
 
         defer.returnValue(onion)
 
     def __init__(self, config, ports, hostname=None, private_key=None, auth=[], version=3,
-                 detach=False):
+                 detach=False, single_hop=None):
         """
         Users should create instances of this class by using the async
         method :meth:`txtorcon.EphemeralAuthenticatedOnionService.create`
@@ -742,6 +759,7 @@ class EphemeralAuthenticatedOnionService(object):
         self._version = version
         self._detach = detach
         self._clients = dict()
+        self._single_hop = single_hop
 
     def get_permanent_id(self):
         """
@@ -824,7 +842,8 @@ class EphemeralOnionService(object):
                private_key=None,  # or DISCARD
                version=None,
                progress=None,
-               await_all_uploads=None):
+               await_all_uploads=None,
+               single_hop=False):
         """
         returns a new EphemeralOnionService after adding it to the
         provided config and ensuring at least one of its descriptors
@@ -847,6 +866,15 @@ class EphemeralOnionService(object):
         :param progress: a callable taking (percent, tag, description)
             that is called periodically to report progress.
 
+        :param await_all_uploads: if True, the Deferred only fires
+            after ALL descriptor uploads have completed (otherwise, it
+            fires when at least one has completed).
+
+        :param single_hop: if True, pass the `NonAnonymous` flag. Note
+            that Tor options `HiddenServiceSingleHopMode`,
+            `HiddenServiceNonAnonymousMode` must be set to `1` and there
+            must be no `SOCKSPort` configured for this to actually work.
+
         See also :meth:`txtorcon.Tor.create_onion_service` (which
         ultimately calls this).
         """
@@ -862,6 +890,7 @@ class EphemeralOnionService(object):
             detach=detach,
             version=version,
             await_all_uploads=await_all_uploads,
+            single_hop=single_hop,
         )
 
         yield _add_ephemeral_service(config, onion, progress, version, None, await_all_uploads)
@@ -869,7 +898,7 @@ class EphemeralOnionService(object):
         defer.returnValue(onion)
 
     def __init__(self, config, ports, hostname=None, private_key=None, version=3,
-                 detach=False, await_all_uploads=None, **kwarg):
+                 detach=False, await_all_uploads=None, single_hop=None, **kwarg):
         """
         Users should create instances of this class by using the async
         method :meth:`txtorcon.EphemeralOnionService.create`
@@ -893,6 +922,7 @@ class EphemeralOnionService(object):
         self._private_key = private_key
         self._version = version
         self._detach = detach
+        self._single_hop = single_hop
 
     # not putting an "add_to_tor" method here; that class is now
     # deprecated and you add one of these by using .create()
@@ -1069,6 +1099,10 @@ class FilesystemAuthenticatedOnionService(object):
 
         :param progress: a callable taking (percent, tag, description)
             that is called periodically to report progress.
+
+        :param await_all_uploads: if True, the Deferred only fires
+            after ALL descriptor uploads have completed (otherwise, it
+            fires when at least one has completed).
         """
         # if hsdir is relative, it's "least surprising" (IMO) to make
         # it into a relative path here -- otherwise, it's relative to
