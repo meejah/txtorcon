@@ -9,6 +9,7 @@ import shutil
 import weakref
 import tempfile
 import functools
+from binascii import b2a_base64
 
 from txtorcon.util import available_tcp_port
 from txtorcon.socks import TorSocksEndpoint
@@ -799,6 +800,35 @@ class TorOnionListeningPort(object):
         return self._service.directory
 
 
+def _load_private_key_file(fname):
+    """
+    Loads an onion-service private-key from the given file. This can
+    be either a 'key blog' as returned from a previous ADD_ONION call,
+    or a v3 or v2 file as created by Tor when using the
+    HiddenServiceDir directive.
+
+    In any case, a key-blob suitable for ADD_ONION use is returned.
+    """
+    with open(fname, "rb") as f:
+        data = f.read()
+    if b"\x00\x00\x00" in data:  # v3 private key file
+        blob = data[data.find(b"\x00\x00\x00") + 3:]
+        return u"ED25519-V3:{}".format(b2a_base64(blob.strip()).decode('ascii').strip())
+    if b"-----BEGIN RSA PRIVATE KEY-----" in data:  # v2 RSA key
+        blob = "".join(data.decode('ascii').split('\n')[1:-2])
+        return u"RSA1024:{}".format(blob)
+    blob = data.decode('ascii').strip()
+    if ':' in blob:
+        kind, key = blob.split(':', 1)
+        if kind in ['ED25519-V3', 'RSA1024']:
+            return blob
+    raise ValueError(
+        "'{}' does not appear to contain v2 or v3 private key data".format(
+            fname,
+        )
+    )
+
+
 @implementer(IStreamServerEndpointStringParser, IPlugin)
 class TCPHiddenServiceEndpointParser(object):
     """
@@ -822,6 +852,10 @@ class TCPHiddenServiceEndpointParser(object):
     If ``hiddenServiceDir`` is not specified, one is created with
     ``tempfile.mkdtemp()``. The IStreamServerEndpoint returned will be
     an instance of :class:`txtorcon.TCPHiddenServiceEndpoint`
+
+    If ``privateKey`` or ``privateKeyFile`` is specified, the service
+    will be "ephemeral" and Tor will receive the private key via the
+    ADD_ONION control-port command.
     """
     prefix = "onion"
 
@@ -831,14 +865,22 @@ class TCPHiddenServiceEndpointParser(object):
 
     def parseStreamServer(self, reactor, public_port, localPort=None,
                           controlPort=None, hiddenServiceDir=None,
-                          privateKey=None, version=None):
+                          privateKey=None, privateKeyFile=None, version=None):
         """
         :api:`twisted.internet.interfaces.IStreamServerEndpointStringParser`
         """
 
+        if privateKeyFile is not None:
+            if privateKey is not None:
+                raise ValueError(
+                    "Can't specify both privateKey= and privateKeyFile="
+                )
+            privateKey = _load_private_key_file(privateKeyFile)
+            privateKeyFile = None
+
         if hiddenServiceDir is not None and privateKey is not None:
             raise ValueError(
-                "Only one of hiddenServiceDir and privateKey accepted"
+                "Only one of hiddenServiceDir and privateKey/privateKeyFile accepted"
             )
 
         if version is not None:
@@ -880,6 +922,7 @@ class TCPHiddenServiceEndpointParser(object):
                 local_port=localPort,
                 ephemeral=ephemeral,
                 version=version,
+                private_key=privateKey,
             )
 
         return TCPHiddenServiceEndpoint.global_tor(
@@ -889,6 +932,7 @@ class TCPHiddenServiceEndpointParser(object):
             control_port=controlPort,
             ephemeral=ephemeral,
             version=version,
+            private_key=privateKey,
         )
 
 
