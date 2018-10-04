@@ -21,6 +21,10 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
 
+v18.2.0
+-------
+
+ * `txtorcon-18.2.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.2.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.2.0>`_ (:download:`local-sig </../signatues/txtorcon-18.2.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-18.2.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.2.0.tar.gz>`_)
  * add `privateKeyFile=` option to endpoint parser (ticket 313)
  * use `privateKey=` option properly in endpoint parser
  * support `NonAnonymous` mode for `ADD_ONION` via `single_hop=` kwarg

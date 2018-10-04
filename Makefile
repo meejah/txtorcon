@@ -1,6 +1,6 @@
 .PHONY: test html counts coverage sdist clean install doc integration diagrams
 default: test
-VERSION = 18.1.0
+VERSION = 18.2.0
 
 test:
 	PYTHONPATH=. trial --reporter=text test
@@ -112,11 +112,11 @@ dist/txtorcon-${VERSION}-py2.py3-none-any.whl:
 	python setup.py bdist_wheel --universal
 
 dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc: dist/txtorcon-${VERSION}-py2.py3-none-any.whl
-	gpg --verify dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-${VERSION}-py2.py3-none-any.whl
+	gpg --verify dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc || gpg --pinentry loopback --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-${VERSION}-py2.py3-none-any.whl
 
 dist/txtorcon-${VERSION}.tar.gz: sdist
 dist/txtorcon-${VERSION}.tar.gz.asc: dist/txtorcon-${VERSION}.tar.gz
-	gpg --verify dist/txtorcon-${VERSION}.tar.gz.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-${VERSION}.tar.gz
+	gpg --verify dist/txtorcon-${VERSION}.tar.gz.asc || gpg --pinentry loopback --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-${VERSION}.tar.gz
 
 release:
 	twine upload -r pypi -c "txtorcon v${VERSION} tarball" dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}.tar.gz.asc

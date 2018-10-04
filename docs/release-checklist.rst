@@ -10,7 +10,7 @@ Release Checklist
    * txtorcon/_metadata.py
 
 * run all tests, on all configurations
-   * "tox"
+   * "detox"
 
 * ensure long_description will render properly:
    * python setup.py check -r -s
