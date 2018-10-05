@@ -885,7 +885,8 @@ class TCPHiddenServiceEndpointParser(object):
 
     def parseStreamServer(self, reactor, public_port, localPort=None,
                           controlPort=None, hiddenServiceDir=None,
-                          privateKey=None, privateKeyFile=None, version=None):
+                          privateKey=None, privateKeyFile=None,
+                          version=None, singleHop=None):
         """
         :api:`twisted.internet.interfaces.IStreamServerEndpointStringParser`
         """
@@ -902,6 +903,18 @@ class TCPHiddenServiceEndpointParser(object):
             raise ValueError(
                 "Only one of hiddenServiceDir and privateKey/privateKeyFile accepted"
             )
+
+        if singleHop is not None:
+            if singleHop.strip().lower() in ['0', 'false']:
+                singleHop = False
+            elif singleHop.strip().lower() in ['1', 'true']:
+                singleHop = True
+            else:
+                raise ValueError(
+                    "singleHop= param must be 'true' or 'false'"
+                )
+        else:
+            singleHop = False
 
         if version is not None:
             try:
@@ -943,6 +956,7 @@ class TCPHiddenServiceEndpointParser(object):
                 ephemeral=ephemeral,
                 version=version,
                 private_key=privateKey,
+                single_hop=singleHop,
             )
 
         return TCPHiddenServiceEndpoint.global_tor(
@@ -953,6 +967,7 @@ class TCPHiddenServiceEndpointParser(object):
             ephemeral=ephemeral,
             version=version,
             private_key=privateKey,
+            single_hop=singleHop,
         )
 
 

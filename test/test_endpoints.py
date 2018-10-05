@@ -819,6 +819,63 @@ class EndpointTests(unittest.TestCase):
                 'onion:88:localPort=1234:privateKeyFile={}'.format(os.path.join(tmp, 'some_data')),
             )
 
+    def test_parse_via_plugin_single_hop(self, ftb):
+        tmp = self.mktemp()
+        os.mkdir(tmp)
+        with open(os.path.join(tmp, 'some_data'), 'wb') as f:
+            f.write(b'ED25519-V3:deadbeefdeadbeef\n')
+
+        # make sure we have a valid thing from get_global_tor without
+        # actually launching tor
+        config = TorConfig()
+        config.post_bootstrap = defer.succeed(config)
+        from txtorcon import torconfig
+        torconfig._global_tor_config = None
+        get_global_tor(
+            self.reactor,
+            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+        )
+        ep = serverFromString(
+            self.reactor,
+            'onion:88:localPort=1234:singleHop=True:privateKeyFile={}'.format(os.path.join(tmp, 'some_data')),
+        )
+        self.assertEqual(ep.public_port, 88)
+        self.assertEqual(ep.local_port, 1234)
+        self.assertEqual(ep.private_key, "ED25519-V3:deadbeefdeadbeef")
+        self.assertTrue(ep.single_hop)
+
+    def test_parse_via_plugin_single_hop_explicit_false(self, ftb):
+        tmp = self.mktemp()
+        os.mkdir(tmp)
+        with open(os.path.join(tmp, 'some_data'), 'wb') as f:
+            f.write(b'ED25519-V3:deadbeefdeadbeef\n')
+
+        # make sure we have a valid thing from get_global_tor without
+        # actually launching tor
+        config = TorConfig()
+        config.post_bootstrap = defer.succeed(config)
+        from txtorcon import torconfig
+        torconfig._global_tor_config = None
+        get_global_tor(
+            self.reactor,
+            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+        )
+        ep = serverFromString(
+            self.reactor,
+            'onion:88:localPort=1234:singleHop=false:privateKeyFile={}'.format(os.path.join(tmp, 'some_data')),
+        )
+        self.assertEqual(ep.public_port, 88)
+        self.assertEqual(ep.local_port, 1234)
+        self.assertEqual(ep.private_key, "ED25519-V3:deadbeefdeadbeef")
+        self.assertFalse(ep.single_hop)
+
+    def test_parse_via_plugin_single_hop_bogus(self, ftb):
+        with self.assertRaises(ValueError):
+            serverFromString(
+                self.reactor,
+                'onion:88:singleHop=yes_please',
+            )
+
     def test_parse_via_plugin_key_and_keyfile(self, ftb):
         with self.assertRaises(ValueError):
             serverFromString(
