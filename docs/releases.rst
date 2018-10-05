@@ -21,6 +21,9 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
 
+ * add `singleHop={true,false}` for endpoint-strings as well
+
+
 v18.2.0
 -------
 
