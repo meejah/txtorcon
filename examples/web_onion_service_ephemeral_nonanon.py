@@ -37,11 +37,14 @@ def main(reactor):
         reactor,
         endpoints.TCP4ClientEndpoint(reactor, "localhost", 9351),
     )
-    ep = tor.create_onion_endpoint(
-        80,
-        version=3,
-        single_hop=True,
-    )
+    if False:
+        ep = tor.create_onion_endpoint(
+            80,
+            version=3,
+            single_hop=True,
+        )
+    else:
+        ep = endpoints.serverFromString(reactor, "onion:80:version=3:singleHop=true")
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))
