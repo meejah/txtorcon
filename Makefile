@@ -1,6 +1,6 @@
 .PHONY: test html counts coverage sdist clean install doc integration diagrams
 default: test
-VERSION = 18.2.0
+VERSION = 18.3.0
 
 test:
 	PYTHONPATH=. trial --reporter=text test
