@@ -23,7 +23,7 @@ from txtorcon.log import txtorlog
 
 from txtorcon.interface import ITorControlProtocol
 from .spaghetti import FSM, State, Transition
-from .util import maybe_coroutine
+from .util import maybe_coroutine, SingleObserver
 
 
 DEFAULT_VALUE = 'DEFAULT'
@@ -269,6 +269,11 @@ class TorControlProtocol(LineOnlyReceiver):
         """
         This Deferred is triggered when the connection is closed. If
         there was an error, the errback is called instead.
+        """
+
+        self._when_disconnected = SingleObserver()
+        """
+        Private. See :func:`.when_disconnected`
         """
 
         self.post_bootstrap = defer.Deferred()
@@ -648,6 +653,13 @@ class TorControlProtocol(LineOnlyReceiver):
         self._maybe_issue_command()
         return d
 
+    def when_disconnected(self):
+        """
+        :returns: a Deferred that fires when (if) we disconnect from our
+            Tor process.
+        """
+        return self._when_disconnected.when_fired()
+
     # the remaining methods are internal API implementations,
     # callbacks and state-tracking methods -- you shouldn't have any
     # need to call them.
@@ -672,6 +684,11 @@ class TorControlProtocol(LineOnlyReceiver):
     def connectionLost(self, reason):
         "Protocol API"
         txtorlog.msg('connection terminated: ' + str(reason))
+        if reason.check(ConnectionDone):
+            self._when_disconnected.fire(self)
+        else:
+            self._when_disconnected.fire(reason)
+
         # ...and this is why we don't do on_disconnect = Deferred() :(
         # and instead should have had on_disconnect() method that
         # returned a new Deferred to each caller..(we're checking if
