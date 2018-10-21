@@ -51,7 +51,7 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
         )
 
     def closeStdin(self):
-        self.process_protocol.outReceived(b"Bootstrap")
+        self.process_protocol.outReceived(b"100%")
         return
 
 
