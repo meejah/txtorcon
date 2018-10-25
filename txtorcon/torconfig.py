@@ -1104,7 +1104,7 @@ class TorConfig(object):
         # then...?)
         try:
             ephemeral = yield self.protocol.get_info('onions/current')
-        except Exception as e:
+        except Exception:
             self.config['EphemeralOnionServices'] = []
         else:
             onions = []
