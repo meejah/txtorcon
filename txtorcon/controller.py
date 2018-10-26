@@ -1234,7 +1234,7 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         # tor_connection_failed)
         txtorlog.msg(data)
         if not self.attempted_connect and self.connection_creator \
-                and b'100%' in data:
+                and b'Opening Control listener' in data:
             self.attempted_connect = True
             # hmmm, we don't "do" anything with this Deferred?
             # (should it be connected to the when_connected
