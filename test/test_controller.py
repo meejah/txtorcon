@@ -51,7 +51,7 @@ class FakeProcessTransport(proto_helpers.StringTransportWithDisconnection):
         )
 
     def closeStdin(self):
-        self.process_protocol.outReceived(b"Bootstrap")
+        self.process_protocol.outReceived(b"Opening Control listener")
         return
 
 
@@ -599,7 +599,7 @@ class LaunchTorTests(unittest.TestCase):
         trans = FakeProcessTransport()
 
         def on_protocol(proto):
-            proto.outReceived(b'Bootstrapped 100%\n')
+            proto.outReceived(b'Opening Control listener\n')
         reactor = FakeReactor(self, trans, on_protocol, [1, 2, 3])
 
         fails = ['one']
