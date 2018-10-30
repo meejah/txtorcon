@@ -20,7 +20,7 @@ unreleased
 ----------
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
-* add `TorControlProtocol.when_disconnected()` Returns a new defferred to each caller, depreciating on_disconnect.
+* add `TorControlProtocol.when_disconnected()` Returns a new deferred to each caller.
 
 v18.3.0
 -------
