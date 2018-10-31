@@ -945,7 +945,9 @@ class Tor(object):
     # method names are kind of long (not-ideal)
 
     @inlineCallbacks
-    def create_onion_service(self, ports, private_key=None, version=3, progress=None, await_all_uploads=False, single_hop=None):
+    def create_onion_service(self, ports, private_key=None, version=3,
+                             progress=None, await_all_uploads=False,
+                             single_hop=None, detach=None):
         """
         Create a new Onion service
 
@@ -986,6 +988,12 @@ class Tor(object):
             that Tor options `HiddenServiceSingleHopMode`,
             `HiddenServiceNonAnonymousMode` must be set to `1` and there
             must be no `SOCKSPort` configured for this to actually work.
+
+        :param detach: if True, the created service won't be tied to
+            this control connection and will still be active when this
+            control-connection goes away (this means the service will
+            appear in `GETINFO onions/detached` to all other
+            controllers)
         """
         if version not in (2, 3):
             raise ValueError(
@@ -1005,6 +1013,7 @@ class Tor(object):
             progress=progress,
             await_all_uploads=await_all_uploads,
             single_hop=single_hop,
+            detach=detach,
         )
         returnValue(service)
 
