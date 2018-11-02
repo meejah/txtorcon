@@ -215,6 +215,38 @@ class DisconnectionTests(unittest.TestCase):
         self.protocol.connectionLost(f)
         self.assertTrue(it_was_called.yes)
 
+    def test_when_disconnect(self):
+        """
+        see that we get our callback for when_disconnected if the
+        transport goes away
+        """
+        def it_was_called(arg):
+            it_was_called.yes = True
+            return None
+        it_was_called.yes = False
+
+        d = self.protocol.when_disconnected()
+        d.addCallback(it_was_called)
+        f = failure.Failure(error.ConnectionDone("It's all over"))
+        self.protocol.connectionLost(f)
+        self.assertTrue(it_was_called.yes)
+
+    def test_when_disconnect_error(self):
+        """
+        see that we get our errback for when_disconnected if the
+        transport goes away
+        """
+        def it_was_called(arg):
+            it_was_called.yes = True
+            return None
+        it_was_called.yes = False
+
+        d = self.protocol.when_disconnected()
+        d.addErrback(it_was_called)
+        f = failure.Failure(RuntimeError("sadness"))
+        self.protocol.connectionLost(f)
+        self.assertTrue(it_was_called.yes)
+
     def test_disconnect_errback(self):
         """
         see that we get our callback on_disconnect if the transport
