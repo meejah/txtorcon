@@ -22,6 +22,7 @@ unreleased
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
 
  * add :func:`TorControlProtocol.when_disconnected` (will replace `.on_disconnect`)
+ * add `detach=` kwarg to :func:`Tor.create_onion_service`
 
 
 v18.3.0
