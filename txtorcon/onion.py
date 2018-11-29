@@ -1118,7 +1118,6 @@ class FilesystemAuthenticatedOnionService(object):
         config.HiddenServices.append(fhs)
 
         def translate_progress(pct, tag, description):
-            print("OHAI {} {}".format(pct, tag))
             # XXX fixme actually translate..
             if progress:
                 progress(pct, tag, description)
