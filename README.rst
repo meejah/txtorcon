@@ -31,10 +31,6 @@
     :target: https://txtorcon.readthedocs.io/en/latest
     :alt: ReadTheDocs
 
-.. image:: http://api.flattr.com/button/flattr-badge-large.png
-    :target: http://flattr.com/thing/1689502/meejahtxtorcon-on-GitHub
-    :alt: flattr
-
 .. image:: https://landscape.io/github/meejah/txtorcon/master/landscape.svg?style=flat
     :target: https://landscape.io/github/meejah/txtorcon/master
     :alt: Code Health
