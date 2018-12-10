@@ -3,7 +3,7 @@ import six
 import functools
 from os.path import join
 from mock import Mock, patch
-from six.moves import StringIO
+from io import BytesIO
 
 from twisted.internet.interfaces import IReactorCore
 from twisted.internet.interfaces import IListeningPort
@@ -570,12 +570,12 @@ class LaunchTorTests(unittest.TestCase):
             return proto.post_bootstrap
 
         def on_protocol(proto):
-            proto.errReceived('Something went horribly wrong!\n')
+            proto.errReceived(b'Something went horribly wrong!\n')
 
         trans = FakeProcessTransport()
         trans.protocol = Mock()
-        fakeout = StringIO()
-        fakeerr = StringIO()
+        fakeout = BytesIO()
+        fakeerr = BytesIO()
         creator = functools.partial(connector, Mock(), Mock())
         try:
             yield launch(
@@ -587,8 +587,8 @@ class LaunchTorTests(unittest.TestCase):
             )
             self.fail()  # should't get callback
         except RuntimeError as e:
-            self.assertEqual('', fakeout.getvalue())
-            self.assertEqual('Something went horribly wrong!\n', fakeerr.getvalue())
+            self.assertEqual(b'', fakeout.getvalue())
+            self.assertEqual(b'Something went horribly wrong!\n', fakeerr.getvalue())
             self.assertTrue(
                 'Something went horribly wrong!' in str(e)
             )
