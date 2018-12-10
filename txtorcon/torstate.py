@@ -797,11 +797,44 @@ class TorState(object):
         txtorlog.msg(" --> addr_map", addr)
         self.addrmap.update(addr)
 
+    def _guard_update(self, data):
+        "Internal callback to update guards"
+        # controlspec: "650" SP "GUARD" SP Type SP Name SP Status ... CRLF
+        kind, router_id, status = data.strip().split()
+        if kind != "ENTRY":
+            raise Exception(
+                "Unknown GUARD event type '{}'".format(kind)
+            )
+        router = self.router_from_id(router_id)
+        status = status.strip().lower()
+        if status == "new":
+            self.entry_guards[router.hex_id] = router
+        elif status == "dropped":
+            # XXX wait, will router_from_id() work if our guard
+            # disappeared
+            del self.entry_guards[router.hex_id]
+        elif status == "up":
+            if router.hex_id in self.unusable_entry_guards:
+                self.unusable_entry_guards.remove(router.hex_id)
+            self.entry_guards[router.hex_id] = router  # should already be in there?
+        elif status == "down":
+            self.unusable_entry_guards.append(router.hex_id)
+        elif status == "bad":
+            self.unusable_entry_guards.append(router.hex_id)
+        elif status == "good":
+            if router.hex_id in self.unusable_entry_guards:
+                self.unusable_entry_guards.remove(router.hex_id)
+        else:
+            raise Exception(
+                "Unknown GUARD state '{}'".format(status)
+            )
+
     event_map = {
         'STREAM': '_stream_update',
         'CIRC': '_circuit_update',
         'NEWCONSENSUS': '_update_network_status',
         'ADDRMAP': '_addr_map',
+        'GUARD': '_guard_update',
     }
 
     @defer.inlineCallbacks
