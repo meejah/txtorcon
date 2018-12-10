@@ -694,6 +694,7 @@ class TorControlProtocol(LineOnlyReceiver):
         # returned a new Deferred to each caller..(we're checking if
         # this Deferred has any callbacks because if it doesn't we'll
         # generate an "Unhandled error in Deferred")
+        # XXX (deprecate this)
         if not self.on_disconnect.called and self.on_disconnect.callbacks:
             if reason.check(ConnectionDone):
                 self.on_disconnect.callback(self)
