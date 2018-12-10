@@ -3,7 +3,6 @@ import six
 import functools
 from os.path import join
 from mock import Mock, patch
-from six.moves import StringIO
 from io import BytesIO
 
 from twisted.internet.interfaces import IReactorCore
