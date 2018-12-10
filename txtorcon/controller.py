@@ -1282,7 +1282,8 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         if self.kill_on_stderr:
             self.transport.loseConnection()
             raise RuntimeError(
-                "Received stderr output from slave Tor process: " + data)
+                "Received stderr output from slave Tor process: " + data.decode('utf8')
+            )
 
     def cleanup(self):
         """
