@@ -23,6 +23,7 @@ unreleased
 
  * add :func:`TorControlProtocol.when_disconnected` (will replace `.on_disconnect`)
  * add `detach=` kwarg to :func:`Tor.create_onion_service`
+ * add `purpose=` kwarg to :func:`TorState.build_circuit`
 
 
 v18.3.0

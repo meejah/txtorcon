@@ -1399,7 +1399,6 @@ s Fast Guard Running Stable Valid
         circ = FakeCircuit()
 
         def _build(*args, **kw):
-            print("DING {} {}".format(args, kw))
             return defer.succeed(circ)
         self.state.build_circuit = _build
 
@@ -1411,7 +1410,6 @@ s Fast Guard Running Stable Valid
         # be closed
         d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=False)
         clock.advance(1)
-        print("DING {}".format(self.state))
         d.cancel()
 
         with self.assertRaises(CircuitBuildTimedOutError):
@@ -1498,6 +1496,33 @@ s Fast Guard Running Stable Valid
         d.addCallback(self.circuit_callback)
 
         self.assertEqual(self.transport.value(), b'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002\r\n')
+        self.send(b"250 EXTENDED 1234")
+        # we can't just .send(b'650 CIRC 1234 BUILT') this because we
+        # didn't fully hook up the protocol to the state, e.g. via
+        # post_bootstrap etc.
+        self.state.circuits[1234].update(['1234', 'FAILED', 'REASON=TIMEOUT'])
+
+        def check_reason(fail):
+            self.assertEqual(fail.value.reason, 'TIMEOUT')
+        d.addErrback(check_reason)
+
+        return d
+
+    def test_build_circuit_with_purpose(self):
+        class FakeRouter:
+            def __init__(self, i):
+                self.id_hex = i
+                self.flags = []
+
+        path = []
+        for x in range(3):
+            path.append(FakeRouter("$%040d" % x))
+        path[0].flags = ['guard']
+
+        d = self.state.build_circuit(path, using_guards=True, purpose="general")
+        d.addCallback(self.circuit_callback)
+
+        self.assertEqual(self.transport.value(), b'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002 purpose=general\r\n')
         self.send(b"250 EXTENDED 1234")
         # we can't just .send(b'650 CIRC 1234 BUILT') this because we
         # didn't fully hook up the protocol to the state, e.g. via
