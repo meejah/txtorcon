@@ -1519,8 +1519,6 @@ s Fast Guard Running Stable Valid
             path.append(FakeRouter("$%040d" % x))
         path[0].flags = ['guard']
 
-        timeout = 10
-        clock = task.Clock()
         d = self.state.build_circuit(path, using_guards=True, purpose="general")
         d.addCallback(self.circuit_callback)
 
