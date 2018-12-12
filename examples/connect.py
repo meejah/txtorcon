@@ -16,9 +16,11 @@ def main(reactor):
     tor = yield txtorcon.connect(reactor, ep)
     print("Connected to Tor {version}".format(version=tor.protocol.version))
 
-    state = yield tor.create_state()
-    # or:
-    # state = yield txtorcon.TorState.from_protocol(tor.protocol)
-    print("Tor state created. Circuits:")
-    for circuit in state.circuits.values():
-        print("  {circuit.id}: {circuit.path}".format(circuit=circuit))
+    d = tor.protocol.when_disconnected()
+
+    def its_gone(value):
+        print("Connection gone")
+    d.addCallback(its_gone)
+
+    tor.protocol.transport.loseConnection()
+    yield d
