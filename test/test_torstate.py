@@ -1399,7 +1399,6 @@ s Fast Guard Running Stable Valid
         circ = FakeCircuit()
 
         def _build(*args, **kw):
-            print("DING {} {}".format(args, kw))
             return defer.succeed(circ)
         self.state.build_circuit = _build
 
@@ -1411,7 +1410,6 @@ s Fast Guard Running Stable Valid
         # be closed
         d = build_timeout_circuit(self.state, clock, path, timeout, using_guards=False)
         clock.advance(1)
-        print("DING {}".format(self.state))
         d.cancel()
 
         with self.assertRaises(CircuitBuildTimedOutError):
