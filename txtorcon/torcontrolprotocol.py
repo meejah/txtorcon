@@ -8,7 +8,7 @@ import os
 import re
 import base64
 from binascii import b2a_hex, hexlify
-# from warnings import warn
+from warnings import warn
 
 from twisted.python import log
 from twisted.internet import defer
@@ -703,10 +703,10 @@ class TorControlProtocol(LineOnlyReceiver):
         # this Deferred has any callbacks because if it doesn't we'll
         # generate an "Unhandled error in Deferred")
         if self.on_disconnect and not self.on_disconnect.called and self.on_disconnect.callbacks:
-            # warn(
-            #     'TorControlProtocol.on_disconnect is deprecated; use .when_disconnected() instead',
-            #     DeprecationWarning,
-            # )
+            warn(
+                'TorControlProtocol.on_disconnect is deprecated; use .when_disconnected() instead',
+                DeprecationWarning,
+            )
             if reason.check(ConnectionDone):
                 self.on_disconnect.callback(self)
             else:
