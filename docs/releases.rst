@@ -15,12 +15,18 @@ that will be "19.2.1".
 
 See also :ref:`api_stability`.
 
-
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.0.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.1.0*
 
+
+v19.0.0
+-------
+
+January 15, 2019
+
+ * `txtorcon-19.0.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-19.0.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/19.0.0>`_ (:download:`local-sig </../signatues/txtorcon-19.0.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-19.0.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v19.0.0.tar.gz>`_)
  * add :func:`TorControlProtocol.when_disconnected` (will replace `.on_disconnect`)
  * add `detach=` kwarg to :func:`Tor.create_onion_service`
  * add `purpose=` kwarg to :func:`TorState.build_circuit`
