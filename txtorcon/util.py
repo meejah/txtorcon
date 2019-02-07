@@ -9,10 +9,8 @@ import os
 import hmac
 import hashlib
 import shutil
-import socket
 import subprocess
 import ipaddress
-import struct
 import re
 import six
 
