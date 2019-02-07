@@ -270,9 +270,9 @@ class ConfigTests(unittest.TestCase):
         self.protocol.answers.append({'baz': 'auto'})
 
         conf = TorConfig(self.protocol)
-        self.assertTrue(conf.foo is 0)
-        self.assertTrue(conf.bar is 1)
-        self.assertTrue(conf.baz is -1)
+        self.assertEqual(conf.foo, 0)
+        self.assertEqual(conf.bar, 1)
+        self.assertEqual(conf.baz, -1)
 
     def test_save_boolean_auto(self):
         self.protocol.answers.append(
