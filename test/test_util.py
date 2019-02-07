@@ -14,7 +14,6 @@ from zope.interface import implementer
 from txtorcon.util import process_from_address
 from txtorcon.util import delete_file_or_tree
 from txtorcon.util import find_keywords
-from txtorcon.util import ip_from_int
 from txtorcon.util import find_tor_binary
 from txtorcon.util import maybe_ip_addr
 from txtorcon.util import unescape_quoted_string
@@ -42,12 +41,6 @@ class FakeProtocolFactory:
     def buildProtocol(self, addr):
         "IProtocolFactory API"
         return None
-
-
-class TestIPFromInt(unittest.TestCase):
-
-    def test_cast(self):
-        self.assertEqual(ip_from_int(0x7f000001), '127.0.0.1')
 
 
 class TestGeoIpDatabaseLoading(unittest.TestCase):

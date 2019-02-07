@@ -192,11 +192,6 @@ def delete_file_or_tree(*args):
             shutil.rmtree(f, ignore_errors=True)
 
 
-def ip_from_int(ip):
-        """ Convert long int back to dotted quad string """
-        return socket.inet_ntoa(struct.pack('>I', ip))
-
-
 def process_from_address(addr, port, torstate=None):
     """
     Determines the PID from the address/port provided by using lsof
