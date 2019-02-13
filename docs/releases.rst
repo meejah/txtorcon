@@ -20,6 +20,9 @@ unreleased
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.1.0*
 
+ * `TorControlProtocol.on_disconnect` is deprecated in favour of
+   :func:`TorControlProtocol.when_disconnected`
+
 
 v19.0.0
 -------
