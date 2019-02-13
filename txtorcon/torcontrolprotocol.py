@@ -8,6 +8,7 @@ import os
 import re
 import base64
 from binascii import b2a_hex, hexlify
+from warnings import warn
 
 from twisted.python import log
 from twisted.internet import defer
@@ -23,7 +24,8 @@ from txtorcon.log import txtorlog
 
 from txtorcon.interface import ITorControlProtocol
 from .spaghetti import FSM, State, Transition
-from .util import maybe_coroutine, SingleObserver
+from .util import maybe_coroutine
+from .util import SingleObserver
 
 
 DEFAULT_VALUE = 'DEFAULT'
@@ -263,12 +265,18 @@ class TorControlProtocol(LineOnlyReceiver):
         self.valid_signals = []
         """A list of all valid signals we accept from Tor"""
 
-        # XXX bad practice; this should be like an on_disconnct()
-        # method that returns a new Deferred each time...
+        # NOTE: bad practice (and now deprecated) -- use
+        # when_disconnected() instead
         self.on_disconnect = defer.Deferred()
         """
-        This Deferred is triggered when the connection is closed. If
-        there was an error, the errback is called instead.
+        This Deferred is triggered when the connection is closed. If there
+        was an error, the errback is called instead. (Deprecated: use
+        :func:`when_disconnected` instead)
+        """
+
+        self._when_disconnected = SingleObserver()
+        """
+        Internal use. A :class:`SingleObserver` for when_disconnected()
         """
 
         self._when_disconnected = SingleObserver()
@@ -694,13 +702,17 @@ class TorControlProtocol(LineOnlyReceiver):
         # returned a new Deferred to each caller..(we're checking if
         # this Deferred has any callbacks because if it doesn't we'll
         # generate an "Unhandled error in Deferred")
-        # XXX (deprecate this)
-        if not self.on_disconnect.called and self.on_disconnect.callbacks:
+        if self.on_disconnect and not self.on_disconnect.called and self.on_disconnect.callbacks:
+            warn(
+                'TorControlProtocol.on_disconnect is deprecated; use .when_disconnected() instead',
+                DeprecationWarning,
+            )
             if reason.check(ConnectionDone):
                 self.on_disconnect.callback(self)
             else:
                 self.on_disconnect.errback(reason)
         self.on_disconnect = None
+        self._when_disconnected.fire(self)
         outstanding = [self.command] + self.commands if self.command else self.commands
         for d, cmd, cmd_arg in outstanding:
             if not d.called:
