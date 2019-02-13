@@ -808,22 +808,22 @@ class TorState(object):
         router = self.router_from_id(router_id)
         status = status.strip().lower()
         if status == "new":
-            self.entry_guards[router.hex_id] = router
+            self.entry_guards[router.id_hex] = router
         elif status == "dropped":
             # XXX wait, will router_from_id() work if our guard
             # disappeared
-            del self.entry_guards[router.hex_id]
+            del self.entry_guards[router.id_hex]
         elif status == "up":
-            if router.hex_id in self.unusable_entry_guards:
-                self.unusable_entry_guards.remove(router.hex_id)
-            self.entry_guards[router.hex_id] = router  # should already be in there?
+            if router.id_hex in self.unusable_entry_guards:
+                self.unusable_entry_guards.remove(router.id_hex)
+            self.entry_guards[router.id_hex] = router  # should already be in there?
         elif status == "down":
-            self.unusable_entry_guards.append(router.hex_id)
+            self.unusable_entry_guards.append(router.id_hex)
         elif status == "bad":
-            self.unusable_entry_guards.append(router.hex_id)
+            self.unusable_entry_guards.append(router.id_hex)
         elif status == "good":
-            if router.hex_id in self.unusable_entry_guards:
-                self.unusable_entry_guards.remove(router.hex_id)
+            if router.id_hex in self.unusable_entry_guards:
+                self.unusable_entry_guards.remove(router.id_hex)
         else:
             raise Exception(
                 "Unknown GUARD state '{}'".format(status)

@@ -1534,3 +1534,64 @@ s Fast Guard Running Stable Valid
         d.addErrback(check_reason)
 
         return d
+
+
+class GuardUpdateTests(unittest.TestCase):
+
+    def setUp(self):
+        self.protocol = TorControlProtocol()
+        self.state = TorState(self.protocol)
+        # avoid spew in trial logs; state prints this by default
+        self.state._attacher_error = lambda f: f
+        self.protocol.connectionMade = lambda: None
+        self.transport = proto_helpers.StringTransport()
+        self.protocol.makeConnection(self.transport)
+
+        self.state._create_router(
+            nickname='some_name',
+            idhash='0' * 27,
+            orhash='$D34D34D34D34D34D34D34D34D34D34D34D34D34D',
+            modified='probably a date',
+            ip='1.1.1.1',
+            orport='1234',
+            dirport='4321',
+        )
+
+    def test_new(self):
+        # I guess I should .. write the event first etc ..?
+        self.state._guard_update("ENTRY some_name new")
+
+    def test_dropped(self):
+        # I guess I should .. write the event first etc ..?
+        self.state._guard_update("ENTRY some_name new")
+        self.state._guard_update("ENTRY some_name dropped")
+
+    def test_up(self):
+        # I guess I should .. write the event first etc ..?
+        self.state.unusable_entry_guards.append('$D34D34D34D34D34D34D34D34D34D34D34D34D34D')
+        self.state._guard_update("ENTRY some_name up")
+
+    def test_down(self):
+        # I guess I should .. write the event first etc ..?
+        self.state._guard_update("ENTRY some_name down")
+
+    def test_bad(self):
+        # I guess I should .. write the event first etc ..?
+        self.state._guard_update("ENTRY some_name bad")
+
+    def test_good(self):
+        # I guess I should .. write the event first etc ..?
+        self.state.unusable_entry_guards.append('$D34D34D34D34D34D34D34D34D34D34D34D34D34D')
+        self.state._guard_update("ENTRY some_name good")
+
+    def test_unknown_event_type(self):
+        # I guess I should .. write the event first etc ..?
+        with self.assertRaises(Exception) as ctx:
+            self.state._guard_update("FOO some_name some_unknown_guard_state")
+        self.assertIn('Unknown', str(ctx.exception))
+
+    def test_unknown_guard_state(self):
+        # I guess I should .. write the event first etc ..?
+        with self.assertRaises(Exception) as ctx:
+            self.state._guard_update("ENTRY some_name some_unknown_guard_state")
+        self.assertIn('Unknown', str(ctx.exception))
