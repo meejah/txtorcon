@@ -1547,6 +1547,7 @@ class GuardUpdateTests(unittest.TestCase):
         self.transport = proto_helpers.StringTransport()
         self.protocol.makeConnection(self.transport)
 
+        # XXX cheating a bit
         self.state._create_router(
             nickname='some_name',
             idhash='0' * 27,
@@ -1557,14 +1558,17 @@ class GuardUpdateTests(unittest.TestCase):
             dirport='4321',
         )
 
-    def test_new(self):
-        # I guess I should .. write the event first etc ..?
+    def test_new_dropped(self):
         self.state._guard_update("ENTRY some_name new")
-
-    def test_dropped(self):
-        # I guess I should .. write the event first etc ..?
-        self.state._guard_update("ENTRY some_name new")
+        self.assertIn(
+            '$D34D34D34D34D34D34D34D34D34D34D34D34D34D',
+            self.state.entry_guards,
+        )
         self.state._guard_update("ENTRY some_name dropped")
+        self.assertNotIn(
+            '$D34D34D34D34D34D34D34D34D34D34D34D34D34D',
+            self.state.entry_guards,
+        )
 
     def test_up(self):
         # I guess I should .. write the event first etc ..?
@@ -1572,7 +1576,6 @@ class GuardUpdateTests(unittest.TestCase):
         self.state._guard_update("ENTRY some_name up")
 
     def test_down(self):
-        # WTF? why this no work? self.protocol.lineReceived(b"650-GUARD ENTRY some_name down")
         self.state._guard_update("ENTRY some_name down")
         self.assertIn(
             '$D34D34D34D34D34D34D34D34D34D34D34D34D34D',
@@ -1580,13 +1583,11 @@ class GuardUpdateTests(unittest.TestCase):
         )
 
     def test_bad(self):
-        self.protocol.lineReceived(b"650-GUARD ENTRY some_name bad")
         self.state._guard_update("ENTRY some_name bad")
 
     def test_good(self):
         self.state.unusable_entry_guards.append('$D34D34D34D34D34D34D34D34D34D34D34D34D34D')
         self.state._guard_update("ENTRY some_name good")
-        # WTF?? self.protocol.lineReceived(b"650-GUARD ENTRY some_name good")
         self.assertNotIn(
             '$D34D34D34D34D34D34D34D34D34D34D34D34D34D',
             self.state.unusable_entry_guards,
