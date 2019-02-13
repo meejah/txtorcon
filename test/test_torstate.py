@@ -1572,26 +1572,32 @@ class GuardUpdateTests(unittest.TestCase):
         self.state._guard_update("ENTRY some_name up")
 
     def test_down(self):
-        # I guess I should .. write the event first etc ..?
+        # WTF? why this no work? self.protocol.lineReceived(b"650-GUARD ENTRY some_name down")
         self.state._guard_update("ENTRY some_name down")
+        self.assertIn(
+            '$D34D34D34D34D34D34D34D34D34D34D34D34D34D',
+            self.state.unusable_entry_guards,
+        )
 
     def test_bad(self):
-        # I guess I should .. write the event first etc ..?
+        self.protocol.lineReceived(b"650-GUARD ENTRY some_name bad")
         self.state._guard_update("ENTRY some_name bad")
 
     def test_good(self):
-        # I guess I should .. write the event first etc ..?
         self.state.unusable_entry_guards.append('$D34D34D34D34D34D34D34D34D34D34D34D34D34D')
         self.state._guard_update("ENTRY some_name good")
+        # WTF?? self.protocol.lineReceived(b"650-GUARD ENTRY some_name good")
+        self.assertNotIn(
+            '$D34D34D34D34D34D34D34D34D34D34D34D34D34D',
+            self.state.unusable_entry_guards,
+        )
 
     def test_unknown_event_type(self):
-        # I guess I should .. write the event first etc ..?
         with self.assertRaises(Exception) as ctx:
             self.state._guard_update("FOO some_name some_unknown_guard_state")
         self.assertIn('Unknown', str(ctx.exception))
 
     def test_unknown_guard_state(self):
-        # I guess I should .. write the event first etc ..?
         with self.assertRaises(Exception) as ctx:
             self.state._guard_update("ENTRY some_name some_unknown_guard_state")
         self.assertIn('Unknown', str(ctx.exception))
