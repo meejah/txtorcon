@@ -117,7 +117,9 @@ def launch(reactor,
         `SOCKSPort` config, thus putting this Tor client into
         "non-anonymous mode" which allows starting so-called Single
         Onion services -- which use single-hop circuits to rendezvous
-        points. See WARNINGs in Tor manual!
+        points. See WARNINGs in Tor manual! Also you need Tor
+        `0.3.4.1` or later (e.g. any `0.3.5.*` or newer) for this to
+        work properly.
 
     :param stdout: a file-like object to which we write anything that
         Tor prints on stdout (just needs to support write()).
