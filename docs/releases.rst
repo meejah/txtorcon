@@ -22,6 +22,10 @@ unreleased
 
  * `TorControlProtocol.on_disconnect` is deprecated in favour of
    :func:`TorControlProtocol.when_disconnected`
+ * introduce `non_anonymous_mode=` kwarg in :func:`txtorcon.launch`
+   enabling Tor options making Onion Services non-anonymous for the
+   server (but they use a single hop instead of three to the
+   Introduction Point so they're slightly faster).
 
 
 v19.0.0

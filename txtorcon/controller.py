@@ -55,6 +55,7 @@ def launch(reactor,
            control_port=None,
            data_directory=None,
            socks_port=None,
+           non_anonymous_mode=None,
            stdout=None,
            stderr=None,
            timeout=None,
@@ -109,6 +110,16 @@ def launch(reactor,
         etc); starting with an already-populated state directory is a lot
         faster. If ``None`` (the default), we create a tempdir for this
         **and delete it on exit**. It is recommended you pass something here.
+
+    :param non_anonymous_mode: sets the Tor options
+        `HiddenServiceSingleHopMode` and
+        `HiddenServiceNonAnonymousMode` to 1 and un-sets any
+        `SOCKSPort` config, thus putting this Tor client into
+        "non-anonymous mode" which allows starting so-called Single
+        Onion services -- which use single-hop circuits to rendezvous
+        points. See WARNINGs in Tor manual! Also you need Tor
+        `0.3.4.1` or later (e.g. any `0.3.5.*` or newer) for this to
+        work properly.
 
     :param stdout: a file-like object to which we write anything that
         Tor prints on stdout (just needs to support write()).
@@ -221,9 +232,18 @@ def launch(reactor,
         except KeyError:
             socks_port = None
 
-    if socks_port is None:
-        socks_port = yield available_tcp_port(reactor)
-    config.SOCKSPort = socks_port
+    if non_anonymous_mode:
+        if socks_port is not None:
+            raise ValueError(
+                "Cannot use SOCKS options with non_anonymous_mode=True"
+            )
+        config.HiddenServiceNonAnonymousMode = 1
+        config.HiddenServiceSingleHopMode = 1
+        config.SOCKSPort = 0
+    else:
+        if socks_port is None:
+            socks_port = yield available_tcp_port(reactor)
+        config.SOCKSPort = socks_port
 
     try:
         our_user = user or config.User
@@ -350,6 +370,7 @@ def launch(reactor,
             config.protocol,
             _tor_config=config,
             _process_proto=process_protocol,
+            _non_anonymous=True if non_anonymous_mode else False,
         )
     )
 
@@ -474,7 +495,7 @@ class Tor(object):
             print(port.getHost())
     """
 
-    def __init__(self, reactor, control_protocol, _tor_config=None, _process_proto=None):
+    def __init__(self, reactor, control_protocol, _tor_config=None, _process_proto=None, _non_anonymous=None):
         """
         don't instantiate this class yourself -- instead use the factory
         methods :func:`txtorcon.launch` or :func:`txtorcon.connect`
@@ -487,6 +508,8 @@ class Tor(object):
         # cache our preferred socks port (please use
         # self._default_socks_endpoint() to get one)
         self._socks_endpoint = None
+        # True if we've turned on non-anonymous mode / Onion services
+        self._non_anonymous = _non_anonymous
 
     @inlineCallbacks
     def quit(self):
@@ -552,6 +575,10 @@ class Tor(object):
 
         :param pool: passed on to the Agent (as ``pool=``)
         """
+        if self._non_anonymous:
+            raise Exception(
+                "Cannot use web_agent when in non_anonymous mode"
+            )
         # local import since not all platforms have this
         from txtorcon import web
 
@@ -932,6 +959,10 @@ class Tor(object):
         (which might mean setting one up in our attacked Tor if it
         doesn't have one)
         """
+        if self._non_anonymous:
+            raise Exception(
+                "Cannot use SOCKS when in non_anonymous mode"
+            )
         if self._socks_endpoint is None:
             self._socks_endpoint = yield _create_socks_endpoint(self._reactor, self._protocol)
         returnValue(self._socks_endpoint)
