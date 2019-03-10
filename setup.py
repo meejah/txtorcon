@@ -64,7 +64,7 @@ setup(
     author=__author__,
     author_email=__contact__,
     url=__url__,
-    license=__license__,
+    license='MIT',  # in metadata.__license__ but trying this "because #311
     packages=[
         "txtorcon",
         "twisted.plugins",
