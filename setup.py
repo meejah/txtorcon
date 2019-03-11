@@ -37,6 +37,7 @@ setup(
     description=description,
     setup_requires="setuptools>=36.2",
     long_description=open('README.rst', 'r').read(),
+    long_description_content_type="text/x-rst",
     keywords=['python', 'twisted', 'tor', 'tor controller'],
     install_requires=open('requirements.txt').readlines(),
     # "pip install -e .[dev]" will install development requirements
