@@ -37,8 +37,10 @@ setup(
     description=description,
     setup_requires="setuptools>=36.2",
 #    long_description=open('README.rst', 'r').read(),
-    long_description="txtorcon\n========\n\n",
-    long_description_content_type="text/x-rst",
+#    long_description_content_type="text/x-rst",
+#    long_description=open('README.md', 'r').read(),
+    long_description="a description",
+    long_description_content_type="text/markdown",
     keywords=['python', 'twisted', 'tor', 'tor controller'],
     install_requires=open('requirements.txt').readlines(),
     # "pip install -e .[dev]" will install development requirements
