@@ -81,7 +81,7 @@ setup(
         ('share/txtorcon', [
             'INSTALL',
             'LICENSE',
-            'README.md',
+            'README.rst',
             'TODO',
             'meejah.asc',
             'setup.py',
