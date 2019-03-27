@@ -6,6 +6,7 @@ from __future__ import print_function
 from os.path import join
 from os import listdir
 from setuptools import setup
+import re
 
 # Hmmmph.
 # So we get all the meta-information in one place (yay!) but we call
@@ -13,17 +14,16 @@ from setuptools import setup
 # import *" here because that won't work when setup is being run by
 # pip (outside of Git checkout etc)
 with open('txtorcon/_metadata.py') as f:
-    exec(
-        compile(f.read(), '_metadata.py', 'exec'),
-        globals(),
-        locals(),
-    )
+    version_string = f.read().strip()
+match = re.match("__version__ = '([0-9.]*)'", version_string)
+version = match.group(1)
 
 description = '''
     Twisted-based Tor controller client, with state-tracking and
     configuration abstractions.
     https://txtorcon.readthedocs.org
     https://github.com/meejah/txtorcon
+    https://meejah.ca/projects/txtorcon
 '''
 
 sphinx_rst_files = [x for x in listdir('docs') if x[-3:] == 'rst']
@@ -33,15 +33,21 @@ examples = [x for x in listdir('examples') if x[-3:] == '.py']
 
 setup(
     name='txtorcon',
-    version=__version__,
+    version=version,
     description=description,
     setup_requires="setuptools>=36.2",
-#    long_description=open('README.rst', 'r').read(),
-#    long_description_content_type="text/x-rst",
-#    long_description=open('README.md', 'r').read(),
-    long_description="a description",
-    long_description_content_type="text/markdown",
+    long_description=open('README.rst', 'r').read(),
+    long_description_content_type="text/x-rst",
     keywords=['python', 'twisted', 'tor', 'tor controller'],
+    author='meejah',
+    author_email='meejah@meejah.ca',
+    url='https://meejah.ca/projects/txtorcon',
+    license='MIT',
+    packages=[
+        "txtorcon",
+        "twisted.plugins",
+    ],
+
     install_requires=open('requirements.txt').readlines(),
     # "pip install -e .[dev]" will install development requirements
     extras_require=dict(
@@ -65,14 +71,6 @@ setup(
         'Topic :: Internet',
         'Topic :: Security',
     ],
-    author=__author__,
-    author_email=__contact__,
-    url=__url__,
-    license=__license__,
-    packages=[
-        "txtorcon",
-        "twisted.plugins",
-    ],
 
     # I'm a little unclear if I'm doing this "properly", especially
     # the documentation etc. Do we really want "share/txtorcon" for
@@ -80,7 +78,14 @@ setup(
     # duplicate this in MANIFEST.in?
 
     data_files=[
-        ('share/txtorcon', ['INSTALL', 'README.rst', 'TODO', 'meejah.asc']),
+        ('share/txtorcon', [
+            'INSTALL',
+            'LICENSE',
+            'README.md',
+            'TODO',
+            'meejah.asc',
+            'setup.py',
+        ]),
 
         # this includes the Sphinx source for the
         # docs. The "map+filter" construct grabs all .rst

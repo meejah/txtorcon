@@ -5,8 +5,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-from txtorcon._metadata import __version__, __author__, __contact__
-from txtorcon._metadata import __license__, __copyright__, __url__
+from txtorcon._metadata import __version__
+# not sure if we really need this stuff, but we "used" to have it ... so
+__author__ = 'meejah'
+__contact__ = 'meejah@meejah.ca'
+__license__ = 'MIT'
+__copyright__ = 'Copyright 2012-2019'
+__url__ = 'https://github.com/meejah/txtorcon'
 
 from txtorcon.router import Router
 from txtorcon.circuit import Circuit
