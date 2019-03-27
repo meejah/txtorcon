@@ -1,3 +1,4 @@
+import os
 import sys
 import subprocess
 from os.path import join
@@ -12,6 +13,7 @@ def main():
         [sys.executable, "setup.py", "bdist_wheel"],
         check=True,
     )
+    print(os.listdir("."))
     import txtorcon
     dist_file = join("dist", "txtorcon-{}-py2.py3-none-any.whl".format(txtorcon.__version__))
     print("dist: {}".format(dist_file))
