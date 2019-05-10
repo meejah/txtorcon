@@ -1642,6 +1642,22 @@ class ComposibleListenerTests(unittest.TestCase):
         def _(stream):
             listener_calls.append(("succeeded", stream.id))
 
+        @self.state.on_stream_attach
+        def _(stream, circ):
+            listener_calls.append(("attach", stream.id))
+
+        @self.state.on_stream_detach
+        def _(stream):
+            listener_calls.append(("detach", stream.id))
+
+        @self.state.on_stream_closed
+        def _(stream):
+            listener_calls.append(("closed", stream.id))
+
+        @self.state.on_stream_failed
+        def _(stream):
+            listener_calls.append(("failed", stream.id))
+
         addrmap = AddrMap()
 
         circ = self.state._maybe_create_circuit("42")
@@ -1649,11 +1665,18 @@ class ComposibleListenerTests(unittest.TestCase):
 
         self.state._stream_update("1234 NEW 0 meejah.ca:80")
         self.state._stream_update("1234 SUCCEEDED 42")
+        self.state._stream_update("1234 DETACHED 0")
+        self.state._stream_update("1234 CLOSED 0")
+        self.state._stream_update("1234 FAILED 0")
 
         self.assertEqual(
             listener_calls,
             [
                 ("new", 1234),
                 ("succeeded", 1234),
+                ("attach", 1234),
+                ("detach", 1234),
+                ("closed", 1234),
+                ("failed", 1234),
             ]
         )
