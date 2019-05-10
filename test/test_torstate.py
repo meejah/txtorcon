@@ -30,7 +30,6 @@ from txtorcon.interface import StreamListenerMixin
 from txtorcon.interface import CircuitListenerMixin
 from txtorcon.circuit import _get_circuit_attacher
 from txtorcon.circuit import _extract_reason
-from txtorcon.addrmap import AddrMap
 
 try:
     from .py3_torstate import TorStatePy3Tests  # noqa
@@ -1657,8 +1656,6 @@ class ComposibleListenerTests(unittest.TestCase):
         @self.state.on_stream_failed
         def _(stream):
             listener_calls.append(("failed", stream.id))
-
-        addrmap = AddrMap()
 
         circ = self.state._maybe_create_circuit("42")
         circ.update(["42", "LAUNCHED"])
