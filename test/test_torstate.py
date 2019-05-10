@@ -30,6 +30,7 @@ from txtorcon.interface import StreamListenerMixin
 from txtorcon.interface import CircuitListenerMixin
 from txtorcon.circuit import _get_circuit_attacher
 from txtorcon.circuit import _extract_reason
+from txtorcon.addrmap import AddrMap
 
 try:
     from .py3_torstate import TorStatePy3Tests  # noqa
@@ -1625,3 +1626,34 @@ class ComposibleListenerTests(unittest.TestCase):
 
         self.assertEqual(len(listener_calls), 1)
         self.assertEqual(listener_calls[0].id, 42)
+
+    def test_stream_events(self):
+        """
+        one for the philosophers: is this 'one, but big' test better /
+        easier to read than the N circuit tests above?
+        """
+        listener_calls = []  # list of 2-tuples
+
+        @self.state.on_stream_new
+        def _(stream):
+            listener_calls.append(("new", stream.id))
+
+        @self.state.on_stream_succeeded
+        def _(stream):
+            listener_calls.append(("succeeded", stream.id))
+
+        addrmap = AddrMap()
+
+        circ = self.state._maybe_create_circuit("42")
+        circ.update(["42", "LAUNCHED"])
+
+        self.state._stream_update("1234 NEW 0 meejah.ca:80")
+        self.state._stream_update("1234 SUCCEEDED 42")
+
+        self.assertEqual(
+            listener_calls,
+            [
+                ("new", 1234),
+                ("succeeded", 1234),
+            ]
+        )

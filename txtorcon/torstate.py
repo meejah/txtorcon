@@ -564,6 +564,12 @@ class TorState(object):
             circ.listen(listen)
         self.circuit_listeners.append(listen)
 
+    def on_stream_new(self, callback):
+        listener = StreamListenerMixin()
+        listener.stream_new = callback
+        self.add_stream_listener(listener)
+        return callback  # so we can be used as a listener
+
     def on_stream_succeeded(self, callback):
         listener = StreamListenerMixin()
         listener.stream_succeeded = callback
