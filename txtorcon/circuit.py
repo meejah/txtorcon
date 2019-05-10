@@ -494,7 +494,7 @@ class Circuit(object):
         rendevouz point not in the current consensus.
         """
 
-        oldpath = self.path
+        oldpath_len = len(self.path)
         self.path = []
         for p in path:
             if p[0] != '$':
@@ -506,10 +506,10 @@ class Circuit(object):
 
             self.path.append(router)
             # if the path grew, notify listeners
-            if len(self.path) > len(oldpath):
+            if len(self.path) > oldpath_len:
                 for x in self.listeners:
                     x.circuit_extend(self, router)
-                oldpath = self.path
+                oldpath_len = len(self.path)
 
     def __str__(self):
         path = ' '.join([x.ip for x in self.path])

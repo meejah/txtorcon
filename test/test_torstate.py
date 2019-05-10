@@ -1542,7 +1542,7 @@ class ComposibleListenerTests(unittest.TestCase):
         self.protocol = TorControlProtocol()
         self.state = TorState(self.protocol)
 
-    def test_circuit_listeners(self):
+    def test_circuit_new(self):
         listener_calls = []
 
         @self.state.on_circuit_new
@@ -1552,5 +1552,49 @@ class ComposibleListenerTests(unittest.TestCase):
         c = self.state._maybe_create_circuit("42")
         c.update(["42", "LAUNCHED"])
 
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)
+
+    def test_circuit_launched(self):
+        listener_calls = []
+
+        @self.state.on_circuit_launched
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)
+
+    def test_circuit_extend(self):
+        listener_calls = []
+
+        @self.state.on_circuit_extend
+        def _(circ, router):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+        c.update(["42", "BUILDING", "$deadbeef,$1ee7"])
+
+        # we get two calls because we've now extended to 2 relays
+        self.assertEqual(len(listener_calls), 2)
+        self.assertEqual(listener_calls[0].id, 42)
+        self.assertEqual(listener_calls[1].id, 42)
+
+    def test_circuit_built(self):
+        listener_calls = []
+
+        @self.state.on_circuit_built
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+        c.update(["42", "BUILT", "$deadbeef"])
+
+        # we get two calls because we've now extended to 2 relays
         self.assertEqual(len(listener_calls), 1)
         self.assertEqual(listener_calls[0].id, 42)
