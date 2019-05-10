@@ -1593,8 +1593,35 @@ class ComposibleListenerTests(unittest.TestCase):
 
         c = self.state._maybe_create_circuit("42")
         c.update(["42", "LAUNCHED"])
-        c.update(["42", "BUILT", "$deadbeef"])
+        c.update(["42", "BUILT"])
 
-        # we get two calls because we've now extended to 2 relays
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)
+
+    def test_circuit_closed(self):
+        listener_calls = []
+
+        @self.state.on_circuit_closed
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+        c.update(["42", "CLOSED"])
+
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)
+
+    def test_circuit_failed(self):
+        listener_calls = []
+
+        @self.state.on_circuit_failed
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+        c.update(["42", "FAILED"])
+
         self.assertEqual(len(listener_calls), 1)
         self.assertEqual(listener_calls[0].id, 42)
