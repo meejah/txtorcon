@@ -1534,3 +1534,23 @@ s Fast Guard Running Stable Valid
         d.addErrback(check_reason)
 
         return d
+
+
+class ComposibleListenerTests(unittest.TestCase):
+
+    def setUp(self):
+        self.protocol = TorControlProtocol()
+        self.state = TorState(self.protocol)
+
+    def test_circuit_listeners(self):
+        listener_calls = []
+
+        @self.state.on_circuit_new
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)

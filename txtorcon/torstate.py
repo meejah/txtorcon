@@ -32,6 +32,8 @@ from txtorcon.interface import ICircuitListener
 from txtorcon.interface import ICircuitContainer
 from txtorcon.interface import IStreamListener
 from txtorcon.interface import IStreamAttacher
+from txtorcon.interface import StreamListenerMixin
+from txtorcon.interface import CircuitListenerMixin
 from ._microdesc_parser import MicrodescriptorParser
 from .router import hexIdFromHash
 from .util import maybe_coroutine
@@ -516,6 +518,42 @@ class TorState(object):
             'CLOSECIRCUIT %s%s' % (circid, flags)
         )
 
+    def on_circuit_new(self, callback):
+        listener = CircuitListenerMixin()
+        listener.circuit_new = callback
+        self.add_circuit_listener(listener)
+        return callback  # so we can be used as a listener
+
+    def on_circuit_launched(self, callback):
+        listener = CircuitListenerMixin()
+        listener.circuit_launched = callback
+        self.add_circuit_listener(listener)
+        return callback  # so we can be used as a listener
+
+    def on_circuit_extend(self, callback):
+        listener = CircuitListenerMixin()
+        listener.circuit_extend = callback
+        self.add_circuit_listener(listener)
+        return callback  # so we can be used as a listener
+
+    def on_circuit_built(self, callback):
+        listener = CircuitListenerMixin()
+        listener.circuit_built = callback
+        self.add_circuit_listener(listener)
+        return callback  # so we can be used as a listener
+
+    def on_circuit_closed(self, callback):
+        listener = CircuitListenerMixin()
+        listener.circuit_closed = callback
+        self.add_circuit_listener(listener)
+        return callback  # so we can be used as a listener
+
+    def on_circuit_failed(self, callback):
+        listener = CircuitListenerMixin()
+        listener.circuit_failed = callback
+        self.add_circuit_listener(listener)
+        return callback  # so we can be used as a listener
+
     def add_circuit_listener(self, icircuitlistener):
         """
         Adds a new instance of :class:`txtorcon.interface.ICircuitListener` which
@@ -525,6 +563,36 @@ class TorState(object):
         for circ in self.circuits.values():
             circ.listen(listen)
         self.circuit_listeners.append(listen)
+
+    def on_stream_succeeded(self, callback):
+        listener = StreamListenerMixin()
+        listener.stream_succeeded = callback
+        self.add_stream_listener(listener)
+        return callback  # so we can be used as a listener
+
+    def on_stream_attach(self, callback):
+        listener = StreamListenerMixin()
+        listener.stream_attach = callback
+        self.add_stream_listener(listener)
+        return callback  # so we can be used as a listener
+
+    def on_stream_detach(self, callback):
+        listener = StreamListenerMixin()
+        listener.stream_detach = callback
+        self.add_stream_listener(listener)
+        return callback  # so we can be used as a listener
+
+    def on_stream_closed(self, callback):
+        listener = StreamListenerMixin()
+        listener.stream_closed = callback
+        self.add_stream_listener(listener)
+        return callback  # so we can be used as a listener
+
+    def on_stream_failed(self, callback):
+        listener = StreamListenerMixin()
+        listener.stream_failed = callback
+        self.add_stream_listener(listener)
+        return callback  # so we can be used as a listener
 
     def add_stream_listener(self, istreamlistener):
         """
