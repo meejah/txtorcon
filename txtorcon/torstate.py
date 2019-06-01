@@ -519,36 +519,60 @@ class TorState(object):
         )
 
     def on_circuit_new(self, callback):
+        """
+        :param callback: will be called (with 'circuit' instance) when a
+            CIRC NEW event happens
+        """
         listener = CircuitListenerMixin()
         listener.circuit_new = callback
         self.add_circuit_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_circuit_launched(self, callback):
+        """
+        :param callback: will be called (with 'circuit' instance) when a
+             CIRC LAUNCHED event happens
+        """
         listener = CircuitListenerMixin()
         listener.circuit_launched = callback
         self.add_circuit_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_circuit_extend(self, callback):
+        """
+        :param callback: will be called (with 'circuit' and 'router'
+            instances) when a CIRC EXTENDED event happens
+        """
         listener = CircuitListenerMixin()
         listener.circuit_extend = callback
         self.add_circuit_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_circuit_built(self, callback):
+        """
+        :param callback: will be called (with 'circuit' instance) when a
+            CIRC BUILT event happens
+        """
         listener = CircuitListenerMixin()
         listener.circuit_built = callback
         self.add_circuit_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_circuit_closed(self, callback):
+        """
+        :param callback: will be called (with 'circuit' instance, and
+            arbitrary kwargs) when a CIRC CLOSED event happens
+        """
         listener = CircuitListenerMixin()
         listener.circuit_closed = callback
         self.add_circuit_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_circuit_failed(self, callback):
+        """
+        :param callback: will be called (with 'circuit' instance, and
+            arbitrary kwargs) when a CIRC FAILED event happens
+        """
         listener = CircuitListenerMixin()
         listener.circuit_failed = callback
         self.add_circuit_listener(listener)
@@ -565,36 +589,60 @@ class TorState(object):
         self.circuit_listeners.append(listen)
 
     def on_stream_new(self, callback):
+        """
+        :param callback: will be called (with 'stream' instance) when a
+            STREAM NEW event happens.
+        """
         listener = StreamListenerMixin()
         listener.stream_new = callback
         self.add_stream_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_stream_succeeded(self, callback):
+        """
+        :param callback: will be called (with 'stream' instance) when a
+            STREAM SUCCEEDED event happens.
+        """
         listener = StreamListenerMixin()
         listener.stream_succeeded = callback
         self.add_stream_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_stream_attach(self, callback):
+        """
+        :param callback: will be called (with 'stream' and 'circuit'
+            instances) when a stream is attached to a circuit
+        """
         listener = StreamListenerMixin()
         listener.stream_attach = callback
         self.add_stream_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_stream_detach(self, callback):
+        """
+        :param callback: will be called (with 'stream' instance and
+            arbitrary kwargs) when a STREAM DETACHED happens
+        """
         listener = StreamListenerMixin()
         listener.stream_detach = callback
         self.add_stream_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_stream_closed(self, callback):
+        """
+        :param callback: will be called (with 'stream' instance and
+            arbitrary kwargs) when a STREAM CLOSED event happens.
+        """
         listener = StreamListenerMixin()
         listener.stream_closed = callback
         self.add_stream_listener(listener)
         return callback  # so we can be used as a listener
 
     def on_stream_failed(self, callback):
+        """
+        :param callback: will be called (with 'stream' instance and
+            arbitrary kwargs) when a STREAM FAILED event happens.
+        """
         listener = StreamListenerMixin()
         listener.stream_failed = callback
         self.add_stream_listener(listener)

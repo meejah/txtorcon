@@ -26,6 +26,9 @@ unreleased
    enabling Tor options making Onion Services non-anonymous for the
    server (but they use a single hop instead of three to the
    Introduction Point so they're slightly faster).
+ * add an API to listen to individual circuit and stream events
+   (without subclassing anything). Can be used as decorators too.
+   See e.g. :func:`TorState.on_circuit_new`
 
 
 v19.0.0
