@@ -1534,3 +1534,146 @@ s Fast Guard Running Stable Valid
         d.addErrback(check_reason)
 
         return d
+
+
+class ComposibleListenerTests(unittest.TestCase):
+
+    def setUp(self):
+        self.protocol = TorControlProtocol()
+        self.state = TorState(self.protocol)
+
+    def test_circuit_new(self):
+        listener_calls = []
+
+        @self.state.on_circuit_new
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)
+
+    def test_circuit_launched(self):
+        listener_calls = []
+
+        @self.state.on_circuit_launched
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)
+
+    def test_circuit_extend(self):
+        listener_calls = []
+
+        @self.state.on_circuit_extend
+        def _(circ, router):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+        c.update(["42", "BUILDING", "$deadbeef,$1ee7"])
+
+        # we get two calls because we've now extended to 2 relays
+        self.assertEqual(len(listener_calls), 2)
+        self.assertEqual(listener_calls[0].id, 42)
+        self.assertEqual(listener_calls[1].id, 42)
+
+    def test_circuit_built(self):
+        listener_calls = []
+
+        @self.state.on_circuit_built
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+        c.update(["42", "BUILT"])
+
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)
+
+    def test_circuit_closed(self):
+        listener_calls = []
+
+        @self.state.on_circuit_closed
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+        c.update(["42", "CLOSED"])
+
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)
+
+    def test_circuit_failed(self):
+        listener_calls = []
+
+        @self.state.on_circuit_failed
+        def _(circ):
+            listener_calls.append(circ)
+
+        c = self.state._maybe_create_circuit("42")
+        c.update(["42", "LAUNCHED"])
+        c.update(["42", "FAILED"])
+
+        self.assertEqual(len(listener_calls), 1)
+        self.assertEqual(listener_calls[0].id, 42)
+
+    def test_stream_events(self):
+        """
+        one for the philosophers: is this 'one, but big' test better /
+        easier to read than the N circuit tests above?
+        """
+        listener_calls = []  # list of 2-tuples
+
+        @self.state.on_stream_new
+        def _(stream):
+            listener_calls.append(("new", stream.id))
+
+        @self.state.on_stream_succeeded
+        def _(stream):
+            listener_calls.append(("succeeded", stream.id))
+
+        @self.state.on_stream_attach
+        def _(stream, circ):
+            listener_calls.append(("attach", stream.id))
+
+        @self.state.on_stream_detach
+        def _(stream):
+            listener_calls.append(("detach", stream.id))
+
+        @self.state.on_stream_closed
+        def _(stream):
+            listener_calls.append(("closed", stream.id))
+
+        @self.state.on_stream_failed
+        def _(stream):
+            listener_calls.append(("failed", stream.id))
+
+        circ = self.state._maybe_create_circuit("42")
+        circ.update(["42", "LAUNCHED"])
+
+        self.state._stream_update("1234 NEW 0 meejah.ca:80")
+        self.state._stream_update("1234 SUCCEEDED 42")
+        self.state._stream_update("1234 DETACHED 0")
+        self.state._stream_update("1234 CLOSED 0")
+        self.state._stream_update("1234 FAILED 0")
+
+        self.assertEqual(
+            listener_calls,
+            [
+                ("new", 1234),
+                ("succeeded", 1234),
+                ("attach", 1234),
+                ("detach", 1234),
+                ("closed", 1234),
+                ("failed", 1234),
+            ]
+        )

@@ -285,6 +285,10 @@ notifications on a Tor-wide basis with
 interested in a single circuit, you can call
 :meth:`.Circuit.listen` directly on a ``Circuit`` instance.
 
+You can instead use methods (which also function as decorators) such
+as :meth:`.TorState.on_circuit_launched` or
+:meth:`.TorState.on_stream_closed` to add listeners for single events.
+
 The Tor relays are abstracted with :class:`.Router`
 instances. Again, these have read-only attributes for interesting
 information, e.g.: ``id_hex``, ``ip``, ``flags`` (a list of strings),
