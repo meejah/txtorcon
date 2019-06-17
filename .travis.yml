@@ -29,7 +29,8 @@ matrix:
   - python: "3.6"
     env: TOX_ENV=py36-tx19
 
-# python 3.4
+# python 3.4 (twisted dropped support in tx19, so ... should we?)
+# https://twistedmatrix.com/trac/ticket/9613
 
   - python: "3.4"
     env: TOX_ENV=py34-tx16
@@ -37,8 +38,8 @@ matrix:
     env: TOX_ENV=py34-tx17
   - python: "3.4"
     env: TOX_ENV=py34-tx18
-  - python: "3.4"
-    env: TOX_ENV=py34-tx19
+#  - python: "3.4"
+#    env: TOX_ENV=py34-tx19
 
 # python 2.7
 
