@@ -29,6 +29,7 @@ unreleased
  * add an API to listen to individual circuit and stream events
    (without subclassing anything). Can be used as decorators too.
    See e.g. :func:`TorState.on_circuit_new`
+ * fixes to the CI setup to properly test Twisted versions
 
 
 v19.0.0
