@@ -10,11 +10,8 @@ sudo: required
 # - pip install tox-travis
 
 # "pip upgrade" to fix python 3.4 builders (maybe)
-install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install --upgrade pip && pip install -r requirements.txt && pip install -r dev-requirements.txt"
-
-# NOTE disabling anything less than twisted-14 because
-# "assertRaises()" can't be used as a context-manager before then, and
-# many of the tests do that.
+#install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install --upgrade pip && pip install -r requirements.txt && pip install -r dev-requirements.txt"
+install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install --upgrade pip
 
 env:
   - TOX_ENV=tx15
