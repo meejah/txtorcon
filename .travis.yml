@@ -15,14 +15,11 @@ matrix:
   - python: "3.6"
     env: TOX_ENV=readme_render
 
-# for every python we support, we're currently testing on Twisted 15,
-# 16, 17, 18 and 19
-# XXX when can we drop 15?
+# for every python we support; we're currently testing on Twisted 16,
+# 17, 18 and 19
 
 # python 3.6
 
-  - python: "3.6"
-    env: TOX_ENV=py36-tx15
   - python: "3.6"
     env: TOX_ENV=py36-tx16
   - python: "3.6"
@@ -35,8 +32,6 @@ matrix:
 # python 3.4
 
   - python: "3.4"
-    env: TOX_ENV=py34-tx15
-  - python: "3.4"
     env: TOX_ENV=py34-tx16
   - python: "3.4"
     env: TOX_ENV=py34-tx17
@@ -48,8 +43,6 @@ matrix:
 # python 2.7
 
   - python: "2.7"
-    env: TOX_ENV=py27-tx15
-  - python: "2.7"
     env: TOX_ENV=py27-tx16
   - python: "2.7"
     env: TOX_ENV=py27-tx17
@@ -60,8 +53,6 @@ matrix:
 
 # PyPy
 
-  - python: "pypy"
-    env: TOX_ENV=pypy-tx15
   - python: "pypy"
     env: TOX_ENV=pypy-tx16
   - python: "pypy"
