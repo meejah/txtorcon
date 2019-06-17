@@ -1060,7 +1060,7 @@ class WebAgentTests(unittest.TestCase):
                 print("Skipping; appears we don't have web support")
                 return
 
-        resp = yield agent.request('GET', b'meejah.ca')
+        resp = yield agent.request(b'GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
 
     @defer.inlineCallbacks
@@ -1074,7 +1074,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, proto, _tor_config=cfg)
         agent = tor.web_agent(pool=self.pool, socks_endpoint=socks_d)
 
-        resp = yield agent.request('GET', b'meejah.ca')
+        resp = yield agent.request(b'GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
 
     @defer.inlineCallbacks
@@ -1089,7 +1089,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, proto, _tor_config=cfg)
         agent = tor.web_agent(pool=self.pool, socks_endpoint=socks)
 
-        resp = yield agent.request('GET', b'meejah.ca')
+        resp = yield agent.request(b'GET', b'meejah.ca')
         self.assertEqual(self.expected_response, resp)
 
     @defer.inlineCallbacks
@@ -1102,7 +1102,7 @@ class WebAgentTests(unittest.TestCase):
         tor = Tor(reactor, proto, _tor_config=cfg)
         with self.assertRaises(ValueError) as ctx:
             agent = tor.web_agent(pool=self.pool, socks_endpoint=object())
-            yield agent.request('GET', b'meejah.ca')
+            yield agent.request(B'GET', b'meejah.ca')
         self.assertTrue("'socks_endpoint' should be" in str(ctx.exception))
 
 
