@@ -1,42 +1,75 @@
 language: python
-python:
- - "2.7"
- - "3.4"
- - "3.6"
- - "pypy"
 sudo: required
 
-#install:
-# - pip install tox-travis
-
-# "pip upgrade" to fix python 3.4 builders (maybe)
-#install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install --upgrade pip && pip install -r requirements.txt && pip install -r dev-requirements.txt"
 install: "sudo apt-get update && sudo apt-get install -y libgeoip-dev python-dev && pip install --upgrade pip && pip install tox"
 
-env:
-  - TOX_ENV=tx15
-  - TOX_ENV=tx16
-  - TOX_ENV=tx17
-  - TOX_ENV=tx18
-  - TOX_ENV=tx19
-  # - TOX_ENV=flake8
-  # - TOX_ENV=readme_render
-  # - TOX_ENV=py27-tx15
-  # - TOX_ENV=py27-tx16
-  # - TOX_ENV=py27-tx17
-  # - TOX_ENV=py35-tx15
-  # - TOX_ENV=py35-tx16
-  # - TOX_ENV=py35-tx17
-  # - TOX_ENV=pypy-tx15
-  # - TOX_ENV=pypy-tx16
-  # - TOX_ENV=pypy-tx17
+# just listing everything in the matrix, because:
+# - anything else apparently failed
+# - this is what klein does
 
 matrix:
   include:
+# these two are "special", we only run them in "a really new python"
   - python: "3.6"
     env: TOX_ENV=flake8
   - python: "3.6"
     env: TOX_ENV=readme_render
+
+# for every python we support, we're currently testing on Twisted 15,
+# 16, 17, 18 and 19
+# XXX when can we drop 15?
+
+# python 3.6
+
+  - python: "3.6"
+    env: TOX_ENV=py36-tx15
+  - python: "3.6"
+    env: TOX_ENV=py36-tx16
+  - python: "3.6"
+    env: TOX_ENV=py36-tx17
+  - python: "3.6"
+    env: TOX_ENV=py36-tx18
+  - python: "3.6"
+    env: TOX_ENV=py36-tx19
+
+# python 3.4
+
+  - python: "3.4"
+    env: TOX_ENV=py34-tx15
+  - python: "3.4"
+    env: TOX_ENV=py34-tx16
+  - python: "3.4"
+    env: TOX_ENV=py34-tx17
+  - python: "3.4"
+    env: TOX_ENV=py34-tx18
+  - python: "3.4"
+    env: TOX_ENV=py34-tx19
+
+# python 2.7
+
+  - python: "2.7"
+    env: TOX_ENV=py27-tx15
+  - python: "2.7"
+    env: TOX_ENV=py27-tx16
+  - python: "2.7"
+    env: TOX_ENV=py27-tx17
+  - python: "2.7"
+    env: TOX_ENV=py27-tx18
+  - python: "2.7"
+    env: TOX_ENV=py27-tx19
+
+# PyPy
+
+  - python: "pypy"
+    env: TOX_ENV=pypy-tx15
+  - python: "pypy"
+    env: TOX_ENV=pypy-tx16
+  - python: "pypy"
+    env: TOX_ENV=pypy-tx17
+  - python: "pypy"
+    env: TOX_ENV=pypy-tx18
+  - python: "pypy"
+    env: TOX_ENV=pypy-tx19
 
 script:
   - apt-cache policy libssl-dev
