@@ -18,6 +18,7 @@ env:
   - TOX_ENV=tx16
   - TOX_ENV=tx17
   - TOX_ENV=tx18
+  - TOX_ENV=tx19
   # - TOX_ENV=flake8
   # - TOX_ENV=readme_render
   # - TOX_ENV=py27-tx15
