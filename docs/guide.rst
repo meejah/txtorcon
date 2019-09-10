@@ -127,7 +127,7 @@ instance associated with this tor and change configuration afterwards.
 
 Setting ``data_directory`` gives your Tor instance a place to cache
 its state information which includes the current "consensus"
-document. If you don't set it, txtorcon creates a temporary directly
+document. If you don't set it, txtorcon creates a temporary directory
 (which is deleted when this Tor instance exits). Startup time is
 drammatically improved if Tor already has a recent consensus, so when
 integrating with Tor by launching your own client it's highly
