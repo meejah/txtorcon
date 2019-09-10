@@ -25,6 +25,12 @@ description = '''
     https://txtorcon.readthedocs.org
     https://github.com/meejah/txtorcon
 '''
+# if there are any newlines in the short-description, there's no error
+# .. but setuptools / pip / readme_renderere "or something" causes the
+# 'descript' to be all the meta-data after 'summary', which fails to
+# render.
+# see: https://github.com/pypa/setuptools/issues/1390
+description = description.replace('\n', ' ')
 
 sphinx_rst_files = [x for x in listdir('docs') if x[-3:] == 'rst']
 sphinx_docs = [join('docs', x) for x in sphinx_rst_files]
