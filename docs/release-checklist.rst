@@ -23,13 +23,13 @@ Release Checklist
    * update heading, date
 
 * on both signing-machine and build-machine shells:
-   * export VERSION=19.0.0
+   * export VERSION=19.1.0
 
 * (if on signing machine) "make dist" and "make dist-sigs"
    * creates:
      dist/txtorcon-${VERSION}.tar.gz.asc
      dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc
-   * add the signatures to "signatues/"
+   * add the signatures to "signatures/"
      cp dist/txtorcon-${VERSION}.tar.gz.asc dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc signatures/
    * add ALL FOUR files to dist/ (OR fix twine commands)
 

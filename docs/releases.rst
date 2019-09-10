@@ -18,7 +18,15 @@ See also :ref:`api_stability`.
 unreleased
 ----------
 
-`git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.1.0*
+`git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.2.0*
+
+
+v19.1.0
+-------
+
+September 10, 2019
+
+ * `txtorcon-19.1.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-19.1.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/19.1.0>`_ (:download:`local-sig </../signatues/txtorcon-19.1.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/master/signatues/txtorcon-19.1.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v19.1.0.tar.gz>`_)
 
  * `TorControlProtocol.on_disconnect` is deprecated in favour of
    :func:`TorControlProtocol.when_disconnected`
