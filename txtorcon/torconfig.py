@@ -10,8 +10,11 @@ import six
 import functools
 import warnings
 from io import StringIO
-from collections import OrderedDict
 from warnings import warn
+try:
+    from collections.abc import OrderedDict
+except ImportError:
+    from collections import OrderedDict
 
 from twisted.python import log
 from twisted.python.compat import nativeString
