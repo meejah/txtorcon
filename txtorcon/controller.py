@@ -11,8 +11,11 @@ import shlex
 import tempfile
 import functools
 from io import StringIO
-from collections import Sequence
 from os.path import dirname, exists
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 from twisted.python import log
 from twisted.python.failure import Failure
