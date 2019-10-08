@@ -19,6 +19,7 @@ unreleased
 ----------
 
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.2.0*
+ *Change abstract base classes import in preperation for Python 3.8
 
 
 v19.1.0
@@ -634,4 +635,3 @@ v0.1
 march, 2012
 
  * `txtorcon-0.1.tar.gz <txtorcon-0.1.tar.gz>`_ (`txtorcon-0.1.tar.gz.sig <txtorcon-0.1.tar.gz.sig>`_)
-
