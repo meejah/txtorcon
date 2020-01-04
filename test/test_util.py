@@ -1,9 +1,10 @@
 import os
 import sys
 import tempfile
+import ipaddress
 from mock import patch
 from unittest import skipIf
-import ipaddress
+from os.path import exists
 
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -63,10 +64,14 @@ class TestGeoIpDatabaseLoading(unittest.TestCase):
 
     @skipIf('pypy' in sys.version.lower(), "No GeoIP in PyPy")
     def test_return_geoip_object(self):
+        # requires a valid GeoIP database to work, so hopefully we're
+        # on Debian or similar...
+        fname = "/usr/share/GeoIP/GeoIP.dat"
+        if not exists(fname):
+            return
+
         from txtorcon import util
-        (fd, f) = tempfile.mkstemp()
-        ret_val = util.create_geoip(f)
-        delete_file_or_tree(f)
+        ret_val = util.create_geoip(fname)
         self.assertEqual(type(ret_val).__name__, 'GeoIP')
 
 
