@@ -4,10 +4,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import with_statement
 
-import collections
 import os
 import stat
 import warnings
+try:
+    from collections.abc import Callable
+except ImportError:
+    from collections import Callable
 
 from twisted.internet import defer
 from twisted.python.failure import Failure
@@ -115,11 +118,11 @@ def build_tor_connection(connection, build_state=True, wait_for_proto=True,
     )
     if build_state:
         d.addCallback(build_state
-                      if isinstance(build_state, collections.Callable)
+                      if isinstance(build_state, Callable)
                       else _build_state)
     elif wait_for_proto:
         d.addCallback(wait_for_proto
-                      if isinstance(wait_for_proto, collections.Callable)
+                      if isinstance(wait_for_proto, Callable)
                       else _wait_for_proto)
     return d
 
