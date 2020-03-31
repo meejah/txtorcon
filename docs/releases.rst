@@ -21,6 +21,9 @@ unreleased
 `git master <https://github.com/meejah/txtorcon>`_ *will likely become v19.2.0*
  * Use real GeoIP database or nothing (`#250 <https://github.com/meejah/txtorcon/issues/250>`_)
  * Change abstract base classes import in preperation for Python 3.8 (thanks `@glowatsk <https://github.com/glowatsk>`_
+ * Python 3.4 is no longer supported
+ * Python 2 is deprecated; all new code should be Python 3. Support
+   for Python 2 will be removed in a future release.
 
 
 v19.1.0
