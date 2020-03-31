@@ -1,5 +1,5 @@
 tox
-coverage
+coverage<5.0
 cuvner
 setuptools>=0.8.0
 Sphinx
