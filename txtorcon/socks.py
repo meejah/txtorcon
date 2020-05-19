@@ -89,7 +89,7 @@ class _SocksMachine(object):
             )
         if not isinstance(host, (bytes, str, six.text_type)):
             raise ValueError(
-                "'host' must be text".format(type(host))
+                "'host' must be text (not {})".format(type(host))
             )
         # XXX what if addr is None?
         self._req_type = req_type

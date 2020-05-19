@@ -7,7 +7,6 @@ from __future__ import print_function
 
 import sys
 from twisted.python import log
-from twisted.internet import reactor
 from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks, Deferred
 import txtorcon

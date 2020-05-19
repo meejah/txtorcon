@@ -1,5 +1,5 @@
 from twisted.internet.task import react
-from twisted.internet.defer import inlineCallbacks, ensureDeferred
+from twisted.internet.defer import ensureDeferred
 from twisted.internet.endpoints import UNIXClientEndpoint
 
 import treq

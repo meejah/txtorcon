@@ -94,8 +94,9 @@ def main():
     # Sanitize path and set working directory there (for SimpleHTTPServer)
     serve_directory = os.path.abspath(serve_directory)
     if not os.path.exists(serve_directory):
-        print('Path "%s" does not exists, can\'t serve from there...' % \
-            (serve_directory, ))
+        print(
+            'Path "{}" does not exist, can\'t serve from there...'.format(serve_directory)
+        )
         return 1
     os.chdir(serve_directory)
 
