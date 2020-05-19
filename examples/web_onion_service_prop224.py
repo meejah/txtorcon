@@ -16,7 +16,6 @@ from twisted.internet import defer, task, endpoints
 from twisted.web import server, resource
 
 import txtorcon
-from txtorcon.util import default_control_port
 
 
 class Simple(resource.Resource):
@@ -45,7 +44,7 @@ def main(reactor):
     print(dir(hs))
 
     ep = endpoints.TCP4ServerEndpoint(reactor, 8787, interface="localhost")
-    port = yield ep.listen(server.Site(Simple()))
+    yield ep.listen(server.Site(Simple()))  # returns 'port'
     print("Site listening: {}".format(hs.hostname))
     print("Private key:\n{}".format(hs.private_key))
     yield defer.Deferred()  # wait forever

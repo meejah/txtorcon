@@ -18,8 +18,6 @@ from twisted.internet import defer, task, endpoints
 from twisted.web import server, resource
 
 import txtorcon
-from txtorcon.util import default_control_port
-from txtorcon.onion import AuthBasic
 
 
 class Simple(resource.Resource):
@@ -41,7 +39,7 @@ def main(reactor):
     unix_p = abspath('./web_socket')
 
     ep = endpoints.UNIXServerEndpoint(reactor, unix_p)
-    port = yield ep.listen(server.Site(Simple()))
+    yield ep.listen(server.Site(Simple()))  # ignoring "port" return value
 
     def on_progress(percent, tag, msg):
         print('%03d: %s' % (percent, msg))

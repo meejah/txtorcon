@@ -11,7 +11,6 @@
 # note: if run in Python2, there are SyntaxErrors before we can tell
 # the user nicely
 
-import os
 import asyncio
 from twisted.internet import asyncioreactor
 
@@ -25,9 +24,7 @@ from twisted.internet.endpoints import UNIXClientEndpoint
 
 import txtorcon
 try:
-    import aiohttp
     from aiohttp import web
-    from aiosocks.connector import ProxyConnector, ProxyClientRequest
 except ImportError:
     raise Exception(
         "You need aiohttp to run this example:\n  pip install aiohttp"
@@ -61,10 +58,10 @@ async def _main(reactor):
         print("launching tor")
         tor = await txtorcon.launch(reactor, progress_updates=print)
     else:
-        tor = await txtorcon.connect(reactor,
-            UNIXClientEndpoint(reactor, "/var/run/tor/control")
+        tor = await txtorcon.connect(
+            reactor,
+            UNIXClientEndpoint(reactor, "/var/run/tor/control"),
         )
-    config = await tor.get_config()
     print("Connected to tor {}".format(tor.version))
 
     # here, we've just chosen 1234 as the port. We have three other
@@ -104,6 +101,7 @@ def main():
             _main(reactor)
         )
     )
+
 
 if __name__ == '__main__':
     main()

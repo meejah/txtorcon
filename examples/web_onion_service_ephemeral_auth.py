@@ -16,7 +16,6 @@ from twisted.internet import defer, task, endpoints
 from twisted.web import server, resource
 
 import txtorcon
-from txtorcon.util import default_control_port
 from txtorcon.onion import AuthBasic
 
 
