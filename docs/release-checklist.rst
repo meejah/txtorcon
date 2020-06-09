@@ -1,8 +1,8 @@
 Release Checklist
 =================
 
-* ensure local copy is on master, up-to-date:
-   * git checkout master
+* ensure local copy is on main, up-to-date:
+   * git checkout main
    * git pull
 
 * double-check version updated, sadly in a few places:
@@ -94,7 +94,7 @@ Release Checklist
 
 * copy release announcement to signing machine, update code
    * (from dev machine: "git push pangea")
-   * git checkout master
+   * git checkout main
    * git pull
 
 * create signed tag
@@ -117,7 +117,7 @@ Release Checklist
       * make sure BOTH the .tar.gz and .tar.gz.asc (ditto for .whl) are in the dist/ directory first!!)
       * ls dist/txtorcon-${VERSION}*
       * note this depends on a ~/.pypirc file with [server-login] section containing "username:" and "password:"
-   * git push origin master
+   * git push origin main
    * git push origin v${VERSION}
    * to github: use web-upload interface to upload the 4 files (both dists, both signature)
 

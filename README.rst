@@ -11,7 +11,7 @@
 
 
 
-.. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
+.. image:: https://travis-ci.org/meejah/txtorcon.png?branch=main
     :target: https://www.travis-ci.org/meejah/txtorcon
     :alt: travis
 
@@ -19,8 +19,8 @@
     :target: https://coveralls.io/r/meejah/txtorcon
     :alt: coveralls
 
-.. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=master
-    :target: http://codecov.io/github/meejah/txtorcon?branch=master
+.. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=main
+    :target: http://codecov.io/github/meejah/txtorcon?branch=main
     :alt: codecov
 
 .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=stable
@@ -31,8 +31,8 @@
     :target: https://txtorcon.readthedocs.io/en/latest
     :alt: ReadTheDocs
 
-.. image:: https://landscape.io/github/meejah/txtorcon/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/meejah/txtorcon/master
+.. image:: https://landscape.io/github/meejah/txtorcon/main/landscape.svg?style=flat
+    :target: https://landscape.io/github/meejah/txtorcon/main
     :alt: Code Health
 
 

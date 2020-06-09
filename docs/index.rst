@@ -10,14 +10,14 @@ txtorcon
    - clearnet: https://txtorcon.readthedocs.org
 - **code**: https://github.com/meejah/txtorcon
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
-- .. image:: https://travis-ci.org/meejah/txtorcon.png?branch=master
+- .. image:: https://travis-ci.org/meejah/txtorcon.png?branch=main
       :target: https://www.travis-ci.org/meejah/txtorcon
 
   .. image:: https://coveralls.io/repos/meejah/txtorcon/badge.svg
       :target: https://coveralls.io/r/meejah/txtorcon
 
-  .. image:: https://codecov.io/gh/meejah/txtorcon/branch/master/graphs/badge.svg?branch=master
-      :target: https://codecov.io/github/meejah/txtorcon?branch=master
+  .. image:: https://codecov.io/gh/meejah/txtorcon/branch/main/graphs/badge.svg?branch=main
+      :target: https://codecov.io/github/meejah/txtorcon?branch=main
 
   .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=stable
       :target: https://txtorcon.readthedocs.io/en/stable
@@ -27,8 +27,8 @@ txtorcon
       :target: https://txtorcon.readthedocs.io/en/latest
       :alt: ReadTheDocs
 
-  .. image:: https://landscape.io/github/meejah/txtorcon/master/landscape.svg?style=flat
-      :target: https://landscape.io/github/meejah/txtorcon/master
+  .. image:: https://landscape.io/github/meejah/txtorcon/main/landscape.svg?style=flat
+      :target: https://landscape.io/github/meejah/txtorcon/main
       :alt: Code Health
 
 .. container:: first_time
