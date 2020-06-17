@@ -67,10 +67,10 @@ setup(
         'Topic :: Internet',
         'Topic :: Security',
     ],
-    author=__author__,
-    author_email=__contact__,
-    url=__url__,
-    license=__license__,
+    author='meejah',
+    author_email='meejah@meejah.ca',
+    url='https://meejah.ca/projects/txtorcon',
+    license='MIT',  # in metadata.__license__ but trying this "because #311
     packages=[
         "txtorcon",
         "twisted.plugins",
