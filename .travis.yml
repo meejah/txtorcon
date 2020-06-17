@@ -15,9 +15,6 @@ matrix:
   - python: "3.6"
     env: TOX_ENV=readme_render
 
-# for every python we support; we're currently testing on Twisted 16,
-# 17, 18 and 19
-
 # python 3.6
 
   - python: "3.6"
@@ -28,6 +25,18 @@ matrix:
     env: TOX_ENV=py36-tx18
   - python: "3.6"
     env: TOX_ENV=py36-tx19
+  - python: "3.6"
+    env: TOX_ENV=py36-tx20
+
+# python 3.7
+
+  - python: "3.7"
+    env: TOX_ENV=py37-tx20
+
+# python 3.8
+
+  - python: "3.8"
+    env: TOX_ENV=py38-tx20
 
 # python 2.7
 
@@ -39,6 +48,8 @@ matrix:
     env: TOX_ENV=py27-tx18
   - python: "2.7"
     env: TOX_ENV=py27-tx19
+  - python: "2.7"
+    env: TOX_ENV=py27-tx20
 
 # PyPy
 
@@ -50,6 +61,8 @@ matrix:
     env: TOX_ENV=pypy-tx18
   - python: "pypy"
     env: TOX_ENV=pypy-tx19
+  - python: "pypy"
+    env: TOX_ENV=pypy-tx20
 
 script:
   - apt-cache policy libssl-dev
