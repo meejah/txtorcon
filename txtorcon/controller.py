@@ -25,8 +25,9 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.endpoints import UNIXClientEndpoint
 from twisted.internet.interfaces import IReactorTime, IReactorCore
 from twisted.internet.interfaces import IStreamClientEndpoint
+from twisted.internet.interfaces import IStreamServerEndpoint
 
-from zope.interface import implementer
+from zope.interface import implementer, Interface
 
 from txtorcon.util import delete_file_or_tree, find_keywords
 from txtorcon.util import find_tor_binary, available_tcp_port
@@ -50,6 +51,139 @@ except Exception:
 
 if sys.platform in ('linux', 'linux2', 'darwin'):
     import pwd
+
+
+class ITorManager(Interface):
+    """
+    see _TorManager
+    """
+
+    def onion_service(*args, **kw):
+        # same args as Tor.create_onion_service or whatever
+        pass
+
+    def stream_via(reactor, host, port, tls=False):
+        # same args as Tor.stream_via minus 'socks_endpoint' (we'll
+        # figure that out ourselves)
+        pass
+
+
+@implementer(IStreamClientEndpoint)
+@implementer(IStreamServerEndpoint)
+class _AsyncStartupEndpoint(object):
+    """
+    This is an IStreamClientEndpoint (or IStreamServerEndpoint) that
+    wraps an underlying endpoint; we first perform some async startup
+    encapsulated by a method and then call .connect (or .listen) on
+    the wrapped endpoint.
+    """
+
+    def __init__(self, async_startup, endpoint_creator):
+        """
+        :param async_startup: an async method that does whatever startup
+            is required. No-argument callable.
+
+        :param endpoint_creator: a callable that takes one arg (the
+            return value from async_startup()) and returns the right sort
+            of endpoint. Can be async.
+        """
+        self._async_startup = async_startup
+        self._endpoint_creator = endpoint_creator
+
+    @inlineCallbacks
+    def listen(self, factory):
+        res = yield self._async_startup()
+        wrapped_endpoint = yield maybeDeferred(self._endpoint_creator, res)
+        if not IStreamServerEndpoint.providedBy(wrapped_endpoint):
+            raise ValueError("wrapped endpoint must implement IStreamServerEndpoint")
+
+        port = yield wrapped_endpoint.listen(factory)
+        returnValue(port)
+
+    @inlineCallbacks
+    def connect(self, factory):
+        res = yield self._async_startup()
+        wrapped_endpoint = yield maybeDeferred(self._endpoint_creator, res)
+        if not IStreamClientEndpoint.providedBy(wrapped_endpoint):
+            raise ValueError("wrapped endpoint must implement IStreamClientEndpoint")
+
+        port = yield wrapped_endpoint.connect(factory)
+        returnValue(port)
+
+
+@implementer(ITorManager)
+class _TorManager(object):
+    """
+    Prototype/experimental API
+
+    This is returned from launch_later() or connect_later() and wraps
+    up a way to configure how you're going to access Tor and where it
+    should store its files. It is *completely synchronous*, and can
+    basically only create you Twisted 'endpoint' objects
+    (IStreamServerEndpoint and IStreamClientEndpoint).
+
+    These endpoints will delay all async-ness until you call
+    .connect() or .listen() on the endpoints. Thus, you can specify
+    *how* we will connect to (or launch) Tor but not actually do so
+    until you've started up the reactor and call listen(), etc.
+
+    You should not create instances of this yourself; call one of the
+    factory methods.
+    """
+
+    def __init__(self, async_startup):
+        self._async_startup = async_startup
+        self._done_startup = SingleObserver()
+        self._starting = False
+
+    @inlineCallbacks
+    def _do_startup(self):
+        d = self._done_startup.when_fired()
+        if not self._starting:
+            self._starting = True
+            res = yield self._async_startup()
+            self._done_startup.fire(res)
+        res = yield d
+        returnValue(res)
+
+    def onion_service(self, reactor, *args, **kw):
+        # API TBD; see onion-api branch etc.
+
+        def create_endpoint(tor):
+            return tor.create_onion_service(*args, **kw)
+        return _AsyncStartupEndpoint(self._do_startup, create_endpoint)
+
+    def stream_via(self, reactor, host, port, tls=False):
+        # same args as Tor.stream_via minus 'socks_endpoint' (we'll
+        # figure that out ourselves)
+
+        @inlineCallbacks
+        def create_endpoint(tor):
+            config = yield tor.get_config()
+            socks_ep = config.socks_endpoint(reactor)
+            service = yield tor.create_onion_service(*args, socks_endpoint=socks_ep, **kw)
+            returnValue(service)
+        return _AsyncStartupEndpoint(self._do_startup, create_endpoint)
+
+
+def launch_later(reactor, **kwargs):
+    """
+    takes same kwargs as launch() but returns an ITorManager instance
+    """
+
+    def startup():
+        return launch(reactor, **kwargs)
+    return _TorManager(startup)
+
+
+def connect_later(reactor, **kwargs):
+    """
+    takes same kwargs as connect() but returns an ITorManager instance
+    """
+
+    def startup():
+        return connect(reactor, **kwargs)
+    return _TorManager(startup)
 
 
 @inlineCallbacks
