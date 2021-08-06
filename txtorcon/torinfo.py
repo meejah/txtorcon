@@ -199,8 +199,11 @@ class TorInfo(object):
             return sup.__getattribute__(name)
 
         attrs = sup.__getattribute__('attrs')
+        # are there other "special" attributes we need to consider..?
         if name == '__members__':
             return list(attrs.keys())
+        if name == '__class__':
+            return sup.__class__
 
         else:
             try:
