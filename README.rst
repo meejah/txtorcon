@@ -11,7 +11,7 @@
 
 
 
-.. image:: https://github.com/meejah/txtorcon/actions/workflows/python3.yaml/badge.svg)
+.. image:: https://github.com/meejah/txtorcon/actions/workflows/python3.yaml/badge.svg
     :target: https://github.com/meejah/txtorcon/actions
     :alt: github-actions
 
