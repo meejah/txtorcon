@@ -12,7 +12,8 @@ jobs:
     strategy:
       matrix:
         python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
-        twisted-version: [tx17, tx18, tx19, tx20, tx21]
+## XXX not sure how to tie this to "tox -e tx21" below, for example (just get GHA errors)
+##        twisted-version: [tx17, tx18, tx19, tx20, tx21]
 
     steps:
     - uses: actions/checkout@v2
@@ -29,4 +30,5 @@ jobs:
     - name: Test
       run: |
         python --version
-        python -m tox -e ${{ matrix.twisted-version }}
+        python -m tox
+##        python -m tox -e ${{ matrix.twisted-version }}
