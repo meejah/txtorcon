@@ -11,9 +11,9 @@
 
 
 
-.. image:: https://travis-ci.org/meejah/txtorcon.png?branch=main
-    :target: https://www.travis-ci.org/meejah/txtorcon
-    :alt: travis
+.. image:: https://github.com/meejah/txtorcon/actions/workflows/python3.yaml/badge.svg)
+    :target: https://github.com/meejah/txtorcon/actions
+    :alt: github-actions
 
 .. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
     :target: https://coveralls.io/r/meejah/txtorcon
