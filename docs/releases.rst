@@ -15,7 +15,10 @@ that will be "19.2.1".
 
 See also :ref:`api_stability`.
 
-`git main <https://github.com/meejah/txtorcon>`_ *will likely become v20.1.0*
+`git main <https://github.com/meejah/txtorcon>`_ *will likely become v21.0.0*
+
+ * Use GitHub Actions instead of Travis for CI (needs more work)
+ * fix Python 3.x+ bug with `TorInfo` and `__class__` access (`#350 <https://github.com/meejah/txtorcon/issues/350>`_)
 
 
 v20.0.0

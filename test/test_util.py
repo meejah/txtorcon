@@ -1,9 +1,8 @@
 import os
-import sys
 import tempfile
 import ipaddress
 from mock import patch
-from unittest import skipIf
+from unittest import skip
 from os.path import exists
 
 from twisted.trial import unittest
@@ -62,7 +61,7 @@ class TestGeoIpDatabaseLoading(unittest.TestCase):
         util.GeoIP = _GeoIP
         self.assertEqual(ret_val, None)
 
-    @skipIf('pypy' in sys.version.lower(), "No GeoIP in PyPy")
+    @skip("No GeoIP in github-actions")
     def test_return_geoip_object(self):
         # requires a valid GeoIP database to work, so hopefully we're
         # on Debian or similar...
