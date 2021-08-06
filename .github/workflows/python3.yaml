@@ -29,4 +29,4 @@ jobs:
     - name: Test
       run: |
         python --version
-        python -m tox -e ${{ matrix.twisted_version }}
+        python -m tox -e ${{ matrix.twisted-version }}
