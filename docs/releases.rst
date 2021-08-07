@@ -15,9 +15,16 @@ that will be "19.2.1".
 
 See also :ref:`api_stability`.
 
-`git main <https://github.com/meejah/txtorcon>`_ *will likely become v21.0.0*
+`git main <https://github.com/meejah/txtorcon>`_ *will likely become v21.1.0*
 
- * Use GitHub Actions instead of Travis for CI (needs more work)
+
+v21.0.0
+-------
+
+August 7, 2021
+
+ * `txtorcon-21.0.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-21.0.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/21.0.0>`_ (:download:`local-sig </../signatues/txtorcon-21.0.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-21.0.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v21.0.0.tar.gz>`_)
+ * Use GitHub Actions instead of Travis for CI
  * fix Python 3.x+ bug with `TorInfo` and `__class__` access (`#350 <https://github.com/meejah/txtorcon/issues/350>`_)
 
 
