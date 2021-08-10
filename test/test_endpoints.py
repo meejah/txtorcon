@@ -45,7 +45,7 @@ from txtorcon.util import SingleObserver
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import _create_socks_endpoint
 from txtorcon.circuit import TorCircuitEndpoint, _get_circuit_attacher
-from txtorcon.controller import Tor
+from txtorcon.controller import Tor, launch as _real_launch
 from txtorcon.socks import _TorSocksFactory
 
 from . import util
@@ -64,6 +64,36 @@ class MockReactor(Mock):
     pass
 
 
+def fake_tor_launcher(config):
+    # exactly match the signature of txtorcon.controller.launch
+    def launch(reactor,
+               progress_updates=None,
+               control_port=None,
+               data_directory=None,
+               socks_port=None,
+               non_anonymous_mode=None,
+               stdout=None,
+               stderr=None,
+               timeout=None,
+               tor_binary=None,
+               user=None,
+               connection_creator=None,
+               kill_on_stderr=True,
+               _tor_config=None,
+               ):
+        return defer.succeed(Tor(reactor, None, config, None, non_anonymous_mode))
+
+    return launch
+
+def valid_enough_torconfig():
+    config = TorConfig()
+    # The implementation will probably ask the configuration about the control
+    # port to make sure it agrees with the control port of the global Tor
+    # instance it believes will be used.  Give it an answer.
+    config.ControlPort = 12345
+    return config
+
+
 @patch('txtorcon.controller.find_tor_binary', return_value='/bin/echo')
 class EndpointTests(unittest.TestCase):
 
@@ -72,6 +102,7 @@ class EndpointTests(unittest.TestCase):
         endpoints._global_tor_config = None
         del endpoints._global_tor_lock
         endpoints._global_tor_lock = defer.DeferredLock()
+        endpoints._global_tor = None
         self.reactor = FakeReactorTcp(self)
         self.protocol = FakeControlProtocol([])
         self.protocol.event_happened('INFO', 'something craaaaaaazy')
@@ -105,24 +136,23 @@ class EndpointTests(unittest.TestCase):
         endpoints._global_tor_config = None
         del endpoints._global_tor_lock
         endpoints._global_tor_lock = defer.DeferredLock()
+        endpoints._global_tor = None
         self.patcher.stop()
 
     @defer.inlineCallbacks
     def test_global_tor(self, ftb):
-        fake_tor = Mock()
-        fake_tor.get_config = Mock(return_value=self.config)
         config = yield get_global_tor(
             Mock(),
-            _tor_launcher=lambda x, progress_updates=None: fake_tor
+            _tor_launcher=fake_tor_launcher(self.config),
         )
         # XXX this was asserting SOCKSPort == 0 before; why?
-        self.assertEqual(['9050'], config.SOCKSPort)
+        self.assertEqual(['9050'], self.config.SOCKSPort)
 
     @defer.inlineCallbacks
     def test_global_tor_error(self, ftb):
         yield get_global_tor(
             reactor=FakeReactorTcp(self),
-            _tor_launcher=lambda x, y, progress_updates=None: True
+            _tor_launcher=fake_tor_launcher(self.config),
         )
         # now if we specify a control_port it should be an error since
         # the above should have launched one.
@@ -130,7 +160,7 @@ class EndpointTests(unittest.TestCase):
             yield get_global_tor(
                 reactor=FakeReactorTcp(self),
                 control_port=111,
-                _tor_launcher=lambda x, y, progress_updates=None: True
+                _tor_launcher=fake_tor_launcher(self.config),
             )
             self.fail()
         except RuntimeError:
@@ -701,13 +731,13 @@ class EndpointTests(unittest.TestCase):
     def test_parse_via_plugin(self, ftb):
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
-        config = TorConfig()
+        config = valid_enough_torconfig()
         config.post_bootstrap = defer.succeed(config)
         from txtorcon import torconfig
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+            _tor_launcher=fake_tor_launcher(config),
         )
         ep = serverFromString(
             self.reactor,
@@ -725,13 +755,13 @@ class EndpointTests(unittest.TestCase):
 
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
-        config = TorConfig()
+        config = valid_enough_torconfig()
         config.post_bootstrap = defer.succeed(config)
         from txtorcon import torconfig
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+            _tor_launcher=fake_tor_launcher(config),
         )
         ep = serverFromString(
             self.reactor,
@@ -749,13 +779,13 @@ class EndpointTests(unittest.TestCase):
 
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
-        config = TorConfig()
+        config = valid_enough_torconfig()
         config.post_bootstrap = defer.succeed(config)
         from txtorcon import torconfig
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+            _tor_launcher=fake_tor_launcher(config),
         )
         ep = serverFromString(
             self.reactor,
@@ -777,13 +807,13 @@ class EndpointTests(unittest.TestCase):
 
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
-        config = TorConfig()
+        config = valid_enough_torconfig()
         config.post_bootstrap = defer.succeed(config)
         from txtorcon import torconfig
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+            _tor_launcher=fake_tor_launcher(config),
         )
         ep = serverFromString(
             self.reactor,
@@ -804,13 +834,13 @@ class EndpointTests(unittest.TestCase):
 
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
-        config = TorConfig()
+        config = valid_enough_torconfig()
         config.post_bootstrap = defer.succeed(config)
         from txtorcon import torconfig
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+            _tor_launcher=fake_tor_launcher(config),
         )
 
         with self.assertRaises(ValueError):
@@ -827,13 +857,13 @@ class EndpointTests(unittest.TestCase):
 
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
-        config = TorConfig()
+        config = valid_enough_torconfig()
         config.post_bootstrap = defer.succeed(config)
         from txtorcon import torconfig
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+            _tor_launcher=fake_tor_launcher(config),
         )
         ep = serverFromString(
             self.reactor,
@@ -852,13 +882,13 @@ class EndpointTests(unittest.TestCase):
 
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
-        config = TorConfig()
+        config = valid_enough_torconfig()
         config.post_bootstrap = defer.succeed(config)
         from txtorcon import torconfig
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+            _tor_launcher=fake_tor_launcher(config),
         )
         ep = serverFromString(
             self.reactor,
@@ -925,13 +955,11 @@ class EndpointTests(unittest.TestCase):
 
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
-        config = TorConfig()
+        config = valid_enough_torconfig()
         config.post_bootstrap = defer.succeed(config)
-        from txtorcon import torconfig
-        torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+            _tor_launcher=fake_tor_launcher(config),
         )
         ep = serverFromString(
             self.reactor,
@@ -951,13 +979,13 @@ class EndpointTests(unittest.TestCase):
 
         # make sure we have a valid thing from get_global_tor without
         # actually launching tor
-        config = TorConfig()
+        config = valid_enough_torconfig()
         config.post_bootstrap = defer.succeed(config)
         from txtorcon import torconfig
         torconfig._global_tor_config = None
         get_global_tor(
             self.reactor,
-            _tor_launcher=lambda react, config, progress_updates=None: defer.succeed(config)
+            _tor_launcher=fake_tor_launcher(config),
         )
 
         orig = os.path.realpath('.')
@@ -988,7 +1016,7 @@ class EndpointTests(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             TCPHiddenServiceEndpoint(
                 reactor, config, 80,
-                stealth_auth=['alice', 'bob'],
+                auth=AuthStealth(['alice', 'bob']),
                 ephemeral=True,
             )
         self.assertIn(
