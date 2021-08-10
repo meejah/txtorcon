@@ -15,7 +15,8 @@ from txtorcon.circuit import TorCircuitEndpoint
 
 
 class WebAgentTests(unittest.TestCase):
-    skip = not _HAVE_WEB
+    if not _HAVE_WEB:
+        skip = "Missing web"
 
     def test_socks_agent_tcp_port(self):
         reactor = Mock()
