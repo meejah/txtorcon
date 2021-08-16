@@ -17,6 +17,9 @@ See also :ref:`api_stability`.
 
 `git main <https://github.com/meejah/txtorcon>`_ *will likely become v21.1.0*
 
+ * Fix some incorrect unit-test skipping logic (thanks `@exarkun <https://github.com/exarkun>`, `#354 <https://github.com/meejah/txtorcon/issues/354>`_ and `#352 <https://github.com/meejah/txtorcon/issues/352>`_)
+ * Fix broken tests revealed by previous fixes (thanks `@exarkun <https://github.com/exarkun>`, `#356 <https://github.com/meejah/txtorcon/issues/356>`_
+
 
 v21.0.0
 -------
