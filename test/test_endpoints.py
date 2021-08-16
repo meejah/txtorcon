@@ -134,6 +134,7 @@ class EndpointTests(unittest.TestCase):
     def tearDown(self):
         from txtorcon import endpoints
         endpoints._global_tor_config = None
+        endpoints._global_tor = None
         del endpoints._global_tor_lock
         endpoints._global_tor_lock = defer.DeferredLock()
         endpoints._global_tor = None
@@ -150,6 +151,9 @@ class EndpointTests(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_global_tor_error(self, ftb):
+        config = _FakeConfig()
+        config.ControlPort = 1234  # not 111
+
         yield get_global_tor(
             reactor=FakeReactorTcp(self),
             _tor_launcher=fake_tor_launcher(self.config),
@@ -575,7 +579,7 @@ class EndpointTests(unittest.TestCase):
         control_ep.connect = Mock(return_value=defer.succeed(None))
         directlyProvides(control_ep, IStreamClientEndpoint)
         ep = TCPHiddenServiceEndpoint.system_tor(self.reactor, control_ep, 1234)
-        ep._tor_progress_update(40, "FOO", "foo to bar")
+        ep._tor_progress_update(40, "FOO", "foo to the bar")
         return ep
 
     def test_single_hop_non_ephemeral(self, ftb):
