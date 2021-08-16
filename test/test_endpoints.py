@@ -45,7 +45,7 @@ from txtorcon.util import SingleObserver
 from txtorcon.endpoints import get_global_tor                       # FIXME
 from txtorcon.endpoints import _create_socks_endpoint
 from txtorcon.circuit import TorCircuitEndpoint, _get_circuit_attacher
-from txtorcon.controller import Tor, launch as _real_launch
+from txtorcon.controller import Tor
 from txtorcon.socks import _TorSocksFactory
 
 from . import util
@@ -84,6 +84,7 @@ def fake_tor_launcher(config):
         return defer.succeed(Tor(reactor, None, config, None, non_anonymous_mode))
 
     return launch
+
 
 def valid_enough_torconfig():
     config = TorConfig()
@@ -148,13 +149,10 @@ class EndpointTests(unittest.TestCase):
             _tor_launcher=fake_tor_launcher(self.config),
         )
         # XXX this was asserting SOCKSPort == 0 before; why?
-        self.assertEqual(['9050'], self.config.SOCKSPort)
+        self.assertEqual(['9050'], config.SOCKSPort)
 
     @defer.inlineCallbacks
     def test_global_tor_error(self, ftb):
-        config = _FakeConfig()
-        config.ControlPort = 1234  # not 111
-
         yield get_global_tor(
             reactor=FakeReactorTcp(self),
             _tor_launcher=fake_tor_launcher(self.config),
