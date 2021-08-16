@@ -135,6 +135,7 @@ class EndpointTests(unittest.TestCase):
         from txtorcon import endpoints
         endpoints._global_tor_config = None
         endpoints._global_tor = None
+        assert not endpoints._global_tor_lock.locked, "Should not be locked a teardown"
         del endpoints._global_tor_lock
         endpoints._global_tor_lock = defer.DeferredLock()
         endpoints._global_tor = None
