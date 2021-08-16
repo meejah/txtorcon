@@ -947,11 +947,12 @@ class EndpointTests(unittest.TestCase):
         )
 
     def test_parse_version_3(self, ftb):
-        ep = serverFromString(
-            self.reactor,
-            'onion:88:version=3:localPort=1234:hiddenServiceDir=~/blam/blarg'
-        )
-        self.assertFalse(ep.ephemeral)
+        with patch('txtorcon.endpoints.get_global_tor_instance'):
+            ep = serverFromString(
+                self.reactor,
+                'onion:88:version=3:localPort=1234:hiddenServiceDir=~/blam/blarg'
+            )
+            self.assertFalse(ep.ephemeral)
 
     def test_parse_user_path(self, ftb):
         # this makes sure we expand users and symlinks in
