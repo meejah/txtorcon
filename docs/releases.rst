@@ -17,6 +17,13 @@ See also :ref:`api_stability`.
 
 `git main <https://github.com/meejah/txtorcon>`_ *will likely become v21.1.0*
 
+
+v21.1.0
+-------
+
+August 16, 2021
+
+ * `txtorcon-21.1.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-21.1.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/21.1.0>`_ (:download:`local-sig </../signatues/txtorcon-21.1.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-21.1.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v21.1.0.tar.gz>`_)
  * Fix some incorrect unit-test skipping logic (thanks `@exarkun <https://github.com/exarkun>`, `#354 <https://github.com/meejah/txtorcon/issues/354>`_ and `#352 <https://github.com/meejah/txtorcon/issues/352>`_)
  * Fix broken tests revealed by previous fixes (thanks `@exarkun <https://github.com/exarkun>`, `#356 <https://github.com/meejah/txtorcon/issues/356>`_
 
