@@ -39,9 +39,9 @@
 txtorcon
 ========
 
-- **docs**: https://txtorcon.readthedocs.org or http://timaq4ygg2iegci7.onion
+- **docs**: https://txtorcon.readthedocs.org or http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/
 - **code**: https://github.com/meejah/txtorcon
-- ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
+- ``torsocks git clone git://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon.git``
 - MIT-licensed;
 - Python 2.7, PyPy 5.0.0+, Python 3.5+;
 - depends on
