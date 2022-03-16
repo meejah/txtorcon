@@ -15,7 +15,7 @@
     :target: https://github.com/meejah/txtorcon/actions
     :alt: github-actions
 
-.. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png
+.. image:: https://coveralls.io/repos/meejah/txtorcon/badge.png?branch=main
     :target: https://coveralls.io/r/meejah/txtorcon
     :alt: coveralls
 
