@@ -30,7 +30,6 @@ jobs:
       env:
         TOX_ENV: py3-${{ matrix.twisted-version }}
       run: |
-        python --version
         python -m tox
 
     - name: Coveralls
