@@ -17,6 +17,15 @@ See also :ref:`api_stability`.
 
 `git main <https://github.com/meejah/txtorcon>`_ *will likely become v21.1.0*
 
+v22.0.0
+-------
+
+March 16, 2022
+
+ * `txtorcon-22.0.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-22.0.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/22.0.0>`_ (:download:`local-sig </../signatues/txtorcon-22.0.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-22.0.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v22.0.0.tar.gz>`_)
+ * Use GitHub Action for CI (instead of Travis)
+ * fix coveralls uploading of coverage
+
 
 v21.1.0
 -------

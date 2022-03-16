@@ -23,7 +23,7 @@ Release Checklist
    * update heading, date
 
 * on both signing-machine and build-machine shells:
-   * export VERSION=21.1.0
+   * export VERSION=22.0.0
 
 * (if on signing machine) "make dist" and "make dist-sigs"
    * creates:
