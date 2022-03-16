@@ -28,7 +28,7 @@ jobs:
 
     - name: Unit-Test
       env:
-        TOX_ENV: ${{ matix.python-version }}-${{ matrix.twisted-version }}
+        TOX_ENV: py3-${{ matrix.twisted-version }}
       run: |
         python --version
         python -m tox
