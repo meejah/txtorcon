@@ -27,10 +27,8 @@ jobs:
         python -m pip install --upgrade pip tox tox-gh-actions
 
     - name: Unit-Test
-      env:
-        TOX_ENV: py3-${{ matrix.twisted-version }}
       run: |
-        python -m tox
+        python -m tox -e py3-${{ matrix.twisted-version }}
 
     - name: Coveralls
       uses: coverallsapp/github-action@master
