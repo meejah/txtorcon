@@ -121,3 +121,4 @@ Known Users
 - `torperf2 <https://github.com/gsathya/torperf2>`_ new Tor node network performance measurement service
 - `torweb <https://github.com/coffeemakr/torweb>`_ web-based Tor controller/monitor
 - `potator <https://github.com/mixxorz/potator>`_ "A Tor-based Decentralized Virtual Private Network Application"
+- `JoinMarket <https://github.com/JoinMarket-Org/joinmarket-clientserver>`_ Bitcoin CoinJoin (privacy technique) implementation with incentive structure to convince people to take part
