@@ -19,8 +19,8 @@
     :target: https://coveralls.io/github/meejah/txtorcon?branch=main
     :alt: coveralls
 
-.. image:: http://codecov.io/github/meejah/txtorcon/coverage.svg?branch=main
-    :target: http://codecov.io/github/meejah/txtorcon?branch=main
+.. image:: https://codecov.io/github/meejah/txtorcon/coverage.svg?branch=main
+    :target: https://codecov.io/github/meejah/txtorcon?branch=main
     :alt: codecov
 
 .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=stable
