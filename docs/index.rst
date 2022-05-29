@@ -10,14 +10,13 @@ txtorcon
    - clearnet: https://txtorcon.readthedocs.org
 - **code**: https://github.com/meejah/txtorcon
 - ``torsocks git clone git://timaq4ygg2iegci7.onion/txtorcon.git``
-- .. image:: https://travis-ci.org/meejah/txtorcon.png?branch=main
-      :target: https://www.travis-ci.org/meejah/txtorcon
+
+- .. image:: https://github.com/meejah/txtorcon/actions/workflows/python3.yaml/badge.svg
+    :target: https://github.com/meejah/txtorcon/actions
+    :alt: github-actions
 
   .. image:: https://coveralls.io/repos/meejah/txtorcon/badge.svg
       :target: https://coveralls.io/r/meejah/txtorcon
-
-  .. image:: https://codecov.io/gh/meejah/txtorcon/branch/main/graphs/badge.svg?branch=main
-      :target: https://codecov.io/github/meejah/txtorcon?branch=main
 
   .. image:: https://readthedocs.org/projects/txtorcon/badge/?version=stable
       :target: https://txtorcon.readthedocs.io/en/stable
