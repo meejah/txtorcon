@@ -26,10 +26,6 @@ txtorcon
       :target: https://txtorcon.readthedocs.io/en/latest
       :alt: ReadTheDocs
 
-  .. image:: https://landscape.io/github/meejah/txtorcon/main/landscape.svg?style=flat
-      :target: https://landscape.io/github/meejah/txtorcon/main
-      :alt: Code Health
-
 .. container:: first_time
 
     If this is your first time exploring txtorcon, please **look at the**
