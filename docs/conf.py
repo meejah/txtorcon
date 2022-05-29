@@ -152,7 +152,7 @@ html_theme_options = {
     'github_button': 'false',
     'github_user': 'meejah',
     'github_repo': 'txtorcon',
-    'travis_button': 'true',
+    'travis_button': 'false',
     'coveralls_button': 'true',
     'logo_name': 'true',
     'description': 'Control Tor from Twisted',
