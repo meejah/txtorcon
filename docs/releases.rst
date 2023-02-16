@@ -23,6 +23,7 @@ v23.0.0
 
 February 15, 2023
 
+ * `txtorcon-23.0.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-23.0.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/23.0.0>`_ (:download:`local-sig </../signatues/txtorcon-23.0.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-23.0.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v23.0.0.tar.gz>`_)
  * Drop python2 support
  * Fix a bug with `CONTROLLER_WAIT` events
 
