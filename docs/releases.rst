@@ -15,7 +15,17 @@ that will be "19.2.1".
 
 See also :ref:`api_stability`.
 
-`git main <https://github.com/meejah/txtorcon>`_ *will likely become v21.1.0*
+`git main <https://github.com/meejah/txtorcon>`_ *will likely become v23.1.0*
+
+
+v23.0.0
+-------
+
+February 15, 2023
+
+ * Drop python2 support
+ * Fix a bug with `CONTROLLER_WAIT` events
+
 
 v22.0.0
 -------
