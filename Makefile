@@ -99,20 +99,20 @@ counts:
 test-release: dist
 	./scripts/test-release.sh $(shell pwd) ${VERSION}
 
-dist: dist/txtorcon-${VERSION}-py2.py3-none-any.whl dist/txtorcon-${VERSION}.tar.gz
+dist: dist/txtorcon-${VERSION}-py3-none-any.whl dist/txtorcon-${VERSION}.tar.gz
 
-dist-sigs: dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc dist/txtorcon-${VERSION}.tar.gz.asc
+dist-sigs: dist/txtorcon-${VERSION}-py3-none-any.whl.asc dist/txtorcon-${VERSION}.tar.gz.asc
 
 sdist: setup.py
 	python setup.py check
 	python setup.py sdist
 
-dist/txtorcon-${VERSION}-py2.py3-none-any.whl:
+dist/txtorcon-${VERSION}-py3-none-any.whl:
 	python setup.py check
-	python setup.py bdist_wheel --universal
+	python setup.py bdist_wheel
 
-dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc: dist/txtorcon-${VERSION}-py2.py3-none-any.whl
-	gpg --verify dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc || gpg --pinentry loopback --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-${VERSION}-py2.py3-none-any.whl
+dist/txtorcon-${VERSION}-py3-none-any.whl.asc: dist/txtorcon-${VERSION}-py3-none-any.whl
+	gpg --verify dist/txtorcon-${VERSION}-py3-none-any.whl.asc || gpg --pinentry loopback --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/txtorcon-${VERSION}-py3-none-any.whl
 
 dist/txtorcon-${VERSION}.tar.gz: sdist
 dist/txtorcon-${VERSION}.tar.gz.asc: dist/txtorcon-${VERSION}.tar.gz
@@ -120,7 +120,7 @@ dist/txtorcon-${VERSION}.tar.gz.asc: dist/txtorcon-${VERSION}.tar.gz
 
 release:
 	twine upload -r pypi -c "txtorcon v${VERSION} tarball" dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}.tar.gz.asc
-	twine upload -r pypi -c "txtorcon v${VERSION} wheel" dist/txtorcon-${VERSION}-py2.py3-none-any.whl dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc
+	twine upload -r pypi -c "txtorcon v${VERSION} wheel" dist/txtorcon-${VERSION}-py3-none-any.whl dist/txtorcon-${VERSION}-py3-none-any.whl.asc
 
 
 venv:
