@@ -124,12 +124,10 @@ release:
 
 
 venv:
-	virtualenv --never-download --extra-search-dir=/usr/lib/python2.7/dist-packages/ venv
+	virtualenv venv
+	./venv/bin/pip install -r requirements.txt
+	./venv/bin/pip install -r dev-requirements.txt
 	@echo "created venv"
-	@echo "see INSTALL for more information; to use:"
-	@echo ". ./venv/bin/activate"
-	@echo "pip install -r requirements.txt"
-	@echo "pip install -r dev-requirements.txt"
 	@echo "python examples/monitor.py"
 
 html: docs/*.rst

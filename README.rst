@@ -67,7 +67,6 @@ Some Possibly Motivational Example Code
 ---------------------------------------
 
 `download <examples/readme.py>`_
-(also `python2 style <examples/readme2.py>`_)
 
 .. code:: python
 
