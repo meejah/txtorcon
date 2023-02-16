@@ -935,7 +935,7 @@ class Tor(object):
             "status/circuit-established",
         )
         returnValue(
-            not(
+            not (
                 int(info["dormant"]) or
                 not int(info["status/enough-dir-info"]) or
                 not int(info["status/circuit-established"])
