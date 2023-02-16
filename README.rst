@@ -39,11 +39,10 @@ txtorcon
 - **code**: https://github.com/meejah/txtorcon
 - ``torsocks git clone git://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon.git``
 - MIT-licensed;
-- Python 2.7, PyPy 5.0.0+, Python 3.5+;
+- Python 3.5+, PyPy 5.0.0+;
 - depends on
   `Twisted`_,
-  `Automat <https://github.com/glyph/automat>`_,
-  (and the `ipaddress <https://pypi.python.org/pypi/ipaddress>`_ backport for non Python 3)
+  `Automat <https://github.com/glyph/automat>`_
 
 
 Ten Thousand Feet
@@ -67,7 +66,6 @@ Some Possibly Motivational Example Code
 ---------------------------------------
 
 `download <examples/readme.py>`_
-(also `python2 style <examples/readme2.py>`_)
 
 .. code:: python
 

@@ -24,13 +24,11 @@ If you want to take slightly more time, but only install temporarily,
 use virtualenv:
 
    apt-get install python-setuptools python-pip
-   python setup.py build
    mkdir tmp
-   virtualenv --never-download --extra-search-dir=/usr/lib/python2.7/dist-packages/ tmp/txtorcon_env
+   virtualenv tmp/txtorcon_env
    cd tmp/txtorcon_env
    source bin/activate
-   pip install Twisted ipaddress pygeoip     # this will download from internets:
-   export PYTHONPATH=../../build/lib.linux-x86_64-2.7/
+   pip install --editable .  # this will download from internets:
 
 (Or you can type "make virtualenv" which creates tmp/txtorcon_env, up
 to the "activate" step above)
