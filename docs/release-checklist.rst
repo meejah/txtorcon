@@ -28,23 +28,23 @@ Release Checklist
 * (if on signing machine) "make dist" and "make dist-sigs"
    * creates:
      dist/txtorcon-${VERSION}.tar.gz.asc
-     dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc
+     dist/txtorcon-${VERSION}-py3-none-any.whl.asc
    * add the signatures to "signatures/"
-     cp dist/txtorcon-${VERSION}.tar.gz.asc dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc signatures/
+     cp dist/txtorcon-${VERSION}.tar.gz.asc dist/txtorcon-${VERSION}-py3-none-any.whl.asc signatures/
    * add ALL FOUR files to dist/ (OR fix twine commands)
 
 * (if not on signing machine) do "make dist"
-  * scp dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2-none-any.whl signingmachine:
+  * scp dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py3-none-any.whl signingmachine:
   * sign both, with .asc detached signatures
-     * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}-py2-none-any.whl
+     * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}-py3-none-any.whl
      * gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca txtorcon-${VERSION}.tar.gz
   * copy signatures back to build machine, in dist/
   * double-check that they validate::
-     gpg --verify dist/txtorcon-${VERSION}-py2.py3-none-any.whl.asc
+     gpg --verify dist/txtorcon-${VERSION}-py3-none-any.whl.asc
      gpg --verify dist/txtorcon-${VERSION}.tar.gz.asc
 
 * generate sha256sum for each::
-     sha256sum dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py2.py3-none-any.whl
+     sha256sum dist/txtorcon-${VERSION}.tar.gz dist/txtorcon-${VERSION}-py3-none-any.whl
 
 * copy signature files to <root of dist>/signatures and commit them
   along with the above changes for versions, etc.
@@ -85,7 +85,7 @@ Release Checklist
            in a shell wherever you have the files downloaded:
 
            cat <<EOF | sha256sum --check
-           910ff3216035de0a779cfc167c0545266ff1f26687b163fc4655f298aca52d74  txtorcon-0.10.0-py2-none-any.whl
+           910ff3216035de0a779cfc167c0545266ff1f26687b163fc4655f298aca52d74 txtorcon-0.10.0-py3-none-any.whl
            c93f3d0f21d53c6b4c1521fc8d9dc2c9aff4a9f60497becea207d1738fa78279  txtorcon-0.10.0.tar.gz
            EOF
 
