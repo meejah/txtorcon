@@ -244,6 +244,9 @@ class Stream(object):
         elif self.state in ['NEWRESOLVE', 'SENTRESOLVE']:
             pass  # print self.state, self, args
 
+        elif self.state == 'CONTROLLER_WAIT':
+            pass  # waiting for us to ATTACHSTREAM
+
         else:
             raise RuntimeError("Unknown state: %s" % self.state)
 

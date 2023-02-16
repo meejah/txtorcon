@@ -648,7 +648,8 @@ class StateTests(unittest.TestCase):
         for ignored in self.state.event_map.items():
             self.send(b"250 OK")
 
-        self.send(b"650 STREAM 1 NEW 0 ca.yahoo.com:80 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
+        self.send(b"650 STREAM 1 NEW 0 links.duckduckgo.com:443 SOURCE_ADDR=127.0.0.1:54327 PURPOSE=USER")
+        self.send(b'650 STREAM 1 CONTROLLER_WAIT 0 links.duckduckgo.com:443 SOCKS_USERNAME="duckduckgo.com" SOCKS_PASSWORD="4a2f6ef74fe3aa0bf8876b4e927a28f7" CLIENT_PROTOCOL=SOCKS5 NYM_EPOCH=0 SESSION_GROUP=-5 ISO_FIELDS=SOCKS_USERNAME,SOCKS_PASSWORD,CLIENTADDR,SESSION_GROUP,NYM_EPOCH')
         self.send(b"650 STREAM 1 REMAP 0 87.248.112.181:80 SOURCE=CACHE")
         self.assertEqual(len(attacher.streams), 1)
         self.assertEqual(attacher.streams[0].id, 1)

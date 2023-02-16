@@ -542,7 +542,11 @@ class EndpointTests(unittest.TestCase):
         args = (50, "blarg", "Doing that thing we talked about.")
         # kind-of cheating, test-wise?
         ep._tor_progress_update(*args)
-        self.assertTrue(ding.called_with(*args))
+        ding.assert_called()
+        self.assertEqual(
+            ding.call_args[0][1:],
+            args[1:],
+        )
 
     def test_progress_updates_error(self, ftb):
         config = TorConfig()
