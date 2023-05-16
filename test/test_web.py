@@ -1,6 +1,7 @@
 
 from mock import Mock
 
+from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.trial import unittest
 from twisted.internet import defer
 
@@ -12,6 +13,11 @@ except ImportError:
     _HAVE_WEB = False
 from txtorcon.socks import TorSocksEndpoint
 from txtorcon.circuit import TorCircuitEndpoint
+
+
+class CustomTLSContextFactory(BrowserLikePolicyForHTTPS):
+    def creatorForNetloc(self, hostname, port):
+        return super().creatorForNetloc(b"custom.domain", port)
 
 
 class WebAgentTests(unittest.TestCase):
@@ -56,7 +62,12 @@ class WebAgentTests(unittest.TestCase):
 
         def getConnection(key, endpoint):
             self.assertTrue(isinstance(endpoint, TorSocksEndpoint))
-            self.assertTrue(endpoint._tls)
+            self.assertIsInstance(
+                endpoint._tls,
+                BrowserLikePolicyForHTTPS().creatorForNetloc(b"host", 443).__class__
+            )
+            # This uses a Twisted private interface...
+            self.assertEqual(endpoint._tls._hostname, "meejah.ca")
             self.assertEqual(endpoint._host, u'meejah.ca')
             self.assertEqual(endpoint._port, 443)
             return defer.succeed(proto)
@@ -65,6 +76,38 @@ class WebAgentTests(unittest.TestCase):
 
         # do the test
         agent = yield agent_for_socks_port(reactor, config, '127.0.0.50:1234', pool=pool)
+
+        # apart from the getConnection asserts...
+        res = yield agent.request(b'GET', b'https://meejah.ca')
+        self.assertIs(res, gold)
+
+    @defer.inlineCallbacks
+    def test_socks_agent_custom_tls_context_factory(self):
+        reactor = Mock()
+        config = Mock()
+        config.SocksPort = []
+        proto = Mock()
+        gold = object()
+        proto.request = Mock(return_value=defer.succeed(gold))
+
+        def getConnection(key, endpoint):
+
+            self.assertIsInstance(
+                endpoint._tls,
+                BrowserLikePolicyForHTTPS().creatorForNetloc(b"host", 443).__class__
+            )
+            # This uses a Twisted private interface...
+            self.assertEqual(endpoint._tls._hostname, "custom.domain")
+            self.assertEqual(endpoint._host, 'meejah.ca')
+            return defer.succeed(proto)
+        pool = Mock()
+        pool.getConnection = getConnection
+
+        # do the test
+        agent = yield agent_for_socks_port(
+            reactor, config, '127.0.0.50:1234', pool=pool,
+            tls_context_factory=CustomTLSContextFactory()
+        )
 
         # apart from the getConnection asserts...
         res = yield agent.request(b'GET', b'https://meejah.ca')
@@ -95,7 +138,12 @@ class WebAgentTests(unittest.TestCase):
         def getConnection(key, endpoint):
             self.assertTrue(isinstance(endpoint, TorCircuitEndpoint))
             target = endpoint._target_endpoint
-            self.assertTrue(target._tls)
+            self.assertIsInstance(
+                target._tls,
+                BrowserLikePolicyForHTTPS().creatorForNetloc(b"host", 443).__class__
+            )
+            # This uses a Twisted private interface...
+            self.assertEqual(target._tls._hostname, "meejah.ca")
             self.assertEqual(target._host, u'meejah.ca')
             self.assertEqual(target._port, 443)
             return defer.succeed(proto)
@@ -103,6 +151,37 @@ class WebAgentTests(unittest.TestCase):
         pool.getConnection = getConnection
 
         agent = yield tor_agent(reactor, socks_ep, circuit=circuit, pool=pool)
+
+        # apart from the getConnection asserts...
+        res = yield agent.request(b'GET', b'https://meejah.ca')
+        self.assertIs(res, gold)
+
+    @defer.inlineCallbacks
+    def test_agent_with_circuit_tls_context_factory(self):
+        reactor = Mock()
+        circuit = Mock()
+        socks_ep = Mock()
+        proto = Mock()
+        gold = object()
+        proto.request = Mock(return_value=defer.succeed(gold))
+
+        def getConnection(key, endpoint):
+            target = endpoint._target_endpoint
+            self.assertIsInstance(
+                target._tls,
+                BrowserLikePolicyForHTTPS().creatorForNetloc(b"host", 443).__class__
+            )
+            # This uses a Twisted private interface...
+            self.assertEqual(target._tls._hostname, "custom.domain")
+            self.assertEqual(target._host, 'meejah.ca')
+            return defer.succeed(proto)
+        pool = Mock()
+        pool.getConnection = getConnection
+
+        agent = yield tor_agent(
+            reactor, socks_ep, circuit=circuit, pool=pool,
+            tls_context_factory=CustomTLSContextFactory()
+        )
 
         # apart from the getConnection asserts...
         res = yield agent.request(b'GET', b'https://meejah.ca')
