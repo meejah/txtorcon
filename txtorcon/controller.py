@@ -566,7 +566,7 @@ class Tor(object):
             self._config = yield TorConfig.from_protocol(self._protocol)
         returnValue(self._config)
 
-    def web_agent(self, pool=None, socks_endpoint=None):
+    def web_agent(self, pool=None, socks_endpoint=None, tls_context_factory=None):
         """
         :param socks_endpoint: If ``None`` (the default), a suitable
             SOCKS port is chosen from our config (or added). If supplied,
@@ -577,6 +577,9 @@ class Tor(object):
             this.
 
         :param pool: passed on to the Agent (as ``pool=``)
+
+        :param tls_context_factory: A factory for TLS contexts. If ``None``,
+            ``BrowserLikePolicyForHTTPS`` is used.
         """
         if self._non_anonymous:
             raise Exception(
@@ -597,6 +600,7 @@ class Tor(object):
             self._reactor,
             socks_endpoint,
             pool=pool,
+            tls_context_factory=tls_context_factory
         )
 
     @inlineCallbacks

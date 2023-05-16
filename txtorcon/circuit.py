@@ -264,13 +264,16 @@ class Circuit(object):
             return defer.succeed(self)
         return self._when_closed.when_fired()
 
-    def web_agent(self, reactor, socks_endpoint, pool=None):
+    def web_agent(self, reactor, socks_endpoint, pool=None, tls_context_factory=None):
         """
         :param socks_endpoint: create one with
             :meth:`txtorcon.TorConfig.create_socks_endpoint`. Can be a
             Deferred.
 
         :param pool: passed on to the Agent (as ``pool=``)
+
+        :param tls_context_factory: A factory for TLS contexts. If ``None``,
+            ``BrowserLikePolicyForHTTPS`` is used.
         """
         # local import because there isn't Agent stuff on some
         # platforms we support, so this will only error if you try
@@ -281,6 +284,7 @@ class Circuit(object):
             socks_endpoint,
             circuit=self,
             pool=pool,
+            tls_context_factory=tls_context_factory,
         )
 
     # XXX should make this API match above web_agent (i.e. pass a
