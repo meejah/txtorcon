@@ -5,7 +5,7 @@ from __future__ import print_function
 from __future__ import with_statement
 
 from twisted.web.iweb import IAgentEndpointFactory
-from twisted.web.client import Agent
+from twisted.web.client import Agent, BrowserLikePolicyForHTTPS
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
@@ -18,7 +18,7 @@ from txtorcon.util import SingleObserver
 
 @implementer(IAgentEndpointFactory)
 class _AgentEndpointFactoryUsingTor(object):
-    def __init__(self, reactor, tor_socks_endpoint):
+    def __init__(self, reactor, tor_socks_endpoint, tls_context_factory):
         self._reactor = reactor
         self._proxy_ep = SingleObserver()
         # if _proxy_ep is Deferred, but we get called twice, we must
@@ -28,32 +28,47 @@ class _AgentEndpointFactoryUsingTor(object):
         else:
             self._proxy_ep.fire(tor_socks_endpoint)
 
+        if tls_context_factory is None:
+            tls_context_factory = BrowserLikePolicyForHTTPS()
+        self._tls_context_factory = tls_context_factory
+
     def _set_proxy(self, p):
         self._proxy_ep.fire(p)
         return p
 
     def endpointForURI(self, uri):
+        if uri.scheme == b'https':
+            tls = self._tls_context_factory.creatorForNetloc(uri.host, uri.port)
+        else:
+            tls = False
         return TorSocksEndpoint(
             self._proxy_ep.when_fired(),
             uri.host,
             uri.port,
-            tls=(uri.scheme == b'https'),
+            tls=tls,
         )
 
 
 @implementer(IAgentEndpointFactory)
 class _AgentEndpointFactoryForCircuit(object):
-    def __init__(self, reactor, tor_socks_endpoint, circ):
+    def __init__(self, reactor, tor_socks_endpoint, circ, tls_context_factory):
         self._reactor = reactor
         self._socks_ep = tor_socks_endpoint
         self._circ = circ
+        if tls_context_factory is None:
+            tls_context_factory = BrowserLikePolicyForHTTPS()
+        self._tls_context_factory = tls_context_factory
 
     def endpointForURI(self, uri):
         """IAgentEndpointFactory API"""
+        if uri.scheme == b'https':
+            tls = self._tls_context_factory.creatorForNetloc(uri.host, uri.port)
+        else:
+            tls = False
         torsocks = TorSocksEndpoint(
             self._socks_ep,
             uri.host, uri.port,
-            tls=uri.scheme == b'https',
+            tls=tls,
         )
         from txtorcon.circuit import TorCircuitEndpoint
         return TorCircuitEndpoint(
@@ -61,7 +76,7 @@ class _AgentEndpointFactoryForCircuit(object):
         )
 
 
-def tor_agent(reactor, socks_endpoint, circuit=None, pool=None):
+def tor_agent(reactor, socks_endpoint, circuit=None, pool=None, tls_context_factory=None):
     """
     This is the low-level method used by
     :meth:`txtorcon.Tor.web_agent` and
@@ -83,21 +98,29 @@ def tor_agent(reactor, socks_endpoint, circuit=None, pool=None):
         which points at a SOCKS5 port of our Tor
 
     :param pool: passed on to the Agent (as ``pool=``)
-    """
 
+    :param tls_context_factory: A factory for TLS contexts. If ``None``,
+        ``BrowserLikePolicyForHTTPS`` is used.
+    """
     if socks_endpoint is None:
         raise ValueError(
             "Must provide socks_endpoint as Deferred or IStreamClientEndpoint"
         )
     if circuit is not None:
-        factory = _AgentEndpointFactoryForCircuit(reactor, socks_endpoint, circuit)
+        factory = _AgentEndpointFactoryForCircuit(
+            reactor, socks_endpoint, circuit, tls_context_factory
+        )
     else:
-        factory = _AgentEndpointFactoryUsingTor(reactor, socks_endpoint)
+        factory = _AgentEndpointFactoryUsingTor(
+            reactor, socks_endpoint, tls_context_factory
+        )
+
     return Agent.usingEndpointFactory(reactor, factory, pool=pool)
 
 
 @inlineCallbacks
-def agent_for_socks_port(reactor, torconfig, socks_config, pool=None):
+def agent_for_socks_port(reactor, torconfig, socks_config, pool=None,
+                         tls_context_factory=None):
     """
     This returns a Deferred that fires with an object that implements
     :class:`twisted.web.iweb.IAgent` and is thus suitable for passing
@@ -116,13 +139,10 @@ def agent_for_socks_port(reactor, torconfig, socks_config, pool=None):
         containing ``socket``). If the given SOCKS option is not
         already available in the underlying Tor instance, it is
         re-configured to add the SOCKS option.
-    """
-    # :param tls: True (the default) will use Twisted's default options
-    #     with the hostname in the URI -- that is, TLS verification
-    #     similar to a Browser. Otherwise, you can pass whatever Twisted
-    #     returns for `optionsForClientTLS
-    #     <https://twistedmatrix.com/documents/current/api/twisted.internet.ssl.optionsForClientTLS.html>`_
 
+    :param tls_context_factory: A factory for TLS contexts. If ``None``,
+        ``BrowserLikePolicyForHTTPS`` is used.
+    """
     socks_config = str(socks_config)  # sadly, all lists are lists-of-strings to Tor :/
     if socks_config not in torconfig.SocksPort:
         txtorlog.msg("Adding SOCKS port '{}' to Tor".format(socks_config))
@@ -149,7 +169,9 @@ def agent_for_socks_port(reactor, torconfig, socks_config, pool=None):
     returnValue(
         Agent.usingEndpointFactory(
             reactor,
-            _AgentEndpointFactoryUsingTor(reactor, socks_ep),
+            _AgentEndpointFactoryUsingTor(
+                reactor, socks_ep, tls_context_factory=tls_context_factory
+            ),
             pool=pool,
         )
     )

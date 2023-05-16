@@ -41,9 +41,9 @@ class ITor(Interface):
         :class:`txtorcon.TorState` instance.
         """
 
-    def web_agent(self, pool=None, _socks_endpoint=None):
+    def web_agent(self, pool=None, socks_endpoint=None, tls_context_factory=None):
         """
-        :param _socks_endpoint: If ``None`` (the default), a suitable
+        :param socks_endpoint: If ``None`` (the default), a suitable
             SOCKS port is chosen from our config (or added). If supplied,
             should be a Deferred which fires an IStreamClientEndpoint
             (e.g. the return-value from
@@ -52,6 +52,9 @@ class ITor(Interface):
             this.
 
         :param pool: passed on to the Agent (as ``pool=``)
+
+        :param tls_context_factory: A factory for TLS contexts. If ``None``,
+            ``BrowserLikePolicyForHTTPS`` is used.
         """
 
     def dns_resolve(self, hostname):
