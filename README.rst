@@ -39,7 +39,7 @@ txtorcon
 - **code**: https://github.com/meejah/txtorcon
 - ``torsocks git clone git://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon.git``
 - MIT-licensed;
-- Python 3.5+, PyPy 5.0.0+;
+- Python 3.8+, PyPy 7.3.7+;
 - depends on
   `Twisted`_,
   `Automat <https://github.com/glyph/automat>`_
