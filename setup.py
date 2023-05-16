@@ -41,6 +41,7 @@ setup(
     name='txtorcon',
     version=__version__,
     description=description,
+    python_requires=">=3.8",
 ##    setup_requires="setuptools>=36.2",
     long_description=open('README.rst', 'r').read(),
     keywords=['python', 'twisted', 'tor', 'tor controller'],
