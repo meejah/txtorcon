@@ -15,7 +15,7 @@ jobs:
         twisted-version: [tx18, tx19, tx20, tx21]
         include:
           - python-version: "3.11"
-          - twisted-version: "tx22"
+            twisted-version: "tx22"
 
     steps:
     - uses: actions/checkout@v2
