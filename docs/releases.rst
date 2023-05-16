@@ -17,6 +17,9 @@ See also :ref:`api_stability`.
 
 `git main <https://github.com/meejah/txtorcon>`_ *will likely become v23.1.0*
 
+* ``twisted.web.client.Agent`` instances now use the same HTTPS policy by default as ``twisted.web.client.Agent``.
+  It is possible to override this policy with the ``tls_context_factory`` argument, the equivalent to ``Agent``'s ``contextFactory=``.
+
 
 v23.0.0
 -------
