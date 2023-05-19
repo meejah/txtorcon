@@ -15,11 +15,20 @@ that will be "19.2.1".
 
 See also :ref:`api_stability`.
 
-`git main <https://github.com/meejah/txtorcon>`_ *will likely become v23.1.0*
+`git main <https://github.com/meejah/txtorcon>`_ *will likely become v23.6.0*
 
+
+
+v23.5.0
+-------
+
+May 18, 2023
+
+ * `txtorcon-23.5.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-23.5.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/23.5.0>`_ (:download:`local-sig </../signatues/txtorcon-23.5.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-23.5.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v23.5.0.tar.gz>`_)
 * ``twisted.web.client.Agent`` instances now use the same HTTPS policy by default as ``twisted.web.client.Agent``.
   It is possible to override this policy with the ``tls_context_factory`` argument, the equivalent to ``Agent``'s ``contextFactory=``.
 * Added support for Python 3.11.
+* No more ipaddress dependency
 
 
 v23.0.0
