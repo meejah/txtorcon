@@ -1293,7 +1293,14 @@ s Fast Guard Running Stable Valid
         self.assertEqual(self.transport.value(), b'EXTENDCIRCUIT 0 0000000000000000000000000000000000000000,0000000000000000000000000000000000000001,0000000000000000000000000000000000000002\r\n')
         # should have gotten a warning about this not being an entry
         # guard
-        self.assertEqual(len(self.flushWarnings()), 1)
+        self.assertEqual(
+            1,
+            len([
+                warn
+                for warn in self.flushWarnings()
+                if "Circuit doesn't start with a guard" in warn["message"]
+            ])
+        )
 
     def test_build_circuit_no_routers(self):
         self.state.build_circuit()
@@ -1329,7 +1336,14 @@ s Fast Guard Running Stable Valid
         self.send(b"250 EXTENDED 1234")
         # should have gotten a warning about this not being an entry
         # guard
-        self.assertEqual(len(self.flushWarnings()), 1)
+        self.assertEqual(
+            1,
+            len([
+                warn
+                for warn in self.flushWarnings()
+                if "Circuit doesn't start with a guard" in warn["message"]
+            ])
+        )
         return d
 
     def test_build_circuit_error(self):
@@ -1477,7 +1491,14 @@ s Fast Guard Running Stable Valid
         self.state.circuits[1234].update(['1234', 'BUILT'])
         # should have gotten a warning about this not being an entry
         # guard
-        self.assertEqual(len(self.flushWarnings()), 1)
+        self.assertEqual(
+            1,
+            len([
+                warn
+                for warn in self.flushWarnings()
+                if "Circuit doesn't start with a guard" in warn["message"]
+            ])
+        )
         return d
 
     def test_build_circuit_failure(self):
