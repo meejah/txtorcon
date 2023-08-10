@@ -203,7 +203,7 @@ class TCPHiddenServiceEndpoint(object):
     :class:`txtorcon.IAuthenticatedOnionClients` instance (and from
     which you can recover private keys, the hostname, etc)
 
-    :ivar onion_uri: the public key, like ``timaq4ygg2iegci7.onion``
+    :ivar onion_uri: the public key, like ``fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion``
         which came from the hidden_service_dir's ``hostname`` file
 
     :ivar onion_private_key: the contents of ``hidden_service_dir/private_key``
@@ -1193,11 +1193,11 @@ class TorClientEndpointStringParser(object):
     :api:`twisted.internet.endpoints.clientFromString
     <clientFromString>` with a string argument like:
 
-    ``tor:host=timaq4ygg2iegci7.onion:port=80:socksPort=9050``
+    ``tor:host=fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion:port=80:socksPort=9050``
 
     ...or simply:
 
-    ``tor:host=timaq4ygg2iegci7.onion:port=80``
+    ``tor:host=fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion:port=80``
 
     You may also include a username + password. By default, Tor will
     not put two streams that provided different authentication on the

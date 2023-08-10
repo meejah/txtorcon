@@ -89,11 +89,11 @@ Source Code
 -----------
 
 Most people will use the code from https://github.com/meejah/txtorcon
-The canonical URI is http://timaq4ygg2iegci7.onion
+The canonical URI is http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion
 I sign tags with my public key (:download:`meejah.asc <../meejah.asc>`)
 
 - ``git clone https://github.com/meejah/txtorcon.git``
-- ``torsocks git clone git://timaq4ygg2iegci7.onion/meejah/txtorcon.git``
+- ``torsocks git clone git://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/meejah/txtorcon.git``
 
 Rendered documentation for the latest release is at `txtorcon.readthedocs.org <https://txtorcon.readthedocs.org/en/latest/>`_.
 

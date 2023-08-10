@@ -361,7 +361,7 @@ You can also use Twisted's `clientFromString`_ API as txtorcon
 registers a ``tor:`` plugin. This also implies that any Twisted-using
 program that supports configuring endpoint strings gets Tor support
 "for free". For example, passing a string like
-``tor:timaq4ygg2iegci7.onion:80`` to `clientFromString`_ will return
+``tor:fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion:80`` to `clientFromString`_ will return
 an endpoint that will connect to txtorcon's onion-service
 website. Note that these endpoints will use the "global to txtorcon"
 Tor instance (available from :meth:`.get_global_tor`). Thus,
@@ -428,7 +428,7 @@ From an API perspective, here are the parts we care about:
   part);
    - these keys can be on disk (in the "hidden service directory");
    - or, they can be "ephemeral" (only in memory);
-- the "host name" is a hash of the public-key (e.g. ``timaq4ygg2iegci7.onion``);
+- the "host name" is a hash of the public-key (e.g. ``fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion``);
 - a "Descriptor" (which tells clients how to connect) must be
   published (to a "Hidden Service Directory", or HSDir);
 - a service has a list of port-mappings (public -> local):
@@ -534,7 +534,7 @@ least explicit):
 Factors to consider when deciding whether to use "authenticated"
 service or not:
 
- - if you want anyone with e.g. the URL http://timaq4ygg2iegci7.onion
+ - if you want anyone with e.g. the URL http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion
    to be able to put it in `Tor Browser Bundle
    <https://www.torproject.org/download/download.html.en>`_ and see a
    Web site, you **do not want** authentication;

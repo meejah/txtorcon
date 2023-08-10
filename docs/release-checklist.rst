@@ -73,8 +73,8 @@ Release Checklist
 
            Releases are also available from the hidden service:
 
-              http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz
-              http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz.asc
+              http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.12.0.tar.gz
+              http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.12.0.tar.gz.asc
 
            Or via a "version 3" service:
 

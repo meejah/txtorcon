@@ -32,7 +32,7 @@ def main(reactor):
     agent = tor.web_agent()
     uri = b'http://surely-this-has-not-been-registered-and-is-invalid.com'
     uri = b'https://www.torproject.org'
-    uri = b'http://timaq4ygg2iegci7.onion/'  # txtorcon documentation
+    uri = b'http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/'  # txtorcon documentation
     print("Downloading {}".format(uri))
     resp = yield agent.request(b'GET', uri)
 

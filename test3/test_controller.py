@@ -31,7 +31,7 @@ class Python3ControllerTests(unittest.TestCase):
         add = patch.object(self.tor, "add_onion_authentication", return_value=succeed(None))
         remove = patch.object(self.tor, "remove_onion_authentication", return_value=succeed(None))
         with add as adder, remove as remover:
-            async with self.tor.onion_authentication("timaq4ygg2iegci7.onion", "seekrit token"):
+            async with self.tor.onion_authentication("fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion", "seekrit token"):
                 self.assertTrue(adder.called)
                 self.assertFalse(remover.called)
             self.assertTrue(remover.called)
