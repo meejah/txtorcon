@@ -112,7 +112,7 @@ Known Users
 - `foolscap <https://github.com/warner/foolscap/>`_ RPC system inspired by Twisted's built-in "Perspective Broker" package.
 - `bwscanner <https://github.com/TheTorProject/bwscanner>`_ next-gen bandwidth scanner for Tor network
 - `unmessage <https://github.com/AnemoneLabs/unmessage>`_ Privacy enhanced instant messenger
-- `APAF <https://github.com/globaleaks/APAF>`_ anonymous Python application framework
+- `GlobaLeaks <https://github.com/globaleaks/GlobaLeaks>`_ Free and open source software enabling anyone to easily set up and maintain a secure whistleblowing platform
 - `OONI <https://ooni.torproject.org/>`_ the Open Observatory of Network Interference
 - `exitaddr <https://github.com/arlolra/exitaddr>`_ scan Tor exit addresses
 - `txtorhttpproxy <https://github.com/david415/txtorhttpproxy>`_ simple HTTP proxy in Twisted
