@@ -692,9 +692,9 @@ class Tor(object):
         add and remove onion authentication. For example, inside an
         `async def` method that's had `ensureDeferred` called on it::
 
-            async with tor.onion_authentication("timaq4ygg2iegci7.onion", "seekrit token"):
+            async with tor.onion_authentication("fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion", "seekrit token"):
                 agent = tor.web_agent()
-                resp = await agent.request(b'GET', "http://timaq4ygg2iegci7.onion/")
+                resp = await agent.request(b'GET', "http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/")
                 body = await readBody(resp)
             # after the "async with" the token will be removed from Tor's configuration
 

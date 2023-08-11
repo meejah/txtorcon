@@ -89,7 +89,7 @@ v19.1.0
 
 September 10, 2019
 
- * `txtorcon-19.1.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-19.1.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/19.1.0>`_ (:download:`local-sig </../signatues/txtorcon-19.1.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-19.1.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v19.1.0.tar.gz>`_)
+ * `txtorcon-19.1.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-19.1.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/19.1.0>`_ (:download:`local-sig </../signatues/txtorcon-19.1.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-19.1.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v19.1.0.tar.gz>`_)
 
  * `TorControlProtocol.on_disconnect` is deprecated in favour of
    :func:`TorControlProtocol.when_disconnected`
@@ -108,7 +108,7 @@ v19.0.0
 
 January 15, 2019
 
- * `txtorcon-19.0.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-19.0.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/19.0.0>`_ (:download:`local-sig </../signatues/txtorcon-19.0.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-19.0.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v19.0.0.tar.gz>`_)
+ * `txtorcon-19.0.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-19.0.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/19.0.0>`_ (:download:`local-sig </../signatues/txtorcon-19.0.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-19.0.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v19.0.0.tar.gz>`_)
  * add :func:`TorControlProtocol.when_disconnected` (will replace `.on_disconnect`)
  * add `detach=` kwarg to :func:`Tor.create_onion_service`
  * add `purpose=` kwarg to :func:`TorState.build_circuit`
@@ -117,14 +117,14 @@ January 15, 2019
 v18.3.0
 -------
 
- * `txtorcon-18.3.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.3.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.3.0>`_ (:download:`local-sig </../signatues/txtorcon-18.3.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.3.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.3.0.tar.gz>`_)
+ * `txtorcon-18.3.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-18.3.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.3.0>`_ (:download:`local-sig </../signatues/txtorcon-18.3.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.3.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.3.0.tar.gz>`_)
  * add `singleHop={true,false}` for endpoint-strings as well
 
 
 v18.2.0
 -------
 
- * `txtorcon-18.2.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.2.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.2.0>`_ (:download:`local-sig </../signatues/txtorcon-18.2.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.2.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.2.0.tar.gz>`_)
+ * `txtorcon-18.2.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-18.2.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.2.0>`_ (:download:`local-sig </../signatues/txtorcon-18.2.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.2.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.2.0.tar.gz>`_)
  * add `privateKeyFile=` option to endpoint parser (ticket 313)
  * use `privateKey=` option properly in endpoint parser
  * support `NonAnonymous` mode for `ADD_ONION` via `single_hop=` kwarg
@@ -135,7 +135,7 @@ v18.1.0
 
 September 26, 2018
 
- * `txtorcon-18.1.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.1.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.1.0>`_ (:download:`local-sig </../signatues/txtorcon-18.1.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.1.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.1.0.tar.gz>`_)
+ * `txtorcon-18.1.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-18.1.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.1.0>`_ (:download:`local-sig </../signatues/txtorcon-18.1.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.1.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.1.0.tar.gz>`_)
  * better error-reporting (include REASON and REMOTE_REASON if
    available) when circuit-builds fail (thanks `David Stainton
    <https://github.com/david415>`_)
@@ -154,7 +154,7 @@ v18.0.2
 
 July 2, 2018
 
- * `txtorcon-18.0.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.0.2.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.0.2>`_ (:download:`local-sig </../signatues/txtorcon-18.0.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.0.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.0.2.tar.gz>`_)
+ * `txtorcon-18.0.2.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-18.0.2.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.0.2>`_ (:download:`local-sig </../signatues/txtorcon-18.0.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.0.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.0.2.tar.gz>`_)
  * Python3.4 doesn't support async-def or await
 
 
@@ -163,7 +163,7 @@ v18.0.1
 
 June 30, 2018
 
- * `txtorcon-18.0.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.0.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.0.1>`_ (:download:`local-sig </../signatues/txtorcon-18.0.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.0.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.0.1.tar.gz>`_)
+ * `txtorcon-18.0.1.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-18.0.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.0.1>`_ (:download:`local-sig </../signatues/txtorcon-18.0.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.0.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.0.1.tar.gz>`_)
  * fix a Python2/3 regression when parsing onion services
 
 
@@ -172,7 +172,7 @@ v18.0.0
 
 June 21, 2018
 
- * `txtorcon-18.0.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-18.0.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.0.0>`_ (:download:`local-sig </../signatues/txtorcon-18.0.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.0.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.0.0.tar.gz>`_)
+ * `txtorcon-18.0.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-18.0.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/18.0.0>`_ (:download:`local-sig </../signatues/txtorcon-18.0.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-18.0.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v18.0.0.tar.gz>`_)
 
  * `await_all_uploads` options when creating Onions
  * properly re-map progress percentages (including descriptor uploads)
@@ -246,7 +246,7 @@ v0.20.0
 
 February 22, 2018
 
- * `txtorcon-0.20.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.20.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.20.0>`_ (:download:`local-sig </../signatues/txtorcon-0.20.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.20.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.20.0.tar.gz>`_)
+ * `txtorcon-0.20.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.20.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.20.0>`_ (:download:`local-sig </../signatues/txtorcon-0.20.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.20.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.20.0.tar.gz>`_)
 
  * doc fixes from `hotelzululima <https://twitter.com/hotelzululima>`_
  * fix endpoints so `.connect` on them works properly more than once
@@ -267,7 +267,7 @@ v0.19.3
 
 May 24, 2017
 
- * `txtorcon-0.19.3.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.19.3.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.3>`_ (:download:`local-sig </../signatues/txtorcon-0.19.3.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.19.3.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.3.tar.gz>`_)
+ * `txtorcon-0.19.3.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.19.3.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.3>`_ (:download:`local-sig </../signatues/txtorcon-0.19.3.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.19.3.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.3.tar.gz>`_)
 
  * Incorrect parsing of SocksPort options (see `Issue 237 <https://github.com/meejah/txtorcon/issues/237>`_)
 
@@ -277,7 +277,7 @@ v0.19.2
 
 May 11, 2017
 
- * `txtorcon-0.19.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.19.2.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.2>`_ (:download:`local-sig </../signatues/txtorcon-0.19.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.19.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.2.tar.gz>`_)
+ * `txtorcon-0.19.2.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.19.2.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.2>`_ (:download:`local-sig </../signatues/txtorcon-0.19.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.19.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.2.tar.gz>`_)
 
  * Work around a bug in `incremental` (see `Issue 233 <https://github.com/meejah/txtorcon/issues/233>`_)
  * Fix for `Issue 190 <https://github.com/meejah/txtorcon/issues/190>`_ from Felipe Dau.
@@ -289,7 +289,7 @@ v0.19.1
 
 April 26, 2017
 
- * `txtorcon-0.19.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.19.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.1>`_ (:download:`local-sig </../signatues/txtorcon-0.19.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.19.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.1.tar.gz>`_)
+ * `txtorcon-0.19.1.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.19.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.1>`_ (:download:`local-sig </../signatues/txtorcon-0.19.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.19.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.1.tar.gz>`_)
 
  * Fix a regression in ``launch_tor``, see `Issue 227 <https://github.com/meejah/txtorcon/issues/227>`_
 
@@ -299,7 +299,7 @@ v0.19.0
 
 April 20, 2017
 
- * `txtorcon-0.19.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.19.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.0>`_ (:download:`local-sig </../signatues/txtorcon-0.19.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.19.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.0.tar.gz>`_)
+ * `txtorcon-0.19.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.19.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.19.0>`_ (:download:`local-sig </../signatues/txtorcon-0.19.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.19.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.19.0.tar.gz>`_)
 
  * Full Python3 support
  * Drop `txsocksx` and use a custom implementation (this also
@@ -343,7 +343,7 @@ v0.18.0
 
 January 11, 2017
 
- * `txtorcon-0.18.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.18.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.18.0>`_ (:download:`local-sig </../signatues/txtorcon-0.18.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.18.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.18.0.tar.gz>`_)
+ * `txtorcon-0.18.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.18.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.18.0>`_ (:download:`local-sig </../signatues/txtorcon-0.18.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.18.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.18.0.tar.gz>`_)
  * `issue 200 <https://github.com/meejah/txtorcon/issues/200>`_: better feedback if the cookie data can't be read
 
 
@@ -352,7 +352,7 @@ v0.17.0
 
 *October 4, 2016*
 
- * `txtorcon-0.17.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.17.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.17.0>`_ (:download:`local-sig </../signatues/txtorcon-0.17.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.17.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.17.0.tar.gz>`_)
+ * `txtorcon-0.17.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.17.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.17.0>`_ (:download:`local-sig </../signatues/txtorcon-0.17.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.17.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.17.0.tar.gz>`_)
  * `issue 187 <https://github.com/meejah/txtorcon/issues/187>`_: fix unix-socket control endpoints
  * sometimes mapping streams to hostnames wasn't working properly
  * backwards-compatibility API for `socks_hostname` was incorrectly named
@@ -363,7 +363,7 @@ v0.16.1
 
 *August 31, 2016*
 
- * `txtorcon-0.16.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.16.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.16.1>`_ (:download:`local-sig </../signatues/txtorcon-0.16.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.16.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.16.1.tar.gz>`_)
+ * `txtorcon-0.16.1.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.16.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.16.1>`_ (:download:`local-sig </../signatues/txtorcon-0.16.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.16.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.16.1.tar.gz>`_)
  * `issue 172 <https://github.com/meejah/txtorcon/issues/172>`_: give `TorProcessProtocol` a `.quit` method
  * `issue 181 <https://github.com/meejah/txtorcon/issues/181>`_: enable SOCKS5-over-unix-sockets for TorClientEndpoint (thanks to `david415 <https://github.com/david415>`_
 
@@ -377,7 +377,7 @@ v0.16.0
 v0.15.1
 -------
 
- * `txtorcon-0.15.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.15.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.15.1>`_ (:download:`local-sig </../signatues/txtorcon-0.15.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.15.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.15.1.tar.gz>`_)
+ * `txtorcon-0.15.1.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.15.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.15.1>`_ (:download:`local-sig </../signatues/txtorcon-0.15.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.15.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.15.1.tar.gz>`_)
  * fix `issue 179 <https://github.com/meejah/txtorcon/issues/179>`_ with `Circuit.age`.
 
 
@@ -386,7 +386,7 @@ v0.15.0
 
 *July 26, 2016*
 
- * `txtorcon-0.15.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.15.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.15.0>`_ (:download:`local-sig </../signatues/txtorcon-0.15.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.15.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.15.0.tar.gz>`_)
+ * `txtorcon-0.15.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.15.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.15.0>`_ (:download:`local-sig </../signatues/txtorcon-0.15.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.15.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.15.0.tar.gz>`_)
  * added support for NULL control-port-authentication which is often
    appropriate when used with a UNIX domain socket
  * switched to `ipaddress
@@ -423,7 +423,7 @@ v0.14.2
 
 *December 2, 2015*
 
- * `txtorcon-0.14.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.14.2.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.14.2>`_ (:download:`local-sig </../signatues/txtorcon-0.14.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.14.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.14.2.tar.gz>`_)
+ * `txtorcon-0.14.2.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.14.2.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.14.2>`_ (:download:`local-sig </../signatues/txtorcon-0.14.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.14.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.14.2.tar.gz>`_)
  * compatibility for Twisted 15.5.0 (released on 0.14.x for `OONI <http://ooni.io/>`_)
 
 
@@ -441,14 +441,14 @@ v0.14.0
 
 *September 26, 2015*
 
- * `txtorcon-0.14.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.14.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.14.0>`_ (:download:`local-sig </../signatues/txtorcon-0.14.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.14.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.14.0.tar.gz>`_)
+ * `txtorcon-0.14.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.14.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.14.0>`_ (:download:`local-sig </../signatues/txtorcon-0.14.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.14.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.14.0.tar.gz>`_)
  * :class:`txtorcon.interface.IStreamAttacher` handling was missing ``None`` and ``DO_NOT_ATTACH`` cases if a Deferred was returned.
  * add ``.is_built`` Deferred to :class:`txtorcon.Circuit` that gets `callback()`d when the circuit becomes BUILT
  * `david415 <https://github.com/david415>`_ ported his ``tor:``
    endpoint parser so now both client and server endpoints are
    supported. This means **any** Twisted program using endpoints can
    use Tor as a client. For example, to connect to txtorcon's Web site:
-   ``ep = clientFromString("tor:timaq4ygg2iegci7.onion:80")``.
+   ``ep = clientFromString("tor:fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion:80")``.
    (In the future, I'd like to automatically launch Tor if required, too).
  * Python3 fixes from `isis <https://github.com/isislovecruft>`_ (note: needs Twisted 15.4.0+)
 
@@ -458,7 +458,7 @@ v0.13.0
 
 *May 10, 2015*
 
- * `txtorcon-0.13.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.13.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.13.0>`_ (:download:`local-sig </../signatues/txtorcon-0.13.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.13.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.13.0.tar.gz>`_)
+ * `txtorcon-0.13.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.13.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.13.0>`_ (:download:`local-sig </../signatues/txtorcon-0.13.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.13.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.13.0.tar.gz>`_)
  * support ``basic`` and ``stealth`` hidden service authorization, and parse ``client_keys`` files.
  * 2x speedup for TorState parsing (mostly by lazy-parsing timestamps)
  * can now parse ~75000 microdescriptors/second per core of 3.4GHz Xeon E3
@@ -475,7 +475,7 @@ v0.12.0
 
 *February 3, 2015*
 
- * `txtorcon-0.12.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.12.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.12.0>`_ (:download:`local-sig </../signatues/txtorcon-0.12.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.12.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.12.0.tar.gz>`_)
+ * `txtorcon-0.12.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.12.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.12.0>`_ (:download:`local-sig </../signatues/txtorcon-0.12.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.12.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.12.0.tar.gz>`_)
  * doc, code and import cleanups from `Kali Kaneko <https://github.com/kalikaneko>`_
  * HiddenServiceDirGroupReadable support
  * Issue #80: honour ``ControlPort 0`` in incoming TorConfig
@@ -502,9 +502,9 @@ v0.11.0
 
 *August 16, 2014*
 
- * September 6, 2015. bugfix release: `txtorcon-0.11.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.11.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.11.1>`_ (:download:`local-sig </../signatues/txtorcon-0.11.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.11.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.11.1.tar.gz>`_)
+ * September 6, 2015. bugfix release: `txtorcon-0.11.1.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.11.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.11.1>`_ (:download:`local-sig </../signatues/txtorcon-0.11.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.11.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.11.1.tar.gz>`_)
  * fixed Debian bug `797261 <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=797261>`_ causing 3 tests to fail
- * `txtorcon-0.11.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.11.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.11.0>`_ (:download:`local-sig </../signatues/txtorcon-0.11.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.11.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.11.0.tar.gz>`_) 
+ * `txtorcon-0.11.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.11.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.11.0>`_ (:download:`local-sig </../signatues/txtorcon-0.11.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.11.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.11.0.tar.gz>`_) 
  * More control for ``launch_tor``: access stdout, stderr in real-time
    and control whether we kill Tor on and stderr output. See issue #79.
  * Warning about ``build_circuit`` being called without a guard first
@@ -519,7 +519,7 @@ v0.10.1
 
 *July 20, 2014*
 
- * `txtorcon-0.10.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.10.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.10.1>`_ (:download:`local-sig </../signatues/txtorcon-0.10.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.10.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.10.1.tar.gz>`_) 
+ * `txtorcon-0.10.1.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.10.1.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.10.1>`_ (:download:`local-sig </../signatues/txtorcon-0.10.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.10.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.10.1.tar.gz>`_) 
  * fix bug incorrectly issuing RuntimeError in brief window of time on event-listeners
  * issue #78: Add tox tests and fix for Twisted 12.0.0 (and prior), as this is what Debian squeeze ships
  * issue #77: properly expand relative and tilde paths for ``hiddenServiceDir`` via endpoints
@@ -530,7 +530,7 @@ v0.10.0
 
 *June 15, 2014*
 
- * `txtorcon-0.10.0.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.10.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.10.0>`_ (:download:`local-sig </../signatues/txtorcon-0.10.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.10.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.10.0.tar.gz>`_)
+ * `txtorcon-0.10.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.10.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/0.10.0>`_ (:download:`local-sig </../signatues/txtorcon-0.10.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.10.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.10.0.tar.gz>`_)
  * In collaboration with `David Stainton <https://github.com/david415>`_ after a pull-request, we
    have endpoint parser plugins for Twisted! This means code like
    ``serverFromString("onion:80").listen(...)`` is enough to start a
@@ -545,7 +545,7 @@ v0.9.2
 
 *April 23, 2014*
 
- * `txtorcon-0.9.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.9.2.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.9.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.9.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.9.2.tar.gz>`_)
+ * `txtorcon-0.9.2.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.9.2.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.9.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.9.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.9.2.tar.gz>`_)
  * add ``on_disconnect`` callback for TorControlProtocol (no more monkey-patching Protocol API)
  * add ``age()`` method to Circuit
  * add ``time_created`` property to Circuit
@@ -568,7 +568,7 @@ v0.9.1
 
 *January 20, 2014*
 
- * `txtorcon-0.9.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.9.1.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.9.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.9.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.9.1.tar.gz>`_)
+ * `txtorcon-0.9.1.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.9.1.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.9.1.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.9.1.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.9.1.tar.gz>`_)
  * put test/ directory at the top level
  * using "`coverage <http://nedbatchelder.com/code/coverage/>`_" tool instead of custom script
  * using `coveralls.io <https://coveralls.io/r/meejah/txtorcon>`_ and `travis-ci <https://travis-ci.org/meejah/txtorcon>`_ for test coverage and continuous integration
@@ -592,7 +592,7 @@ v0.8.2
 
 *November 22, 2013*
 
- * `txtorcon-0.8.2.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.2.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.8.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.8.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.2.tar.gz>`_)
+ * `txtorcon-0.8.2.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.8.2.tar.gz>`_ (:download:`local-sig </../signatues/txtorcon-0.8.2.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.8.2.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.2.tar.gz>`_)
  * ensure hidden service server-side endpoints listen only on 127.0.0.1
 
 
@@ -601,7 +601,7 @@ v0.8.1
 
 *May 13, 2013*
 
- * `txtorcon-0.8.1.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.8.1.tar.gz>`_ (:download:`local-sign </../signatues/txtorcon-0.8.1.tar.gz.sig>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.8.1.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.1.tar.gz>`_)
+ * `txtorcon-0.8.1.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.8.1.tar.gz>`_ (:download:`local-sign </../signatues/txtorcon-0.8.1.tar.gz.sig>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.8.1.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v0.8.1.tar.gz>`_)
  * fixed improper import in setup.py preventing 0.8.0 from installing
  * signatures with proper subkey this time
  * Proper file-flushing in tests and PyPy fixes from Lukas Lueg
@@ -632,7 +632,7 @@ v0.7
 
 *November 21, 2012*
 
- * `txtorcon-0.7.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.7.tar.gz>`_ (:download:`local-sig <../signatues/txtorcon-0.7.tar.gz.sig>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.7.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.7>`_)
+ * `txtorcon-0.7.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.7.tar.gz>`_ (:download:`local-sig <../signatues/txtorcon-0.7.tar.gz.sig>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.7.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.7>`_)
  * `issue #20 <https://github.com/meejah/txtorcon/issues/20>`_ config object now hooked up correctly after launch_tor();
  * `patch <https://github.com/meejah/txtorcon/pull/22>`_ from hellais for properly handling data_dir given to TCPHiddenServiceEndpoint;
  * `.tac example <https://github.com/meejah/txtorcon/pull/19>`_ from mmaker;
@@ -643,7 +643,7 @@ v0.6
 
 *October 10, 2012*
 
- * `txtorcon-0.6.tar.gz <http://timaq4ygg2iegci7.onion/txtorcon-0.6.tar.gz>`_ (:download:`local-sig <../signatues/txtorcon-0.6.tar.gz.sig>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.6.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.6>`_)
+ * `txtorcon-0.6.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-0.6.tar.gz>`_ (:download:`local-sig <../signatues/txtorcon-0.6.tar.gz.sig>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-0.6.tar.gz.sig?raw=true>`_) (`source <https://github.com/meejah/txtorcon/tarball/v0.6>`_)
  * debian packaging (mmaker);
  * psutil fully gone;
  * *changed API* for launch_tor() to use TorConfig instead of args;

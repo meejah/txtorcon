@@ -365,7 +365,7 @@ class StreamTests(unittest.TestCase):
         for address in [
                 '1.2.3.4:80',
                 '1.2.3.4.315D5684D5343580D409F16119F78D776A58AEFB.exit:80',
-                'timaq4ygg2iegci7.onion:80']:
+                'fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion:80']:
 
             line = "316 %s 1 %s REASON=FOO"
             for state in ['NEW', 'SUCCEEDED', 'REMAP',
