@@ -74,7 +74,7 @@ class AuthenticationTests(unittest.TestCase):
         self.transport = proto_helpers.StringTransport()
 
     def send(self, line):
-        assert type(line) == bytes
+        assert isinstance(line, bytes)
         self.protocol.dataReceived(line.strip() + b"\r\n")
 
     def test_authenticate_cookie(self):
@@ -297,7 +297,7 @@ class ProtocolTests(unittest.TestCase):
         self.protocol = None
 
     def send(self, line):
-        assert type(line) == bytes
+        assert isinstance(line, bytes)
         self.protocol.dataReceived(line.strip() + b"\r\n")
 
     def test_statemachine_broadcast_no_code(self):

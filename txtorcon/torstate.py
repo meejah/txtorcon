@@ -477,7 +477,7 @@ class TorState(object):
         (e.g. "SomeFlag=True"). Currently there are none that Tor accepts.
         """
 
-        if type(stream) != int:
+        if not isinstance(stream, int):
             # assume it's a Stream instance
             stream = stream.id
         try:
@@ -513,7 +513,7 @@ class TorState(object):
             :meth:`Circuit.close <txtorcon.circuit.Circuit.close>`
         """
 
-        if type(circid) != int:
+        if not isinstance(circid, int):
             # assume it's a Circuit instance
             circid = circid.id
         flags = flags_from_dict(kwargs)

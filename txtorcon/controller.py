@@ -1032,6 +1032,8 @@ class Tor(object):
             control-connection goes away (this means the service will
             appear in `GETINFO onions/detached` to all other
             controllers)
+
+        :returns EphemeralOnionService:
         """
         if version not in (2, 3):
             raise ValueError(

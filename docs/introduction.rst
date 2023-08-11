@@ -99,6 +99,14 @@ Example Code
 .. literalinclude:: ../examples/readme.py
 
 
+.. _testimonials:
+
+Testimonials
+------------
+
+- `@thegrugq <https://twitter.com/thegrugq/status/359495805025001472>`_: "Holy fucking shit, the awesomeness of this project cannot be denied!" (July 2013)
+
+
 .. _known_users:
 
 Known Users
