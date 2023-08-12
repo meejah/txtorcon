@@ -3,6 +3,5 @@
 ##GeoIP>=1.2.9
 Twisted[tls]>=15.5.0
 zope.interface>=3.6.1
-incremental
 automat
 cryptography
