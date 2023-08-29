@@ -355,7 +355,7 @@ class TorControlProtocol(LineOnlyReceiver):
         self.stop_debug()
 
     def start_debug(self):
-        self.debuglog = open('txtorcon-debug.log', 'w')
+        self.debuglog = open('txtorcon-debug.log', 'wb')
 
     def stop_debug(self):
         def noop(*args, **kw):
