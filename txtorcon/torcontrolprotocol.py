@@ -280,11 +280,6 @@ class TorControlProtocol(LineOnlyReceiver):
 
         self._when_disconnected = SingleObserver()
         """
-        Internal use. A :class:`SingleObserver` for when_disconnected()
-        """
-
-        self._when_disconnected = SingleObserver()
-        """
         Private. See :func:`.when_disconnected`
         """
 
