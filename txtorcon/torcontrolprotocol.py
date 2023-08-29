@@ -759,6 +759,10 @@ class TorControlProtocol(LineOnlyReceiver):
         if len(self.commands):
             self.command = self.commands.pop(0)
             (d, cmd, cmd_arg) = self.command
+
+            if self._when_disconnected.already_fired(d):
+                return
+
             self.defer = d
 
             self.debuglog.write(cmd + b'\n')

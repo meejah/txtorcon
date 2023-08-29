@@ -473,6 +473,19 @@ class SingleObserver(object):
         self._observers = []
         self._fired = self._NotFired
 
+    def has_fired(self):
+        return self._fired is not self._NotFired
+
+    def already_fired(self, d):
+        """
+        If we have already fired, callback `d` with our result.
+        :returns bool: True if we already fired, False otherwise
+        """
+        if self.has_fired():
+            d.callback(self._fired)
+            return True
+        return False
+
     def when_fired(self):
         d = defer.Deferred()
         if self._fired is not self._NotFired:

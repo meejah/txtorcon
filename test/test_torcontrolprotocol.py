@@ -226,7 +226,7 @@ class DisconnectionTests(unittest.TestCase):
         it_was_called.yes = False
 
         d = self.protocol.when_disconnected()
-        d.addCallback(it_was_called)
+        d.addBoth(it_was_called)
         f = failure.Failure(error.ConnectionDone("It's all over"))
         self.protocol.connectionLost(f)
         self.assertTrue(it_was_called.yes)
