@@ -284,6 +284,31 @@ class DisconnectionTests(unittest.TestCase):
         self.protocol.connectionLost(f)
         self.assertEqual(it_was_called.count, 2)
 
+    def test_disconnect_subsequent_commands(self):
+        """
+        commands issued after disconnect should errback
+        """
+
+        def it_was_called(f):
+            str(f)
+            it_was_called.count += 1
+            return None
+        it_was_called.count = 0
+
+        # one outstanding command
+        d0 = self.protocol.queue_command("some command0")
+        d0.addErrback(it_was_called)
+        self.protocol.on_disconnect.addErrback(lambda _: None)
+
+        f = failure.Failure(RuntimeError("The thing didn't do the stuff."))
+        self.protocol.connectionLost(f)
+
+        # one command issued _after_ we've disconnected
+        d1 = self.protocol.queue_command("some command1")
+        d1.addErrback(it_was_called)
+
+        self.assertEqual(it_was_called.count, 2)
+
 
 class ProtocolTests(unittest.TestCase):
 
