@@ -691,10 +691,14 @@ class TorControlProtocol(LineOnlyReceiver):
     def connectionLost(self, reason):
         "Protocol API"
         txtorlog.msg('connection terminated: ' + str(reason))
-        if reason.check(ConnectionDone):
-            self._when_disconnected.fire(self)
-        else:
-            self._when_disconnected.fire(reason)
+        self._when_disconnected.fire(
+            Failure(
+                TorDisconnectError(
+                    text="Tor connection terminated",
+                    error=reason,
+                )
+            )
+        )
 
         # ...and this is why we don't do on_disconnect = Deferred() :(
         # and instead should have had on_disconnect() method that
@@ -711,8 +715,10 @@ class TorControlProtocol(LineOnlyReceiver):
             else:
                 self.on_disconnect.errback(reason)
         self.on_disconnect = None
-        self._when_disconnected.fire(self)
+
         outstanding = [self.command] + self.commands if self.command else self.commands
+        self.command = None
+        self.defer = None
         for d, cmd, cmd_arg in outstanding:
             if not d.called:
                 d.errback(
