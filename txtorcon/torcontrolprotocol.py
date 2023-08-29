@@ -232,6 +232,10 @@ class TorControlProtocol(LineOnlyReceiver):
     :class:`txtorcon.TorState`, which is also the place to go if you
     wish to add your own stream or circuit listeners.
     """
+    # override Twisted's LineOnlyReceiver maximum line-length. At
+    # least "GETINFO md/id/X" for some Xse exceeds 16384 (2**14, the
+    # default) and thus causes the control connection to fail.
+    MAX_LENGTH = 2 ** 20
 
     def __init__(self, password_function=None):
         """
