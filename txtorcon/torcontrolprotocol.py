@@ -234,7 +234,9 @@ class TorControlProtocol(LineOnlyReceiver):
     """
     # override Twisted's LineOnlyReceiver maximum line-length. At
     # least "GETINFO md/id/X" for some Xse exceeds 16384 (2**14, the
-    # default) and thus causes the control connection to fail.
+    # default) and thus causes the control connection to
+    # fail. control.c defines MAX_COMMAND_LINE_LENGTH as 1024*1024 so
+    # we use that
     MAX_LENGTH = 2 ** 20
 
     def __init__(self, password_function=None):
