@@ -18,6 +18,7 @@ See also :ref:`api_stability`.
 `git main <https://github.com/meejah/txtorcon>`_ *will likely become v23.6.0*
 
  * Fix test-failures on Python 3.12
+ * Particular GETINFO hanging (`#389 <https://github.com/meejah/txtorcon/issues/389>`_)
 
 
 v23.5.0

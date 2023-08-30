@@ -232,6 +232,12 @@ class TorControlProtocol(LineOnlyReceiver):
     :class:`txtorcon.TorState`, which is also the place to go if you
     wish to add your own stream or circuit listeners.
     """
+    # override Twisted's LineOnlyReceiver maximum line-length. At
+    # least "GETINFO md/id/X" for some Xse exceeds 16384 (2**14, the
+    # default) and thus causes the control connection to
+    # fail. control.c defines MAX_COMMAND_LINE_LENGTH as 1024*1024 so
+    # we use that
+    MAX_LENGTH = 2 ** 20
 
     def __init__(self, password_function=None):
         """
@@ -272,11 +278,6 @@ class TorControlProtocol(LineOnlyReceiver):
         This Deferred is triggered when the connection is closed. If there
         was an error, the errback is called instead. (Deprecated: use
         :func:`when_disconnected` instead)
-        """
-
-        self._when_disconnected = SingleObserver()
-        """
-        Internal use. A :class:`SingleObserver` for when_disconnected()
         """
 
         self._when_disconnected = SingleObserver()
@@ -356,7 +357,7 @@ class TorControlProtocol(LineOnlyReceiver):
         self.stop_debug()
 
     def start_debug(self):
-        self.debuglog = open('txtorcon-debug.log', 'w')
+        self.debuglog = open('txtorcon-debug.log', 'wb')
 
     def stop_debug(self):
         def noop(*args, **kw):
@@ -692,10 +693,14 @@ class TorControlProtocol(LineOnlyReceiver):
     def connectionLost(self, reason):
         "Protocol API"
         txtorlog.msg('connection terminated: ' + str(reason))
-        if reason.check(ConnectionDone):
-            self._when_disconnected.fire(self)
-        else:
-            self._when_disconnected.fire(reason)
+        self._when_disconnected.fire(
+            Failure(
+                TorDisconnectError(
+                    text="Tor connection terminated",
+                    error=reason,
+                )
+            )
+        )
 
         # ...and this is why we don't do on_disconnect = Deferred() :(
         # and instead should have had on_disconnect() method that
@@ -712,8 +717,10 @@ class TorControlProtocol(LineOnlyReceiver):
             else:
                 self.on_disconnect.errback(reason)
         self.on_disconnect = None
-        self._when_disconnected.fire(self)
+
         outstanding = [self.command] + self.commands if self.command else self.commands
+        self.command = None
+        self.defer = None
         for d, cmd, cmd_arg in outstanding:
             if not d.called:
                 d.errback(
@@ -754,6 +761,10 @@ class TorControlProtocol(LineOnlyReceiver):
         if len(self.commands):
             self.command = self.commands.pop(0)
             (d, cmd, cmd_arg) = self.command
+
+            if self._when_disconnected.already_fired(d):
+                return
+
             self.defer = d
 
             self.debuglog.write(cmd + b'\n')
