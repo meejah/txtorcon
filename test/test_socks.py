@@ -1,5 +1,5 @@
 from six import BytesIO, text_type
-from mock import Mock, patch
+from unittest.mock import Mock, patch
 
 from twisted.trial import unittest
 from twisted.internet import defer

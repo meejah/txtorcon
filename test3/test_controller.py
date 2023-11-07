@@ -2,7 +2,7 @@
 
 import six
 import unittest
-from mock import Mock, patch
+from unittest.mock import Mock, patch
 
 from zope.interface import directlyProvides
 

@@ -6,7 +6,7 @@ import tempfile
 import functools
 import warnings
 from six import StringIO
-from mock import Mock, patch
+from unittest.mock import Mock, patch
 from os.path import join
 
 from zope.interface import implementer, directlyProvides

@@ -1,5 +1,5 @@
 
-from mock import Mock
+from unittest.mock import Mock
 
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.trial import unittest

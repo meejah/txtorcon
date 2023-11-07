@@ -1,7 +1,7 @@
 import os
 import tempfile
 import ipaddress
-from mock import patch
+from unittest.mock import patch
 from unittest import skip as _skip
 from os.path import exists
 

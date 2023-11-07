@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import os
 import sys
-from mock import Mock
+from unittest.mock import Mock
 from os.path import join
 from unittest import skipIf
 

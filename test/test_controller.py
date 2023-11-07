@@ -2,7 +2,7 @@ import os
 import six
 import functools
 from os.path import join
-from mock import Mock, patch
+from unittest.mock import Mock, patch
 from io import BytesIO
 
 from twisted.internet.interfaces import IReactorCore
