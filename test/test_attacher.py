@@ -1,4 +1,4 @@
-from mock import Mock
+from unittest.mock import Mock
 from zope.interface import directlyProvides
 
 from twisted.trial import unittest

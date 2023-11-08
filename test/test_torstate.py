@@ -12,7 +12,7 @@ import tempfile
 
 from ipaddress import IPv4Address
 
-from mock import patch, Mock
+from unittest.mock import patch, Mock
 
 from txtorcon import TorControlProtocol
 from txtorcon import TorProtocolError

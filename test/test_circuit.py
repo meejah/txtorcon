@@ -1,6 +1,6 @@
 import datetime
 import ipaddress
-from mock import patch
+from unittest.mock import patch
 
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -21,7 +21,7 @@ from txtorcon.interface import ICircuitContainer
 from txtorcon.interface import CircuitListenerMixin
 from txtorcon.interface import ITorControlProtocol
 
-from mock import Mock
+from unittest.mock import Mock
 
 
 @implementer(IRouterContainer)

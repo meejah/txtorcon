@@ -2,8 +2,8 @@ from __future__ import print_function
 
 import os
 import sys
-from mock import patch
-from mock import Mock, MagicMock
+from unittest.mock import patch
+from unittest.mock import Mock, MagicMock
 from unittest import skipIf
 from binascii import b2a_base64
 
