@@ -16,3 +16,4 @@ docs/_build
 .tox
 venv/
 venv_tox_*/
+PRIVATE*
