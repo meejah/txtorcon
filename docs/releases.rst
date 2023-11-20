@@ -15,10 +15,18 @@ that will be "19.2.1".
 
 See also :ref:`api_stability`.
 
-`git main <https://github.com/meejah/txtorcon>`_ *will likely become v23.6.0*
+`git main <https://github.com/meejah/txtorcon>`_ *will likely become v24.1.0*
+
+v23.11.0
+--------
+
+November 20, 2023
 
  * Fix test-failures on Python 3.12
  * Particular GETINFO hanging (`#389 <https://github.com/meejah/txtorcon/issues/389>`_)
+   (ultra-long lines over 16KiB caused problems in the protocol)
+ * Use built-in `mock` only (from `jelly <https://github.com/jelly>`_)
+ * Remove `incremental` (from `gdrosos <https://github.com/gdrosos>`_)
 
 
 v23.5.0
