@@ -3,7 +3,6 @@ from twisted.trial import unittest
 import sys
 import functools
 from unittest import skipUnless
-import six
 
 
 def fake_import(orig, name, *args, **kw):
@@ -14,7 +13,7 @@ def fake_import(orig, name, *args, **kw):
 
 class TestImports(unittest.TestCase):
 
-    @skipUnless(six.PY2 and 'pypy' not in sys.version.lower(), "Doesn't work in PYPY, Py3")
+    @skipUnless(False and 'pypy' not in sys.version.lower(), "Doesn't work in PYPY, Py3")
     def test_no_GeoIP(self):
         """
         Make sure we don't explode if there's no GeoIP module

@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import with_statement
-
 import os
 import re
-import six
 import functools
 import warnings
 from io import StringIO
@@ -67,7 +62,7 @@ def launch_tor(config, reactor,
     defer.returnValue(tor.process)
 
 
-class TorConfigType(object):
+class TorConfigType:
     """
     Base class for all configuration types, which function as parsers
     and un-parsers.
@@ -253,11 +248,8 @@ class _ListWrapper(list):
         return '_ListWrapper' + super(_ListWrapper, self).__repr__()
 
 
-if six.PY2:
-    setattr(_ListWrapper, '__setslice__', _wrapture(list.__setslice__))
 
-
-class HiddenService(object):
+class HiddenService:
     """
     Because hidden service configuration is handled specially by Tor,
     we wrap the config in this class. This corresponds to the
@@ -424,7 +416,7 @@ def _is_valid_keyblob(key_blob_or_type):
 # resulting class in isinstance() things and the like, because Twisted
 # makes it into a function instead :( so we @deprecate __init__ for now
 # @deprecated(_Version("txtorcon", 18, 0, 0))
-class EphemeralHiddenService(object):
+class EphemeralHiddenService:
     '''
     Deprecated as of 18.0.0. Please instead use :class:`txtorcon.EphemeralOnionService`
 
@@ -448,7 +440,7 @@ class EphemeralHiddenService(object):
             raise ValueError(
                 'key_blob_or_type must be a string in the formats '
                 '"NEW:<ALGORITHM>" or "<ALGORITHM>:<KEY>"')
-        if isinstance(ports, (six.text_type, str)):
+        if isinstance(ports, str):
             ports = [ports]
         self._ports = [x.replace(' ', ',') for x in ports]
         self._keyblob = key_blob_or_type
@@ -523,7 +515,7 @@ def _endpoint_from_socksport_line(reactor, socks_config):
     return TCP4ClientEndpoint(reactor, host, port)
 
 
-class TorConfig(object):
+class TorConfig:
     """This class abstracts out Tor's config, and can be used both to
     create torrc files from nothing and track live configuration of a Tor
     instance.

@@ -1,8 +1,6 @@
 # just copying over most of "carml checkpypi" because it's a good
 # example of "I want a stream over *this* circuit".
 
-from __future__ import print_function
-
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import react
 from twisted.internet.endpoints import TCP4ClientEndpoint

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 """
 Use the 'global_tor' instance from txtorcon; this is a Tor
 instance that either doesn't exist or is unique to this process'

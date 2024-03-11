@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
 from twisted.internet import reactor
 from nevow.appserver import NevowSite
 from nevow import loaders, tags, livepage

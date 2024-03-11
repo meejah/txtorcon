@@ -1,4 +1,3 @@
-from __future__ import print_function
 #
 # This uses a very simple custom txtorcon.IStreamAttacher to disallow
 # certain streams based solely on their port; by default it closes

@@ -11,7 +11,6 @@
 # parser plugin but code without knowledge of txtorcon can still
 # launch a Tor instance using it. cool!
 
-from __future__ import print_function
 from os.path import abspath
 
 from twisted.internet import defer, task, endpoints

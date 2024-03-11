@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import with_statement
-
+import asyncio
 import glob
 import os
 import hmac
@@ -12,7 +9,6 @@ import shutil
 import subprocess
 import ipaddress
 import re
-import six
 
 from twisted.internet import defer
 from twisted.internet.interfaces import IProtocolFactory
@@ -21,9 +17,6 @@ from twisted.web.http_headers import Headers
 
 from zope.interface import implementer
 from zope.interface import Interface
-
-if six.PY3:
-    import asyncio
 
 try:
     import GeoIP as _GeoIP
@@ -148,8 +141,6 @@ def maybe_ip_addr(addr):
     TODO consider explicitly checking for .exit or .onion at the end?
     """
 
-    if six.PY2 and isinstance(addr, str):
-        addr = unicode(addr)  # noqa
     try:
         return ipaddress.ip_address(addr)
     except ValueError:
@@ -337,10 +328,7 @@ def unescape_quoted_string(string):
     # handeled as escape codes by string.decode('string-escape').
     # This is needed so e.g. '\x00' is not unescaped as '\0'
     string = re.sub(r'((?:^|[^\\])(?:\\\\)*)\\([^ntr0-7\\])', r'\1\2', string)
-    if six.PY3:
-        # XXX hmmm?
-        return bytes(string, 'ascii').decode('unicode-escape')
-    return string.decode('string-escape')
+    return bytes(string, 'ascii').decode('unicode-escape')
 
 
 def default_control_port():
@@ -385,7 +373,7 @@ def maybe_coroutine(obj):
     (This is to insert in all callback chains from user code, in case
     that user code is Python3 and used 'async def')
     """
-    if six.PY3 and asyncio.iscoroutine(obj):
+    if asyncio.iscoroutine(obj):
         return defer.ensureDeferred(obj)
     return obj
 
@@ -532,7 +520,7 @@ def _is_non_public_numeric_address(host):
     # for numeric hostnames, skip RFC1918 addresses, since no Tor exit
     # node will be able to reach those. Likewise ignore IPv6 addresses.
     try:
-        a = ipaddress.ip_address(six.text_type(host))
+        a = ipaddress.ip_address(str(host))
     except ValueError:
         return False        # non-numeric, let Tor try it
     if a.is_loopback or a.is_multicast or a.is_private or a.is_reserved \

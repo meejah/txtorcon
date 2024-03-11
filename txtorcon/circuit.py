@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
-import six
 import time
 from datetime import datetime
 
@@ -69,7 +63,7 @@ class _CircuitAttacher(object):
 
     def _add_real_target(self, real_addr, circuit, d):
         # joy oh joy, ipaddress wants unicode, Twisted gives us bytes...
-        real_host = maybe_ip_addr(six.text_type(real_addr.host))
+        real_host = maybe_ip_addr(str(real_addr.host))
         real_port = real_addr.port
         self._circuit_targets[(real_host, real_port)] = (circuit, d)
 

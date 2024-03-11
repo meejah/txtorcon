@@ -23,14 +23,14 @@ log.startLogging(sys.stdout)
 
 def updates(prog, tag, summary):
     p = ('#' * int(10*(prog/100.0))) + ('.'*(10 - int(10*(prog/100.0))))
-    print "%s %s" % (p, summary)
+    print("%s %s" % (p, summary))
 
 @defer.inlineCallbacks
 def main(reactor):
-    print "Launching Tor"
+    print("Launching Tor")
     tor = yield txtorcon.launch(reactor, progress_updates=updates)
-    print "launch over:", proto
-    print 'Running "ps afxu":'
+    print("launch over:", proto)
+    print('Running "ps afxu":')
     os.system("ps afxu")
 
 task.react(main)

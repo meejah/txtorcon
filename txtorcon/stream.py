@@ -11,18 +11,13 @@ to attach streams to circuits "by hand"
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
 from twisted.python import log
 from twisted.internet import defer
 from txtorcon.interface import ICircuitContainer, IStreamListener
 from txtorcon.util import find_keywords, maybe_ip_addr
 
 
-class Stream(object):
+class Stream:
     """
     Represents an active stream in Tor's state (:class:`txtorcon.TorState`).
 

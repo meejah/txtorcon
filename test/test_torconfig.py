@@ -1,11 +1,9 @@
-from __future__ import print_function
-
 import os
 import shutil
 import tempfile
 import functools
 import warnings
-from six import StringIO
+from io import StringIO
 from unittest.mock import Mock, patch
 from os.path import join
 

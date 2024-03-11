@@ -3,8 +3,6 @@
 # Just listens for a few EVENTs from Tor (INFO NOTICE WARN ERR) and
 # prints out the contents, so functions like a log monitor.
 
-from __future__ import print_function
-
 from twisted.internet import task, defer
 from twisted.internet.endpoints import UNIXClientEndpoint
 import txtorcon

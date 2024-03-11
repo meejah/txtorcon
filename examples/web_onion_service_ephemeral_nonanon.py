@@ -6,7 +6,6 @@
 # services. Once you publish a service like this, there's no going
 # back to location-hidden.
 
-from __future__ import print_function
 from twisted.internet import defer, task, endpoints
 from twisted.web import server, resource
 

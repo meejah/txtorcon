@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os
 import sys
 from unittest.mock import patch
@@ -1331,7 +1329,6 @@ class FakeListeningPort(object):
 
 
 def port_generator():
-    # XXX six has xrange/range stuff?
     for x in range(65535, 0, -1):
         yield x
 

@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import with_statement
-
 from twisted.web.iweb import IAgentEndpointFactory
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
@@ -17,7 +13,7 @@ from txtorcon.util import SingleObserver
 
 
 @implementer(IAgentEndpointFactory)
-class _AgentEndpointFactoryUsingTor(object):
+class _AgentEndpointFactoryUsingTor:
     def __init__(self, reactor, tor_socks_endpoint, tls_context_factory):
         self._reactor = reactor
         self._proxy_ep = SingleObserver()

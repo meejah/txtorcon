@@ -1,4 +1,4 @@
-from six import BytesIO, text_type
+from io import BytesIO
 from unittest.mock import Mock, patch
 
 from twisted.trial import unittest
@@ -768,7 +768,7 @@ class SocksResolveTests(unittest.TestCase):
         d = socks.resolve_ptr(socks_ep, 'meejah.ca')
         self.assertEqual(1, len(fac.mock_calls))
         self.assertTrue(
-            isinstance(fac.mock_calls[0][1][0], text_type)
+            isinstance(fac.mock_calls[0][1][0], str)
         )
         return d
 
@@ -778,7 +778,7 @@ class SocksResolveTests(unittest.TestCase):
         d = socks.resolve(socks_ep, 'meejah.ca')
         self.assertEqual(1, len(fac.mock_calls))
         self.assertTrue(
-            isinstance(fac.mock_calls[0][1][0], text_type)
+            isinstance(fac.mock_calls[0][1][0], str)
         )
         return d
 
@@ -788,7 +788,7 @@ class SocksResolveTests(unittest.TestCase):
         d = socks.resolve_ptr(socks_ep, b'meejah.ca')
         self.assertEqual(1, len(fac.mock_calls))
         self.assertTrue(
-            isinstance(fac.mock_calls[0][1][0], text_type)
+            isinstance(fac.mock_calls[0][1][0], str)
         )
         return d
 
@@ -798,7 +798,7 @@ class SocksResolveTests(unittest.TestCase):
         d = socks.resolve(socks_ep, b'meejah.ca')
         self.assertEqual(1, len(fac.mock_calls))
         self.assertTrue(
-            isinstance(fac.mock_calls[0][1][0], text_type)
+            isinstance(fac.mock_calls[0][1][0], str)
         )
         return d
 

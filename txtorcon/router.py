@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
 import json
 from datetime import datetime
 from .util import NetLocation
 from .util import _Version
-import six
 from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
@@ -38,7 +32,7 @@ def hashFromHexId(hexid):
     return b64encode(a2b_hex(hexid))[:-1].decode('ascii')
 
 
-class PortRange(object):
+class PortRange:
     """
     Represents a range of ports for Router policies.
     """
@@ -53,7 +47,7 @@ class PortRange(object):
         return "%d-%d" % (self.min, self.max)
 
 
-class Router(object):
+class Router:
     """
     Represents a Tor Router, including location.
 
@@ -179,7 +173,7 @@ class Router(object):
         There is some current work in Twisted for open-ended constants
         (enums) support however, it seems.
         """
-        if isinstance(flags, (six.text_type, bytes)):
+        if isinstance(flags, (str, bytes)):
             flags = flags.split()
         self._flags = [x.lower() for x in flags]
         self.name_is_unique = 'named' in self._flags

@@ -5,8 +5,6 @@
 # do anything "special" to select your circuit hops you risk making it
 # easy to de-anonymize this (and all other) Tor circuits.
 
-from __future__ import print_function
-
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.task import react

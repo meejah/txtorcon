@@ -11,8 +11,6 @@ Example:
     ./launch_tor_with_simplehttpd.py -p 8080 -d /opt/files/
 '''
 
-from __future__ import print_function
-
 import SimpleHTTPServer
 import SocketServer
 import functools
