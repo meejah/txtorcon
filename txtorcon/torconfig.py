@@ -248,7 +248,6 @@ class _ListWrapper(list):
         return '_ListWrapper' + super(_ListWrapper, self).__repr__()
 
 
-
 class HiddenService:
     """
     Because hidden service configuration is handled specially by Tor,
