@@ -17,6 +17,10 @@ See also :ref:`api_stability`.
 
 `git main <https://github.com/meejah/txtorcon>`_ *will likely become v24.1.0*
 
+ * Remove usage of "six" (`#395 <https://github.com/meejah/txtorcon/issues/395>`_,
+   from `a-dieste <https://github.com/a-detiste>`_
+
+
 v23.11.0
 --------
 
