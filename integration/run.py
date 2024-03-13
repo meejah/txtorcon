@@ -4,8 +4,6 @@
 ## if any one does.
 ## FIXME can't I [ab]use trial or unittest for this??
 
-from __future__ import print_function
-
 import os
 import sys
 import subprocess

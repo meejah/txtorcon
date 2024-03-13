@@ -1,17 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
 import functools
 from twisted.internet import defer
 
 from txtorcon.interface import ITorControlProtocol
 
 
-class MagicContainer(object):
+class MagicContainer:
     """
     This merely contains 1 or more methods or further MagicContainer
     instances; see _do_setup in TorInfo.

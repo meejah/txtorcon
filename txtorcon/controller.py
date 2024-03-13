@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import with_statement
-
 import os
 import sys
-import six
 import shlex
 import tempfile
 import functools
@@ -1039,7 +1034,7 @@ class Tor(object):
             raise ValueError(
                 "The only valid Onion service versions are 2 or 3"
             )
-        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
+        if not isinstance(ports, Sequence) or isinstance(ports, str):
             raise ValueError("'ports' must be a sequence (list, tuple, ..)")
 
         processed_ports = yield _validate_ports(self._reactor, ports)
@@ -1097,7 +1092,7 @@ class Tor(object):
             been made.
 
         """
-        if not isinstance(ports, Sequence) or isinstance(ports, six.string_types):
+        if not isinstance(ports, Sequence) or isinstance(ports, str):
             raise ValueError("'ports' must be a sequence (list, tuple, ..)")
         processed_ports = yield _validate_ports(self._reactor, ports)
 

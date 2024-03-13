@@ -1,6 +1,3 @@
-from __future__ import print_function
-from __future__ import with_statement
-
 from os.path import exists
 
 from twisted.python import log, failure

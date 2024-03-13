@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import with_statement
-
 import warnings
 
 
-class FSM(object):
+class FSM:
     """
     Pass callables for matcher and handler to add_handler to create
     transitions between states. A "matcher" is a predicate, and if a

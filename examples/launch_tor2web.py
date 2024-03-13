@@ -5,8 +5,6 @@
 # running tor supports, *without* resorting to looking at version
 # numbers.
 
-from __future__ import print_function
-
 import sys
 from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks, Deferred

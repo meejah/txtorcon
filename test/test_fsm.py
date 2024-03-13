@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import txtorcon.spaghetti
 from txtorcon.spaghetti import State
 from txtorcon.spaghetti import Transition

@@ -8,27 +8,26 @@ import os
 import atexit
 import functools
 import subprocess
-import json
 import time
 import sys
-from xml.dom import minidom
 
 d = os.path.realpath(os.path.curdir)
 container = subprocess.check_output(['docker', 'run', '-v', d+':/txtorcon:ro',
-                                     '-d', 'txtorcon-tester', '/txtorcon/integration/timeout_tor_launch/container_run']).strip()
-print 'container:', container
+                                     '-d', 'txtorcon-tester', '/txtorcon/integration/timeout_tor_launch/container_run'],
+                                    text=True).strip()
+print('container:', container)
 def kill_container(container):
-    print "killing", container
+    print("killing", container)
     subprocess.check_output(['docker', 'kill', container])
 atexit.register(functools.partial(kill_container, container))
 
-print "waiting 15 seconds"
+print("waiting 15 seconds")
 time.sleep(15)
 
-print "gathering logs"
-logs = subprocess.check_output(['docker', 'logs', container])
+print("gathering logs")
+logs = subprocess.check_output(['docker', 'logs', container], text=True)
 
-print logs
+print(logs)
 if '/usr/sbin/tor' in logs:
     sys.exit(1)
 sys.exit(0)

@@ -1,6 +1,5 @@
 import os
 import re
-import six
 import base64
 import hashlib
 import functools
@@ -20,7 +19,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
 
-class HiddenServiceClientAuth(object):
+class HiddenServiceClientAuth:
     """
     Encapsulates a single client-authorization, as parsed from a
     HiddenServiceDir's "client_keys" file if you have stealth or basic
@@ -1375,7 +1374,7 @@ def _validate_ports(reactor, ports):
                     "{} 127.0.0.1:{}".format(remote, local)
                 )
 
-        elif isinstance(port, (six.text_type, str)):
+        elif isinstance(port, str):
             _validate_single_port_string(port)
             processed_ports.append(port)
 
@@ -1407,7 +1406,7 @@ def _validate_ports_low_level(ports):
     """
     if not isinstance(ports, (list, tuple)):
         raise ValueError("'ports' must be a list of strings")
-    if any([not isinstance(x, (six.text_type, str)) for x in ports]):
+    if any([not isinstance(x, str) for x in ports]):
         raise ValueError("'ports' must be a list of strings")
     for port in ports:
         _validate_single_port_string(port)

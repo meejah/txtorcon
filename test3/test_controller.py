@@ -1,6 +1,5 @@
 # this is for python3-only tests
 
-import six
 import unittest
 from unittest.mock import Mock, patch
 
@@ -11,9 +10,6 @@ from twisted.internet.defer import ensureDeferred, succeed
 
 import txtorcon
 
-
-if six.PY2:
-    raise unittest.skip()
 
 class Python3ControllerTests(unittest.TestCase):
 

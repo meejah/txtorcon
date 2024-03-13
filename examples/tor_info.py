@@ -15,8 +15,6 @@
 # transaction, you'll have to use TorControlProtocol's get_info
 # instead.
 
-from __future__ import print_function
-
 import sys
 from twisted.internet import reactor, defer
 from txtorcon import TorInfo, build_local_tor_connection

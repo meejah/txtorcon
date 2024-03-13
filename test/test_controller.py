@@ -1,5 +1,4 @@
 import os
-import six
 import functools
 from os.path import join
 from unittest.mock import Mock, patch
@@ -1503,12 +1502,6 @@ class ClientOnionServiceAuthenticationTests(unittest.TestCase):
         self.assertEqual(0, len(self.cfg.HidServAuth))
         yield self.tor.remove_onion_authentication("non_existing.onion")
         self.assertEqual(0, len(self.cfg.HidServAuth))
-
-    def test_context_manager_py2(self):
-        if not six.PY2:
-            return
-        with self.assertRaises(RuntimeError):
-            self.tor.onion_authentication("foo.onion", "token")
 
     @defer.inlineCallbacks
     def test_add_and_remove(self):

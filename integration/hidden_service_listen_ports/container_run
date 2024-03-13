@@ -16,7 +16,7 @@ from twisted.python import log
 
 log.startLogging(sys.stdout)
 
-print sys.argv[0]
+print(sys.argv[0])
 
 sys.path.insert(0, '/txtorcon')
 import txtorcon
@@ -31,22 +31,22 @@ class Simple(resource.Resource):
 
 def updates(prog, tag, summary):
     p = ('#' * int(10*(prog/100.0))) + ('.'*(10 - int(10*(prog/100.0))))
-    print "%s %s" % (p, summary)
+    print("%s %s" % (p, summary))
 
 
 @defer.inlineCallbacks
 def main(reactor):
-    print "Launching Tor"
+    print("Launching Tor")
     tor = yield txtorcon.launch(reactor, socks_port=0, progress_updates=updates)
 
     hs_endpoint = tor.create_onion_endpoint(80)
 
-    print "Starting site"
+    print("Starting site")
     site = server.Site(Simple())
     port = yield hs_endpoint.listen(site)
 
-    print port.getHost().onion_uri, port.getHost().onion_port, port.local_address
-    print "liftoff"
+    print(port.getHost().onion_uri, port.getHost().onion_port, port.local_address)
+    print("liftoff")
     os.system("netstat -pltn")
 
 task.react(main)

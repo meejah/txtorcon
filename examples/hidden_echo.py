@@ -1,4 +1,3 @@
-from __future__ import print_function
 from twisted.internet import protocol, reactor, endpoints
 
 # like the echo-server example on the front page of

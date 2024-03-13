@@ -13,7 +13,6 @@
 # descriptors -- by default Tor only downloads "microdescriptors"
 # (whose information is already available live via txtorcon.Router
 # instances). Set "UseMicrodescriptors 0" to download "full" descriptors
-from __future__ import print_function
 
 from twisted.internet.task import react
 from twisted.internet.defer import inlineCallbacks

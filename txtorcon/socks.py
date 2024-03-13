@@ -4,9 +4,6 @@
 # Python3. Also, Tor's SOCKS5 implementation is especially simple,
 # since it doesn't do BIND or UDP ASSOCIATE.
 
-from __future__ import print_function
-
-import six
 import struct
 from socket import inet_pton, inet_ntoa, inet_aton, AF_INET6, AF_INET
 
@@ -41,9 +38,9 @@ __all__ = (
 
 
 def _create_ip_address(host, port):
-    if not isinstance(host, six.text_type):
+    if not isinstance(host, str):
         raise ValueError(
-            "'host' must be {}, not {}".format(six.text_type, type(host))
+            "'host' must be str, not {}".format(type(host))
         )
     try:
         a = ipaddress.ip_address(host)
@@ -87,13 +84,13 @@ class _SocksMachine(object):
                     req_type
                 )
             )
-        if not isinstance(host, (bytes, str, six.text_type)):
+        if not isinstance(host, (bytes, str)):
             raise ValueError(
                 "'host' must be text (not {})".format(type(host))
             )
         # XXX what if addr is None?
         self._req_type = req_type
-        self._addr = _create_ip_address(six.text_type(host), port)
+        self._addr = _create_ip_address(str(host), port)
         self._data = b''
         self._on_disconnect = on_disconnect
         self._create_connection = create_connection
@@ -646,9 +643,7 @@ def resolve(tor_endpoint, hostname):
 
     :param hostname: the hostname to look up.
     """
-    if six.PY2 and isinstance(hostname, str):
-        hostname = unicode(hostname)  # noqa
-    elif six.PY3 and isinstance(hostname, bytes):
+    if isinstance(hostname, bytes):
         hostname = hostname.decode('ascii')
     factory = _TorSocksFactory(
         hostname, 0, 'RESOLVE', None,
@@ -667,9 +662,7 @@ def resolve_ptr(tor_endpoint, ip):
 
     :param ip: the IP address to look up.
     """
-    if six.PY2 and isinstance(ip, str):
-        ip = unicode(ip)  # noqa
-    elif six.PY3 and isinstance(ip, bytes):
+    if isinstance(ip, bytes):
         ip = ip.decode('ascii')
     factory = _TorSocksFactory(
         ip, 0, 'RESOLVE_PTR', None,
@@ -692,9 +685,7 @@ class TorSocksEndpoint(object):
     def __init__(self, socks_endpoint, host, port, tls=False):
         self._proxy_ep = socks_endpoint  # can be Deferred
         assert self._proxy_ep is not None
-        if six.PY2 and isinstance(host, str):
-            host = unicode(host)  # noqa
-        if six.PY3 and isinstance(host, bytes):
+        if isinstance(host, bytes):
             host = host.decode('ascii')
         self._host = host
         self._port = port

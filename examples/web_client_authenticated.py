@@ -1,8 +1,6 @@
 # this example shows how to use Twisted's web client with Tor via
 # txtorcon
 
-from __future__ import print_function
-
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import react
 from twisted.internet.endpoints import TCP4ClientEndpoint

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 # Here we set up a Twisted Web server and then launch our own tor with
 # a configured hidden service directed at the Web server we set
 # up. This uses serverFromString to translate the "onion" endpoint

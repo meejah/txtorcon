@@ -3,8 +3,6 @@
 # This uses an IStreamListener and an ICircuitListener to log all
 # built circuits and all streams that succeed.
 
-from __future__ import print_function
-
 import sys
 from twisted.python import log
 from twisted.internet.task import react
