@@ -18,8 +18,6 @@ jobs:
             twisted-version: "tx24"
           - python-version: "3.12"
             twisted-version: "tx24"
-          - python-version: "3.13"
-            twisted-version: "tx24"
 
     steps:
     - uses: actions/checkout@v2
