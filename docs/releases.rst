@@ -17,6 +17,7 @@ See also :ref:`api_stability`.
 
 `git main <https://github.com/meejah/txtorcon>`_ *will likely become v24.1.0*
 
+ * Fix (test) issues with Twisted 24.7.0 (`#400 <https://github.com/meejah/txtorcon/pull/400>`_)
  * Remove usage of "six" (`#395 <https://github.com/meejah/txtorcon/issues/395>`_,
    from `a-dieste <https://github.com/a-detiste>`_
 
