@@ -12,10 +12,12 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
-        twisted-version: [tx18, tx19, tx20, tx21]
+        twisted-version: [tx18, tx19, tx20, tx21, tx22, tx23, tx24]
         include:
           - python-version: "3.11"
-            twisted-version: "tx22"
+            twisted-version: "tx24"
+          - python-version: "3.12"
+            twisted-version: "tx24"
 
     steps:
     - uses: actions/checkout@v2
