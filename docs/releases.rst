@@ -15,8 +15,15 @@ that will be "19.2.1".
 
 See also :ref:`api_stability`.
 
-`git main <https://github.com/meejah/txtorcon>`_ *will likely become v24.1.0*
+`git main <https://github.com/meejah/txtorcon>`_ *will likely become v24.9.0*
 
+
+v24.8.0
+-------
+
+August 20, 2024
+
+ * `txtorcon-24.8.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-24.8.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/24.8.0>`_ (:download:`local-sig </../signatues/txtorcon-24.8.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-24.8.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v24.8.0.tar.gz>`_)
  * Fix (test) issues with Twisted 24.7.0 (`#400 <https://github.com/meejah/txtorcon/pull/400>`_)
  * Remove usage of "six" (`#395 <https://github.com/meejah/txtorcon/issues/395>`_,
    from `a-dieste <https://github.com/a-detiste>`_
