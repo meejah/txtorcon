@@ -96,7 +96,7 @@ def get_global_tor_instance(reactor,
                     control_port,
                 )
 
-        defer.returnValue(_global_tor)
+        return _global_tor
     finally:
         _global_tor_lock.release()
 
@@ -131,7 +131,7 @@ def get_global_tor(reactor, control_port=None,
         _tor_launcher=_tor_launcher,
     )
     cfg = yield tor.get_config()
-    defer.returnValue(cfg)
+    return cfg
 
 
 class IProgressProvider(Interface):
@@ -669,13 +669,11 @@ class TCPHiddenServiceEndpoint(object):
         # (so can provide .local_port -> shoujld be local_endpoint I
         # guess actually...)
         # 2. anyway, can provide access to the "real" hs anyway if we want
-        defer.returnValue(
-            TorOnionListeningPort(
-                self.tcp_listening_port,
-                self.public_port,
-                self.hiddenservice,
-                self._config,
-            )
+        return TorOnionListeningPort(
+            self.tcp_listening_port,
+            self.public_port,
+            self.hiddenservice,
+            self._config,
         )
 
 
@@ -1033,7 +1031,7 @@ def _create_socks_endpoint(reactor, control_protocol, socks_config=None):
         socks_endpoint = _endpoint_from_socksport_line(reactor, socks_config)
 
     assert socks_endpoint is not None
-    defer.returnValue(socks_endpoint)
+    return socks_endpoint
 
 
 @implementer(IStreamClientEndpoint)
@@ -1160,7 +1158,7 @@ class TorClientEndpoint(object):
             # forward the address to any listeners we have
             socks_ep._get_address().addCallback(self._when_address.fire)
             proto = yield socks_ep.connect(protocolfactory)
-            defer.returnValue(proto)
+            return proto
         else:
             for socks_port in self.socks_ports_to_try:
                 tor_ep = TCP4ClientEndpoint(
@@ -1173,7 +1171,7 @@ class TorClientEndpoint(object):
                 socks_ep._get_address().addCallback(self._when_address.fire)
                 try:
                     proto = yield socks_ep.connect(protocolfactory)
-                    defer.returnValue(proto)
+                    return proto
 
                 except error.ConnectError as e0:
                     last_error = e0

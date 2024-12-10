@@ -56,7 +56,7 @@ def main(reactor):
         port = yield ep.listen(server.Site(Simple()))
     except error.ConnectionRefusedError:
         print("Couldn't connect; is Tor listening on localhost:{}?".format(default_control_port()))
-        defer.returnValue(1)
+        return 1
 
     print("Site listening: {}".format(port.getHost()))
     print("Private key:\n{}".format(port.getHost().onion_key))

@@ -945,7 +945,7 @@ class TorControlProtocol(LineOnlyReceiver):
         yield self.queue_command('USEFEATURE EXTENDED_EVENTS')
 
         self.post_bootstrap.callback(self)
-        defer.returnValue(self)
+        return self
 
     # State Machine transitions and matchers. See the __init__ method
     # for a way to output a GraphViz dot diagram of the machine.

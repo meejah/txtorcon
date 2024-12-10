@@ -251,7 +251,7 @@ class FilesystemOnionService(object):
 
         yield config.save()
         yield uploaded[0]
-        defer.returnValue(fhs)
+        return fhs
 
     def __init__(self, config, thedir, ports, version=3, group_readable=0):
         """
@@ -744,7 +744,7 @@ class EphemeralAuthenticatedOnionService(object):
         )
         yield _add_ephemeral_service(config, onion, progress, version, auth, await_all_uploads)
 
-        defer.returnValue(onion)
+        return onion
 
     def __init__(self, config, ports, hostname=None, private_key=None, auth=[], version=3,
                  detach=False, single_hop=None):
@@ -898,7 +898,7 @@ class EphemeralOnionService(object):
 
         yield _add_ephemeral_service(config, onion, progress, version, None, await_all_uploads)
 
-        defer.returnValue(onion)
+        return onion
 
     def __init__(self, config, ports, hostname=None, private_key=None, version=3,
                  detach=False, await_all_uploads=None, single_hop=None, **kwarg):
@@ -1164,7 +1164,7 @@ class FilesystemAuthenticatedOnionService(object):
 
         yield config.save()
         yield uploaded[0]
-        defer.returnValue(fhs)
+        return fhs
 
     def __init__(self, config, thedir, ports, auth, version=3, group_readable=0):
         # XXX do we need version here? probably...
@@ -1389,7 +1389,7 @@ def _validate_ports(reactor, ports):
             processed_ports.append(
                 "{} 127.0.0.1:{}".format(remote, local)
             )
-    defer.returnValue(processed_ports)
+    return processed_ports
 
 
 def _validate_ports_low_level(ports):

@@ -7,7 +7,7 @@
 import struct
 from socket import inet_pton, inet_ntoa, inet_aton, AF_INET6, AF_INET
 
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet.address import IPv4Address, IPv6Address, HostnameAddress
 from twisted.python.failure import Failure
@@ -650,7 +650,7 @@ def resolve(tor_endpoint, hostname):
     )
     proto = yield tor_endpoint.connect(factory)
     result = yield proto.when_done()
-    returnValue(result)
+    return result
 
 
 @inlineCallbacks
@@ -669,7 +669,7 @@ def resolve_ptr(tor_endpoint, ip):
     )
     proto = yield tor_endpoint.connect(factory)
     result = yield proto.when_done()
-    returnValue(result)
+    return result
 
 
 @implementer(IStreamClientEndpoint)
@@ -742,6 +742,6 @@ class TorSocksEndpoint(object):
         proto = yield proxy_ep.connect(socks_factory)
         wrapped_proto = yield proto.when_done()
         if self._tls:
-            returnValue(wrapped_proto.wrappedProtocol)
+            return wrapped_proto.wrappedProtocol
         else:
-            returnValue(wrapped_proto)
+            return wrapped_proto

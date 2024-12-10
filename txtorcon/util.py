@@ -299,7 +299,7 @@ def available_tcp_port(reactor):
     port = yield endpoint.listen(NoOpProtocolFactory())
     address = port.getHost()
     yield port.stopListening()
-    defer.returnValue(address.port)
+    return address.port
 
 
 def unescape_quoted_string(string):

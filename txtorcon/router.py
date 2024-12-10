@@ -7,7 +7,7 @@ from .util import _Version
 from base64 import b64encode, b64decode
 from binascii import b2a_hex, a2b_hex
 
-from twisted.internet.defer import inlineCallbacks, returnValue, succeed
+from twisted.internet.defer import inlineCallbacks, succeed
 from twisted.python.deprecate import deprecated
 from twisted.web.client import readBody
 
@@ -215,7 +215,7 @@ class Router:
             raise RuntimeError(
                 'Expected "{}" but got data for "{}"'.format(self.id_hex, relay_data['fingerprint'])
             )
-        returnValue(relay_data)
+        return relay_data
 
     # note that exit-policy is no longer included in the
     # microdescriptors by default, so this stuff is mostly here as a

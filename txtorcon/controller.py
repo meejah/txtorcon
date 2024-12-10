@@ -14,7 +14,7 @@ except ImportError:
 
 from twisted.python import log
 from twisted.python.failure import Failure
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred, succeed, fail
+from twisted.internet.defer import inlineCallbacks, Deferred, succeed, fail
 from twisted.internet import protocol, error
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.endpoints import UNIXClientEndpoint
@@ -362,14 +362,12 @@ def launch(reactor,
         # note that attach_protocol waits for the protocol to be
         # boostrapped if necessary
 
-    returnValue(
-        Tor(
-            reactor,
-            config.protocol,
-            _tor_config=config,
-            _process_proto=process_protocol,
-            _non_anonymous=True if non_anonymous_mode else False,
-        )
+    return Tor(
+        reactor,
+        config.protocol,
+        _tor_config=config,
+        _process_proto=process_protocol,
+        _non_anonymous=True if non_anonymous_mode else False,
     )
 
 
@@ -420,8 +418,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
             )
         )
         config = yield TorConfig.from_protocol(proto)
-        tor = Tor(reactor, proto, _tor_config=config)
-        returnValue(tor)
+        return Tor(reactor, proto, _tor_config=config)
 
     if control_endpoint is None:
         to_try = [
@@ -450,7 +447,7 @@ def connect(reactor, control_endpoint=None, password_function=None):
         try:
             tor = yield try_endpoint(ep)
             txtorlog.msg("Connected via '{}'".format(ep))
-            returnValue(tor)
+            return tor
         except Exception as e:
             errors.append(e)
     if len(errors) == 1:
@@ -559,7 +556,7 @@ class Tor(object):
         """
         if self._config is None:
             self._config = yield TorConfig.from_protocol(self._protocol)
-        returnValue(self._config)
+        return self._config
 
     def web_agent(self, pool=None, socks_endpoint=None, tls_context_factory=None):
         """
@@ -609,7 +606,7 @@ class Tor(object):
         """
         socks_ep = yield self._default_socks_endpoint()
         ans = yield socks.resolve(socks_ep, hostname)
-        returnValue(ans)
+        return ans
 
     @inlineCallbacks
     def dns_resolve_ptr(self, ip):
@@ -622,7 +619,7 @@ class Tor(object):
         """
         socks_ep = yield self._default_socks_endpoint()
         ans = yield socks.resolve_ptr(socks_ep, ip)
-        returnValue(ans)
+        return ans
 
     @inlineCallbacks
     def add_onion_authentication(self, onion_host, token):
@@ -678,8 +675,8 @@ class Tor(object):
         if to_remove is not None:
             config.HidServAuth.remove(to_remove)
             yield config.save()
-            returnValue(True)
-        returnValue(False)
+            return True
+        return False
 
     def onion_authentication(self, onion_host, token):
         """
@@ -913,7 +910,7 @@ class Tor(object):
         """
         state = TorState(self.protocol)
         yield state.post_bootstrap
-        returnValue(state)
+        return state
 
     def __str__(self):
         return "<Tor version='{tor_version}'>".format(
@@ -933,12 +930,10 @@ class Tor(object):
             "status/enough-dir-info",
             "status/circuit-established",
         )
-        returnValue(
-            not (
-                int(info["dormant"]) or
-                not int(info["status/enough-dir-info"]) or
-                not int(info["status/circuit-established"])
-            )
+        return not (
+            int(info["dormant"]) or
+            not int(info["status/enough-dir-info"]) or
+            not int(info["status/circuit-established"])
         )
 
     @inlineCallbacks
@@ -967,7 +962,7 @@ class Tor(object):
             )
         if self._socks_endpoint is None:
             self._socks_endpoint = yield _create_socks_endpoint(self._reactor, self._protocol)
-        returnValue(self._socks_endpoint)
+        return self._socks_endpoint
 
     # For all these create_*() methods, instead of magically computing
     # the class-name from arguments (e.g. we could decide "it's a
@@ -1050,7 +1045,7 @@ class Tor(object):
             single_hop=single_hop,
             detach=detach,
         )
-        returnValue(service)
+        return service
 
     @inlineCallbacks
     def create_filesystem_onion_service(self, ports, onion_service_dir,
@@ -1111,7 +1106,7 @@ class Tor(object):
             progress=progress,
             await_all_uploads=await_all_uploads,
         )
-        returnValue(service)
+        return service
 
 
 class TorNotFound(RuntimeError):
@@ -1412,4 +1407,4 @@ class TorProcessProtocol(protocol.ProcessProtocol):
         yield self.tor_protocol.queue_command('RESETCONF __OwningControllerProcess')
         if self.config is not None and self.config.protocol is None:
             yield self.config.attach_protocol(proto)
-        returnValue(self)  # XXX or "proto"?
+        return self  # XXX or "proto"?

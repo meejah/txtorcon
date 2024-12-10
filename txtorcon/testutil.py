@@ -83,7 +83,7 @@ class FakeControlProtocol(object):
         text = yield self.get_info_raw(info)
         for line in text.split('\r\n'):
             cb(line)
-        defer.returnValue('')  # FIXME uh....what's up at torstate.py:350?
+        return ''  # FIXME uh....what's up at torstate.py:350?
 
     def get_conf(self, info):
         if len(self.answers) == 0:

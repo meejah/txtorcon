@@ -59,7 +59,7 @@ def launch_tor(config, reactor,
         kill_on_stderr=kill_on_stderr,
         _tor_config=config,
     )
-    defer.returnValue(tor.process)
+    return tor.process
 
 
 class TorConfigType:
@@ -573,7 +573,7 @@ class TorConfig:
         """
         cfg = TorConfig(control=proto)
         yield cfg.post_bootstrap
-        defer.returnValue(cfg)
+        return cfg
 
     def __init__(self, control=None):
         self.config = {}
@@ -714,9 +714,7 @@ class TorConfig:
                         )
                     )
 
-        defer.returnValue(
-            _endpoint_from_socksport_line(reactor, socks_config)
-        )
+        return _endpoint_from_socksport_line(reactor, socks_config)
 
     # FIXME should re-name this to "tor_protocol" to be consistent
     # with other things? Or rename the other things?
@@ -1005,7 +1003,7 @@ class TorConfig:
         except TorProtocolError:
             # must be a version of Tor without config/defaults
             defaults = dict()
-        defer.returnValue(defaults)
+        return defaults
 
     @defer.inlineCallbacks
     def _do_setup(self, data):
@@ -1136,7 +1134,7 @@ class TorConfig:
                         )
                     )
             self.config['DetachedOnionServices'] = onions
-        defer.returnValue(self)
+        return self
 
     def _setup_hidden_services(self, servicelines):
 
