@@ -2,7 +2,7 @@
 
 from twisted.web.iweb import IAgentEndpointFactory
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.endpoints import TCP4ClientEndpoint, UNIXClientEndpoint
 
 from zope.interface import implementer
@@ -162,12 +162,10 @@ def agent_for_socks_port(reactor, torconfig, socks_config, pool=None,
             port = int(socks_config)
         socks_ep = TCP4ClientEndpoint(reactor, host, port)
 
-    returnValue(
-        Agent.usingEndpointFactory(
-            reactor,
-            _AgentEndpointFactoryUsingTor(
-                reactor, socks_ep, tls_context_factory=tls_context_factory
-            ),
-            pool=pool,
-        )
+    return Agent.usingEndpointFactory(
+        reactor,
+        _AgentEndpointFactoryUsingTor(
+            reactor, socks_ep, tls_context_factory=tls_context_factory
+        ),
+        pool=pool,
     )

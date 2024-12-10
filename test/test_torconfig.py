@@ -1457,11 +1457,8 @@ class LegacyLaunchTorTests(unittest.TestCase):
             )
             self.assertIs(tpp, fake_tor.process)
         calls = warn.mock_calls
-        # on Twisted 24.7.0 and higher, there's an extra deprecation
-        # warning due to returnValue being deprecated
-        self.assertTrue(len(calls) >= 1)
-        for call in calls:
-            self.assertEqual(call[1][1], DeprecationWarning)
+        self.assertEqual(1, len(calls))
+        self.assertEqual(calls[0][1][1], DeprecationWarning)
 
 
 class ErrorTests(unittest.TestCase):

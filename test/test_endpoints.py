@@ -627,8 +627,7 @@ class EndpointTests(unittest.TestCase):
             yield arg.stopListening()
             ep.listen(NoOpProtocolFactory())
 
-            defer.returnValue(arg)
-            return
+            return arg
         d0.addBoth(more_listen)
         self.protocol.commands[0][1].callback(
             'ServiceID=blarglyfoo\nPrivateKey=bigbadkeyblob'
@@ -662,8 +661,7 @@ class EndpointTests(unittest.TestCase):
             yield arg.stopListening()
             ep.listen(NoOpProtocolFactory())
 
-            defer.returnValue(arg)
-            return
+            return arg
         d0.addBoth(more_listen)
         if True:
             self.protocol.events['HS_DESC'](

@@ -104,7 +104,7 @@ class _CircuitAttacher(object):
                 )))
                 return
             d.callback(None)
-            defer.returnValue(circuit)
+            return circuit
         except Exception:
             d.errback(Failure())
 
@@ -114,7 +114,7 @@ def _get_circuit_attacher(reactor, state):
     if _get_circuit_attacher.attacher is None:
         _get_circuit_attacher.attacher = _CircuitAttacher()
         yield state.set_attacher(_get_circuit_attacher.attacher, reactor)
-    defer.returnValue(_get_circuit_attacher.attacher)
+    return _get_circuit_attacher.attacher
 
 
 _get_circuit_attacher.attacher = None
@@ -150,7 +150,7 @@ class TorCircuitEndpoint(object):
         attached_d = attacher.add_endpoint(self._target_endpoint, self._circuit)
         proto = yield connect_d
         yield attached_d
-        defer.returnValue(proto)
+        return proto
 
 
 class Circuit(object):
