@@ -1211,7 +1211,10 @@ class TorConfig:
                 group_read = int(v)
 
             else:
-                raise RuntimeError("Can't parse HiddenServiceOptions: " + k)
+                warnings.warn(
+                    "Ignoring unknown HiddenService option: {}={}".format(k, v),
+                    RuntimeWarning,
+                )
 
         maybe_add_hidden_service()
 
