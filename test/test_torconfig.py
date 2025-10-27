@@ -1332,11 +1332,11 @@ HiddenServicePort=90 127.0.0.1:2345'''.format(fake0, fake1))
 
     def test_hidden_service_parse_error(self):
         conf = TorConfig(FakeControlProtocol(['config/names=']))
-        try:
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
             conf._setup_hidden_services('''FakeHiddenServiceKey=foo''')
-            self.fail()
-        except RuntimeError as e:
-            self.assertTrue('parse' in str(e))
+            self.assertEqual(len(w), 1)
+            self.assertTrue('unknown' in str(w[0].message).lower())
 
     def test_hidden_service_directory_absolute_path(self):
         conf = TorConfig(FakeControlProtocol(['config/names=']))
