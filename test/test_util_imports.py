@@ -19,7 +19,6 @@ class TestImports(unittest.TestCase):
         Make sure we don't explode if there's no GeoIP module
         """
 
-        global __import__
         orig = __import__
         try:
             # attempt to ensure we've unimportted txtorcon.util
@@ -32,7 +31,6 @@ class TestImports(unittest.TestCase):
 
             # replace global import with our test import, which will
             # throw on GeoIP import no matter what
-            global __builtins__
             __builtins__['__import__'] = functools.partial(fake_import, orig)
 
             # now ensure we set up all the databases as "None" when we
@@ -44,4 +42,4 @@ class TestImports(unittest.TestCase):
             self.assertEqual(loc.countrycode, '')
 
         finally:
-            __import__ = orig
+            __builtins__['__import__'] = orig

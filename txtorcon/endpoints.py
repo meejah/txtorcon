@@ -72,7 +72,6 @@ def get_global_tor_instance(reactor,
         is called. All calls to this method return the same instance.
     """
     global _global_tor
-    global _global_tor_lock
     yield _global_tor_lock.acquire()
 
     if _tor_launcher is None:
