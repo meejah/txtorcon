@@ -20,7 +20,11 @@ See also :ref:`api_stability`.
 
 * eliminate GeoIP as a dependency (#409)
   This will still load Tor's geoip-db if GeoIP is installed, and the database is found.
-  Only country-codes are supported by this database
+  Only country-codes are supported by this database.
+  Essentially this is just optimization: txtorcon will ask Tor for the country-code of anything interesting via the existing `get_location()` API.
+
+  Packagers / distributions: you may simply ignore GeoIP entirely.
+  To make this available to users: '/usr/share/tor/geoip' contains a Tor geoip-database and the `pygeoip` Python package is installed.
 
 
 v24.8.0
