@@ -15,7 +15,12 @@ that will be "19.2.1".
 
 See also :ref:`api_stability`.
 
-`git main <https://github.com/meejah/txtorcon>`_ *will likely become v24.9.0*
+`git main <https://github.com/meejah/txtorcon>`_ *will likely become v26.x.x*
+
+
+* eliminate GeoIP as a dependency (#409)
+  This will still load Tor's geoip-db if GeoIP is installed, and the database is found.
+  Only country-codes are supported by this database
 
 
 v24.8.0

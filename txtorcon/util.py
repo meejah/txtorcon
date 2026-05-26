@@ -82,9 +82,9 @@ def maybe_create_db(path):
         return None
 
 
-city = maybe_create_db("/usr/share/GeoIP/GeoLiteCity.dat")
-asn = maybe_create_db("/usr/share/GeoIP/GeoIPASNum.dat")
-country = maybe_create_db("/usr/share/GeoIP/GeoIP.dat")
+city = None
+asn = None
+country = maybe_create_db("/usr/share/tor/geoip")
 
 
 def is_executable(path):

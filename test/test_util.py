@@ -99,6 +99,9 @@ class FakeGeoIP(object):
             r['region_name'] = 'Region'
         return r
 
+    def country_code_by_addr(self, ip):
+        return 'XX'
+
 
 class TestNetLocation(unittest.TestCase):
 
@@ -106,25 +109,25 @@ class TestNetLocation(unittest.TestCase):
         from txtorcon import util
         orig = util.city
         try:
-            util.city = FakeGeoIP(version=2)
+            util.country = FakeGeoIP(version=2)
             nl = util.NetLocation('127.0.0.1')
-            self.assertTrue(nl.city)
-            self.assertEqual(nl.city[0], 'City')
-            self.assertEqual(nl.city[1], 'Region')
+            self.assertEqual(nl.countrycode, "XX")
+            self.assertIs(nl.city, None)
+            self.assertIs(nl.asn, None)
         finally:
-            util.ity = orig
+            util.country = orig
 
     def test_valid_lookup_v3(self):
         from txtorcon import util
-        orig = util.city
+        orig = util.country
         try:
-            util.city = FakeGeoIP(version=3)
+            util.country = FakeGeoIP(version=3)
             nl = util.NetLocation('127.0.0.1')
-            self.assertTrue(nl.city)
-            self.assertEqual(nl.city[0], 'City')
-            self.assertEqual(nl.city[1], 'Region')
+            self.assertEqual(nl.countrycode, "XX")
+            self.assertIs(nl.city, None)
+            self.assertIs(nl.asn, None)
         finally:
-            util.ity = orig
+            util.country = orig
 
     def test_city_fails(self):
         "make sure we don't fail if the city lookup excepts"
