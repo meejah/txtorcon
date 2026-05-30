@@ -248,30 +248,11 @@ class NetLocation(object):
         if self.ip is None or self.ip == 'unknown':
             return
 
-        if city:
-            try:
-                r = city.record_by_addr(self.ip)
-            except Exception:
-                r = None
-            if r is not None:
-                self.countrycode = r['country_code']
-                self.latlng = (r['latitude'], r['longitude'])
-                try:
-                    self.city = (r['city'], r['region_code'])
-                except KeyError:
-                    self.city = (r['city'], r['region_name'])
-
-        elif country:
+        if country:
             self.countrycode = country.country_code_by_addr(ipaddr)
 
         else:
             self.countrycode = ''
-
-        if asn:
-            try:
-                self.asn = asn.org_by_addr(self.ip)
-            except Exception:
-                self.asn = None
 
 
 @implementer(IProtocolFactory)
