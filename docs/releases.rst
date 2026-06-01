@@ -15,9 +15,16 @@ that will be "19.2.1".
 
 See also :ref:`api_stability`.
 
-`git main <https://github.com/meejah/txtorcon>`_ *will likely become v26.x.x*
+`git main <https://github.com/meejah/txtorcon>`_ *will likely become v26.7.x*
 
 
+
+v26.6.0
+-------
+
+June 1, 2026
+
+ * `txtorcon-26.6.0.tar.gz <http://fjblvrw2jrxnhtg67qpbzi45r7ofojaoo3orzykesly2j3c2m3htapid.onion/txtorcon-26.6.0.tar.gz>`_ (`PyPI <https://pypi.python.org/pypi/txtorcon/26.6.0>`_ (:download:`local-sig </../signatues/txtorcon-26.6.0.tar.gz.asc>` or `github-sig <https://github.com/meejah/txtorcon/blob/main/signatues/txtorcon-26.6.0.tar.gz.asc?raw=true>`_) (`source <https://github.com/meejah/txtorcon/archive/v26.6.0.tar.gz>`_)
 * eliminate GeoIP as a dependency (#409)
   This will still load Tor's geoip-db if GeoIP is installed, and the database is found.
   Only country-codes are supported by this database.
